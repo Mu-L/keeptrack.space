@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`SensorTimeline Weather Integration should correctly calculate passes and integrate weather data 1`] = `
+exports[`SensorTimeline Weather Integration > should correctly calculate passes and integrate weather data 1`] = `
 [
   [
     {
@@ -46,6 +46,7 @@ exports[`SensorTimeline Weather Integration should correctly calculate passes an
         "name": "Beale AFB, California",
         "objName": "BLEAFB",
         "operator": "USSF",
+        "position": undefined,
         "sensorId": 0,
         "sensor_": PhasedArrayRadar {
           "beamwidth": 2,
@@ -352,6 +353,7 @@ exports[`SensorTimeline Weather Integration should correctly calculate passes an
         "name": "Cape Cod SFS, Massachusetts",
         "objName": "CODSFS",
         "operator": "USSF",
+        "position": undefined,
         "sensorId": 0,
         "sensor_": PhasedArrayRadar {
           "beamwidth": 2,
@@ -655,6 +657,7 @@ exports[`SensorTimeline Weather Integration should correctly calculate passes an
         "name": "Cavalier SFS, North Dakota",
         "objName": "CAVSFS",
         "operator": "USSF",
+        "position": undefined,
         "sensorId": 0,
         "sensor_": PhasedArrayRadar {
           "beamwidth": 1.2,
@@ -893,6 +896,7 @@ exports[`SensorTimeline Weather Integration should correctly calculate passes an
         "name": "Clear SFS, Alaska",
         "objName": "CLRSFS",
         "operator": "USSF",
+        "position": undefined,
         "sensorId": 0,
         "sensor_": PhasedArrayRadar {
           "beamwidth": 2,
@@ -1197,6 +1201,7 @@ exports[`SensorTimeline Weather Integration should correctly calculate passes an
         "name": "RAF Fylingdales, United Kingdom",
         "objName": "RAFFYL",
         "operator": "RAF",
+        "position": undefined,
         "sensorId": 0,
         "sensor_": PhasedArrayRadar {
           "beamwidth": 2,
@@ -1435,6 +1440,7 @@ exports[`SensorTimeline Weather Integration should correctly calculate passes an
         "name": "Pituffik SB, Greenland",
         "objName": "PITSB",
         "operator": "USSF",
+        "position": undefined,
         "sensorId": 0,
         "sensor_": PhasedArrayRadar {
           "beamwidth": 2,
