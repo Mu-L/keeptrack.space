@@ -1,6 +1,5 @@
 {
   "env": {
-    "jest": true,
     "browser": true,
     "es2021": true
   },
@@ -21,8 +20,7 @@
     "ecmaVersion": 2021
   },
   "plugins": [
-    "@typescript-eslint",
-    "jest"
+    "@typescript-eslint"
   ],
   "rules": {
     "accessor-pairs": "error",

@@ -6,6 +6,9 @@
   "compilerOptions": {
     "noEmit": true,
     "strictNullChecks": true,
+    "types": [
+      "vitest/globals"
+    ],
   },
   "include": [
     "src/**/*.ts",
