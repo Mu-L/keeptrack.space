@@ -106,7 +106,7 @@ describe('Plugin Capabilities Type Guards', () => {
           level2Html: '<ul></ul>',
           level2ElementName: 'test-l2',
         }),
-        onContextMenuAction: jest.fn(),
+        onContextMenuAction: vi.fn(),
       };
 
       expect(hasContextMenu(plugin)).toBe(true);
@@ -141,7 +141,7 @@ describe('Plugin Capabilities Type Guards', () => {
   describe('hasFormSubmit', () => {
     it('should return true for objects implementing IFormSubmitCapable', () => {
       const plugin: IFormSubmitCapable = {
-        onFormSubmit: jest.fn(),
+        onFormSubmit: vi.fn(),
       };
 
       expect(hasFormSubmit(plugin)).toBe(true);
@@ -157,7 +157,7 @@ describe('Plugin Capabilities Type Guards', () => {
   describe('hasDownload', () => {
     it('should return true for objects implementing IDownloadCapable', () => {
       const plugin: IDownloadCapable = {
-        onDownload: jest.fn(),
+        onDownload: vi.fn(),
       };
 
       expect(hasDownload(plugin)).toBe(true);
@@ -174,7 +174,7 @@ describe('Plugin Capabilities Type Guards', () => {
     it('should return true for objects implementing IKeyboardShortcutCapable', () => {
       const plugin: IKeyboardShortcutCapable = {
         getKeyboardShortcuts: (): IKeyboardShortcut[] => [
-          { key: 'N', callback: jest.fn() },
+          { key: 'N', callback: vi.fn() },
         ],
       };
 

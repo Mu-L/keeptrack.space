@@ -100,8 +100,8 @@ export const websiteInit = (plugin: KeepTrackPlugin) => {
   EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
   EventBus.getInstance().emit(EventBusEvent.uiManagerOnReady);
   ServiceLocator.getCatalogManager().satCruncher = {
-    addEventListener: jest.fn(),
-    postMessage: jest.fn(),
+    addEventListener: vi.fn(),
+    postMessage: vi.fn(),
   } as unknown as Worker;
   // Set up sccIndex so sccNum2Id can find satellites by their catalog number
   ServiceLocator.getCatalogManager().objectCache = [defaultSat];
@@ -270,9 +270,9 @@ export const standardPluginRmbTests = (Plugin: Constructor<KeepTrackPlugin>, plu
 
         websiteInit(plugin);
         expect(() => EventBus.getInstance().emit(EventBusEvent.rmbMenuActions, rmbOption, -1)).not.toThrow();
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
         expect(() => EventBus.getInstance().emit(EventBusEvent.rmbMenuActions, rmbOption, -1)).not.toThrow();
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       });
     });
   });
@@ -293,7 +293,7 @@ export const standardClickTests = (Plugin: Constructor<KeepTrackPlugin>) => {
       websiteInit(plugin);
       expect(getEl(buttonElement)).toBeDefined();
       expect(() => getEl(buttonElement)!.click()).not.toThrow();
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
   });
 };
@@ -317,7 +317,7 @@ export const standardChangeTests = (Plugin: Constructor<KeepTrackPlugin>) => {
       // Fire a change event
       expect(elementDom).toBeDefined();
       expect(() => elementDom!.dispatchEvent(new Event('change'))).not.toThrow();
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
   });
 };

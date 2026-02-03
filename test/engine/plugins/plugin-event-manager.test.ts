@@ -24,7 +24,7 @@ describe('PluginEventManager', () => {
 
   describe('on', () => {
     it('should register a callback for an event', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback);
 
@@ -33,7 +33,7 @@ describe('PluginEventManager', () => {
     });
 
     it('should invoke the callback when event is emitted', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback);
       eventBus.emit(EventBusEvent.bottomMenuClick, 'test-icon');
@@ -43,8 +43,8 @@ describe('PluginEventManager', () => {
     });
 
     it('should allow multiple callbacks for the same event', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback1);
       eventManager.on(EventBusEvent.bottomMenuClick, callback2);
@@ -59,7 +59,7 @@ describe('PluginEventManager', () => {
 
   describe('off', () => {
     it('should unsubscribe a specific callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback);
       expect(eventManager.subscriptionCount).toBe(1);
@@ -69,7 +69,7 @@ describe('PluginEventManager', () => {
     });
 
     it('should not invoke the callback after unsubscribing', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback);
       eventManager.off(EventBusEvent.bottomMenuClick, callback);
@@ -82,7 +82,7 @@ describe('PluginEventManager', () => {
 
   describe('emit', () => {
     it('should emit events to the event bus', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventBus.on(EventBusEvent.bottomMenuClick, callback);
       eventManager.emit(EventBusEvent.bottomMenuClick, 'test-icon');
@@ -93,8 +93,8 @@ describe('PluginEventManager', () => {
 
   describe('unsubscribeAll', () => {
     it('should unsubscribe all registered callbacks', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback1);
       eventManager.on(EventBusEvent.hideSideMenus, callback2);
@@ -107,7 +107,7 @@ describe('PluginEventManager', () => {
     });
 
     it('should not invoke callbacks after unsubscribeAll', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback);
       eventManager.unsubscribeAll();
@@ -120,7 +120,7 @@ describe('PluginEventManager', () => {
 
   describe('hasSubscription', () => {
     it('should return true when subscription exists', () => {
-      eventManager.on(EventBusEvent.bottomMenuClick, jest.fn());
+      eventManager.on(EventBusEvent.bottomMenuClick, vi.fn());
 
       expect(eventManager.hasSubscription(EventBusEvent.bottomMenuClick)).toBe(true);
     });
@@ -130,7 +130,7 @@ describe('PluginEventManager', () => {
     });
 
     it('should return false after unsubscribing', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       eventManager.on(EventBusEvent.bottomMenuClick, callback);
       eventManager.off(EventBusEvent.bottomMenuClick, callback);
@@ -145,9 +145,9 @@ describe('PluginEventManager', () => {
     });
 
     it('should return correct count after adding subscriptions', () => {
-      eventManager.on(EventBusEvent.bottomMenuClick, jest.fn());
-      eventManager.on(EventBusEvent.hideSideMenus, jest.fn());
-      eventManager.on(EventBusEvent.uiManagerInit, jest.fn());
+      eventManager.on(EventBusEvent.bottomMenuClick, vi.fn());
+      eventManager.on(EventBusEvent.hideSideMenus, vi.fn());
+      eventManager.on(EventBusEvent.uiManagerInit, vi.fn());
 
       expect(eventManager.subscriptionCount).toBe(3);
     });
