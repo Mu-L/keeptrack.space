@@ -1,3 +1,4 @@
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -5,7 +6,6 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
-import { SoundNames } from '@app/engine/audio/sounds';
 import barChart4BarsPng from '@public/img/icons/bar-chart-4-bars.png';
 import developerModePng from '@public/img/icons/developer-mode.png';
 import localCafePng from '@public/img/icons/local-cafe.png';
