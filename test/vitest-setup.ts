@@ -4,6 +4,7 @@ import { settingsManager } from '@app/settings/settings';
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import path from 'path';
+import { vi } from 'vitest';
 
 // This allows consistent testing in the CI environment
 // eslint-disable-next-line no-process-env
@@ -11,14 +12,19 @@ process.env.TZ = 'GMT';
 const fakeTime = new Date('2022-01-01');
 
 fakeTime.setUTCHours(0, 0, 0, 0);
-jest.useFakeTimers().setSystemTime(fakeTime.getTime());
+vi.useFakeTimers().setSystemTime(fakeTime.getTime());
 
 // eslint-disable-next-line no-sync
 const documentHTML = fs.readFileSync(path.resolve(__dirname, '../public/index.html'), 'utf8').toString();
 const body = '<body>';
 const bodyEnd = '</body>';
 const docBody = documentHTML.substring(documentHTML.indexOf(body) + body.length, documentHTML.indexOf(bodyEnd));
-const dom = new JSDOM(documentHTML, { pretendToBeVisual: true, runScripts: 'dangerously', resources: 'usable' });
+const dom = new JSDOM(documentHTML, {
+  pretendToBeVisual: true,
+  runScripts: 'dangerously',
+  resources: 'usable',
+  url: 'https://app.keeptrack.space',
+});
 
 // set the global window and document objects using JSDOM
 // global is a node.js global object
@@ -26,7 +32,28 @@ if (typeof global !== 'undefined') {
   global.window = dom.window;
   global.document = dom.window.document;
   global.docBody = docBody;
+  global.localStorage = dom.window.localStorage;
+  global.sessionStorage = dom.window.sessionStorage;
+  // Ensure Event and CustomEvent from JSDOM are available globally
+  global.Event = dom.window.Event;
+  global.CustomEvent = dom.window.CustomEvent;
+  global.KeyboardEvent = dom.window.KeyboardEvent;
+  global.MouseEvent = dom.window.MouseEvent;
+  // Ensure HTML element classes from JSDOM are available globally
+  global.HTMLElement = dom.window.HTMLElement;
+  global.HTMLDivElement = dom.window.HTMLDivElement;
+  global.HTMLInputElement = dom.window.HTMLInputElement;
+  global.HTMLFormElement = dom.window.HTMLFormElement;
 }
+
+// Mock createImageBitmap for WebGL texture loading
+global.createImageBitmap = vi.fn(() =>
+  Promise.resolve({
+    width: 1,
+    height: 1,
+    close: () => {},
+  } as ImageBitmap),
+);
 
 settingsManager.init();
 
@@ -39,21 +66,31 @@ if (typeof global.window === 'undefined') {
 }
 
 global.speechSynthesis = {
-  speak: jest.fn(),
-  cancel: jest.fn(),
-  paused: jest.fn(),
-  resume: jest.fn(),
-  getVoices: jest.fn(),
+  speak: vi.fn(),
+  cancel: vi.fn(),
+  paused: vi.fn(),
+  resume: vi.fn(),
+  getVoices: vi.fn(),
 };
 
-global.fetch = jest.fn(() =>
+global.fetch = vi.fn(() =>
   Promise.resolve({
     json: () => Promise.resolve({}),
     blob: () => Promise.resolve(new Blob()),
     text: () => Promise.resolve(''),
     ok: true,
   }),
-);
+) as unknown as typeof fetch;
+
+// Mock Worker for web worker tests
+global.Worker = vi.fn().mockImplementation(() => ({
+  postMessage: vi.fn(),
+  terminate: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  onmessage: null,
+  onerror: null,
+})) as unknown as typeof Worker;
 
 /*
  * global.document.canvas = new HTMLCanvasElement(1920, 1080);
@@ -72,33 +109,33 @@ global.window.resizeTo = (width, height) => {
 
 window.resizeTo(1920, 1080);
 
-window.matchMedia = jest.fn().mockImplementation((query) => ({
+window.matchMedia = vi.fn().mockImplementation((query) => ({
   matches: false,
   media: query,
   onchange: null,
-  addListener: jest.fn(), // Deprecated
-  removeListener: jest.fn(), // Deprecated
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
-  dispatchEvent: jest.fn(),
+  addListener: vi.fn(), // Deprecated
+  removeListener: vi.fn(), // Deprecated
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
 }));
 
 window.M = {
-  AutoInit: jest.fn(),
-  updateTextFields: jest.fn(),
+  AutoInit: vi.fn(),
+  updateTextFields: vi.fn(),
 };
 
 // Mock echarts to avoid noisy console warnings and side effects during tests
-jest.mock('echarts', () => {
-  const setOption = jest.fn();
-  const resize = jest.fn();
-  const dispose = jest.fn();
-  const getZr = jest.fn(() => ({ dispose: jest.fn() }));
+vi.mock('echarts', () => {
+  const setOption = vi.fn();
+  const resize = vi.fn();
+  const dispose = vi.fn();
+  const getZr = vi.fn(() => ({ dispose: vi.fn() }));
   const chartInstance = { setOption, resize, dispose, getZr };
-  const init = jest.fn(() => chartInstance);
-  const use = jest.fn();
-  const registerTheme = jest.fn();
-  const registerLocale = jest.fn();
+  const init = vi.fn(() => chartInstance);
+  const use = vi.fn();
+  const registerTheme = vi.fn();
+  const registerLocale = vi.fn();
   const graphic = {};
 
   return {
@@ -112,7 +149,7 @@ jest.mock('echarts', () => {
   };
 });
 
-jest.mock('echarts-gl', () => ({}));
+vi.mock('echarts-gl', () => ({}));
 
 global.requestAnimationFrame = function requestAnimationFrame(cb) {
   return setTimeout(cb, 0);
@@ -124,8 +161,8 @@ global.console = {
   log: console.log.bind(console),
 
   // Ignore console.log() type statements during test
-  info: jest.fn(),
-  debug: jest.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
 };
 
 // Note: echarts-gl warning filtered below during tests
@@ -157,9 +194,9 @@ window.HTMLMediaElement.prototype.addTextTrack = () => {
  * Eruda is a console for mobile web browsers
  * It is not needed for testing and causes issues with the test environment
  */
-jest.mock('eruda', () => ({
-  init: jest.fn(),
-  add: jest.fn(),
+vi.mock('eruda', () => ({
+  init: vi.fn(),
+  add: vi.fn(),
 }));
 
 /** Setup catalog, webgl, and other standard environment */
@@ -169,69 +206,70 @@ import('./environment/standard-env').then((module) => {
 
 global.mocks = {};
 global.mocks.glMock = {
-  activeTexture: jest.fn(),
-  attachShader: jest.fn(),
-  bindBuffer: jest.fn(),
-  bindFramebuffer: jest.fn(),
-  bindRenderbuffer: jest.fn(),
-  bindTexture: jest.fn(),
-  bindVertexArray: jest.fn(),
-  blendFunc: jest.fn(),
-  bufferData: jest.fn(),
-  bufferSubData: jest.fn(),
+  activeTexture: vi.fn(),
+  attachShader: vi.fn(),
+  bindBuffer: vi.fn(),
+  bindFramebuffer: vi.fn(),
+  bindRenderbuffer: vi.fn(),
+  bindTexture: vi.fn(),
+  bindVertexArray: vi.fn(),
+  blendFunc: vi.fn(),
+  bufferData: vi.fn(),
+  bufferSubData: vi.fn(),
   canvas: { height: 1080, width: 1920 },
-  clear: jest.fn(),
-  clearColor: jest.fn(),
-  compileShader: jest.fn(),
+  clear: vi.fn(),
+  clearColor: vi.fn(),
+  compileShader: vi.fn(),
   createBuffer: () => ({ numItems: 0, layout: {}, data: {} }),
-  createFramebuffer: jest.fn(),
+  createFramebuffer: vi.fn(),
   createProgram: () => ({
     test: '',
   }),
-  createRenderbuffer: jest.fn(),
+  createImageBitmap: vi.fn(),
+  createRenderbuffer: vi.fn(),
   createShader: () => ({
     test: '',
   }),
-  createTexture: jest.fn(),
-  createVertexArray: jest.fn(),
-  depthMask: jest.fn(),
-  disable: jest.fn(),
-  disableVertexAttribArray: jest.fn(),
-  drawArrays: jest.fn(),
-  drawElements: jest.fn(),
-  enable: jest.fn(),
-  enableVertexAttribArray: jest.fn(),
-  framebufferRenderbuffer: jest.fn(),
-  framebufferTexture2D: jest.fn(),
-  generateMipmap: jest.fn(),
-  getAttribLocation: jest.fn(),
-  getExtension: jest.fn(),
-  getProgramInfoLog: jest.fn(),
+  createTexture: vi.fn(),
+  createVertexArray: vi.fn(),
+  depthMask: vi.fn(),
+  disable: vi.fn(),
+  disableVertexAttribArray: vi.fn(),
+  drawArrays: vi.fn(),
+  drawElements: vi.fn(),
+  enable: vi.fn(),
+  enableVertexAttribArray: vi.fn(),
+  framebufferRenderbuffer: vi.fn(),
+  framebufferTexture2D: vi.fn(),
+  generateMipmap: vi.fn(),
+  getAttribLocation: vi.fn(),
+  getExtension: vi.fn(),
+  getProgramInfoLog: vi.fn(),
   getProgramParameter: () => true,
   getShaderParameter: () => true,
   getUniformLocation: () => true,
-  isContextLost: jest.fn(() => false),
-  linkProgram: jest.fn(),
-  readPixels: jest.fn(),
-  renderbufferStorage: jest.fn(),
-  scissor: jest.fn(),
-  shaderSource: jest.fn(),
-  texImage2D: jest.fn(),
-  texParameteri: jest.fn(),
-  uniform1f: jest.fn(),
-  uniform1i: jest.fn(),
-  uniform2f: jest.fn(),
-  uniform3fv: jest.fn(),
-  uniform4fv: jest.fn(),
-  uniformMatrix3fv: jest.fn(),
-  uniformMatrix4fv: jest.fn(),
-  useProgram: jest.fn(),
-  viewport: jest.fn(),
-  vertexAttribPointer: jest.fn(),
-  getShaderInfoLog: jest.fn(() => 'This is a mock error'),
-  depthFunc: jest.fn(),
-  clearDepth: jest.fn(),
-  pixelStorei: jest.fn(),
+  isContextLost: vi.fn(() => false),
+  linkProgram: vi.fn(),
+  readPixels: vi.fn(),
+  renderbufferStorage: vi.fn(),
+  scissor: vi.fn(),
+  shaderSource: vi.fn(),
+  texImage2D: vi.fn(),
+  texParameteri: vi.fn(),
+  uniform1f: vi.fn(),
+  uniform1i: vi.fn(),
+  uniform2f: vi.fn(),
+  uniform3fv: vi.fn(),
+  uniform4fv: vi.fn(),
+  uniformMatrix3fv: vi.fn(),
+  uniformMatrix4fv: vi.fn(),
+  useProgram: vi.fn(),
+  viewport: vi.fn(),
+  vertexAttribPointer: vi.fn(),
+  getShaderInfoLog: vi.fn(() => 'This is a mock error'),
+  depthFunc: vi.fn(),
+  clearDepth: vi.fn(),
+  pixelStorei: vi.fn(),
 };
 
 // mock_requestAnimationFrame.js
@@ -283,4 +321,4 @@ export const requestAnimationFrameMock = new RequestAnimationFrameMockSession();
 window.requestAnimationFrame = requestAnimationFrameMock.requestAnimationFrame.bind(requestAnimationFrameMock);
 window.cancelAnimationFrame = requestAnimationFrameMock.cancelAnimationFrame.bind(requestAnimationFrameMock);
 
-window.scrollTo = jest.fn();
+window.scrollTo = vi.fn();
