@@ -26,7 +26,7 @@ describe('BottomIconComponent', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const createConfig = (overrides: Partial<IBottomIconConfig> = {}): IBottomIconConfig => ({
@@ -172,7 +172,7 @@ describe('BottomIconComponent', () => {
 
     it('should emit hideSideMenus on deselect by default', () => {
       const component = new BottomIconComponent('test-plugin', createConfig());
-      const hideSpy = jest.fn();
+      const hideSpy = vi.fn();
 
       eventBus.on(EventBusEvent.hideSideMenus, hideSpy);
 
@@ -186,7 +186,7 @@ describe('BottomIconComponent', () => {
 
     it('should not emit hideSideMenus when emitHideSideMenus is false', () => {
       const component = new BottomIconComponent('test-plugin', createConfig());
-      const hideSpy = jest.fn();
+      const hideSpy = vi.fn();
 
       eventBus.on(EventBusEvent.hideSideMenus, hideSpy);
 
@@ -199,7 +199,7 @@ describe('BottomIconComponent', () => {
     });
 
     it('should call onDeselect callback', () => {
-      const onDeselect = jest.fn();
+      const onDeselect = vi.fn();
       const component = new BottomIconComponent('test-plugin', createConfig(), { onDeselect });
 
       component.init();
@@ -309,7 +309,7 @@ describe('BottomIconComponent', () => {
 
   describe('click handling', () => {
     it('should handle bottom menu click event', () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const component = new BottomIconComponent('test-plugin', createConfig(), { onClick });
 
       component.init();
@@ -320,7 +320,7 @@ describe('BottomIconComponent', () => {
     });
 
     it('should ignore click events for other icons', () => {
-      const onClick = jest.fn();
+      const onClick = vi.fn();
       const component = new BottomIconComponent('test-plugin', createConfig(), { onClick });
 
       component.init();
@@ -331,7 +331,7 @@ describe('BottomIconComponent', () => {
     });
 
     it('should verify requirements before selecting', () => {
-      const onVerifyRequirements = jest.fn().mockReturnValue(false);
+      const onVerifyRequirements = vi.fn().mockReturnValue(false);
       const component = new BottomIconComponent('test-plugin', createConfig(), {
         onVerifyRequirements,
       });
@@ -345,7 +345,7 @@ describe('BottomIconComponent', () => {
     });
 
     it('should call onToggleSideMenu when selecting', () => {
-      const onToggleSideMenu = jest.fn();
+      const onToggleSideMenu = vi.fn();
       const component = new BottomIconComponent('test-plugin', createConfig(), {
         onToggleSideMenu,
       });
@@ -358,7 +358,7 @@ describe('BottomIconComponent', () => {
     });
 
     it('should call onToggleSideMenu(false) when deselecting', () => {
-      const onToggleSideMenu = jest.fn();
+      const onToggleSideMenu = vi.fn();
       const component = new BottomIconComponent('test-plugin', createConfig(), {
         onToggleSideMenu,
       });

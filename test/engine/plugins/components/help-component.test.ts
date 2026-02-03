@@ -9,9 +9,9 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
 
 // Mock adviceManager
-jest.mock('@app/engine/utils/adviceManager', () => ({
+vi.mock('@app/engine/utils/adviceManager', () => ({
   adviceManagerInstance: {
-    showAdvice: jest.fn(),
+    showAdvice: vi.fn(),
   },
 }));
 
@@ -24,8 +24,8 @@ describe('HelpComponent', () => {
     eventBus = EventBus.getInstance();
 
     // Clear all mocks including call counts
-    jest.clearAllMocks();
-    (adviceManagerInstance.showAdvice as jest.Mock).mockClear();
+    vi.clearAllMocks();
+    (adviceManagerInstance.showAdvice as vi.Mock).mockClear();
   });
 
   const createConfig = (overrides: Partial<IHelpConfig> = {}): IHelpConfig => ({
@@ -36,7 +36,7 @@ describe('HelpComponent', () => {
 
   describe('constructor', () => {
     it('should create component with provided config', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       expect(component.title).toBe('Test Help Title');
@@ -46,7 +46,7 @@ describe('HelpComponent', () => {
 
   describe('init', () => {
     it('should throw if already initialized', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       component.init();
@@ -55,7 +55,7 @@ describe('HelpComponent', () => {
     });
 
     it('should register help handler on init', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       component.init();
@@ -67,7 +67,7 @@ describe('HelpComponent', () => {
 
   describe('destroy', () => {
     it('should allow re-initialization after destroy', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       component.init();
@@ -80,10 +80,10 @@ describe('HelpComponent', () => {
 
   describe('help handling', () => {
     it.skip('should show help when plugin is active', () => {
-      const showAdviceMock = adviceManagerInstance.showAdvice as jest.Mock;
+      const showAdviceMock = adviceManagerInstance.showAdvice as vi.Mock;
       const callCountBefore = showAdviceMock.mock.calls.length;
 
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig({
         title: 'My Feature Help',
         body: 'Click the button to activate the feature.',
@@ -100,9 +100,9 @@ describe('HelpComponent', () => {
     });
 
     it('should not show help when plugin is not active', () => {
-      const showAdviceMock = adviceManagerInstance.showAdvice as jest.Mock;
+      const showAdviceMock = adviceManagerInstance.showAdvice as vi.Mock;
 
-      const isActive = jest.fn().mockReturnValue(false);
+      const isActive = vi.fn().mockReturnValue(false);
       const component = new HelpComponent('test-plugin', createConfig({
         title: 'Unique Inactive Title',
         body: 'Unique inactive body',
@@ -120,7 +120,7 @@ describe('HelpComponent', () => {
     });
 
     it('should return true from event handler when help is shown', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       component.init();
@@ -141,7 +141,7 @@ describe('HelpComponent', () => {
 
   describe('showHelp', () => {
     it.skip('should show help using advice manager', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig({
         title: 'Direct Show Title',
         body: 'Direct show body.',
@@ -156,7 +156,7 @@ describe('HelpComponent', () => {
     });
 
     it.skip('should be callable without initialization', () => {
-      const isActive = jest.fn().mockReturnValue(true);
+      const isActive = vi.fn().mockReturnValue(true);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       // Should not throw
@@ -167,7 +167,7 @@ describe('HelpComponent', () => {
 
   describe('getters', () => {
     it('should return title from config', () => {
-      const isActive = jest.fn();
+      const isActive = vi.fn();
       const component = new HelpComponent('test-plugin', createConfig({
         title: 'Custom Title',
       }), isActive);
@@ -176,7 +176,7 @@ describe('HelpComponent', () => {
     });
 
     it('should return body from config', () => {
-      const isActive = jest.fn();
+      const isActive = vi.fn();
       const component = new HelpComponent('test-plugin', createConfig({
         body: 'Custom body content with <strong>HTML</strong>.',
       }), isActive);
@@ -187,7 +187,7 @@ describe('HelpComponent', () => {
 
   describe('isActiveCallback', () => {
     it('should be called each time help event is triggered', () => {
-      const isActive = jest.fn().mockReturnValue(false);
+      const isActive = vi.fn().mockReturnValue(false);
       const component = new HelpComponent('test-plugin', createConfig(), isActive);
 
       component.init();
@@ -200,11 +200,11 @@ describe('HelpComponent', () => {
     });
 
     it.skip('should respond to changing active state', () => {
-      const showAdviceMock = adviceManagerInstance.showAdvice as jest.Mock;
+      const showAdviceMock = adviceManagerInstance.showAdvice as vi.Mock;
       const uniqueTitle = 'Changing State Test Title';
 
       let isActiveState = false;
-      const isActive = jest.fn(() => isActiveState);
+      const isActive = vi.fn(() => isActiveState);
       const component = new HelpComponent('test-plugin', createConfig({
         title: uniqueTitle,
         body: 'Changing state test body',

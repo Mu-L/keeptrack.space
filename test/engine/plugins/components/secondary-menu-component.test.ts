@@ -11,18 +11,18 @@ import * as slideUtils from '@app/engine/utils/slide';
 import * as dragUtils from '@app/engine/utils/click-and-drag';
 
 // Mock ServiceLocator
-jest.mock('@app/engine/core/service-locator', () => ({
+vi.mock('@app/engine/core/service-locator', () => ({
   ServiceLocator: {
-    getSoundManager: jest.fn().mockReturnValue({
-      play: jest.fn(),
+    getSoundManager: vi.fn().mockReturnValue({
+      play: vi.fn(),
     }),
   },
 }));
 
 // Spies for module functions
-let mockSlideInRight: jest.SpyInstance;
-let mockSlideOutLeft: jest.SpyInstance;
-let mockClickAndDragWidth: jest.SpyInstance;
+let mockSlideInRight: vi.SpyInstance;
+let mockSlideOutLeft: vi.SpyInstance;
+let mockClickAndDragWidth: vi.SpyInstance;
 
 describe('SecondaryMenuComponent', () => {
   let eventBus: EventBus;
@@ -42,12 +42,12 @@ describe('SecondaryMenuComponent', () => {
     (EventBus as any).instance = null;
     eventBus = EventBus.getInstance();
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Setup spies for slide utilities
-    mockSlideInRight = jest.spyOn(slideUtils, 'slideInRight').mockImplementation(() => {});
-    mockSlideOutLeft = jest.spyOn(slideUtils, 'slideOutLeft').mockImplementation(() => {});
-    mockClickAndDragWidth = jest.spyOn(dragUtils, 'clickAndDragWidth').mockImplementation(() => ({ style: { top: '', position: '' } }) as HTMLElement);
+    mockSlideInRight = vi.spyOn(slideUtils, 'slideInRight').mockImplementation(() => {});
+    mockSlideOutLeft = vi.spyOn(slideUtils, 'slideOutLeft').mockImplementation(() => {});
+    mockClickAndDragWidth = vi.spyOn(dragUtils, 'clickAndDragWidth').mockImplementation(() => ({ style: { top: '', position: '' } }) as HTMLElement);
   });
 
   afterEach(() => {
@@ -241,7 +241,7 @@ describe('SecondaryMenuComponent', () => {
     });
 
     it('should call onOpen callback', () => {
-      const onOpen = jest.fn();
+      const onOpen = vi.fn();
       const component = new SecondaryMenuComponent(
         'test-plugin',
         'test-side-menu',
@@ -257,7 +257,7 @@ describe('SecondaryMenuComponent', () => {
     });
 
     it('should call onClose callback', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       const component = new SecondaryMenuComponent(
         'test-plugin',
         'test-side-menu',
@@ -366,9 +366,9 @@ describe('SecondaryMenuComponent', () => {
     });
 
     it.skip('should play click sound on button click', () => {
-      const mockPlay = jest.fn();
+      const mockPlay = vi.fn();
 
-      jest.spyOn(ServiceLocator, 'getSoundManager').mockReturnValue({
+      vi.spyOn(ServiceLocator, 'getSoundManager').mockReturnValue({
         play: mockPlay,
       } as any);
 
@@ -390,8 +390,8 @@ describe('SecondaryMenuComponent', () => {
     });
 
     it('should track open/close state via programmatic open/close', () => {
-      const onOpen = jest.fn();
-      const onClose = jest.fn();
+      const onOpen = vi.fn();
+      const onClose = vi.fn();
       const component = new SecondaryMenuComponent(
         'test-plugin',
         'test-side-menu',
@@ -422,7 +422,7 @@ describe('SecondaryMenuComponent', () => {
 
   describe('download button', () => {
     it('should call onDownload callback on download button click', () => {
-      const onDownload = jest.fn();
+      const onDownload = vi.fn();
       const component = new SecondaryMenuComponent(
         'test-plugin',
         'test-side-menu',
@@ -442,13 +442,13 @@ describe('SecondaryMenuComponent', () => {
     });
 
     it.skip('should play export sound on download', () => {
-      const mockPlay = jest.fn();
+      const mockPlay = vi.fn();
 
-      jest.spyOn(ServiceLocator, 'getSoundManager').mockReturnValue({
+      vi.spyOn(ServiceLocator, 'getSoundManager').mockReturnValue({
         play: mockPlay,
       } as any);
 
-      const onDownload = jest.fn();
+      const onDownload = vi.fn();
       const component = new SecondaryMenuComponent(
         'test-plugin',
         'test-side-menu',

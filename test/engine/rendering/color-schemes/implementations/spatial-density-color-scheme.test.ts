@@ -2,10 +2,11 @@
 /* eslint-disable no-undefined */
 import { Pickable } from '@app/engine/core/interfaces';
 import { SpatialDensityColorScheme } from '@app/engine/rendering/color-schemes/spatial-density-color-scheme';
+import { vi } from 'vitest';
 import { ColorSchemeTestUtils } from '../__helpers__/color-scheme-test-utils';
 
 // Mock dependencies
-jest.mock('@app/keepTrackApi', () => ({
+vi.mock('@app/keepTrackApi', () => ({
   keepTrackApi: {
     html: (strings: TemplateStringsArray) => strings[0],
     getSpatialDensityManager: () => ({
@@ -14,7 +15,7 @@ jest.mock('@app/keepTrackApi', () => ({
   },
 }));
 
-jest.mock('@app/settings/settings', () => ({
+vi.mock('@app/settings/settings', () => ({
   settingsManager: {
     colors: {
       transparent: [0, 0, 0, 0],

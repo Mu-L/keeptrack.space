@@ -17,22 +17,22 @@ import * as dragUtils from '@app/engine/utils/click-and-drag';
 
 // Mock ServiceLocator - hideSideMenus mock will be tracked via the UiManager mock
 const mockUiManager = {
-  hideSideMenus: jest.fn(),
+  hideSideMenus: vi.fn(),
   searchManager: {
-    closeSearch: jest.fn(),
+    closeSearch: vi.fn(),
   },
 };
 
-jest.mock('@app/engine/core/service-locator', () => ({
+vi.mock('@app/engine/core/service-locator', () => ({
   ServiceLocator: {
     getUiManager: () => mockUiManager,
   },
 }));
 
 // Spies for module functions
-let mockSlideInRight: jest.SpyInstance;
-let mockSlideOutLeft: jest.SpyInstance;
-let mockClickAndDragWidth: jest.SpyInstance;
+let mockSlideInRight: vi.SpyInstance;
+let mockSlideOutLeft: vi.SpyInstance;
+let mockClickAndDragWidth: vi.SpyInstance;
 
 describe('SideMenuComponent', () => {
   let eventBus: EventBus;
@@ -49,12 +49,12 @@ describe('SideMenuComponent', () => {
     eventBus = EventBus.getInstance();
 
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Setup spies for slide utilities
-    mockSlideInRight = jest.spyOn(slideUtils, 'slideInRight').mockImplementation(() => {});
-    mockSlideOutLeft = jest.spyOn(slideUtils, 'slideOutLeft').mockImplementation(() => {});
-    mockClickAndDragWidth = jest.spyOn(dragUtils, 'clickAndDragWidth').mockImplementation(() => {});
+    mockSlideInRight = vi.spyOn(slideUtils, 'slideInRight').mockImplementation(() => {});
+    mockSlideOutLeft = vi.spyOn(slideUtils, 'slideOutLeft').mockImplementation(() => {});
+    mockClickAndDragWidth = vi.spyOn(dragUtils, 'clickAndDragWidth').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -187,7 +187,7 @@ describe('SideMenuComponent', () => {
     });
 
     it('should call onOpen callback', () => {
-      const onOpen = jest.fn();
+      const onOpen = vi.fn();
       const component = new SideMenuComponent('test-plugin', createConfig(), { onOpen });
 
       component.init();
@@ -198,7 +198,7 @@ describe('SideMenuComponent', () => {
     });
 
     it('should call onClose callback', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       const component = new SideMenuComponent('test-plugin', createConfig(), { onClose });
 
       component.init();
@@ -287,7 +287,7 @@ describe('SideMenuComponent', () => {
 
   describe('registerFormSubmit', () => {
     it('should register form submit handler', () => {
-      const onFormSubmit = jest.fn();
+      const onFormSubmit = vi.fn();
       const component = new SideMenuComponent('test-plugin', createConfig(), { onFormSubmit });
 
       component.init();
@@ -303,7 +303,7 @@ describe('SideMenuComponent', () => {
     });
 
     it('should prevent default form submission', () => {
-      const onFormSubmit = jest.fn();
+      const onFormSubmit = vi.fn();
       const component = new SideMenuComponent('test-plugin', createConfig(), { onFormSubmit });
 
       component.init();
@@ -320,7 +320,7 @@ describe('SideMenuComponent', () => {
     });
 
     it('should accept custom callback', () => {
-      const customCallback = jest.fn();
+      const customCallback = vi.fn();
       const component = new SideMenuComponent('test-plugin', createConfig());
 
       component.init();

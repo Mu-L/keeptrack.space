@@ -9,9 +9,9 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
 // Mock ServiceLocator
-jest.mock('@app/engine/core/service-locator', () => ({
+vi.mock('@app/engine/core/service-locator', () => ({
   ServiceLocator: {
-    getInputManager: jest.fn().mockReturnValue({
+    getInputManager: vi.fn().mockReturnValue({
       rmbMenuItems: [],
     }),
   },
@@ -22,7 +22,7 @@ describe('ContextMenuComponent', () => {
 
   beforeEach(() => {
     // Clear mocks first, then set up mock return values
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Reset DOM
     document.body.innerHTML = `
@@ -35,7 +35,7 @@ describe('ContextMenuComponent', () => {
     eventBus = EventBus.getInstance();
 
     // Reset input manager mock (must be after clearAllMocks)
-    (ServiceLocator.getInputManager as jest.Mock).mockReturnValue({
+    (ServiceLocator.getInputManager as vi.Mock).mockReturnValue({
       rmbMenuItems: [],
     });
   });
@@ -49,7 +49,7 @@ describe('ContextMenuComponent', () => {
   });
 
   const createCallbacks = (overrides: Partial<ContextMenuCallbacks> = {}): ContextMenuCallbacks => ({
-    onAction: jest.fn(),
+    onAction: vi.fn(),
     ...overrides,
   });
 
@@ -127,7 +127,7 @@ describe('ContextMenuComponent', () => {
       const callbacks = createCallbacks();
       const mockInputManager = { rmbMenuItems: [] as any[] };
 
-      (ServiceLocator.getInputManager as jest.Mock).mockReturnValue(mockInputManager);
+      (ServiceLocator.getInputManager as vi.Mock).mockReturnValue(mockInputManager);
 
       const component = new ContextMenuComponent('test-plugin', createConfig({
         isVisibleOnSatellite: true,
@@ -164,7 +164,7 @@ describe('ContextMenuComponent', () => {
 
   describe('action handling', () => {
     it('should call onAction callback when rmbMenuActions event is emitted', () => {
-      const onAction = jest.fn();
+      const onAction = vi.fn();
       const component = new ContextMenuComponent('test-plugin', createConfig(), { onAction });
 
       component.init();
@@ -174,7 +174,7 @@ describe('ContextMenuComponent', () => {
     });
 
     it('should call onAction without satId', () => {
-      const onAction = jest.fn();
+      const onAction = vi.fn();
       const component = new ContextMenuComponent('test-plugin', createConfig(), { onAction });
 
       component.init();
