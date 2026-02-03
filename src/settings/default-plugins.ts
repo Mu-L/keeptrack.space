@@ -271,6 +271,10 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
     enabled: true,
     order: 592,
   },
+  SymbologyPlugin: {
+    enabled: true,
+    order: 593,
+  },
   AboutMenuPlugin: {
     enabled: false,
     order: 601,
@@ -300,6 +304,9 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
     enabled: true,
   },
   SatInfoBoxMission: {
+    enabled: true,
+  },
+  SatInfoBoxSponsor: {
     enabled: true,
   },
   SatInfoBoxManeuver: {

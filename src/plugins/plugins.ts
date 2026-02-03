@@ -1,7 +1,7 @@
+import { SoundManager } from '@app/engine/audio/sound-manager';
 import { CountriesMenu } from '@app/plugins/countries/countries';
 import { FindSatPlugin } from '@app/plugins/find-sat/find-sat';
 import { SatelliteViewPlugin } from '@app/plugins/satellite-view/satellite-view';
-import { SoundManager } from '@app/engine/audio/sound-manager';
 import { SoundToggle } from '@app/plugins/sound-toggle/sound-toggle';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
 
@@ -31,6 +31,7 @@ import { GamepadPlugin } from './gamepad/gamepad';
 import { GithubLinkPlugin } from './github-link/github-link';
 import { KeepTrackPluginsConfiguration } from './keeptrack-plugins-configuration';
 import { LaunchCalendar } from './launch-calendar/launch-calendar';
+import { LinkBudgetPlugin } from './link-budget/link-budget';
 import { LinkedInLinkPlugin } from './linkedin-link/linkedin-link';
 import { MissilePlugin } from './missile/missile-plugin';
 import { NewLaunch } from './new-launch/new-launch';
@@ -56,6 +57,7 @@ import { SatInfoBoxOrbital } from './sat-info-box-orbital/sat-info-box-orbital';
 import { SatInfoBoxSensor } from './sat-info-box-sensor/sat-info-box-sensor';
 import { SatInfoBox } from './sat-info-box/sat-info-box';
 import { SatelliteFov } from './satellite-fov/satellite-fov';
+import { SatelliteListsPlugin } from './satellite-lists/satellite-lists';
 import { SatellitePhotos } from './satellite-photos/satellite-photos';
 import { ScenarioManagementPlugin } from './scenario-management/scenario-management';
 import { ScreenRecorder } from './screen-recorder/screen-recorder';
@@ -65,13 +67,13 @@ import { SensorFov } from './sensor-fov/sensor-fov';
 import { SensorListPlugin } from './sensor-list/sensor-list';
 import { SensorSurvFence } from './sensor-surv/sensor-surv-fence';
 import { CustomSensorPlugin } from './sensor/custom-sensor-plugin';
-import { LinkBudgetPlugin } from './link-budget/link-budget';
 import { LookAnglesPlugin } from './sensor/look-angles-plugin';
 import { MultiSiteLookAnglesPlugin } from './sensor/multi-site-look-angles-plugin';
 import { SensorInfoPlugin } from './sensor/sensor-info-plugin';
 import { SettingsMenuPlugin } from './settings-menu/settings-menu';
 import { ShortTermFences } from './short-term-fences/short-term-fences';
 import { StereoMap } from './stereo-map/stereo-map';
+import { SymbologyPlugin } from './symbology/symbology-plugin';
 import { TimeMachine } from './time-machine/time-machine';
 import { TimeSlider } from './time-slider/time-slider';
 import { SatelliteTimeline } from './timeline-satellite/satellite-timeline';
@@ -85,7 +87,6 @@ import { VideoDirectorPlugin } from './video-director/video-director';
 import { ViewInfoRmbPlugin } from './view-info-rmb/view-info-rmb';
 import { WatchlistPlugin } from './watchlist/watchlist';
 import { WatchlistOverlay } from './watchlist/watchlist-overlay';
-import { SatelliteListsPlugin } from './satellite-lists/satellite-lists';
 
 export class PluginManager {
   // Register all core modules
@@ -150,6 +151,13 @@ export class PluginManager {
 
             new proPlugin.SatInfoBoxMission().init();
           }, config: plugins.SatInfoBoxMission,
+        },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/sat-info-box-sponsor/sat-info-box-sponsor');
+
+            new proPlugin.SatInfoBoxSponsor().init();
+          }, config: plugins.SatInfoBoxSponsor,
         },
         { init: () => new SatInfoBoxSensor().init(), config: plugins.SatInfoBoxSensor },
         { init: () => new DateTimeManager().init(), config: plugins.DateTimeManager },
@@ -265,6 +273,14 @@ export class PluginManager {
         { init: () => new Inc2AltPlots().init(), config: plugins.Inc2AltPlots },
         { init: () => new Inc2LonPlots().init(), config: plugins.Inc2LonPlots },
         { init: () => new FilterMenuPlugin().init(), config: plugins.FilterMenuPlugin },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/symbology/symbology-plugin');
+
+            new proPlugin.SymbologyPlugin().init();
+          }, config: plugins.SymbologyPlugin,
+        },
+        { init: () => new SymbologyPlugin().init(), config: plugins.SymbologyPlugin },
         { init: () => new SettingsMenuPlugin().init(), config: plugins.SettingsMenuPlugin },
         {
           init: async () => {

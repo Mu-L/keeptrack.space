@@ -103,4 +103,6 @@ export type KeepTrackPluginsConfiguration = {
   TimeSlider?: PluginConfiguration;
   OemReaderPlugin?: PluginConfiguration;
   EclipseSolarAnalysis?: PluginConfiguration;
+  SymbologyPlugin?: PluginConfiguration;
+  SatInfoBoxSponsor?: PluginConfiguration;
 };
