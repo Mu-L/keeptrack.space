@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { EciArr3, SatCruncherMessageData, SolarBody } from '../core/interfaces';
 import { GlUtils } from './gl-utils';
 /* eslint-disable camelcase */
@@ -5,7 +6,7 @@ import { GlUtils } from './gl-utils';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { BaseObject, Satellite, TemeVec3, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType } from '@ootk/src/main';
+import { BaseObject, Kilometers, KilometersPerSecond, Satellite, Seconds, SpaceObjectType, TemeVec3 } from '@ootk/src/main';
 import { mat4 } from 'gl-matrix';
 import { SettingsManager } from '../../settings/settings';
 import { CameraType } from '../camera/camera';
@@ -46,15 +47,22 @@ export class DotsManager {
    * glsl code - keep as a string
    */
   private positionBufferOneTime_ = false;
+  private affiliationBufferOneTime_ = false;
+  private objectTypeBufferOneTime_ = false;
   private settings_: SettingsManager;
   // Array for which colors go to which ids
   private isSizeBufferOneTime_ = false;
+  // Sprite atlas texture for symbology
+  private symbologyTexture_: WebGLTexture | null = null;
+  private symbologyTextureLoaded_ = false;
 
   buffers = {
     position: <WebGLBuffer><unknown>null,
     size: <WebGLBuffer><unknown>null,
     color: <WebGLBuffer><unknown>null,
     pickability: <WebGLBuffer><unknown>null,
+    affiliation: <WebGLBuffer><unknown>null,
+    objectType: <WebGLBuffer><unknown>null,
   };
 
   inSunData: Int8Array;
@@ -95,6 +103,16 @@ export class DotsManager {
           vertices: 1,
           offset: 0,
         }),
+        a_affiliation: new BufferAttribute({
+          location: 4,
+          vertices: 1,
+          offset: 0,
+        }),
+        a_objectType: new BufferAttribute({
+          location: 5,
+          vertices: 1,
+          offset: 0,
+        }),
       },
       uniforms: {
         u_pMvCamMatrix: <WebGLUniformLocation><unknown>null,
@@ -102,6 +120,10 @@ export class DotsManager {
         u_maxSize: <WebGLUniformLocation><unknown>null,
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
+        u_symbologyEnabled: <WebGLUniformLocation><unknown>null,
+        u_symbologyAtlas: <WebGLUniformLocation><unknown>null,
+        u_iconMinSize: <WebGLUniformLocation><unknown>null,
+        u_iconFadeRange: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -191,6 +213,12 @@ export class DotsManager {
       gl.uniform1f(this.programs.dots.uniforms.u_maxSize, this.settings_.satShader.maxSize);
     }
 
+    // Set symbology enabled uniform
+    const symbologyManager = ServiceLocator.getSymbologyManager();
+    const symbologyEnabled = symbologyManager?.isEnabled ?? false;
+
+    gl.uniform1i(this.programs.dots.uniforms.u_symbologyEnabled, symbologyEnabled ? 1 : 0);
+
     gl.bindVertexArray(this.programs.dots.vao);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position);
@@ -207,6 +235,45 @@ export class DotsManager {
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.positionData);
     }
     gl.vertexAttribPointer(this.programs.dots.attribs.a_position.location, 3, gl.FLOAT, false, 0, 0);
+
+    // Update affiliation buffer if symbology is enabled
+    if (symbologyEnabled && symbologyManager) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.affiliation);
+      const affiliationData = symbologyManager.getAffiliationData();
+
+      if (affiliationData.length > 0) {
+        if (!this.affiliationBufferOneTime_) {
+          gl.bufferData(gl.ARRAY_BUFFER, affiliationData, gl.DYNAMIC_DRAW);
+          this.affiliationBufferOneTime_ = true;
+        } else {
+          gl.bufferSubData(gl.ARRAY_BUFFER, 0, affiliationData);
+        }
+      }
+
+      // Update object type buffer (static after catalog load)
+      const objectTypeData = symbologyManager.getObjectTypeData();
+
+      if (objectTypeData.length > 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.objectType);
+        if (!this.objectTypeBufferOneTime_) {
+          gl.bufferData(gl.ARRAY_BUFFER, objectTypeData, gl.STATIC_DRAW);
+          this.objectTypeBufferOneTime_ = true;
+        }
+      }
+
+      // Bind sprite atlas texture if available
+      if (this.symbologyTextureLoaded_ && this.symbologyTexture_) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.symbologyTexture_);
+        gl.uniform1i(this.programs.dots.uniforms.u_symbologyAtlas, 0);
+        gl.uniform1f(this.programs.dots.uniforms.u_iconMinSize, 16.0);
+        gl.uniform1f(this.programs.dots.uniforms.u_iconFadeRange, 4.0);
+      } else {
+        // No atlas available - set iconMinSize to 0 to trigger SDF fallback
+        gl.uniform1f(this.programs.dots.uniforms.u_iconMinSize, 0.0);
+        gl.uniform1f(this.programs.dots.uniforms.u_iconFadeRange, 0.0);
+      }
+    }
 
     /*
      * DEBUG:
@@ -383,7 +450,56 @@ export class DotsManager {
     this.setupPickingBuffer(catalogManagerInstance.objectCache.length);
     this.updateSizeBuffer(catalogManagerInstance.objectCache.length);
     this.initColorBuffer(colorBuffer);
+    this.initAffiliationBuffer();
+    this.initObjectTypeBuffer();
     this.initVao(); // Needs ColorBuffer first
+
+    // Load symbology texture asynchronously (non-blocking)
+    this.loadSymbologyTexture();
+  }
+
+  /**
+   * Initialize the affiliation buffer for symbology rendering
+   */
+  initAffiliationBuffer(): void {
+    const gl = ServiceLocator.getRenderer().gl;
+
+    this.buffers.affiliation = gl.createBuffer();
+  }
+
+  /**
+   * Initialize the object type buffer for sprite atlas rendering
+   */
+  initObjectTypeBuffer(): void {
+    const gl = ServiceLocator.getRenderer().gl;
+
+    this.buffers.objectType = gl.createBuffer();
+  }
+
+  /**
+   * Load the symbology sprite atlas texture.
+   * This should be called after the WebGL context is available.
+   */
+  async loadSymbologyTexture(): Promise<void> {
+    const gl = ServiceLocator.getRenderer().gl;
+
+    try {
+      this.symbologyTexture_ = await GlUtils.initTexture(
+        gl,
+        `${settingsManager.installDirectory}textures/symbology-atlas.png`,
+      );
+      this.symbologyTextureLoaded_ = true;
+    } catch (e) {
+      console.warn('Failed to load symbology atlas texture:', e);
+      this.symbologyTextureLoaded_ = false;
+    }
+  }
+
+  /**
+   * Check if symbology texture is loaded and ready
+   */
+  get isSymbologyTextureLoaded(): boolean {
+    return this.symbologyTextureLoaded_;
   }
 
   /**
@@ -448,6 +564,16 @@ export class DotsManager {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.size);
     gl.enableVertexAttribArray(this.programs.dots.attribs.a_size.location);
     gl.vertexAttribPointer(this.programs.dots.attribs.a_size.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
+
+    // Affiliation buffer for symbology
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.affiliation);
+    gl.enableVertexAttribArray(this.programs.dots.attribs.a_affiliation.location);
+    gl.vertexAttribPointer(this.programs.dots.attribs.a_affiliation.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
+
+    // Object type buffer for sprite atlas rendering
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.objectType);
+    gl.enableVertexAttribArray(this.programs.dots.attribs.a_objectType.location);
+    gl.vertexAttribPointer(this.programs.dots.attribs.a_objectType.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
 
     gl.bindVertexArray(null);
 
@@ -750,29 +876,150 @@ export class DotsManager {
             precision highp float;
 
             uniform float logDepthBufFC;
+            uniform bool u_symbologyEnabled;
+            uniform sampler2D u_symbologyAtlas;
+            uniform float u_iconMinSize;
+            uniform float u_iconFadeRange;
 
             in vec4 vColor;
             in float vSize;
             in float vDist;
+            in float vAffiliation;
+            in float vObjectType;
+            in float vPointSize;
 
             out vec4 fragColor;
 
             float when_lt(float x, float y) {
-            return max(sign(y - x), 0.0);
+              return max(sign(y - x), 0.0);
             }
             float when_ge(float x, float y) {
-            return 1.0 - when_lt(x, y);
+              return 1.0 - when_lt(x, y);
+            }
+
+            // SDF for circle (Friend shape)
+            float sdCircle(vec2 p, float r) {
+              return length(p) - r;
+            }
+
+            // SDF for diamond (Hostile shape)
+            float sdDiamond(vec2 p, float size) {
+              return (abs(p.x) + abs(p.y)) - size;
+            }
+
+            // SDF for square (Neutral shape)
+            float sdSquare(vec2 p, float size) {
+              vec2 d = abs(p) - vec2(size);
+              return max(d.x, d.y);
+            }
+
+            // SDF for quatrefoil - four overlapping circles (Unknown shape)
+            float sdQuatrefoil(vec2 p, float size) {
+              float r = size * 0.55;
+              float d = size * 0.35;
+              float d1 = length(p - vec2(d, 0.0)) - r;
+              float d2 = length(p - vec2(-d, 0.0)) - r;
+              float d3 = length(p - vec2(0.0, d)) - r;
+              float d4 = length(p - vec2(0.0, -d)) - r;
+              return min(min(d1, d2), min(d3, d4));
+            }
+
+            // Get shape SDF based on affiliation
+            float getShapeSDF(vec2 p, float affiliation) {
+              float size = 0.95;
+
+              if (affiliation < 0.5) {
+                // FRIEND (0) - Circle
+                return sdCircle(p, size * 0.7);
+              } else if (affiliation < 1.5) {
+                // HOSTILE (1) - Diamond
+                return sdDiamond(p, size * 0.7);
+              } else if (affiliation < 2.5) {
+                // NEUTRAL (2) - Square
+                return sdSquare(p, size * 0.55);
+              } else {
+                // UNKNOWN (3) - Quatrefoil
+                return sdQuatrefoil(p, size);
+              }
+            }
+
+            // Get color based on affiliation (MIL-STD-2525 inspired)
+            vec3 getAffiliationColor(float affiliation) {
+              if (affiliation < 0.5) {
+                // FRIEND - Cyan
+                return vec3(0.0, 0.784, 1.0);
+              } else if (affiliation < 1.5) {
+                // HOSTILE - Red
+                return vec3(1.0, 0.196, 0.196);
+              } else if (affiliation < 2.5) {
+                // NEUTRAL - Green
+                return vec3(0.0, 0.902, 0.302);
+              } else {
+                // UNKNOWN - Yellow
+                return vec3(1.0, 1.0, 0.0);
+              }
+            }
+
+            // Sample from sprite atlas (8x8 grid, 16 icons per affiliation)
+            vec4 sampleSpriteAtlas(vec2 uv, float affiliation, float objectType) {
+              float atlasIndex = affiliation * 16.0 + objectType;
+              float col = mod(atlasIndex, 8.0);
+              float row = floor(atlasIndex / 8.0);
+              vec2 cellUV = (uv + vec2(col, row)) / 8.0;
+              return texture(u_symbologyAtlas, cellUV);
+            }
+
+            // Render simple colored dot (fallback)
+            vec4 renderSimpleDot(vec2 ptCoord) {
+              float r = (${settingsManager.satShader.blurFactor1} - min(abs(length(ptCoord)), 1.0));
+              float alpha = (2.0 * r + ${settingsManager.satShader.blurFactor2});
+              alpha = min(alpha, 1.0);
+              if (alpha < 0.01) return vec4(0.0);
+              return vec4(vColor.rgb, vColor.a * alpha);
+            }
+
+            // Render SDF shape (intermediate fallback when no atlas)
+            vec4 renderSdfShape(vec2 ptCoord) {
+              float sdf = getShapeSDF(ptCoord, vAffiliation);
+              float strokeWidth = 0.12;
+              float alpha = 1.0 - smoothstep(0.0, 0.06, abs(sdf) - strokeWidth);
+              if (alpha < 0.01) return vec4(0.0);
+              vec3 color = getAffiliationColor(vAffiliation);
+              return vec4(color, vColor.a * alpha);
             }
 
             void main(void) {
               vec2 ptCoord = gl_PointCoord * 2.0 - vec2(1.0, 1.0);
-              float r = (${settingsManager.satShader.blurFactor1} - min(abs(length(ptCoord)), 1.0));
-              float alpha = (2.0 * r + ${settingsManager.satShader.blurFactor2});
+              vec2 uv = gl_PointCoord;
 
-              alpha = min(alpha, 1.0);
+              vec4 finalColor;
 
-              if (alpha == 0.0) discard;
-              fragColor = vec4(vColor.rgb, vColor.a * alpha);
+              if (u_symbologyEnabled) {
+                // Check if sprite atlas is available and point is large enough
+                if (u_iconMinSize > 0.0 && vPointSize >= u_iconMinSize) {
+                  // Full sprite atlas rendering
+                  vec4 texColor = sampleSpriteAtlas(uv, vAffiliation, vObjectType);
+                  if (texColor.a < 0.1) discard;
+                  finalColor = texColor;
+                } else if (u_iconMinSize > 0.0 && vPointSize >= (u_iconMinSize - u_iconFadeRange)) {
+                  // Blend zone: crossfade between sprite and SDF
+                  float blendFactor = (vPointSize - (u_iconMinSize - u_iconFadeRange)) / u_iconFadeRange;
+                  vec4 iconColor = sampleSpriteAtlas(uv, vAffiliation, vObjectType);
+                  vec4 sdfColor = renderSdfShape(ptCoord);
+                  finalColor = mix(sdfColor, iconColor, blendFactor);
+                  if (finalColor.a < 0.01) discard;
+                } else {
+                  // SDF shape fallback (no atlas or too small)
+                  finalColor = renderSdfShape(ptCoord);
+                  if (finalColor.a < 0.01) discard;
+                }
+              } else {
+                // Original circular dot rendering
+                finalColor = renderSimpleDot(ptCoord);
+                if (finalColor.a < 0.01) discard;
+              }
+
+              fragColor = finalColor;
 
               ${DepthManager.getLogDepthFragCode()}
             }
@@ -782,16 +1029,22 @@ export class DotsManager {
           in vec3 a_position;
           in vec4 a_color;
           in float a_size;
+          in float a_affiliation;
+          in float a_objectType;
 
           uniform float u_minSize;
           uniform float u_maxSize;
           uniform vec3 worldOffset;
           uniform mat4 u_pMvCamMatrix;
           uniform float logDepthBufFC;
+          uniform bool u_symbologyEnabled;
 
           out vec4 vColor;
           out float vSize;
           out float vDist;
+          out float vAffiliation;
+          out float vObjectType;
+          out float vPointSize;
 
           float when_lt(float x, float y) {
               return max(sign(y - x), 0.0);
@@ -823,10 +1076,15 @@ export class DotsManager {
               // Searched Object
               drawSize += when_ge(a_size, 0.5) * ${settingsManager.satShader.starSize};
 
-              gl_PointSize = drawSize;
+              // Increase size when symbology is enabled for better visibility of outline shapes
+              float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
+              gl_PointSize = drawSize * symbologyScale;
+              vPointSize = gl_PointSize;
               vColor = a_color;
               vSize = a_size * 1.0;
               vDist = dist;
+              vAffiliation = a_affiliation;
+              vObjectType = a_objectType;
           }
         `,
       },

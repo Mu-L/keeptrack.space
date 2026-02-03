@@ -47,6 +47,7 @@ import { EventBus } from './engine/events/event-bus';
 import { EventBusEvent } from './engine/events/event-bus-events';
 import { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import { DotsManager } from './engine/rendering/dots-manager';
+import { SymbologyManager } from './engine/rendering/symbology/symbology-manager';
 import { lineManagerInstance } from './engine/rendering/line-manager';
 import { WebWorkerThreadManager } from './engine/threads/web-worker-thread';
 import { DemoManager } from './engine/utils/demo-mode';
@@ -119,6 +120,7 @@ export class KeepTrack {
     const dotsManagerInstance = new DotsManager();
     const uiManagerInstance = new UiManager();
     const colorSchemeManagerInstance = new ColorSchemeManager();
+    const symbologyManagerInstance = new SymbologyManager();
     const sensorMathInstance = new SensorMath();
     const hoverManagerInstance = new HoverManager();
 
@@ -129,6 +131,7 @@ export class KeepTrack {
     Container.getInstance().registerSingleton(Singletons.DotsManager, dotsManagerInstance);
     Container.getInstance().registerSingleton(Singletons.UiManager, uiManagerInstance);
     Container.getInstance().registerSingleton(Singletons.ColorSchemeManager, colorSchemeManagerInstance);
+    Container.getInstance().registerSingleton(Singletons.SymbologyManager, symbologyManagerInstance);
     Container.getInstance().registerSingleton(Singletons.SensorMath, sensorMathInstance);
     Container.getInstance().registerSingleton(Singletons.HoverManager, hoverManagerInstance);
 
@@ -330,6 +333,7 @@ theodore.kruczek at gmail dot com.
       const dotsManagerInstance = ServiceLocator.getDotsManager();
       const uiManagerInstance = ServiceLocator.getUiManager();
       const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
+      const symbologyManagerInstance = ServiceLocator.getSymbologyManager();
       const inputManagerInstance = ServiceLocator.getInputManager();
 
       this.engine.init();
@@ -364,6 +368,7 @@ theodore.kruczek at gmail dot com.
 
       catalogManagerInstance.init();
       colorSchemeManagerInstance.init(renderer);
+      symbologyManagerInstance.init(renderer.gl);
 
       await CatalogLoader.load(); // Needs Object Manager and gl first
 

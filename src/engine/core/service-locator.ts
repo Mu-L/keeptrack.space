@@ -14,6 +14,7 @@ import type { ColorSchemeManager } from '../rendering/color-scheme-manager';
 import type { DotsManager } from '../rendering/dots-manager';
 import type { LineManager } from '../rendering/line-manager';
 import type { MeshManager } from '../rendering/mesh-manager';
+import type { SymbologyManager } from '../rendering/symbology/symbology-manager';
 import type { WebGLRenderer } from '../rendering/webgl-renderer';
 import type { Scene } from './scene';
 import type { TimeManager } from './time-manager';
@@ -36,4 +37,5 @@ export class ServiceLocator {
   static readonly getHoverManager = () => Container.getInstance().get<HoverManager>(Singletons.HoverManager);
   static readonly getMainCamera = () => Container.getInstance().get<Camera>(Singletons.MainCamera);
   static readonly getMeshManager = () => Container.getInstance().get<MeshManager>(Singletons.MeshManager);
+  static readonly getSymbologyManager = () => Container.getInstance().get<SymbologyManager>(Singletons.SymbologyManager);
 }

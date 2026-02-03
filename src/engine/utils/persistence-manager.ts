@@ -69,6 +69,10 @@ export enum StorageKey {
   FILTER_SETTINGS_STARLINK = 'v2-filter-settings-starlink',
   SENSOR_TIMELINE_ENABLED_SENSORS = 'v2-sensor-timeline-enabled-sensors',
 
+  // Symbology
+  SYMBOLOGY_CONFIG = 'v2-symbology-config',
+  SYMBOLOGY_ENABLED = 'v2-symbology-enabled',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
