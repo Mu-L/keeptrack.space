@@ -115,4 +115,9 @@
       "text": "Only add body for breaking changes, complex reasoning, or issue references"
     }
   ],
+  "github.copilot.chat.advanced.inlineEdits.logContextRecorder.enabled": true,
+  "github.copilot.enable": {
+    "*": true
+  },
+  "github.copilot.nextEditSuggestions.enabled": true,
 }
