@@ -20,7 +20,7 @@ describe('FilterMenuPlugin_class', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   standardPluginSuite(FilterMenuPlugin, 'FilterMenuPlugin');
@@ -84,7 +84,7 @@ describe('FilterMenuPlugin_class', () => {
 
     it('should trigger bottomMenuClicked when keyboard shortcut callback is invoked', () => {
       const plugin = new FilterMenuPlugin();
-      const bottomMenuClickedSpy = jest.spyOn(plugin, 'bottomMenuClicked');
+      const bottomMenuClickedSpy = vi.spyOn(plugin, 'bottomMenuClicked');
 
       websiteInit(plugin);
 
@@ -169,7 +169,7 @@ describe('FilterMenuPlugin_class', () => {
       const plugin = new FilterMenuPlugin();
 
       // Create spy before websiteInit so it catches the bound method
-      const saveSettingsSpy = jest.spyOn(plugin as any, 'saveSettings_');
+      const saveSettingsSpy = vi.spyOn(plugin as any, 'saveSettings_');
 
       websiteInit(plugin);
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
@@ -182,7 +182,7 @@ describe('FilterMenuPlugin_class', () => {
       const plugin = new FilterMenuPlugin();
 
       // Create spy before websiteInit so it catches the bound method
-      const loadSettingsSpy = jest.spyOn(plugin as any, 'loadSettings_');
+      const loadSettingsSpy = vi.spyOn(plugin as any, 'loadSettings_');
 
       websiteInit(plugin);
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
@@ -434,7 +434,7 @@ describe('FilterMenuPlugin_class', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
 
-      const bottomMenuClickedSpy = jest.spyOn(plugin, 'bottomMenuClicked');
+      const bottomMenuClickedSpy = vi.spyOn(plugin, 'bottomMenuClicked');
       const topMenuBtn = getEl('top-menu-filter-btn');
 
       topMenuBtn?.click();
@@ -472,7 +472,7 @@ describe('FilterMenuPlugin_class', () => {
     it('should play sound when reset is clicked', () => {
       const plugin = new FilterMenuPlugin();
       const soundManager = ServiceLocator.getSoundManager();
-      const playSpy = jest.spyOn(soundManager as any, 'play');
+      const playSpy = vi.spyOn(soundManager as any, 'play');
 
       websiteInit(plugin);
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
@@ -500,7 +500,7 @@ describe('FilterMenuPlugin_class', () => {
 
     it('should call onBottomIconClick when bottomIconCallback is invoked', () => {
       const plugin = new FilterMenuPlugin();
-      const onBottomIconClickSpy = jest.spyOn(plugin, 'onBottomIconClick');
+      const onBottomIconClickSpy = vi.spyOn(plugin, 'onBottomIconClick');
 
       plugin.bottomIconCallback();
 
@@ -617,6 +617,7 @@ describe('FilterMenuPlugin_class', () => {
 
   describe('Side menu interaction', () => {
     it('should work when any filter checkbox is clicked', () => {
+      vi.useFakeTimers();
       const plugin = new FilterMenuPlugin();
 
       websiteInit(plugin);
@@ -630,9 +631,10 @@ describe('FilterMenuPlugin_class', () => {
       checkboxes.filter((cb) => !cb.disabled).forEach((checkbox) => {
         expect(() => {
           checkbox.click();
-          jest.advanceTimersByTime(100);
+          vi.advanceTimersByTime(100);
         }).not.toThrow();
       });
+      vi.useRealTimers();
     }, 30000);
 
     it('should have all filters include required id property', () => {

@@ -42,10 +42,10 @@ describe('LinkedInLinkPlugin', () => {
   });
 
   describe('onClick functionality', () => {
-    let windowOpenSpy: jest.SpyInstance;
+    let windowOpenSpy: vi.SpyInstance;
 
     beforeEach(() => {
-      windowOpenSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+      windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     });
 
     afterEach(() => {

@@ -106,7 +106,7 @@ describe('DebrisScreening_form', () => {
   it('should handle form submission without throwing', () => {
     websiteInit(debrisScreeningPlugin);
     expect(() => getEl('debris-screening-menu-form')!.dispatchEvent(new Event('submit'))).not.toThrow();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   it('should handle export button click without throwing', () => {

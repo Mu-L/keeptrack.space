@@ -27,8 +27,8 @@ const setupCountriesMenuTestEnvironment = () => {
   mockGroupsManager.groupList.F = {
     groupName: 'F',
     ids: [],
-    updateIsInGroup: jest.fn(),
-    updateOrbits: jest.fn(),
+    updateIsInGroup: vi.fn(),
+    updateOrbits: vi.fn(),
   } as unknown as ObjectGroup<GroupType.ALL>;
   Container.getInstance().registerSingleton(Singletons.GroupsManager, mockGroupsManager);
 };
@@ -39,7 +39,7 @@ describe('CountriesMenu', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   standardPluginSuite(CountriesMenu, 'CountriesMenu');
@@ -116,12 +116,12 @@ describe('CountriesMenu', () => {
     it('should merge country codes by display name and skip ANALSAT', () => {
       const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
-      catalogManagerInstance.getSats = jest.fn().mockReturnValue([
+      catalogManagerInstance.getSats = vi.fn().mockReturnValue([
         { country: 'US' },
         { country: 'USA' },
         { country: 'ANALSAT' },
       ]);
-      jest
+      vi
         .spyOn(StringExtractor, 'extractCountry')
         .mockImplementation((code: string) => (code === 'US' || code === 'USA' ? 'United States' : code));
 
@@ -143,8 +143,8 @@ describe('CountriesMenu', () => {
     it('should create group if it does not exist', () => {
       const groupManagerInstance = ServiceLocator.getGroupsManager();
 
-      groupManagerInstance.selectGroup = jest.fn();
-      groupManagerInstance.createGroup = jest.fn();
+      groupManagerInstance.selectGroup = vi.fn();
+      groupManagerInstance.createGroup = vi.fn();
       groupManagerInstance.groupList = [] as unknown as Record<string, ObjectGroup<GroupType.ALL>>;
       Container.getInstance().registerSingleton(Singletons.GroupsManager, groupManagerInstance);
 
@@ -160,8 +160,8 @@ describe('CountriesMenu', () => {
       const groupManagerInstance = ServiceLocator.getGroupsManager();
       const uiManagerInstance = mockUiManager;
 
-      uiManagerInstance.searchManager.fillResultBox = jest.fn();
-      groupManagerInstance.selectGroup = jest.fn();
+      uiManagerInstance.searchManager.fillResultBox = vi.fn();
+      groupManagerInstance.selectGroup = vi.fn();
       Container.getInstance().registerSingleton(Singletons.GroupsManager, groupManagerInstance);
 
       const plugin = new CountriesMenu();
@@ -176,14 +176,14 @@ describe('CountriesMenu', () => {
       const groupManagerInstance = ServiceLocator.getGroupsManager();
 
       PluginRegistry.addPlugin(new SelectSatManager());
-      PluginRegistry.getPlugin(SelectSatManager)!.selectSat = jest.fn();
+      PluginRegistry.getPlugin(SelectSatManager)!.selectSat = vi.fn();
       groupManagerInstance.groupList.Argentina = {
         ids: [0, 1],
-        updateIsInGroup: jest.fn(),
-        updateOrbits: jest.fn(),
-        clear: jest.fn(),
-        hasObject: jest.fn(),
-        createGroupByCountry_: jest.fn(),
+        updateIsInGroup: vi.fn(),
+        updateOrbits: vi.fn(),
+        clear: vi.fn(),
+        hasObject: vi.fn(),
+        createGroupByCountry_: vi.fn(),
       } as unknown as ObjectGroup<GroupType.COUNTRY>;
       ServiceLocator.getCatalogManager().getObject = () => defaultSat;
 
@@ -210,12 +210,12 @@ describe('CountriesMenu', () => {
   describe('uiManagerFinal_', () => {
     it('should bind click listeners to country list items', () => {
       const plugin = new CountriesMenu();
-      const countryMenuClickSpy = jest
+      const countryMenuClickSpy = vi
         .spyOn(plugin as any, 'countryMenuClick_')
         // eslint-disable-next-line
         .mockImplementation(() => undefined);
 
-      jest
+      vi
         .spyOn(plugin as any, 'generateCountryList_')
         .mockReturnValue('<li class="menu-selectable country-option" data-group="US">United States</li>');
       document.body.innerHTML = `
@@ -236,7 +236,7 @@ describe('CountriesMenu', () => {
 
     it('should no-op when country menu elements are missing', () => {
       const plugin = new CountriesMenu();
-      const generateSpy = jest.spyOn(plugin as any, 'generateCountryList_');
+      const generateSpy = vi.spyOn(plugin as any, 'generateCountryList_');
 
       document.body.innerHTML = '';
 
@@ -249,8 +249,8 @@ describe('CountriesMenu', () => {
   describe('Lifecycle', () => {
     it('should register uiManagerFinal handler on addHtml', () => {
       const plugin = new CountriesMenu();
-      const uiFinalSpy = jest.spyOn(plugin as any, 'uiManagerFinal_').mockImplementation();
-      const onSpy = jest.spyOn(EventBus.getInstance(), 'on');
+      const uiFinalSpy = vi.spyOn(plugin as any, 'uiManagerFinal_').mockImplementation();
+      const onSpy = vi.spyOn(EventBus.getInstance(), 'on');
 
       plugin.addHtml();
 

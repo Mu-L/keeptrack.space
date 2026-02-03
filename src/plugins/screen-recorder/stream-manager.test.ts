@@ -4,57 +4,57 @@ import { KeepTrack } from '@app/keeptrack';
 import { StreamManager } from './stream-manager';
 
 // Mock dependencies
-jest.mock('@app/engine/utils/errorManager');
-jest.mock('@app/keeptrack');
+vi.mock('@app/engine/utils/errorManager');
+vi.mock('@app/keeptrack');
 
 describe('StreamManager', () => {
   let streamManager: StreamManager;
-  let onStopMock: jest.Mock;
-  let onMinorErrorMock: jest.Mock;
-  let onErrorMock: jest.Mock;
+  let onStopMock: vi.Mock;
+  let onMinorErrorMock: vi.Mock;
+  let onErrorMock: vi.Mock;
   let mockStream: MediaStream;
   let mockMediaRecorder: MediaRecorder;
 
   beforeEach(() => {
-    onStopMock = jest.fn();
-    onMinorErrorMock = jest.fn();
-    onErrorMock = jest.fn();
+    onStopMock = vi.fn();
+    onMinorErrorMock = vi.fn();
+    onErrorMock = vi.fn();
 
     // Mock MediaStream
     mockStream = {
-      getTracks: jest.fn().mockReturnValue([{ stop: jest.fn() }]),
+      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }]),
     } as unknown as MediaStream;
 
     // Mock MediaRecorder
     mockMediaRecorder = {
-      start: jest.fn(),
-      stop: jest.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
       onstop: null,
       ondataavailable: null,
-      isTypeSupported: jest.fn().mockReturnValue(true),
+      isTypeSupported: vi.fn().mockReturnValue(true),
     } as unknown as MediaRecorder;
 
     global.window = {
       location: { protocol: 'https:' },
-      MediaRecorder: jest.fn().mockImplementation(() => mockMediaRecorder),
+      MediaRecorder: vi.fn().mockImplementation(() => mockMediaRecorder),
       URL: {
-        createObjectURL: jest.fn().mockReturnValue('blob:test'),
-        revokeObjectURL: jest.fn(),
+        createObjectURL: vi.fn().mockReturnValue('blob:test'),
+        revokeObjectURL: vi.fn(),
       },
     } as any;
 
     global.navigator = {} as Navigator;
     global.document = {
-      createElement: jest.fn().mockReturnValue({
+      createElement: vi.fn().mockReturnValue({
         style: {},
-        click: jest.fn(),
+        click: vi.fn(),
       }),
     } as any;
 
-    (KeepTrack.getInstance as jest.Mock) = jest.fn().mockReturnValue({
+    (KeepTrack.getInstance as vi.Mock) = vi.fn().mockReturnValue({
       containerRoot: {
-        appendChild: jest.fn(),
-        removeChild: jest.fn(),
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
       },
     });
 
@@ -95,7 +95,7 @@ describe('StreamManager', () => {
     });
 
     it.skip('should call getDisplayMedia if available on navigator', async () => {
-      const mockGetDisplayMedia = jest.fn().mockResolvedValue(mockStream);
+      const mockGetDisplayMedia = vi.fn().mockResolvedValue(mockStream);
 
       (global.navigator as any).getDisplayMedia = mockGetDisplayMedia;
 
@@ -104,7 +104,7 @@ describe('StreamManager', () => {
     });
 
     it.skip('should call getDisplayMedia on mediaDevices if available', async () => {
-      const mockGetDisplayMedia = jest.fn().mockResolvedValue(mockStream);
+      const mockGetDisplayMedia = vi.fn().mockResolvedValue(mockStream);
 
       (global.navigator as any).mediaDevices = { getDisplayMedia: mockGetDisplayMedia };
 
@@ -165,20 +165,20 @@ describe('StreamManager', () => {
     });
 
     it('should create download link and trigger download', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       (streamManager as any).mediaRecorder_ = mockMediaRecorder;
       (streamManager as any).recordedBlobs = [new Blob(['test'])];
 
-      const mockAnchor = { style: {}, click: jest.fn() };
+      const mockAnchor = { style: {}, click: vi.fn() };
 
-      (document.createElement as jest.Mock).mockReturnValue(mockAnchor);
+      (document.createElement as vi.Mock).mockReturnValue(mockAnchor);
 
       streamManager.save('test.webm');
 
       expect(mockAnchor.click).toHaveBeenCalled();
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       expect(window.URL.revokeObjectURL).toHaveBeenCalled();
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 

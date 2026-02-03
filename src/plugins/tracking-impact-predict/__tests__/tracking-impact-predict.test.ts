@@ -45,15 +45,15 @@ describe('TrackingImpactPredict_class', () => {
   beforeEach(() => {
     setupStandardEnvironment();
     // Mock fetch for TIP data
-    global.fetch = jest.fn(() =>
+    global.fetch = vi.fn(() =>
       Promise.resolve({
         json: () => Promise.resolve(mockTipData),
       }),
-    ) as jest.Mock;
+    ) as vi.Mock;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   standardPluginSuite(TrackingImpactPredict, 'TrackingImpactPredict');
@@ -137,7 +137,7 @@ describe('TrackingImpactPredict_class', () => {
 
       websiteInit(plugin);
 
-      const spy = jest.spyOn(plugin, 'onBottomIconClick');
+      const spy = vi.spyOn(plugin, 'onBottomIconClick');
 
       plugin.bottomIconCallback();
 

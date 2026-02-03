@@ -14,7 +14,7 @@ import { standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from 
 describe('Breakup_class', () => {
   beforeEach(() => {
     setupStandardEnvironment([SelectSatManager]);
-    window.M.AutoInit = jest.fn();
+    window.M.AutoInit = vi.fn();
   });
 
   standardPluginSuite(Breakup, 'Breakup');
@@ -27,11 +27,12 @@ describe('Breakup_class', () => {
       websiteInit(breakupPlugin);
       standardSelectSat();
       // Mock OrbitFinder class
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
-          }) as OrbitFinderFile.OrbitFinder,
+          };
+        } as any
       );
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
     });
@@ -41,11 +42,11 @@ describe('Breakup_class', () => {
 
       websiteInit(breakupPlugin);
 
-      jest.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue({
+      vi.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue({
         isSatellite: () => false,
       } as any);
 
-      const closeSpy = jest.spyOn(breakupPlugin, 'closeSideMenu');
+      const closeSpy = vi.spyOn(breakupPlugin, 'closeSideMenu');
 
       breakupPlugin.onBottomIconClick();
 
@@ -63,9 +64,9 @@ describe('Breakup_class', () => {
         perigee: 500,
       };
 
-      jest.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue(mockSat as any);
-      const closeSpy = jest.spyOn(breakupPlugin, 'closeSideMenu');
-      const disableSpy = jest.spyOn(breakupPlugin, 'setBottomIconToDisabled');
+      vi.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue(mockSat as any);
+      const closeSpy = vi.spyOn(breakupPlugin, 'closeSideMenu');
+      const disableSpy = vi.spyOn(breakupPlugin, 'setBottomIconToDisabled');
 
       breakupPlugin.onBottomIconClick();
 
@@ -85,7 +86,7 @@ describe('Breakup_class', () => {
         sccNum: '12345',
       };
 
-      jest.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue(mockSat as any);
+      vi.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue(mockSat as any);
       breakupPlugin['isMenuButtonActive'] = true;
 
       breakupPlugin.onBottomIconClick();
@@ -131,7 +132,7 @@ describe('Breakup_class', () => {
 
       websiteInit(breakupPlugin);
 
-      jest.spyOn(ServiceLocator.getCatalogManager(), 'getSat').mockReturnValue(null);
+      vi.spyOn(ServiceLocator.getCatalogManager(), 'getSat').mockReturnValue(null);
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
     });
@@ -142,12 +143,13 @@ describe('Breakup_class', () => {
       websiteInit(breakupPlugin);
       standardSelectSat();
 
-      jest.spyOn(SatMath, 'getDirection').mockReturnValue('Error');
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(SatMath, 'getDirection').mockReturnValue('Error');
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
-          }) as OrbitFinderFile.OrbitFinder,
+          };
+        } as any
       );
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
@@ -159,11 +161,12 @@ describe('Breakup_class', () => {
       websiteInit(breakupPlugin);
       standardSelectSat();
 
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => ['Error', 'Error message'],
-          }) as any,
+          };
+        } as any
       );
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
@@ -175,14 +178,15 @@ describe('Breakup_class', () => {
       websiteInit(breakupPlugin);
       standardSelectSat();
 
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
-          }) as OrbitFinderFile.OrbitFinder,
+          };
+        } as any
       );
 
-      jest.spyOn(SatMath, 'altitudeCheck').mockReturnValue(0 as Kilometers);
+      vi.spyOn(SatMath, 'altitudeCheck').mockReturnValue(0 as Kilometers);
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
     });
@@ -193,16 +197,17 @@ describe('Breakup_class', () => {
       websiteInit(breakupPlugin);
       standardSelectSat();
 
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
-          }) as OrbitFinderFile.OrbitFinder,
+          };
+        } as any
       );
 
       const originalSatellite = (global as any).Satellite;
 
-      (global as any).Satellite = jest.fn(() => {
+      (global as any).Satellite = vi.fn(() => {
         throw new Error('Test error');
       });
 
@@ -224,11 +229,12 @@ describe('Breakup_class', () => {
         mockSat.perigee = 500 as Kilometers;
       }
 
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
-          }) as OrbitFinderFile.OrbitFinder,
+          };
+        } as any
       );
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
@@ -243,11 +249,12 @@ describe('Breakup_class', () => {
       (<HTMLInputElement>document.getElementById('hc-count')).value = '1000';
       (global as any).settingsManager.searchLimit = 100;
 
-      jest.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        () =>
-          ({
+      vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
+        function() {
+          return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
-          }) as OrbitFinderFile.OrbitFinder,
+          };
+        } as any
       );
 
       breakupPlugin['onSubmit_']();
@@ -265,7 +272,7 @@ describe('Breakup_class', () => {
         sccNum: '12345',
       };
 
-      jest.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue(mockSat as any);
+      vi.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue(mockSat as any);
       breakupPlugin['isMenuButtonActive'] = false;
 
       const initialValue = (<HTMLInputElement>document.getElementById('hc-scc')).value;
@@ -280,7 +287,7 @@ describe('Breakup_class', () => {
 
       websiteInit(breakupPlugin);
 
-      jest.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue({
+      vi.spyOn(breakupPlugin['selectSatManager_'], 'getSelectedSat').mockReturnValue({
         isSatellite: () => false,
       } as any);
 
@@ -298,7 +305,7 @@ describe('Breakup_class', () => {
 
       websiteInit(breakupPlugin);
 
-      const spy = jest.spyOn(breakupPlugin, 'onBottomIconClick');
+      const spy = vi.spyOn(breakupPlugin, 'onBottomIconClick');
 
       breakupPlugin.bottomIconCallback();
 

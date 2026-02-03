@@ -45,15 +45,15 @@ describe('Collisions_class', () => {
   beforeEach(() => {
     setupStandardEnvironment();
     // Mock fetch for collision data
-    global.fetch = jest.fn(() =>
+    global.fetch = vi.fn(() =>
       Promise.resolve({
         json: () => Promise.resolve(mockCollisionData),
       }),
-    ) as jest.Mock;
+    ) as vi.Mock;
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   standardPluginSuite(Collisions, 'Collisions');
@@ -138,7 +138,7 @@ describe('Collisions_class', () => {
 
       websiteInit(plugin);
 
-      const spy = jest.spyOn(plugin, 'onBottomIconClick');
+      const spy = vi.spyOn(plugin, 'onBottomIconClick');
 
       plugin.bottomIconCallback();
 
@@ -148,6 +148,7 @@ describe('Collisions_class', () => {
 
   describe('parseCollisionData_', () => {
     it('should fetch and process collision data', async () => {
+      vi.useFakeTimers();
       const plugin = new Collisions();
 
       websiteInit(plugin);
@@ -160,12 +161,13 @@ describe('Collisions_class', () => {
       plugin.onBottomIconClick();
 
       // Wait for async operations - use jest timers and flush promises
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       await Promise.resolve();
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       await Promise.resolve();
 
       expect(plugin['collisionList_'].length).toBe(2);
+      vi.useRealTimers();
     });
 
     it('should not fetch if collision list is already populated', async () => {

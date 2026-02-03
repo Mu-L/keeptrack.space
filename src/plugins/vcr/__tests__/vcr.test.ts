@@ -66,9 +66,9 @@ describe('VcrPlugin', () => {
       const shortcuts = plugin.getKeyboardShortcuts();
 
       // Mock the handlers
-      const handlePlayPauseSpy = jest.spyOn(plugin, 'handlePlayPause').mockImplementation();
-      const handleRewindSpy = jest.spyOn(plugin, 'handleRewind').mockImplementation();
-      const handleFastForwardSpy = jest.spyOn(plugin, 'handleFastForward').mockImplementation();
+      const handlePlayPauseSpy = vi.spyOn(plugin, 'handlePlayPause').mockImplementation();
+      const handleRewindSpy = vi.spyOn(plugin, 'handleRewind').mockImplementation();
+      const handleFastForwardSpy = vi.spyOn(plugin, 'handleFastForward').mockImplementation();
 
       shortcuts[0].callback();
       expect(handlePlayPauseSpy).toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('VcrPlugin', () => {
 
       timeManager.isTimeChangingEnabled = false;
 
-      const toastSpy = jest.spyOn(ServiceLocator.getUiManager(), 'toast');
+      const toastSpy = vi.spyOn(ServiceLocator.getUiManager(), 'toast');
 
       expect(plugin.verifyTimeControl()).toBe(false);
       expect(toastSpy).toHaveBeenCalled();
@@ -122,7 +122,7 @@ describe('VcrPlugin', () => {
       timeManager.isTimeChangingEnabled = true;
       timeManager.propRate = 1;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handlePlayPause();
 
@@ -140,7 +140,7 @@ describe('VcrPlugin', () => {
       timeManager.isTimeChangingEnabled = true;
       timeManager.propRate = 0;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handlePlayPause();
 
@@ -157,7 +157,7 @@ describe('VcrPlugin', () => {
 
       timeManager.isTimeChangingEnabled = false;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handlePlayPause();
 
@@ -181,7 +181,7 @@ describe('VcrPlugin', () => {
         endTime: new Date(currentTime),
       };
 
-      const toastSpy = jest.spyOn(ServiceLocator.getUiManager(), 'toast');
+      const toastSpy = vi.spyOn(ServiceLocator.getUiManager(), 'toast');
 
       plugin.handlePlayPause();
 
@@ -205,7 +205,7 @@ describe('VcrPlugin', () => {
       timeManager.isTimeChangingEnabled = true;
       plugin.isRewinding = false;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handleRewind();
 
@@ -224,7 +224,7 @@ describe('VcrPlugin', () => {
       timeManager.isTimeChangingEnabled = true;
       plugin.isRewinding = true;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handleRewind();
 
@@ -262,7 +262,7 @@ describe('VcrPlugin', () => {
       timeManager.isTimeChangingEnabled = true;
       plugin.isFastForwarding = false;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handleFastForward();
 
@@ -281,7 +281,7 @@ describe('VcrPlugin', () => {
       timeManager.isTimeChangingEnabled = true;
       plugin.isFastForwarding = true;
 
-      const changePropRateSpy = jest.spyOn(timeManager, 'changePropRate');
+      const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
 
       plugin.handleFastForward();
 
@@ -368,7 +368,7 @@ describe('VcrPlugin', () => {
       const plugin = new VcrPlugin();
 
       // Spy before init so it captures the bound method
-      const handleRewindSpy = jest.spyOn(plugin, 'handleRewind');
+      const handleRewindSpy = vi.spyOn(plugin, 'handleRewind');
 
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
@@ -388,7 +388,7 @@ describe('VcrPlugin', () => {
       const plugin = new VcrPlugin();
 
       // Spy before init so it captures the bound method
-      const handlePlayPauseSpy = jest.spyOn(plugin, 'handlePlayPause');
+      const handlePlayPauseSpy = vi.spyOn(plugin, 'handlePlayPause');
 
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
@@ -408,7 +408,7 @@ describe('VcrPlugin', () => {
       const plugin = new VcrPlugin();
 
       // Spy before init so it captures the bound method
-      const handleFastForwardSpy = jest.spyOn(plugin, 'handleFastForward');
+      const handleFastForwardSpy = vi.spyOn(plugin, 'handleFastForward');
 
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);

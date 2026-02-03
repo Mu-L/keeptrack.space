@@ -17,23 +17,23 @@ describe('CreateSat', () => {
   it('should add a satellite to the catalog when valid parameters are provided', () => {
     // Mock dependencies
     const mockCatalogManager = {
-      sccNum2Id: jest.fn().mockReturnValue(12345),
-      getObject: jest.fn().mockReturnValue({
+      sccNum2Id: vi.fn().mockReturnValue(12345),
+      getObject: vi.fn().mockReturnValue({
         isSatellite: () => true,
       }),
       objectCache: [],
       satCruncher: {
-        postMessage: jest.fn(),
+        postMessage: vi.fn(),
       },
     };
 
     const mockOrbitManager = {
-      changeOrbitBufferData: jest.fn(),
+      changeOrbitBufferData: vi.fn(),
     };
 
     const mockUiManager = {
-      doSearch: jest.fn(),
-      toast: jest.fn(),
+      doSearch: vi.fn(),
+      toast: vi.fn(),
     };
 
     const mockTimeManager = {
@@ -43,21 +43,21 @@ describe('CreateSat', () => {
     // Mock Sgp4 and FormatTle
     const mockSatrec = {};
 
-    Sgp4.createSatrec = jest.fn().mockReturnValue(mockSatrec);
-    Sgp4.propagate = jest.fn().mockReturnValue({
+    Sgp4.createSatrec = vi.fn().mockReturnValue(mockSatrec);
+    Sgp4.propagate = vi.fn().mockReturnValue({
       position: { x: 1, y: 2, z: 3 },
       velocity: { x: 0.1, y: 0.2, z: 0.3 },
     });
 
-    FormatTle.createTle = jest.fn().mockReturnValue({
+    FormatTle.createTle = vi.fn().mockReturnValue({
       tle1: '1 39280U 13055R   15046.42575068  .30789804  00000-0  57707-2 0  9996',
       tle2: '2 39280 080.8897 122.4763 0060411 007.5143 351.4794 16.26612222 73510',
     });
 
-    SatMath.altitudeCheck = jest.fn().mockReturnValue(500);
+    SatMath.altitudeCheck = vi.fn().mockReturnValue(500);
 
     // Mock DOM elements
-    document.getElementById = jest.fn().mockImplementation((id) => {
+    document.getElementById = vi.fn().mockImplementation((id) => {
       const element = document.createElement('input');
 
       element.id = id;
@@ -67,14 +67,14 @@ describe('CreateSat', () => {
     });
 
     // Mock keepTrackApi
-    jest.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
-    jest.spyOn(ServiceLocator, 'getOrbitManager').mockReturnValue(mockOrbitManager as unknown as OrbitManager);
-    jest.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
-    jest.spyOn(ServiceLocator, 'getTimeManager').mockReturnValue(mockTimeManager as unknown as TimeManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
+    vi.spyOn(ServiceLocator, 'getOrbitManager').mockReturnValue(mockOrbitManager as unknown as OrbitManager);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
+    vi.spyOn(ServiceLocator, 'getTimeManager').mockReturnValue(mockTimeManager as unknown as TimeManager);
 
     // Mock the validation CreateSat[validateInputs_] method to always return false
     // eslint-disable-next-line dot-notation
-    CreateSat['validateInputs_'] = jest.fn().mockReturnValue(false);
+    CreateSat['validateInputs_'] = vi.fn().mockReturnValue(false);
 
     // Call the method under test
     // eslint-disable-next-line dot-notation
@@ -110,23 +110,23 @@ describe('CreateSat', () => {
   it('should show error toast when satellite parameters result in sub-orbital trajectory', () => {
     // Mock dependencies
     const mockCatalogManager = {
-      sccNum2Id: jest.fn().mockReturnValue(12345),
-      getObject: jest.fn().mockReturnValue({
+      sccNum2Id: vi.fn().mockReturnValue(12345),
+      getObject: vi.fn().mockReturnValue({
         isSatellite: () => true,
       }),
       objectCache: [],
       satCruncher: {
-        postMessage: jest.fn(),
+        postMessage: vi.fn(),
       },
     };
 
     const mockOrbitManager = {
-      changeOrbitBufferData: jest.fn(),
+      changeOrbitBufferData: vi.fn(),
     };
 
     const mockUiManager = {
-      toast: jest.fn(),
-      doSearch: jest.fn(),
+      toast: vi.fn(),
+      doSearch: vi.fn(),
     };
 
     const mockTimeManager = {
@@ -136,18 +136,18 @@ describe('CreateSat', () => {
     // Mock Sgp4 and FormatTle
     const mockSatrec = {};
 
-    Sgp4.createSatrec = jest.fn().mockReturnValue(mockSatrec);
+    Sgp4.createSatrec = vi.fn().mockReturnValue(mockSatrec);
 
-    FormatTle.createTle = jest.fn().mockReturnValue({
+    FormatTle.createTle = vi.fn().mockReturnValue({
       tle1: '1 39280U 13055R   15046.42575068  .30789804  00000-0  57707-2 0  9996',
       tle2: '2 39280 080.8897 122.4763 0060411 007.5143 351.4794 16.26612222 73510',
     });
 
     // Mock altitude check to return a value less than 1 (sub-orbital)
-    SatMath.altitudeCheck = jest.fn().mockReturnValue(0.5);
+    SatMath.altitudeCheck = vi.fn().mockReturnValue(0.5);
 
     // Mock DOM elements
-    document.getElementById = jest.fn().mockImplementation((id) => {
+    document.getElementById = vi.fn().mockImplementation((id) => {
       const element = document.createElement('input');
 
       element.id = id;
@@ -158,10 +158,10 @@ describe('CreateSat', () => {
     });
 
     // Mock keepTrackApi
-    jest.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
-    jest.spyOn(ServiceLocator, 'getOrbitManager').mockReturnValue(mockOrbitManager as unknown as OrbitManager);
-    jest.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
-    jest.spyOn(ServiceLocator, 'getTimeManager').mockReturnValue(mockTimeManager as unknown as TimeManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
+    vi.spyOn(ServiceLocator, 'getOrbitManager').mockReturnValue(mockOrbitManager as unknown as OrbitManager);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
+    vi.spyOn(ServiceLocator, 'getTimeManager').mockReturnValue(mockTimeManager as unknown as TimeManager);
 
     // Call the method under test
     // eslint-disable-next-line dot-notation

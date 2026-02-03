@@ -12,7 +12,7 @@ describe('FindSatPlugin_class', () => {
   beforeEach(() => {
     KeepTrack.getInstance().containerRoot.innerHTML = '';
     setupStandardEnvironment();
-    window.M.AutoInit = jest.fn();
+    window.M.AutoInit = vi.fn();
   });
 
   standardPluginSuite(FindSatPlugin);
@@ -74,7 +74,7 @@ describe('FindSatPlugin_class', () => {
     it('should call bottomMenuClicked when shortcut callback is executed', () => {
       const plugin = new FindSatPlugin();
       const shortcuts = plugin.getKeyboardShortcuts();
-      const spy = jest.spyOn(plugin, 'bottomMenuClicked').mockImplementation();
+      const spy = vi.spyOn(plugin, 'bottomMenuClicked').mockImplementation();
 
       shortcuts[0].callback();
 
@@ -90,7 +90,7 @@ describe('FindSatPlugin_class', () => {
   describe('onDownload', () => {
     it('should warn if no search has been run', () => {
       const plugin = new FindSatPlugin();
-      const warnSpy = jest.spyOn(errorManagerInstance, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(errorManagerInstance, 'warn').mockImplementation();
 
       plugin.onDownload();
 
@@ -109,7 +109,7 @@ describe('FindSatPlugin_class', () => {
       incInput.value = '50';
       plugin['findByLooksSubmit_']();
 
-      const warnSpy = jest.spyOn(errorManagerInstance, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(errorManagerInstance, 'warn').mockImplementation();
 
       plugin.onDownload();
 
@@ -125,7 +125,7 @@ describe('FindSatPlugin_class', () => {
   describe('printLastResults', () => {
     it('should call errorManagerInstance.info', () => {
       const plugin = new FindSatPlugin();
-      const infoSpy = jest.spyOn(errorManagerInstance, 'info').mockImplementation();
+      const infoSpy = vi.spyOn(errorManagerInstance, 'info').mockImplementation();
 
       plugin.printLastResults();
 

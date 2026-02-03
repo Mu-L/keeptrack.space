@@ -25,7 +25,7 @@ describe('ColorMenu_class', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   standardPluginSuite(ColorMenu, 'ColorMenu');
@@ -91,7 +91,7 @@ describe('ColorMenu_class', () => {
   describe('onContextMenuAction', () => {
     it('should call colorsMenuClick for valid color scheme', () => {
       const plugin = new ColorMenu();
-      const colorsMenuClickSpy = jest.spyOn(ColorMenu, 'colorsMenuClick');
+      const colorsMenuClickSpy = vi.spyOn(ColorMenu, 'colorsMenuClick');
 
       // Mock a color scheme
       const mockColorSchemeManager = ServiceLocator.getColorSchemeManager();
@@ -110,7 +110,7 @@ describe('ColorMenu_class', () => {
 
     it('should handle unknown color scheme gracefully', () => {
       const plugin = new ColorMenu();
-      const colorsMenuClickSpy = jest.spyOn(ColorMenu, 'colorsMenuClick');
+      const colorsMenuClickSpy = vi.spyOn(ColorMenu, 'colorsMenuClick');
 
       plugin.onContextMenuAction('colors-unknown-rmb');
 
@@ -121,7 +121,7 @@ describe('ColorMenu_class', () => {
   describe('rmbCallback bridge', () => {
     it('should call onContextMenuAction when rmbCallback is invoked', () => {
       const plugin = new ColorMenu();
-      const onContextMenuActionSpy = jest.spyOn(plugin, 'onContextMenuAction');
+      const onContextMenuActionSpy = vi.spyOn(plugin, 'onContextMenuAction');
 
       plugin.rmbCallback('colors-test-rmb');
 
@@ -130,7 +130,7 @@ describe('ColorMenu_class', () => {
 
     it('should not call onContextMenuAction for null targetId', () => {
       const plugin = new ColorMenu();
-      const onContextMenuActionSpy = jest.spyOn(plugin, 'onContextMenuAction');
+      const onContextMenuActionSpy = vi.spyOn(plugin, 'onContextMenuAction');
 
       plugin.rmbCallback(null);
 
@@ -143,7 +143,7 @@ describe('ColorMenu_class', () => {
       const selectSatManager = new SelectSatManager();
 
       PluginRegistry.addPlugin(selectSatManager);
-      selectSatManager.selectSat = jest.fn();
+      selectSatManager.selectSat = vi.fn();
 
       // Use existing color scheme from the manager (which is a real ColorScheme instance)
       const mockColorSchemeManager = ServiceLocator.getColorSchemeManager();
@@ -152,8 +152,8 @@ describe('ColorMenu_class', () => {
       if (existingSchemeKey) {
         const existingScheme = mockColorSchemeManager.colorSchemeInstances[existingSchemeKey];
 
-        mockColorSchemeManager.setColorScheme = jest.fn();
-        ServiceLocator.getUiManager().hideSideMenus = jest.fn();
+        mockColorSchemeManager.setColorScheme = vi.fn();
+        ServiceLocator.getUiManager().hideSideMenus = vi.fn();
 
         ColorMenu.colorsMenuClick(existingScheme.id);
 
@@ -167,10 +167,10 @@ describe('ColorMenu_class', () => {
 
       if (existingSchemeKey) {
         const existingScheme = mockColorSchemeManager.colorSchemeInstances[existingSchemeKey];
-        const mockOnSelected = jest.spyOn(existingScheme, 'onSelected');
+        const mockOnSelected = vi.spyOn(existingScheme, 'onSelected');
 
-        mockColorSchemeManager.setColorScheme = jest.fn();
-        ServiceLocator.getUiManager().hideSideMenus = jest.fn();
+        mockColorSchemeManager.setColorScheme = vi.fn();
+        ServiceLocator.getUiManager().hideSideMenus = vi.fn();
 
         ColorMenu.colorsMenuClick(existingScheme.id);
 
@@ -186,8 +186,8 @@ describe('ColorMenu_class', () => {
       if (existingSchemeKey) {
         const existingScheme = mockColorSchemeManager.colorSchemeInstances[existingSchemeKey];
 
-        mockColorSchemeManager.setColorScheme = jest.fn();
-        const hideSideMenusSpy = jest.fn();
+        mockColorSchemeManager.setColorScheme = vi.fn();
+        const hideSideMenusSpy = vi.fn();
 
         ServiceLocator.getUiManager().hideSideMenus = hideSideMenusSpy;
 
@@ -205,6 +205,7 @@ describe('ColorMenu_class', () => {
 
   describe('Side menu interaction', () => {
     it('should work when any side menu element is clicked', () => {
+      vi.useFakeTimers();
       const menu = new ColorMenu();
 
       websiteInit(menu);
@@ -219,9 +220,10 @@ describe('ColorMenu_class', () => {
       elements.forEach((element) => {
         expect(() => {
           element.click();
-          jest.advanceTimersByTime(1000);
+          vi.advanceTimersByTime(1000);
         }).not.toThrow();
       });
+      vi.useRealTimers();
     }, 20000);
   });
 

@@ -108,14 +108,14 @@ describe('SelectSatManager_class', () => {
   });
 
   it('should handle invalid satellite selection gracefully', () => {
-    ServiceLocator.getCatalogManager().getObject = jest.fn().mockReturnValue(null);
+    ServiceLocator.getCatalogManager().getObject = vi.fn().mockReturnValue(null);
 
     selectSatManager.selectSat(999);
     expect(selectSatManager.selectedSat).toBe(-1);
   });
 
   it('should update dot size and color when a satellite is selected', () => {
-    const updateDotSizeAndColorSpy = jest.spyOn(selectSatManager as any, 'updateDotSizeAndColor_');
+    const updateDotSizeAndColorSpy = vi.spyOn(selectSatManager as any, 'updateDotSizeAndColor_');
 
     ServiceLocator.getCatalogManager().objectCache = [new Satellite({ ...defaultSat, ...{ id: 0, type: SpaceObjectType.PAYLOAD } })];
     ServiceLocator.getCatalogManager().objectCache.forEach((sat) => {
@@ -135,7 +135,7 @@ describe('SelectSatManager_class', () => {
   it('should not select a satellite inside the Earth', () => {
     ServiceLocator.getCatalogManager().objectCache = [{ id: 0, active: true, position: { x: 0, y: 0, z: 0 }, type: SpaceObjectType.PAYLOAD } as Satellite];
 
-    const toastSpy = jest.spyOn(ServiceLocator.getUiManager(), 'toast');
+    const toastSpy = vi.spyOn(ServiceLocator.getUiManager(), 'toast');
 
     selectSatManager.selectSat(0);
 
@@ -158,7 +158,7 @@ describe('SelectSatManager_class', () => {
       y: 10000 as Kilometers,
       z: 10000 as Kilometers,
     } as TemeVec3;
-    const clearSelectOrbitSpy = jest.spyOn(ServiceLocator.getOrbitManager(), 'clearSelectOrbit');
+    const clearSelectOrbitSpy = vi.spyOn(ServiceLocator.getOrbitManager(), 'clearSelectOrbit');
 
     selectSatManager.selectSat(0);
 

@@ -51,8 +51,8 @@ describe('ScreenRecorder_class', () => {
   test('ScreenRecorder_onStop_callback', () => {
     websiteInit(screenRecorderPlugin);
 
-    screenRecorderPlugin['streamManagerInstance_'].save = jest.fn();
-    screenRecorderPlugin.setBottomIconToUnselected = jest.fn();
+    screenRecorderPlugin['streamManagerInstance_'].save = vi.fn();
+    screenRecorderPlugin.setBottomIconToUnselected = vi.fn();
 
     screenRecorderPlugin['onStop_']();
 
@@ -64,8 +64,8 @@ describe('ScreenRecorder_class', () => {
   test('ScreenRecorder_onError_callback', () => {
     websiteInit(screenRecorderPlugin);
 
-    screenRecorderPlugin.setBottomIconToDisabled = jest.fn();
-    screenRecorderPlugin.shakeBottomIcon = jest.fn();
+    screenRecorderPlugin.setBottomIconToDisabled = vi.fn();
+    screenRecorderPlugin.shakeBottomIcon = vi.fn();
 
     screenRecorderPlugin['onError_']();
 
@@ -80,7 +80,7 @@ describe('ScreenRecorder_class', () => {
   test('ScreenRecorder_onMinorError_callback', () => {
     websiteInit(screenRecorderPlugin);
 
-    screenRecorderPlugin.setBottomIconToUnselected = jest.fn();
+    screenRecorderPlugin.setBottomIconToUnselected = vi.fn();
 
     screenRecorderPlugin['onMinorError_']();
 
@@ -92,7 +92,7 @@ describe('ScreenRecorder_class', () => {
     websiteInit(screenRecorderPlugin);
 
     screenRecorderPlugin['isCompatibilityIssue_'] = true;
-    screenRecorderPlugin.shakeBottomIcon = jest.fn();
+    screenRecorderPlugin.shakeBottomIcon = vi.fn();
 
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, screenRecorderPlugin.bottomIconElementName);
 
