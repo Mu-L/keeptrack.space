@@ -36,7 +36,7 @@ describe('SatelliteViewPlugin_class', () => {
   beforeEach(() => {
     PluginRegistry.unregisterAllPlugins();
 
-    mockUiManager.toast = jest.fn();
+    mockUiManager.toast = vi.fn();
     Container.getInstance().registerSingleton<UiManager>(Singletons.UiManager, mockUiManager);
     const selectSatManager = new SelectSatManager();
 
@@ -57,7 +57,7 @@ describe('SatelliteViewPlugin_class', () => {
   // Tests that the addHtml method adds the correct HTML element to the DOM
   it('test_addHtml_method', () => {
     const plugin = new SatelliteViewPlugin();
-    const registerSpy = jest.spyOn(EventBus.getInstance(), 'on');
+    const registerSpy = vi.spyOn(EventBus.getInstance(), 'on');
 
     plugin.addHtml();
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);

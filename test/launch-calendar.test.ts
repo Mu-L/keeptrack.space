@@ -23,7 +23,7 @@ describe('launch_calendar_plugin', () => {
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, launchCalendarPlugin.bottomIconElementName);
-    jest.advanceTimersByTime(4000);
+    vi.advanceTimersByTime(4000);
     // eslint-disable-next-line dot-notation
     expect(() => launchCalendarPlugin['closeColorbox_']()).not.toThrow();
   });

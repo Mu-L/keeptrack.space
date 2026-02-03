@@ -9,7 +9,7 @@ describe('MultiSiteLookAnglesPlugin_class', () => {
   });
 
   afterEach(() => {
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   standardPluginSuite(MultiSiteLookAnglesPlugin);

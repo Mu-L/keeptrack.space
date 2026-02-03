@@ -30,7 +30,7 @@ describe('SensorSurvFence_class', () => {
 
     const sensorManagerInstance = new SensorManager();
 
-    sensorManagerInstance.isSensorSelected = jest.fn().mockReturnValue(true);
+    sensorManagerInstance.isSensorSelected = vi.fn().mockReturnValue(true);
     Container.getInstance().registerSingleton(Singletons.SensorManager, sensorManagerInstance);
     expect(() => EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, sensorSurvFencePlugin.bottomIconElementName)).not.toThrow();
   });

@@ -43,13 +43,13 @@ import { disableConsoleErrors, enableConsoleErrors } from './environment/standar
  */
 
 describe('code_snippet', () => {
-  global.URL.createObjectURL = jest.fn();
+  global.URL.createObjectURL = vi.fn();
 
   // Tests that saveVariable saves a variable as a text file with default filename when filename is not provided
   it('test_save_variable_default_filename', () => {
     const variable = { a: 1, b: 2 };
     const expectedFilename = 'variable.txt';
-    const saveAsSpy = jest.spyOn(fileSaver, 'saveAs');
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs');
 
     saveVariable(variable);
 
@@ -60,7 +60,7 @@ describe('code_snippet', () => {
   it('test_save_variable_provided_filename', () => {
     const variable = { a: 1, b: 2 };
     const filename = 'myVariable.txt';
-    const saveAsSpy = jest.spyOn(fileSaver, 'saveAs');
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs');
 
     saveVariable(variable, filename);
 
@@ -87,7 +87,7 @@ describe('code_snippet', () => {
       { a: 3, b: 4 },
     ];
     const expectedFilename = 'data.csv';
-    const saveAsSpy = jest.spyOn(fileSaver, 'saveAs');
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs');
 
     saveCsv(items);
 
@@ -101,7 +101,7 @@ describe('code_snippet', () => {
       { a: 3, b: 4 },
     ];
     const filename = 'myData';
-    const saveAsSpy = jest.spyOn(fileSaver, 'saveAs');
+    const saveAsSpy = vi.spyOn(fileSaver, 'saveAs');
 
     saveCsv(items, filename);
 
@@ -112,7 +112,7 @@ describe('code_snippet', () => {
   it('test_save_variable_saveAs_unavailable', () => {
     const variable = { a: 1, b: 2 };
 
-    jest.spyOn(fileSaver, 'saveAs').mockImplementation(() => {
+    vi.spyOn(fileSaver, 'saveAs').mockImplementation(() => {
       throw new Error();
     });
 

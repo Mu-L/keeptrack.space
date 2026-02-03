@@ -34,6 +34,21 @@ import { KeepTrack } from '@app/keeptrack';
  */
 
 describe('getClass', () => {
+  beforeEach(() => {
+    // Initialize containerRoot for each test
+    const keepTrack = KeepTrack.getInstance();
+    keepTrack.containerRoot = document.createElement('div');
+    document.body.appendChild(keepTrack.containerRoot);
+  });
+
+  afterEach(() => {
+    // Clean up after each test
+    const keepTrack = KeepTrack.getInstance();
+    if (keepTrack.containerRoot && keepTrack.containerRoot.parentNode) {
+      keepTrack.containerRoot.parentNode.removeChild(keepTrack.containerRoot);
+    }
+  });
+
   // Tests that the function returns an array of HTMLElements when given a valid id
   it('test_returns_array_of_elements', () => {
     KeepTrack.getInstance().containerRoot.innerHTML = '<div class="test"></div>';
@@ -45,7 +60,7 @@ describe('getClass', () => {
 
   // Tests that the function returns an empty array when no elements with the given id are found
   it('test_returns_empty_array_when_no_elements_found', () => {
-    jest.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(false);
+    vi.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(false);
     KeepTrack.getInstance().containerRoot.innerHTML = '';
     const result = getClass('test');
 
@@ -54,7 +69,7 @@ describe('getClass', () => {
 
   // Tests that the function returns an empty array when no elements with the given id are found and not running in Jest environment
   it('test_returns_empty_array_when_no_elements_found_and_not_running_in_jest', () => {
-    jest.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(false);
+    vi.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(false);
     KeepTrack.getInstance().containerRoot.innerHTML = '';
     const result = getClass('test');
 
@@ -63,7 +78,7 @@ describe('getClass', () => {
 
   // Tests that the function returns a single-element array containing an empty div when no elements with the given id are found and running in Jest environment
   it('test_returns_single_element_array_containing_empty_div_when_no_elements_found_and_running_in_jest', () => {
-    jest.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(true);
+    vi.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(true);
     KeepTrack.getInstance().containerRoot.innerHTML = '<div class="test"></div>';
     const result = getClass('test');
 
@@ -74,7 +89,7 @@ describe('getClass', () => {
 
   // Tests that the function returns an empty array when given a bad value
   it('test_returns_empty_array_when_given_bad_value', () => {
-    jest.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(false);
+    vi.spyOn(isThisNode, 'isThisNode').mockReturnValueOnce(false);
     const result = getClass('moose');
 
     expect(result).toStrictEqual([]);

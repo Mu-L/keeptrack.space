@@ -59,7 +59,7 @@ describe('ShortTermFences_class', () => {
       ServiceLocator.getSensorManager().setCurrentSensor(null);
       expect(() => stf['stfOnObjectLinkClick_']()).not.toThrow();
 
-      ServiceLocator.getCatalogManager().getObject = jest.fn().mockReturnValue(defaultSat);
+      ServiceLocator.getCatalogManager().getObject = vi.fn().mockReturnValue(defaultSat);
       PluginRegistry.getPlugin(SelectSatManager)!.selectSat(0);
       expect(() => stf['stfOnObjectLinkClick_']()).not.toThrow();
     });

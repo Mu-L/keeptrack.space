@@ -24,7 +24,7 @@ describe('SearchManager', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should toggle search open and close', () => {
@@ -42,7 +42,7 @@ describe('SearchManager', () => {
 
     searchInput.value = 'test';
 
-    jest.spyOn(searchManager, 'doSearch');
+    vi.spyOn(searchManager, 'doSearch');
 
     searchManager.openSearch();
     expect(searchManager.isSearchOpen).toBe(true);
@@ -50,7 +50,7 @@ describe('SearchManager', () => {
   });
 
   it('should close search and hide results', () => {
-    jest.spyOn(searchManager, 'hideResults');
+    vi.spyOn(searchManager, 'hideResults');
 
     searchManager.openSearch();
     expect(searchManager.isSearchOpen).toBe(true);
@@ -64,19 +64,19 @@ describe('SearchManager', () => {
       objectCache: [],
     } as unknown as CatalogManager;
     const mockDotsManager = {
-      updateSizeBuffer: jest.fn(),
+      updateSizeBuffer: vi.fn(),
     } as unknown as DotsManager;
     const mockGroupManager = {
-      clearSelect: jest.fn(),
+      clearSelect: vi.fn(),
     } as unknown as GroupsManager;
     const mockColorSchemeManager = {
-      calculateColorBuffers: jest.fn(),
+      calculateColorBuffers: vi.fn(),
     } as unknown as ColorSchemeManager;
 
-    jest.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager);
-    jest.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager);
-    jest.spyOn(ServiceLocator, 'getGroupsManager').mockReturnValue(mockGroupManager);
-    jest.spyOn(ServiceLocator, 'getColorSchemeManager').mockReturnValue(mockColorSchemeManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager);
+    vi.spyOn(ServiceLocator, 'getGroupsManager').mockReturnValue(mockGroupManager);
+    vi.spyOn(ServiceLocator, 'getColorSchemeManager').mockReturnValue(mockColorSchemeManager);
 
     searchManager.hideResults();
 
@@ -91,19 +91,19 @@ describe('SearchManager', () => {
         new Satellite({ ...defaultSat, id: 0, name: 'Satellite A' }),
         new Satellite({ ...defaultSat, id: 1, name: 'Satellite B' }),
       ],
-      getObject: jest.fn().mockReturnValue(new Satellite({ ...defaultSat, id: 0, name: 'Satellite A' })),
+      getObject: vi.fn().mockReturnValue(new Satellite({ ...defaultSat, id: 0, name: 'Satellite A' })),
     } as unknown as CatalogManager;
     const mockDotsManager = {
-      updateSizeBuffer: jest.fn(),
+      updateSizeBuffer: vi.fn(),
     } as unknown as DotsManager;
     const mockGroupManager = {
-      createGroup: jest.fn().mockReturnValue({}),
-      selectGroup: jest.fn(),
+      createGroup: vi.fn().mockReturnValue({}),
+      selectGroup: vi.fn(),
     } as unknown as GroupsManager;
 
-    jest.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager);
-    jest.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager);
-    jest.spyOn(ServiceLocator, 'getGroupsManager').mockReturnValue(mockGroupManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager);
+    vi.spyOn(ServiceLocator, 'getGroupsManager').mockReturnValue(mockGroupManager);
 
     searchManager.doSearch('Satellite');
 
@@ -113,7 +113,7 @@ describe('SearchManager', () => {
   });
 
   it('should handle empty search input gracefully', () => {
-    jest.spyOn(searchManager, 'hideResults');
+    vi.spyOn(searchManager, 'hideResults');
 
     searchManager.doSearch('');
     expect(searchManager.hideResults).toHaveBeenCalled();

@@ -17,10 +17,10 @@ describe('SplashScreen_class', () => {
 
   // Tests that the loading screen is hidden immediately when running on mobile
   it('test_hide_splash_screen_mobile', () => {
-    MobileManager.checkMobileMode = jest.fn().mockReturnValue(true);
+    MobileManager.checkMobileMode = vi.fn().mockReturnValue(true);
     SplashScreen.hideSplashScreen();
     // Wait for timers to finish
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(getEl('loading-screen')?.style.display).toBe('');
   });
 
@@ -28,7 +28,7 @@ describe('SplashScreen_class', () => {
   it('test_hide_splash_screen_desktop', () => {
     SplashScreen.hideSplashScreen();
     // Wait for timers to finish
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(getEl('loading-screen')?.style.display).toBe('');
   });
 

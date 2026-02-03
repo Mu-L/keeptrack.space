@@ -27,7 +27,7 @@ describe('triggerSubmit_function', () => {
   // Tests that the function dispatches the 'customSubmit' event when called with a valid form element
   it('test_happy_path_dispatches_event', () => {
     const form = document.createElement('form');
-    const spy = jest.spyOn(form, 'dispatchEvent');
+    const spy = vi.spyOn(form, 'dispatchEvent');
 
     triggerSubmit(form);
     expect(spy).toHaveBeenCalledWith(expect.any(CustomEvent));

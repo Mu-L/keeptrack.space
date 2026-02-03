@@ -50,16 +50,16 @@ const setupStandardEnvironment = () => {
   const uiManagerInstance = new UiManager();
 
   // Jest all Image class objects with a mock decode method.
-  Image.prototype.decode = jest.fn();
+  Image.prototype.decode = vi.fn();
 
-  catalogManagerInstance.init = jest.fn();
+  catalogManagerInstance.init = vi.fn();
   catalogManagerInstance.satCruncher = {
-    postMessage: jest.fn(),
-    terminate: jest.fn(),
+    postMessage: vi.fn(),
+    terminate: vi.fn(),
   } as unknown as Worker;
 
   // eslint-disable-next-line require-await
-  jest.spyOn(CatalogLoader, 'load').mockImplementation(async () => {
+  vi.spyOn(CatalogLoader, 'load').mockImplementation(async () => {
     // Setup a mock catalog
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
@@ -68,8 +68,8 @@ const setupStandardEnvironment = () => {
       new Satellite({ ...defaultSat, ...{ id: 1, type: 2 } }),
     ] as Satellite[];
     catalogManagerInstance.satCruncher = {
-      postMessage: jest.fn(),
-      terminate: jest.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
     } as unknown as Worker;
 
     // Call the onmessage handler only if it is set to avoid "possibly null" invocation.
@@ -103,8 +103,8 @@ describe('code_snippet', () => {
   it.skip('test_constructor_initializes_objects_without_showErrorCode', () => {
     const drawManagerInstance = ServiceLocator.getRenderer();
 
-    drawManagerInstance.update = jest.fn();
-    ServiceLocator.getMainCamera().draw = jest.fn();
+    drawManagerInstance.update = vi.fn();
+    ServiceLocator.getMainCamera().draw = vi.fn();
 
     let keepTrack: KeepTrack;
     const initializationTest = async () => {
@@ -147,8 +147,8 @@ describe('code_snippet', () => {
     const drawManagerInstance = ServiceLocator.getRenderer();
 
     keepTrack.run().then(() => {
-      drawManagerInstance.update = jest.fn();
-      ServiceLocator.getMainCamera().draw = jest.fn();
+      drawManagerInstance.update = vi.fn();
+      ServiceLocator.getMainCamera().draw = vi.fn();
       settingsManager.cruncherReady = true;
       // keepTrack.engine.run();
       // eslint-disable-next-line dot-notation

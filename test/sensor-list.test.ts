@@ -30,10 +30,10 @@ describe('SensorListPlugin', () => {
   });
 
   it.skip('should handle sensorListContentClick with valid sensor group', () => {
-    const mockSetSensor = jest.fn();
+    const mockSetSensor = vi.fn();
 
-    jest.spyOn(keepTrackApi, 'getSensorManager').mockReturnValue({
-      clearSecondarySensors: jest.fn(),
+    vi.spyOn(keepTrackApi, 'getSensorManager').mockReturnValue({
+      clearSecondarySensors: vi.fn(),
       setSensor: mockSetSensor,
     } as any);
 
@@ -43,10 +43,10 @@ describe('SensorListPlugin', () => {
   });
 
   it('should handle sensorListContentClick with invalid sensor group', () => {
-    const mockSetSensor = jest.fn();
+    const mockSetSensor = vi.fn();
 
-    jest.spyOn(keepTrackApi, 'getSensorManager').mockReturnValue({
-      clearSecondarySensors: jest.fn(),
+    vi.spyOn(keepTrackApi, 'getSensorManager').mockReturnValue({
+      clearSecondarySensors: vi.fn(),
       setSensor: mockSetSensor,
     } as any);
 

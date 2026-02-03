@@ -32,7 +32,7 @@ describe('UiValidation_class', () => {
     expect(getEl('ms-lat')).toBeTruthy();
     expect(getEl('ms-lon')).toBeTruthy();
 
-    UiValidation['allowPeriod_']({ code: 'Period', preventDefault: jest.fn } as unknown as KeyboardEvent);
+    UiValidation['allowPeriod_']({ code: 'Period', preventDefault: vi.fn } as unknown as KeyboardEvent);
     UiValidation['esArgPe360_']();
     (<HTMLInputElement>getEl('es-argPe')).value = '-10';
     UiValidation['esArgPe360_']();
@@ -74,7 +74,7 @@ describe('UiValidation_class', () => {
     (<HTMLInputElement>getEl('ms-lon')).value = '500';
     UiValidation['msLon180_']();
 
-    UiValidation['validateNumOnly_']({ code: 'KeyA', ctrlKey: true, preventDefault: jest.fn } as unknown as KeyboardEvent);
-    UiValidation['validateNumOnly_']({ code: 'KeyA', ctrlKey: false, preventDefault: jest.fn } as unknown as KeyboardEvent);
+    UiValidation['validateNumOnly_']({ code: 'KeyA', ctrlKey: true, preventDefault: vi.fn } as unknown as KeyboardEvent);
+    UiValidation['validateNumOnly_']({ code: 'KeyA', ctrlKey: false, preventDefault: vi.fn } as unknown as KeyboardEvent);
   });
 });

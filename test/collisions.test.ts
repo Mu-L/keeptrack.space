@@ -13,7 +13,7 @@ describe('CollisionsPlugin_class', () => {
   beforeEach(() => {
     setupDefaultHtml();
     satConstellationsPlugin = new Collisions();
-    global.fetch = jest.fn().mockResolvedValue({
+    global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(socratesFileData),
     } as Response);

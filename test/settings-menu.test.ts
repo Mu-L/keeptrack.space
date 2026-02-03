@@ -39,11 +39,11 @@ describe('SettingsMenuPlugin_class', () => {
     const settingsMenuPlugin = new SettingsMenuPlugin();
 
     websiteInit(settingsMenuPlugin);
-    ServiceLocator.getGroupsManager().clearSelect = jest.fn();
+    ServiceLocator.getGroupsManager().clearSelect = vi.fn();
     const colorSchemeManagerInstance = new ColorSchemeManager();
 
-    colorSchemeManagerInstance.setColorScheme = jest.fn();
-    colorSchemeManagerInstance.reloadColors = jest.fn();
+    colorSchemeManagerInstance.setColorScheme = vi.fn();
+    colorSchemeManagerInstance.reloadColors = vi.fn();
     Container.getInstance().registerSingleton(Singletons.ColorSchemeManager, colorSchemeManagerInstance);
     expect(() => getEl('settings-submit')?.click()).not.toThrow();
   });

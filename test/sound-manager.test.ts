@@ -24,7 +24,7 @@ describe('Sound Manager', () => {
     for (const sound in sounds) {
       const soundManagerPlugin2 = soundManagerPlugin;
 
-      jest.spyOn(global, 'navigator', 'get').mockReturnValue({
+      vi.spyOn(global, 'navigator', 'get').mockReturnValue({
         userActivation: {
           isActive: true,
           hasBeenActive: true,
@@ -44,7 +44,7 @@ describe('Sound Manager', () => {
   it('should_be_able_to_speak', () => {
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     // Mock SpeechSynthesisUtterance
-    const mockSpeechUtterance = jest.fn(() => ({
+    const mockSpeechUtterance = vi.fn(() => ({
       lang: 'en-US',
       pitch: 1,
       rate: 1,
@@ -56,7 +56,7 @@ describe('Sound Manager', () => {
     mockSpeechUtterance.prototype = {};
     global.SpeechSynthesisUtterance = mockSpeechUtterance as unknown as typeof SpeechSynthesisUtterance;
     global.speechSynthesis = {
-      speak: jest.fn(),
+      speak: vi.fn(),
     } as unknown as SpeechSynthesis;
     expect(() => soundManagerPlugin.speak('hello')).not.toThrow();
   });

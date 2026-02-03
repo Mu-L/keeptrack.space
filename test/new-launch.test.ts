@@ -38,7 +38,7 @@ describe('NewLaunch_form', () => {
 
   it('should have working buttons', () => {
     websiteInit(newLaunchPlugin);
-    ServiceLocator.getCatalogManager().getObject = jest.fn().mockReturnValue({ ...defaultSat, isInGroup: true, isSatellite: () => true });
+    ServiceLocator.getCatalogManager().getObject = vi.fn().mockReturnValue({ ...defaultSat, isInGroup: true, isSatellite: () => true });
     PluginRegistry.getPlugin(SelectSatManager)!.selectedSat = defaultSat.id;
     ServiceLocator.getCatalogManager().objectCache = Array(50).fill({ ...defaultSat, isInGroup: true, isSatellite: () => true });
     ServiceLocator.getCatalogManager().isLaunchSiteManagerLoaded = true;
@@ -54,6 +54,6 @@ describe('NewLaunch_form', () => {
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, newLaunchPlugin.bottomIconElementName);
 
     expect(() => getEl(`${newLaunchPlugin.sideMenuElementName}-submit`)!.click()).not.toThrow();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 });

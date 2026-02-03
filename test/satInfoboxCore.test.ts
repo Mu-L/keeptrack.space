@@ -27,7 +27,7 @@ describe('SatInfoBoxCore_class', () => {
       ServiceLocator.getDotsManager().positionData = new Float32Array(Array(100).fill(0));
       ServiceLocator.getCatalogManager().objectCache = [defaultSat];
       PluginRegistry.getPlugin(SelectSatManager)!.selectSat(0);
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     it.skip('should work when I click all-objects-link', () => {
@@ -73,7 +73,7 @@ describe('SatInfoBoxCore_class', () => {
       ServiceLocator.getCatalogManager().objectCache = [sat1];
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
 
       sat1.rcs = null;
@@ -81,7 +81,7 @@ describe('SatInfoBoxCore_class', () => {
       ServiceLocator.getCatalogManager().objectCache = [sat1, sat2];
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
 
       sat1 = defaultSat;
@@ -95,7 +95,7 @@ describe('SatInfoBoxCore_class', () => {
       ServiceLocator.getCatalogManager().objectCache = [sat1, sat2];
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
     });
 
@@ -105,7 +105,7 @@ describe('SatInfoBoxCore_class', () => {
 
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
     });
 
@@ -115,7 +115,7 @@ describe('SatInfoBoxCore_class', () => {
 
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
     });
 
@@ -128,7 +128,7 @@ describe('SatInfoBoxCore_class', () => {
 
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
     });
 
@@ -139,7 +139,7 @@ describe('SatInfoBoxCore_class', () => {
 
       expect(() => {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
     });
 

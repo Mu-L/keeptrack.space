@@ -7,12 +7,12 @@ import { standardClickTests, standardPluginMenuButtonTests, standardPluginSuite 
 describe('SensorListPlugin_class', () => {
   beforeEach(() => {
     // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = jest.fn();
+    DateTimeManager.prototype.uiManagerFinal = vi.fn();
     setupStandardEnvironment([TopMenu, DateTimeManager]);
   });
 
   afterEach(() => {
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   standardPluginSuite(SensorListPlugin);

@@ -52,7 +52,7 @@ describe('SatConstellations_test_all_links', () => {
 
     const groupList = {};
 
-    jest.spyOn(ServiceLocator, 'getGroupsManager').mockReturnValue(
+    vi.spyOn(ServiceLocator, 'getGroupsManager').mockReturnValue(
       ({
         createGroup: (_type: GroupType, _listOfSats: number[], name: string) => {
           groupList[name] = {
@@ -69,7 +69,7 @@ describe('SatConstellations_test_all_links', () => {
 
   links.forEach((element) => {
     test(`SatConstellations_test_${element.dataset.group}`, () => {
-      SatConstellations.groupSelected = jest.fn();
+      SatConstellations.groupSelected = vi.fn();
       element.click();
     });
   });

@@ -104,10 +104,10 @@ describe('clickAndDragWidth_function', () => {
     edgeEl.dispatchEvent(new MouseEvent('mousemove', { clientX: -1000 }));
     expect(parseInt(el.style.width)).toBe(280);
     edgeEl.dispatchEvent(new MouseEvent('mousemove', { clientX: 1000 }));
-    jest.advanceTimersByTime(16);
+    vi.advanceTimersByTime(16);
     expect(parseInt(el.style.width)).toBe(450);
     edgeEl.dispatchEvent(new MouseEvent('mouseup'));
-    jest.advanceTimersByTime(16);
+    vi.advanceTimersByTime(16);
     expect(parseInt(el.style.width)).toBe(450);
   });
 });
@@ -183,7 +183,7 @@ describe('clickAndDragHeight_function', () => {
     edgeEl.dispatchEvent(new MouseEvent('mousedown', { clientY: 150 }));
     edgeEl.dispatchEvent(new MouseEvent('mousemove', { clientY: 50 }));
     edgeEl.dispatchEvent(new MouseEvent('mouseup'));
-    jest.advanceTimersByTime(16);
+    vi.advanceTimersByTime(16);
     expect(el.style.height).toBe(`${maxHeight}px`);
   });
 

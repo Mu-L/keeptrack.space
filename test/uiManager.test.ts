@@ -11,7 +11,7 @@ import { KeepTrack } from '@app/keeptrack';
 describe('uiManager', () => {
   // Should process fullscreenToggle
   it('process_fullscreen_toggle', () => {
-    document.documentElement.requestFullscreen = jest.fn().mockImplementation(() => Promise.resolve());
+    document.documentElement.requestFullscreen = vi.fn().mockImplementation(() => Promise.resolve());
     expect(() => UiManager.fullscreenToggle()).not.toThrow();
   });
 

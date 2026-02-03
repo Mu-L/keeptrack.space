@@ -12,7 +12,7 @@ describe('SatelliteFov_class', () => {
     setupStandardEnvironment([SelectSatManager]);
     ServiceLocator.getCatalogManager().getObject = () => defaultSat;
     ServiceLocator.getCatalogManager().satCruncher = {
-      postMessage: jest.fn(),
+      postMessage: vi.fn(),
     } as unknown as Worker;
   });
 

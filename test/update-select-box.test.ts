@@ -14,7 +14,7 @@ import { standardPluginSuite } from './generic-tests';
 describe('UpdateSatManager_class', () => {
   beforeEach(() => {
     // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = jest.fn();
+    DateTimeManager.prototype.uiManagerFinal = vi.fn();
     PluginRegistry.unregisterAllPlugins();
     setupStandardEnvironment([TopMenu, SelectSatManager, DateTimeManager]);
   });

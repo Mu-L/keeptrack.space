@@ -8,7 +8,7 @@ describe('DateTimeManager_class', () => {
 
   beforeEach(() => {
     // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = jest.fn();
+    DateTimeManager.prototype.uiManagerFinal = vi.fn();
     setupStandardEnvironment([TopMenu]);
     dtm = new DateTimeManager();
   });

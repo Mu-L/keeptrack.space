@@ -46,9 +46,9 @@ describe('code_snippet', () => {
     orbitManagerInstance = ServiceLocator.getOrbitManager();
     catalogManagerInstance = ServiceLocator.getCatalogManager();
     void catalogManagerInstance; // Variable is used indirectly by test utilities
-    orbitManagerInstance.setHoverOrbit = jest.fn();
+    orbitManagerInstance.setHoverOrbit = vi.fn();
 
-    // orbitManagerInstance.setHoverOrbit = jest.fn();
+    // orbitManagerInstance.setHoverOrbit = vi.fn();
   });
   beforeEach(() => {
     setupStandardEnvironment();
@@ -75,7 +75,7 @@ describe('code_snippet', () => {
     hoverManager.init();
     const drawManagerInstance = ServiceLocator.getRenderer();
 
-    drawManagerInstance.getScreenCoords = jest.fn().mockReturnValue({ error: true, x: 0, y: 0 });
+    drawManagerInstance.getScreenCoords = vi.fn().mockReturnValue({ error: true, x: 0, y: 0 });
     Container.getInstance().registerSingleton<WebGLRenderer>(Singletons.WebGLRenderer, drawManagerInstance);
     hoverManager.setHoverId(1);
     expect(getEl('sat-hoverbox')).toBeDefined();
@@ -87,7 +87,7 @@ describe('code_snippet', () => {
     hoverManager.init();
     const drawManagerInstance = ServiceLocator.getRenderer();
 
-    drawManagerInstance.getScreenCoords = jest.fn().mockReturnValue({ error: false, x: 0, y: 0 });
+    drawManagerInstance.getScreenCoords = vi.fn().mockReturnValue({ error: false, x: 0, y: 0 });
     Container.getInstance().registerSingleton<WebGLRenderer>(Singletons.WebGLRenderer, drawManagerInstance);
     hoverManager.setHoverId(1);
     expect(getEl('sat-hoverbox')).toBeDefined();

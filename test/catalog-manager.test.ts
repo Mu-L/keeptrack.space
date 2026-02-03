@@ -80,7 +80,9 @@ describe('calcSatrec', () => {
     // mock new Date() with new Date(2021, 6, 22, 12);
     const mockDate = new Date(2021, 6, 22, 12);
 
-    jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
+    vi.spyOn(global, 'Date').mockImplementation(function() {
+      return mockDate;
+    } as any);
 
     const satData = CatalogSearch.findObjsByOrbit(catalogManagerInstance.objectCache as Satellite[], defaultSat);
 
@@ -181,8 +183,8 @@ describe('calcSatrec', () => {
   it('process_insert_new_analyst_satellite', () => {
     catalogManagerInstance.objectCache = [defaultSat];
     catalogManagerInstance.satCruncher = {
-      postMessage: jest.fn(),
-      terminate: jest.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
     } as unknown as Worker;
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, defaultSat.tle2, 0)).not.toThrow();
   });
@@ -191,8 +193,8 @@ describe('calcSatrec', () => {
   it('process_insert_new_analyst_satellite_bad', () => {
     catalogManagerInstance.objectCache = [defaultSat];
     catalogManagerInstance.satCruncher = {
-      postMessage: jest.fn(),
-      terminate: jest.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
     } as unknown as Worker;
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1.slice(0, 68), defaultSat.tle2, 0)).toThrow();
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, `${defaultSat.tle2}0`, 0)).toThrow();

@@ -39,7 +39,7 @@ describe('EditSatPlugin_class', () => {
     const button = getEl('editSat-newTLE');
 
     button!.click();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   it('should save TLE', () => {
@@ -55,6 +55,6 @@ describe('EditSatPlugin_class', () => {
     const button = getEl('editSat-save');
 
     button!.click();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 });

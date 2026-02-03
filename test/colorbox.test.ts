@@ -58,7 +58,7 @@ describe('openColorbox_function', () => {
     expect(colorboxDiv).toBeNull();
 
     // jest replace getEl function
-    jest.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
+    vi.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
 
     openColorbox('https://www.example.com');
     const newColorboxDiv = getEl('colorbox-div');
@@ -80,7 +80,7 @@ describe('openColorbox_function', () => {
     let colorboxDiv = <HTMLElement>getEl('colorbox-div');
 
     openColorbox('https://www.example.com');
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
     colorboxDiv = <HTMLElement>getEl('colorbox-div');
     expect(colorboxDiv.style.display).toBe('block');
   });
@@ -88,10 +88,10 @@ describe('openColorbox_function', () => {
   // Tests that image colorbox is set up if options.image is true
   it('test_setup_image_colorbox', () => {
     // jest replace getEl function
-    jest.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
+    vi.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
 
     openColorbox('https://www.example.com', { image: true });
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
 
     const colorboxContainer = <HTMLElement>getEl('colorbox-container');
 
@@ -108,10 +108,10 @@ describe('openColorbox_function', () => {
   // Tests that iframe colorbox is set up if options.image is false
   it('test_setup_iframe_colorbox', () => {
     // jest replace getEl function
-    jest.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
+    vi.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
 
     openColorbox('https://www.example.com', { image: false });
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
 
     const colorboxIframe = <HTMLIFrameElement>getEl('colorbox-iframe');
 
@@ -125,16 +125,16 @@ describe('openColorbox_function', () => {
   // Tests that colorbox is closed when clicked
   it('test_close_colorbox', () => {
     // Create a spyon
-    const cb = jest.fn();
+    const cb = vi.fn();
 
     openColorbox('https://www.example.com', { callback: cb });
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
 
     const colorboxDom = <HTMLElement>getEl('colorbox-div');
 
     expect(colorboxDom.style.display).toBe('block');
     colorboxDom.click();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
 
     expect(cb).toHaveBeenCalled();
   });

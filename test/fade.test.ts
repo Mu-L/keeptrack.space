@@ -33,10 +33,10 @@ describe('fadeIn_function', () => {
   // Tests that the function does not throw an error when the element is not null
   it('test_element_not_null', () => {
     const el = document.createElement('div');
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeIn(el, 'block', 1000, spy);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(el.style.display).toBe('block');
     expect(spy).toHaveBeenCalled();
   });
@@ -51,10 +51,10 @@ describe('fadeIn_function', () => {
   // Tests that the element fades in when it is hidden
   it('test_element_hidden_fade_in', () => {
     const el = document.createElement('div');
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeIn(el, 'block', 1000, spy);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(el.style.display).toBe('block');
     expect(spy).toHaveBeenCalled();
   });
@@ -64,32 +64,32 @@ describe('fadeIn_function', () => {
     const el = document.createElement('div');
 
     el.style.display = 'block';
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeIn(el, 'block', 1000, spy);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(spy).not.toHaveBeenCalled();
   });
 
   // Tests that the function defaults to a duration of 1000ms when duration is not provided
   it('test_duration_not_provided', () => {
     const el = document.createElement('div');
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeIn(el, 'block', null as unknown as number, spy);
-    jest.advanceTimersByTime(999);
+    vi.advanceTimersByTime(999);
     expect(spy).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1);
     expect(spy).toHaveBeenCalled();
   });
 
   // Tests that the callback function is optional and can be provided
   it('test_callback_function_optional', () => {
     const el = document.createElement('div');
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeIn(el, 'block', 1000, spy);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(el.style.display).toBe('block');
     expect(spy).toHaveBeenCalled();
   });
@@ -133,7 +133,7 @@ describe('fadeOut_function', () => {
 
     KeepTrack.getInstance().containerRoot.appendChild(el);
     fadeOut(el);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(el.style.display).toBe('none');
   });
 
@@ -143,7 +143,7 @@ describe('fadeOut_function', () => {
 
     KeepTrack.getInstance().containerRoot.appendChild(el);
     fadeOut(el, 2000);
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
     expect(el.style.display).toBe('none');
   });
 
@@ -152,10 +152,10 @@ describe('fadeOut_function', () => {
     const el = document.createElement('div');
 
     KeepTrack.getInstance().containerRoot.appendChild(el);
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeOut(el, 1000, spy);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(spy).toHaveBeenCalled();
   });
 
@@ -172,10 +172,10 @@ describe('fadeOut_function', () => {
 
     el.style.display = 'none';
     KeepTrack.getInstance().containerRoot.appendChild(el);
-    const spy = jest.fn();
+    const spy = vi.fn();
 
     fadeOut(el, 1000, spy);
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(spy).not.toHaveBeenCalled();
   });
 });
