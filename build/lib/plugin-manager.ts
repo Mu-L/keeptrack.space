@@ -84,13 +84,9 @@ export class PluginManager {
       openSourcePath: '../plugins/oem-reader/oem-reader',
       proPath: '../plugins-pro/oem-reader/oem-reader',
     },
-    'user-account': {
-      openSourcePath: '../plugins/user-account/user-account',
-      proPath: '../plugins-pro/user-account/user-account',
-    },
-    'telemetry': {
-      openSourcePath: '../plugins/telemetry/telemetry',
-      proPath: '../plugins-pro/telemetry/telemetry',
+    'symbology': {
+      openSourcePath: '../plugins/symbology/symbology-plugin',
+      proPath: '../plugins-pro/symbology/symbology-plugin',
     },
   };
 
