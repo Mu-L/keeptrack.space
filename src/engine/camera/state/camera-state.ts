@@ -148,7 +148,7 @@ export class CameraState {
   }
 
   set zoomTarget(val: number) {
-    this.zoomTarget_ = Math.max(0.01, Math.min(1, val));
+    this.zoomTarget_ = Math.max(0.0001, Math.min(1, val));
     this.zoomTargetChange();
   }
 
