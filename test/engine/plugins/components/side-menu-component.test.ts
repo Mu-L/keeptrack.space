@@ -1,14 +1,15 @@
+/* eslint-disable no-empty-function */
 /**
  * @jest-environment jsdom
  */
 
-import { SideMenuComponent } from '@app/engine/plugins/components/side-menu/side-menu-component';
-import { ISideMenuConfig } from '@app/engine/plugins/core/plugin-capabilities';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { ServiceLocator } from '@app/engine/core/service-locator';
-import * as slideUtils from '@app/engine/utils/slide';
+import { SideMenuComponent } from '@app/engine/plugins/components/side-menu/side-menu-component';
+import { ISideMenuConfig } from '@app/engine/plugins/core/plugin-capabilities';
 import * as dragUtils from '@app/engine/utils/click-and-drag';
+import * as slideUtils from '@app/engine/utils/slide';
+import { MockInstance, vi } from 'vitest';
 
 // Mock settingsManager
 (global as any).settingsManager = {
@@ -30,10 +31,11 @@ vi.mock('@app/engine/core/service-locator', () => ({
 }));
 
 // Spies for module functions
-let mockSlideInRight: vi.SpyInstance;
-let mockSlideOutLeft: vi.SpyInstance;
-let mockClickAndDragWidth: vi.SpyInstance;
+let mockSlideInRight: MockInstance;
+let mockSlideOutLeft: MockInstance;
+let mockClickAndDragWidth: MockInstance;
 
+// eslint-disable-next-line max-lines-per-function
 describe('SideMenuComponent', () => {
   let eventBus: EventBus;
 
@@ -52,9 +54,9 @@ describe('SideMenuComponent', () => {
     vi.clearAllMocks();
 
     // Setup spies for slide utilities
-    mockSlideInRight = vi.spyOn(slideUtils, 'slideInRight').mockImplementation(() => {});
-    mockSlideOutLeft = vi.spyOn(slideUtils, 'slideOutLeft').mockImplementation(() => {});
-    mockClickAndDragWidth = vi.spyOn(dragUtils, 'clickAndDragWidth').mockImplementation(() => {});
+    mockSlideInRight = vi.spyOn(slideUtils, 'slideInRight').mockImplementation(() => { });
+    mockSlideOutLeft = vi.spyOn(slideUtils, 'slideOutLeft').mockImplementation(() => { });
+    mockClickAndDragWidth = vi.spyOn(dragUtils, 'clickAndDragWidth').mockImplementation(() => null);
   });
 
   afterEach(() => {
