@@ -1358,14 +1358,17 @@ export class Camera {
 
       this.state.zoomLevel += inOrOut * dt * settingsManager.zoomSpeed * Math.abs(this.state.zoomTarget - this.state.zoomLevel);
 
-      if ((this.state.zoomLevel > this.state.zoomTarget && !this.state.isZoomIn) || (this.state.zoomLevel < this.state.zoomTarget && this.state.isZoomIn)) {
+      // Snap when close enough to prevent floating-point oscillation
+      if (Math.abs(this.state.zoomLevel - this.state.zoomTarget) < 0.0001) {
+        this.state.zoomLevel = this.state.zoomTarget;
+      } else if ((this.state.zoomLevel > this.state.zoomTarget && !this.state.isZoomIn) || (this.state.zoomLevel < this.state.zoomTarget && this.state.isZoomIn)) {
         this.state.zoomTarget = this.state.zoomLevel; // If we change direction then consider us at the target
       }
     }
 
     // Clamp Zoom between 0 and 1
     this.state.zoomLevel = this.state.zoomLevel > 1 ? 1 : this.state.zoomLevel;
-    this.state.zoomLevel = this.state.zoomLevel < 0 ? 0.0001 : this.state.zoomLevel;
+    this.state.zoomLevel = this.state.zoomLevel < 0.0001 ? 0.0001 : this.state.zoomLevel;
 
     // Try to stay out of the earth
     if (this.cameraType === CameraType.FIXED_TO_EARTH || this.cameraType === CameraType.OFFSET || this.cameraType === CameraType.FIXED_TO_SAT) {
