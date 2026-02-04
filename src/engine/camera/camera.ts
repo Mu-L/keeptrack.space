@@ -492,6 +492,7 @@ export class Camera {
   }
 
   init() {
+    // TODO: create a static for the default value
     this.state.zoomLevel = settingsManager.initZoomLevel ?? 0.6925;
     this.state.zoomTarget = settingsManager.initZoomLevel ?? 0.6925;
 
