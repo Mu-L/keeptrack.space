@@ -20,7 +20,10 @@ export class CameraState {
   // ============ Zoom ============
   private zoomLevel_ = 0.6925;
   private zoomTarget_ = 0.6925;
-  private camDistBuffer_: Kilometers = 0 as Kilometers;
+  static readonly MAX_CAM_DIST_BUFFER: Kilometers = 25 as Kilometers;
+  /** This buffer distance is used for close up camera positioning - it MUST match the MAX_CAM_DIST_BUFFER (25km)
+   */
+  private camDistBuffer_: Kilometers = CameraState.MAX_CAM_DIST_BUFFER;
   earthCenteredLastZoom = 0.6925;
   isZoomIn = false;
 

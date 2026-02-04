@@ -369,6 +369,7 @@ export class Camera {
     const cameraDistance = this.getDistFromEarth();
 
     this.state.ftsRotateReset = true;
+    this.state.camDistBuffer = CameraState.MAX_CAM_DIST_BUFFER;
 
     // If within 9000km then we want to move further back to feel less jarring
     if (cameraDistance > 9000) {
