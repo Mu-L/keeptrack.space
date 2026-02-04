@@ -278,16 +278,6 @@ export class Camera {
       static: false,
     });
 
-    let gmst: GreenwichMeanSiderealTime;
-
-    if (!sensorPos?.gmst) {
-      const timeManagerInstance = ServiceLocator.getTimeManager();
-
-      gmst = sensorPos?.gmst ?? SatMath.calculateTimeVariables(timeManagerInstance.simulationTimeObj).gmst;
-    } else {
-      gmst = sensorPos.gmst;
-    }
-
     this.drawPreValidate_(sensorPos);
     mat4.identity(this.matrixWorldInverse);
 
@@ -296,7 +286,7 @@ export class Camera {
       if (target.id === -1 || target.type === SpaceObjectType.STAR) {
         this.cameraType = CameraType.FIXED_TO_EARTH;
       } else {
-        const satAlt = SatMath.getAlt(SatMath.getPositionFromCenterBody(target.position), gmst);
+        const satAlt = <Kilometers>(Math.sqrt(target.position.x ** 2 + target.position.y ** 2 + target.position.z ** 2) - RADIUS_OF_EARTH);
 
         if (this.calcDistanceBasedOnZoom() < satAlt + RADIUS_OF_EARTH + settingsManager.minDistanceFromSatellite) {
           this.state.zoomTarget = alt2zoom(satAlt, settingsManager.minZoomDistance, settingsManager.maxZoomDistance, settingsManager.minDistanceFromSatellite);

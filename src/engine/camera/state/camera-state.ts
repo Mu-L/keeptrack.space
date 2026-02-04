@@ -1,7 +1,7 @@
 // app/keeptrack/camera/camera-state.ts
-import { SatMath } from '@app/app/analysis/sat-math';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { RADIUS_OF_EARTH } from '@app/engine/utils/constants';
 import { alt2zoom } from '@app/engine/utils/transforms';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { Degrees, Kilometers, Radians } from '@ootk/src/main';
@@ -241,7 +241,7 @@ export class CameraState {
       const target = selectSatManagerInstance?.getSelectedSat();
 
       if (target) {
-        const satAlt = SatMath.getAlt(target.position, SatMath.calculateTimeVariables(ServiceLocator.getTimeManager().simulationTimeObj).gmst);
+        const satAlt = <Kilometers>(Math.sqrt(target.position.x ** 2 + target.position.y ** 2 + target.position.z ** 2) - RADIUS_OF_EARTH);
         const curMinZoomLevel = alt2zoom(satAlt, settingsManager.minZoomDistance, settingsManager.maxZoomDistance, settingsManager.minDistanceFromSatellite);
 
         if (this.zoomTarget < this.zoomLevel && this.zoomTarget < curMinZoomLevel) {
