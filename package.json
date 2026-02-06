@@ -134,6 +134,7 @@
     "source-map-loader": "^4.0.2",
     "style-loader": "^3.3.4",
     "ts-loader": "^9.4.4",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
