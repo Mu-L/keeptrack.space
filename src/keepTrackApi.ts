@@ -15,18 +15,17 @@ import type { SensorMath } from './app/sensors/sensor-math';
 import type { SensorManager } from './app/sensors/sensorManager';
 import type { HoverManager } from './app/ui/hover-manager';
 import type { UiManager } from './app/ui/ui-manager';
+import type { SoundManager } from './engine/audio/sound-manager';
 import type { Camera } from './engine/camera/camera';
 import type { Scene } from './engine/core/scene';
 import type { TimeManager } from './engine/core/time-manager';
 import type { InputManager } from './engine/input/input-manager';
-import HorizonsAPI from './engine/ootk/src/fetch/horizons';
 import { KeepTrackPlugin } from './engine/plugins/base-plugin';
 import type { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import type { DotsManager } from './engine/rendering/dots-manager';
 import type { LineManager } from './engine/rendering/line-manager';
 import type { MeshManager } from './engine/rendering/mesh-manager';
 import type { WebGLRenderer } from './engine/rendering/webgl-renderer';
-import type { SoundManager } from './engine/audio/sound-manager';
 
 
 declare global {
@@ -143,8 +142,6 @@ export class KeepTrackApi {
   // Save utilities
   saveCsv = saveCsv;
   saveVariable = saveVariable;
-
-  horizonsApi = new HorizonsAPI();
 }
 
 export const keepTrackApi = new KeepTrackApi();
