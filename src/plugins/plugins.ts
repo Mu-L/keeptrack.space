@@ -73,7 +73,6 @@ import { SensorInfoPlugin } from './sensor/sensor-info-plugin';
 import { SettingsMenuPlugin } from './settings-menu/settings-menu';
 import { ShortTermFences } from './short-term-fences/short-term-fences';
 import { StereoMap } from './stereo-map/stereo-map';
-import { SymbologyPlugin } from './symbology/symbology-plugin';
 import { TimeMachine } from './time-machine/time-machine';
 import { TimeSlider } from './time-slider/time-slider';
 import { SatelliteTimeline } from './timeline-satellite/satellite-timeline';
@@ -280,7 +279,6 @@ export class PluginManager {
             new proPlugin.SymbologyPlugin().init();
           }, config: plugins.SymbologyPlugin,
         },
-        { init: () => new SymbologyPlugin().init(), config: plugins.SymbologyPlugin },
         { init: () => new SettingsMenuPlugin().init(), config: plugins.SettingsMenuPlugin },
         {
           init: async () => {
