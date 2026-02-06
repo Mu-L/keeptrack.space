@@ -27,7 +27,12 @@ import { ToastMsgType } from '@app/engine/core/interfaces';
 import { RADIUS_OF_EARTH, ZOOM_EXP } from '@app/engine/utils/constants';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import {
-  DEG2RAD, Degrees, Satellite, TemeVec3, GreenwichMeanSiderealTime, Kilometers, Milliseconds, Radians, SpaceObjectType, Star, TAU, ZoomValue, eci2lla,
+  DEG2RAD, Degrees,
+  GreenwichMeanSiderealTime, Kilometers, Milliseconds, Radians,
+  Satellite,
+  SpaceObjectType, Star, TAU,
+  TemeVec3,
+  ZoomValue, eci2lla,
 } from '@ootk/src/main';
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { SatMath } from '../../app/analysis/sat-math';
@@ -483,8 +488,8 @@ export class Camera {
 
   init() {
     // TODO: create a static for the default value
-    this.state.zoomLevel = settingsManager.initZoomLevel ?? 0.6925;
-    this.state.zoomTarget = settingsManager.initZoomLevel ?? 0.6925;
+    this.state.zoomLevel = settingsManager.initZoomLevel ?? 0.4085;
+    this.state.zoomTarget = settingsManager.initZoomLevel ?? 0.4085;
 
     this.inputHandler.init();
 
