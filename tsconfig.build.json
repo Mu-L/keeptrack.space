@@ -28,7 +28,9 @@
     "test/**/*",
     "src/engine/ootk/examples/**/*",
     "src/engine/ootk/test/**/*",
-    "src/engine/ootk/**/__tests__/**/*"
+    "src/engine/ootk/**/__tests__/**/*",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
   ],
   "filesGlob": [
     "src/**/*.ts",
