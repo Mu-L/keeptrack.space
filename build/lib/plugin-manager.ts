@@ -88,6 +88,18 @@ export class PluginManager {
       openSourcePath: '../plugins/symbology/symbology-plugin',
       proPath: '../plugins-pro/symbology/symbology-plugin',
     },
+    'link-budget': {
+      openSourcePath: '../plugins/link-budget/link-budget',
+      proPath: '../plugins-pro/link-budget/link-budget',
+    },
+    'eclipse-solar-analysis': {
+      openSourcePath: '../plugins/eclipse-solar-analysis/eclipse-solar-analysis',
+      proPath: '../plugins-pro/eclipse-solar-analysis/eclipse-solar-analysis',
+    },
+    'toca-poca': {
+      openSourcePath: '../plugins/toca-poca-plugin/toca-poca-plugin',
+      proPath: '../plugins-pro/toca-poca-plugin/toca-poca-plugin',
+    },
   };
 
   constructor(fileManager: FileSystemManager) {

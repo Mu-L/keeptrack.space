@@ -24,14 +24,12 @@ import { DebrisScreening } from './debris-screening/debris-screening';
 import { DopsPlugin } from './dops/dops';
 import { DrawLinesPlugin } from './draw-lines/draw-lines';
 import { EarthPresetsPlugin } from './earth-presets/earth-presets';
-import { EclipseSolarAnalysis } from './eclipse-solar-analysis/eclipse-solar-analysis';
 import { EditSat } from './edit-sat/edit-sat';
 import { FilterMenuPlugin } from './filter-menu/filter-menu';
 import { GamepadPlugin } from './gamepad/gamepad';
 import { GithubLinkPlugin } from './github-link/github-link';
 import { KeepTrackPluginsConfiguration } from './keeptrack-plugins-configuration';
 import { LaunchCalendar } from './launch-calendar/launch-calendar';
-import { LinkBudgetPlugin } from './link-budget/link-budget';
 import { LinkedInLinkPlugin } from './linkedin-link/linkedin-link';
 import { MissilePlugin } from './missile/missile-plugin';
 import { NewLaunch } from './new-launch/new-launch';
@@ -77,7 +75,6 @@ import { TimeMachine } from './time-machine/time-machine';
 import { TimeSlider } from './time-slider/time-slider';
 import { SatelliteTimeline } from './timeline-satellite/satellite-timeline';
 import { SensorTimeline } from './timeline-sensor/sensor-timeline';
-import { TocaPocaPlugin } from './toca-poca-plugin/toca-poca-plugin';
 import { TooltipsPlugin } from './tooltips/tooltips';
 import { TrackingImpactPredict } from './tracking-impact-predict/tracking-impact-predict';
 import { TransponderChannelData } from './transponder-channel-data/transponder-channel-data';
@@ -188,7 +185,13 @@ export class PluginManager {
         { init: () => new SensorSurvFence().init(), config: plugins.SensorSurvFence },
         { init: () => new ShortTermFences().init(), config: plugins.ShortTermFences },
         { init: () => new LookAnglesPlugin().init(), config: plugins.LookAnglesPlugin },
-        { init: () => new LinkBudgetPlugin().init(), config: plugins.LinkBudgetPlugin },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/link-budget/link-budget');
+
+            new proPlugin.LinkBudgetPlugin().init();
+          }, config: plugins.LinkBudgetPlugin,
+        },
         { init: () => new MultiSiteLookAnglesPlugin().init(), config: plugins.MultiSiteLookAnglesPlugin },
         { init: () => new SensorTimeline().init(), config: plugins.SensorTimeline },
         { init: () => new SatelliteTimeline().init(), config: plugins.SatelliteTimeline },
@@ -202,7 +205,13 @@ export class PluginManager {
         { init: () => new ProximityOps().init(), config: plugins.ProximityOps },
         { init: () => new OrbitReferences().init(), config: plugins.OrbitReferences },
         { init: () => new Collisions().init(), config: plugins.Collisions },
-        { init: () => new TocaPocaPlugin().init(), config: plugins.TocaPocaPlugin },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/toca-poca-plugin/toca-poca-plugin');
+
+            new proPlugin.TocaPocaPlugin().init();
+          }, config: plugins.TocaPocaPlugin,
+        },
         { init: () => new OrbitGuardMenuPlugin().init(), config: plugins.OrbitGuardMenuPlugin },
         { init: () => new TrackingImpactPredict().init(), config: plugins.TrackingImpactPredict },
         { init: () => new Breakup().init(), config: plugins.Breakup },
@@ -248,7 +257,13 @@ export class PluginManager {
         { init: () => new SatellitePhotos().init(), config: plugins.SatellitePhotos },
         { init: () => new ScreenRecorder().init(), config: plugins.ScreenRecorder },
         { init: () => new AnalysisMenu().init(), config: plugins.AnalysisMenu },
-        { init: () => new EclipseSolarAnalysis().init(), config: plugins.EclipseSolarAnalysis },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/eclipse-solar-analysis/eclipse-solar-analysis');
+
+            new proPlugin.EclipseSolarAnalysis().init();
+          }, config: plugins.EclipseSolarAnalysis,
+        },
         {
           init: async () => {
             const proPlugin = await import('../plugins-pro/maneuver/maneuver');
