@@ -286,8 +286,8 @@ export class Calendar {
   }
 
   private renderCalendarDays(): string {
-    const firstDay = new Date(this.calendarDate.getUTCFullYear(), this.calendarDate.getUTCMonth(), 1).getUTCDay();
-    const daysInMonth = new Date(this.calendarDate.getUTCFullYear(), this.calendarDate.getUTCMonth() + 1, 0).getUTCDate() + 1;
+    const firstDay = new Date(Date.UTC(this.calendarDate.getUTCFullYear(), this.calendarDate.getUTCMonth(), 1)).getUTCDay();
+    const daysInMonth = new Date(Date.UTC(this.calendarDate.getUTCFullYear(), this.calendarDate.getUTCMonth() + 1, 0)).getUTCDate();
     const today = new Date();
     let dayHtml = '';
     let dayCount = 1;
@@ -310,7 +310,7 @@ export class Calendar {
             .filter(Boolean)
             .join(' ');
 
-          const jday = ServiceLocator.getTimeManager().getUTCDayOfYear(new Date(this.calendarDate.getUTCFullYear(), this.calendarDate.getUTCMonth(), dayCount));
+          const jday = ServiceLocator.getTimeManager().getUTCDayOfYear(new Date(Date.UTC(this.calendarDate.getUTCFullYear(), this.calendarDate.getUTCMonth(), dayCount)));
 
           const dayCountPadded = dayCount.toString().padStart(2, '0');
           const jdayPadded = jday.toString().padStart(3, '0');

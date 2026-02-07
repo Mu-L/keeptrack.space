@@ -441,15 +441,13 @@ export class TimeManager {
     const mn = doy.getUTCMonth();
     const dn = doy.getUTCDate();
     const dayCount = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let dayInYear = 365;
     let dayOfYear = dayCount[mn] + dn;
 
     if (mn > 1 && this.isLeapYear(doy)) {
       dayOfYear++;
-      dayInYear++;
     }
 
-    return dayOfYear % dayInYear;
+    return dayOfYear;
   }
 
   getUTCDateFromDayOfYear(year: number, dayOfYear: number): Date {
