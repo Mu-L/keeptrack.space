@@ -28,18 +28,23 @@ import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
 import analysisPng from '@public/img/icons/reports.png';
 
-
 import { SatMath, SunStatus } from '@app/app/analysis/sat-math';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { Scene } from '@app/engine/core/scene';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import {
+  IBottomIconConfig,
+  ICommandPaletteCommand,
+  IHelpConfig,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { t7e } from '@app/locales/keys';
-import { BaseObject, Satellite, TemeVec3, Kilometers, MILLISECONDS_PER_SECOND } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { Kilometers, MILLISECONDS_PER_SECOND, Satellite, TemeVec3 } from '@ootk/src/main';
+import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 interface ReportData {
@@ -133,22 +138,92 @@ export class ReportsPlugin extends KeepTrackPlugin {
   }
 
   isRequireSatelliteSelected = true;
-
-  menuMode: MenuMode[] = [MenuMode.ANALYSIS, MenuMode.ALL];
-
-  bottomIconImg = analysisPng;
-  isIconDisabledOnLoad = true;
   isIconDisabled = true;
-  sideMenuElementName: string = 'reports-menu';
 
-  /**
-   * Dynamically generate the side menu HTML based on registered reports
-   */
-  sideMenuElementHtml: string = html`
+  // =========================================================================
+  // Composition-based configuration methods
+  // =========================================================================
+
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'reports-bottom-icon',
+      label: t7e('plugins.ReportsPlugin.bottomIconLabel'),
+      image: analysisPng,
+      menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
+      isDisabledOnLoad: true,
+    };
+  }
+
+  // Bridge for legacy event system (per CLAUDE.md)
+  bottomIconCallback = (): void => {
+    this.onBottomIconClick();
+  };
+
+  onBottomIconClick(): void {
+    // Default toggle behavior handled by base class
+  }
+
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'reports-menu',
+      title: t7e('plugins.ReportsPlugin.title'),
+      html: this.buildSideMenuHtml_(),
+      dragOptions: {
+        isDraggable: false,
+        minWidth: 320,
+      },
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.ReportsPlugin.title'),
+      body: t7e('plugins.ReportsPlugin.helpBody'),
+    };
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const category = 'Analysis';
+
+    const reportCommands: ICommandPaletteCommand[] = ReportsPlugin.getRegisteredReports().map((report) => ({
+      id: `ReportsPlugin.${report.id}`,
+      label: `Generate ${report.name} Report`,
+      category,
+      callback: () => this.generateReport_(report),
+      isAvailable: () => {
+        try {
+          if (!this.selectSatManager_?.primarySatObj?.isSatellite()) {
+            return false;
+          }
+          if (report.requiresSensor && !ServiceLocator.getSensorManager().isSensorSelected()) {
+            return false;
+          }
+
+          return true;
+        } catch {
+          return false;
+        }
+      },
+    }));
+
+    return [
+      {
+        id: 'ReportsPlugin.open',
+        label: 'Open Reports',
+        category,
+        callback: () => this.bottomMenuClicked(),
+        isAvailable: () => !!this.selectSatManager_?.primarySatObj?.isSatellite?.(),
+      },
+      ...reportCommands,
+    ];
+  }
+
+  private buildSideMenuHtml_(): string {
+    return html`
       <div id="reports-menu" class="side-menu-parent start-hidden text-select">
         <div id="reports-content" class="side-menu">
           <div class="row">
-            <h5 class="center-align">Reports</h5>
+            <h5 class="center-align">${t7e('plugins.ReportsPlugin.title')}</h5>
             <div class="divider"></div>
             <div id="reports-buttons" class="center-align" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; margin-left: 10px; margin-right: 10px;">
             </div>
@@ -156,11 +231,7 @@ export class ReportsPlugin extends KeepTrackPlugin {
         </div>
       </div>
     `;
-
-  dragOptions: ClickDragOptions = {
-    isDraggable: false,
-    minWidth: 320,
-  };
+  }
 
   addHtml(): void {
     super.addHtml();
@@ -191,19 +262,6 @@ export class ReportsPlugin extends KeepTrackPlugin {
             button.addEventListener('click', () => this.generateReport_(report));
           }
         });
-      },
-    );
-
-    EventBus.getInstance().on(
-      EventBusEvent.selectSatData,
-      (obj: BaseObject) => {
-        if (obj?.isSatellite()) {
-          getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-disabled');
-          this.isIconDisabled = false;
-        } else {
-          getEl(this.bottomIconElementName)?.classList.add('bmenu-item-disabled');
-          this.isIconDisabled = true;
-        }
       },
     );
   }
@@ -646,7 +704,7 @@ export class ReportsPlugin extends KeepTrackPlugin {
     }
 
     if (!(sat instanceof Satellite)) {
-      errorManagerInstance.warn('Selected object is not a satellite');
+      errorManagerInstance.warn(t7e('errorMsgs.SelectSatelliteFirst'));
 
       return null;
     }
