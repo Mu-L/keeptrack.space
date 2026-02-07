@@ -280,19 +280,30 @@ describe('FilterMenuPlugin_class', () => {
       }
     });
 
-    it('should detect when filters differ from defaults', () => {
+    it('should return true when all filters are at defaults', () => {
       const plugin = new FilterMenuPlugin();
 
       websiteInit(plugin);
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
 
-      // The checkIfDefaults function compares against filter.checked values
-      // Since most filters don't have explicit checked values in the getter,
-      // the comparison may not work as expected
-      const result = plugin.checkIfDefaults();
+      plugin.resetToDefaults();
 
-      // Just verify the function returns a boolean without error
-      expect(typeof result).toBe('boolean');
+      expect(plugin.checkIfDefaults()).toBe(true);
+    });
+
+    it('should return false when a filter differs from defaults', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      const debrisCheckbox = getEl('filter-debris') as HTMLInputElement;
+
+      if (debrisCheckbox) {
+        debrisCheckbox.checked = false;
+
+        expect(plugin.checkIfDefaults()).toBe(false);
+      }
     });
   });
 
@@ -483,31 +494,6 @@ describe('FilterMenuPlugin_class', () => {
     });
   });
 
-  describe('Legacy bridge', () => {
-    it('should have bottomIconCallback defined', () => {
-      const plugin = new FilterMenuPlugin();
-
-      expect(plugin.bottomIconCallback).toBeDefined();
-      expect(typeof plugin.bottomIconCallback).toBe('function');
-    });
-
-    it('should have onBottomIconClick defined', () => {
-      const plugin = new FilterMenuPlugin();
-
-      expect(plugin.onBottomIconClick).toBeDefined();
-      expect(typeof plugin.onBottomIconClick).toBe('function');
-    });
-
-    it('should call onBottomIconClick when bottomIconCallback is invoked', () => {
-      const plugin = new FilterMenuPlugin();
-      const onBottomIconClickSpy = vi.spyOn(plugin, 'onBottomIconClick');
-
-      plugin.bottomIconCallback();
-
-      expect(onBottomIconClickSpy).toHaveBeenCalled();
-    });
-  });
-
   describe('Filter IDs must match FilterPluginSettings keys', () => {
     // This test ensures filter IDs are valid settings keys, not translated strings
     // See: https://github.com/thkruz/keeptrack-space/issues/XXX for the bug this prevents
@@ -605,13 +591,14 @@ describe('FilterMenuPlugin_class', () => {
       expect(plugin.dependencies_).toContain('TopMenu');
     });
 
-    it('should have correct menuMode', () => {
+    it('should have correct menuMode in bottom icon config', () => {
       const plugin = new FilterMenuPlugin();
+      const config = plugin.getBottomIconConfig();
 
-      expect(plugin.menuMode).toContain(MenuMode.BASIC);
-      expect(plugin.menuMode).toContain(MenuMode.ADVANCED);
-      expect(plugin.menuMode).toContain(MenuMode.SETTINGS);
-      expect(plugin.menuMode).toContain(MenuMode.ALL);
+      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.ADVANCED);
+      expect(config.menuMode).toContain(MenuMode.SETTINGS);
+      expect(config.menuMode).toContain(MenuMode.ALL);
     });
   });
 
@@ -765,6 +752,289 @@ describe('FilterMenuPlugin_class', () => {
 
       expect(filters1.length).toBe(filters2.length);
       expect(filters1.map((f) => f.id)).toEqual(filters2.map((f) => f.id));
+    });
+  });
+
+  describe('Settings persistence on form change', () => {
+    it('should call saveSettings_ when a checkbox is changed', () => {
+      const plugin = new FilterMenuPlugin();
+      const saveSettingsSpy = vi.spyOn(plugin as any, 'saveSettings_');
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      const checkbox = getEl('filter-debris') as HTMLInputElement;
+
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(saveSettingsSpy).toHaveBeenCalled();
+      }
+    });
+
+    it('should play toggle sound when a checkbox is changed', () => {
+      const plugin = new FilterMenuPlugin();
+      const soundManager = ServiceLocator.getSoundManager();
+      const playSpy = vi.spyOn(soundManager as any, 'play');
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      const checkbox = getEl('filter-debris') as HTMLInputElement;
+
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+        expect(playSpy).toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('Command palette integration', () => {
+    it('should return 22 command palette commands', () => {
+      const plugin = new FilterMenuPlugin();
+      const commands = plugin.getCommandPaletteCommands();
+
+      expect(commands).toBeDefined();
+      expect(commands.length).toBe(22);
+    });
+
+    it('should have unique command IDs', () => {
+      const plugin = new FilterMenuPlugin();
+      const commands = plugin.getCommandPaletteCommands();
+      const ids = commands.map((c) => c.id);
+      const uniqueIds = new Set(ids);
+
+      expect(uniqueIds.size).toBe(ids.length);
+    });
+
+    it('should have all original command IDs', () => {
+      const plugin = new FilterMenuPlugin();
+      const ids = plugin.getCommandPaletteCommands().map((c) => c.id);
+
+      expect(ids).toContain('FilterMenuPlugin.open');
+      expect(ids).toContain('FilterMenuPlugin.resetDefaults');
+      expect(ids).toContain('FilterMenuPlugin.toggleDebris');
+      expect(ids).toContain('FilterMenuPlugin.toggleRocketBodies');
+      expect(ids).toContain('FilterMenuPlugin.showOnlyPayloads');
+    });
+
+    it('should have toggle commands for individual filters', () => {
+      const plugin = new FilterMenuPlugin();
+      const ids = plugin.getCommandPaletteCommands().map((c) => c.id);
+
+      expect(ids).toContain('FilterMenuPlugin.toggleUnknownType');
+      expect(ids).toContain('FilterMenuPlugin.toggleNotional');
+      expect(ids).toContain('FilterMenuPlugin.toggleStarlink');
+      expect(ids).toContain('FilterMenuPlugin.toggleLEO');
+      expect(ids).toContain('FilterMenuPlugin.toggleMEO');
+      expect(ids).toContain('FilterMenuPlugin.toggleGEO');
+      expect(ids).toContain('FilterMenuPlugin.toggleHEO');
+    });
+
+    it('should have group preset commands', () => {
+      const plugin = new FilterMenuPlugin();
+      const ids = plugin.getCommandPaletteCommands().map((c) => c.id);
+
+      expect(ids).toContain('FilterMenuPlugin.hideDebrisAndRocketBodies');
+      expect(ids).toContain('FilterMenuPlugin.showAllObjectTypes');
+      expect(ids).toContain('FilterMenuPlugin.showOnlyLEO');
+      expect(ids).toContain('FilterMenuPlugin.showOnlyGEO');
+      expect(ids).toContain('FilterMenuPlugin.showAllOrbitalRegimes');
+      expect(ids).toContain('FilterMenuPlugin.showOnlyUS');
+      expect(ids).toContain('FilterMenuPlugin.showOnlyRussia');
+      expect(ids).toContain('FilterMenuPlugin.showOnlyChina');
+      expect(ids).toContain('FilterMenuPlugin.showAllCountries');
+      expect(ids).toContain('FilterMenuPlugin.hideAllCountries');
+    });
+
+    it('should have same category for all commands', () => {
+      const plugin = new FilterMenuPlugin();
+      const commands = plugin.getCommandPaletteCommands();
+      const categories = new Set(commands.map((cmd) => cmd.category));
+
+      expect(categories.size).toBe(1);
+      commands.forEach((cmd) => {
+        expect(cmd.category).toBeDefined();
+        expect(cmd.category.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should have shortcut hint on open command', () => {
+      const plugin = new FilterMenuPlugin();
+      const commands = plugin.getCommandPaletteCommands();
+      const openCmd = commands.find((c) => c.id === 'FilterMenuPlugin.open');
+
+      expect(openCmd?.shortcutHint).toBe('F');
+    });
+
+    it('should have labels for all commands', () => {
+      const plugin = new FilterMenuPlugin();
+      const commands = plugin.getCommandPaletteCommands();
+
+      commands.forEach((cmd) => {
+        expect(cmd.label).toBeDefined();
+        expect(cmd.label.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should have callbacks for all commands', () => {
+      const plugin = new FilterMenuPlugin();
+      const commands = plugin.getCommandPaletteCommands();
+
+      commands.forEach((cmd) => {
+        expect(typeof cmd.callback).toBe('function');
+      });
+    });
+  });
+
+  describe('Command palette helpers', () => {
+    it('should toggle debris filter via toggleFilter_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      const debrisCheckbox = getEl('filter-debris') as HTMLInputElement;
+      const initialState = debrisCheckbox?.checked;
+
+      plugin['toggleFilter_']('debris');
+
+      expect(debrisCheckbox?.checked).toBe(!initialState);
+    });
+
+    it('should show only payloads via showOnlyPayloads_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      plugin['showOnlyPayloads_']();
+
+      expect((getEl('filter-payloads') as HTMLInputElement)?.checked).toBe(true);
+      expect((getEl('filter-debris') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-rocketBodies') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-unknownType') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-notionalSatellites') as HTMLInputElement)?.checked).toBe(false);
+    });
+
+    it('should not change country/regime filters when showing only payloads', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      const usCheckbox = getEl('filter-unitedStates') as HTMLInputElement;
+      const leoCheckbox = getEl('filter-lEOSatellites') as HTMLInputElement;
+      const usBefore = usCheckbox?.checked;
+      const leoBefore = leoCheckbox?.checked;
+
+      plugin['showOnlyPayloads_']();
+
+      expect(usCheckbox?.checked).toBe(usBefore);
+      expect(leoCheckbox?.checked).toBe(leoBefore);
+    });
+
+    it('should set multiple filters via setFilters_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      plugin['setFilters_']({ debris: false, rocketBodies: false });
+
+      expect((getEl('filter-debris') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-rocketBodies') as HTMLInputElement)?.checked).toBe(false);
+    });
+
+    it('should show only one filter in a group via showOnlyInGroup_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      plugin['showOnlyInGroup_']('lEOSatellites', FilterMenuPlugin['ORBITAL_REGIME_FILTERS_']);
+
+      expect((getEl('filter-lEOSatellites') as HTMLInputElement)?.checked).toBe(true);
+      expect((getEl('filter-gEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-mEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-hEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-xGEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-vLEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+    });
+
+    it('should enable all filters in a group via enableGroup_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      // First disable all orbital regimes
+      plugin['enableGroup_'](FilterMenuPlugin['ORBITAL_REGIME_FILTERS_'], false);
+
+      expect((getEl('filter-lEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-gEOSatellites') as HTMLInputElement)?.checked).toBe(false);
+
+      // Then re-enable all
+      plugin['enableGroup_'](FilterMenuPlugin['ORBITAL_REGIME_FILTERS_'], true);
+
+      expect((getEl('filter-lEOSatellites') as HTMLInputElement)?.checked).toBe(true);
+      expect((getEl('filter-gEOSatellites') as HTMLInputElement)?.checked).toBe(true);
+    });
+
+    it('should show only US objects via showOnlyInGroup_ with country filters', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      plugin['showOnlyInGroup_']('unitedStates', FilterMenuPlugin['COUNTRY_FILTERS_']);
+
+      expect((getEl('filter-unitedStates') as HTMLInputElement)?.checked).toBe(true);
+      expect((getEl('filter-china') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-russia') as HTMLInputElement)?.checked).toBe(false);
+    });
+
+    it('should hide all countries via enableGroup_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      plugin['enableGroup_'](FilterMenuPlugin['COUNTRY_FILTERS_'], false);
+
+      expect((getEl('filter-unitedStates') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-china') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-russia') as HTMLInputElement)?.checked).toBe(false);
+      expect((getEl('filter-japan') as HTMLInputElement)?.checked).toBe(false);
+    });
+
+    it('should not modify disabled checkboxes via setFilters_', () => {
+      const plugin = new FilterMenuPlugin();
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      const agenciesCheckbox = getEl('filter-agencies') as HTMLInputElement;
+      const agenciesBefore = agenciesCheckbox?.checked;
+
+      plugin['setFilters_']({ agencies: true });
+
+      expect(agenciesCheckbox?.checked).toBe(agenciesBefore);
+    });
+
+    it('should call saveSettings_ when using setFilters_', () => {
+      const plugin = new FilterMenuPlugin();
+      const saveSettingsSpy = vi.spyOn(plugin as any, 'saveSettings_');
+
+      websiteInit(plugin);
+      EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
+
+      plugin['setFilters_']({ debris: false });
+
+      expect(saveSettingsSpy).toHaveBeenCalled();
     });
   });
 });
