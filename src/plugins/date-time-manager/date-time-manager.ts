@@ -28,11 +28,20 @@ export class DateTimeManager extends KeepTrackPlugin {
   private lastTime = 0 as Milliseconds;
   calendar: Calendar;
 
-  init(): void {
-    super.init();
+  // =========================================================================
+  // Lifecycle methods
+  // =========================================================================
 
-    EventBus.getInstance().on(EventBusEvent.uiManagerInit, this.uiManagerInit.bind(this));
-    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinal.bind(this));
+  addHtml(): void {
+    super.addHtml();
+
+    EventBus.getInstance().on(EventBusEvent.uiManagerInit, this.uiManagerInit_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinal_.bind(this));
+  }
+
+  addJs(): void {
+    super.addJs();
+
     EventBus.getInstance().on(EventBusEvent.updateDateTime, this.updateDateTime.bind(this));
     EventBus.getInstance().on(EventBusEvent.onKeepTrackReady, () => this.updateDateTime(ServiceLocator.getTimeManager().simulationTimeObj));
     EventBus.getInstance().on(EventBusEvent.selectedDateChange, (date: Date) => this.updateDateTime(date));
@@ -130,7 +139,7 @@ export class DateTimeManager extends KeepTrackPlugin {
     }
   }
 
-  uiManagerInit() {
+  private uiManagerInit_() {
     const NavWrapper = getEl('nav-wrapper');
 
     NavWrapper?.insertAdjacentHTML(
@@ -150,7 +159,7 @@ export class DateTimeManager extends KeepTrackPlugin {
     );
   }
 
-  uiManagerFinal() {
+  private uiManagerFinal_() {
     if (!settingsManager.plugins.TopMenu) {
       return;
     }

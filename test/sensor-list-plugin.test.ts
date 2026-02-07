@@ -6,8 +6,8 @@ import { standardClickTests, standardPluginMenuButtonTests, standardPluginSuite 
 
 describe('SensorListPlugin_class', () => {
   beforeEach(() => {
-    // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = vi.fn();
+    // Mock DateTimeManager uiManagerFinal_ to prevent errors
+    (DateTimeManager.prototype as any).uiManagerFinal_ = vi.fn();
     setupStandardEnvironment([TopMenu, DateTimeManager]);
   });
 

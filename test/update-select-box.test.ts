@@ -13,8 +13,8 @@ import { standardPluginSuite } from './generic-tests';
 
 describe('UpdateSatManager_class', () => {
   beforeEach(() => {
-    // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = vi.fn();
+    // Mock DateTimeManager uiManagerFinal_ to prevent errors
+    (DateTimeManager.prototype as any).uiManagerFinal_ = vi.fn();
     PluginRegistry.unregisterAllPlugins();
     setupStandardEnvironment([TopMenu, SelectSatManager, DateTimeManager]);
   });
