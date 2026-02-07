@@ -1,0 +1,18 @@
+#inc2lon-plots-menu .side-menu {
+  height: 80%;
+  position: relative !important;
+}
+
+#inc2lon-stats {
+  padding: 10px;
+  color: #fff;
+  font-size: 12px;
+}
+
+#inc2lon-country-counts {
+  margin-top: 5px;
+}
+
+#inc2lon-country-counts span {
+  margin-right: 10px;
+}
