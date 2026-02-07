@@ -5,6 +5,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import {
   IBottomIconConfig,
+  ICommandPaletteCommand,
   IHelpConfig,
   IKeyboardShortcut,
   ISideMenuConfig,
@@ -83,14 +84,11 @@ interface Filters {
   tooltip?: string;
   checked?: boolean;
   disabled?: boolean;
-  cb?: (e: Event) => void;
 }
 
 export class FilterMenuPlugin extends KeepTrackPlugin {
   readonly id = 'FilterMenuPlugin';
   dependencies_ = [TopMenu.name];
-
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.SETTINGS, MenuMode.ALL];
 
   static get filters(): Filters[] {
     return [
@@ -291,30 +289,6 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     starlinkSatellites: StorageKey.FILTER_SETTINGS_STARLINK,
   };
 
-  // Legacy properties - will be removed after full migration
-  bottomIconElementName: string = 'filter-menu-icon';
-  bottomIconImg = filterPng;
-  bottomIconLabel: string = 'Filter Menu';
-  sideMenuElementName: string = 'filter-menu';
-  sideMenuElementHtml: string = html`
-  <div id="filter-menu" class="side-menu-parent start-hidden text-select">
-    <div id="filter-content" class="side-menu">
-      <div class="row">
-        <form id="filter-form">
-          <div id="filter-general">
-            <div class="row center"></div>
-            </br>
-            <div class="row center">
-              <button id="filter-reset" class="btn btn-ui waves-effect waves-light" type="button" name="action">Reset to Defaults &#9658;</button>
-            </div>
-            ${this.generateFilterHtml()}
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>`;
-
-  // Composition-based config methods
   getBottomIconConfig(): IBottomIconConfig {
     return {
       elementName: 'filter-menu-icon',
@@ -352,13 +326,156 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     ];
   }
 
-  // Legacy bridge per CLAUDE.md
-  bottomIconCallback = (): void => {
-    this.onBottomIconClick();
-  };
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const cmd = (key: string) => t7e(`plugins.FilterMenuPlugin.commands.${key}` as Parameters<typeof t7e>[0]);
+    const category = cmd('category');
 
-  onBottomIconClick(): void {
-    // Default toggle behavior handled by base class
+    return [
+      // General
+      {
+        id: 'FilterMenuPlugin.open',
+        label: cmd('open'),
+        category,
+        shortcutHint: 'F',
+        callback: () => this.bottomMenuClicked(),
+      },
+      {
+        id: 'FilterMenuPlugin.resetDefaults',
+        label: cmd('resetDefaults'),
+        category,
+        callback: () => this.resetToDefaults(),
+      },
+
+      // Object type toggles
+      {
+        id: 'FilterMenuPlugin.toggleDebris',
+        label: cmd('toggleDebris'),
+        category,
+        callback: () => this.toggleFilter_('debris'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleRocketBodies',
+        label: cmd('toggleRocketBodies'),
+        category,
+        callback: () => this.toggleFilter_('rocketBodies'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleUnknownType',
+        label: cmd('toggleUnknownType'),
+        category,
+        callback: () => this.toggleFilter_('unknownType'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleNotional',
+        label: cmd('toggleNotional'),
+        category,
+        callback: () => this.toggleFilter_('notionalSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleStarlink',
+        label: cmd('toggleStarlink'),
+        category,
+        callback: () => this.toggleFilter_('starlinkSatellites'),
+      },
+
+      // Object type presets
+      {
+        id: 'FilterMenuPlugin.showOnlyPayloads',
+        label: cmd('showOnlyPayloads'),
+        category,
+        callback: () => this.showOnlyPayloads_(),
+      },
+      {
+        id: 'FilterMenuPlugin.hideDebrisAndRocketBodies',
+        label: cmd('hideDebrisAndRocketBodies'),
+        category,
+        callback: () => this.setFilters_({ debris: false, rocketBodies: false }),
+      },
+      {
+        id: 'FilterMenuPlugin.showAllObjectTypes',
+        label: cmd('showAllObjectTypes'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.OBJECT_TYPE_FILTERS_, true),
+      },
+
+      // Orbital regime toggles
+      {
+        id: 'FilterMenuPlugin.toggleLEO',
+        label: cmd('toggleLEO'),
+        category,
+        callback: () => this.toggleFilter_('lEOSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleMEO',
+        label: cmd('toggleMEO'),
+        category,
+        callback: () => this.toggleFilter_('mEOSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleGEO',
+        label: cmd('toggleGEO'),
+        category,
+        callback: () => this.toggleFilter_('gEOSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleHEO',
+        label: cmd('toggleHEO'),
+        category,
+        callback: () => this.toggleFilter_('hEOSatellites'),
+      },
+
+      // Orbital regime presets
+      {
+        id: 'FilterMenuPlugin.showOnlyLEO',
+        label: cmd('showOnlyLEO'),
+        category,
+        callback: () => this.showOnlyInGroup_('lEOSatellites', FilterMenuPlugin.ORBITAL_REGIME_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showOnlyGEO',
+        label: cmd('showOnlyGEO'),
+        category,
+        callback: () => this.showOnlyInGroup_('gEOSatellites', FilterMenuPlugin.ORBITAL_REGIME_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showAllOrbitalRegimes',
+        label: cmd('showAllOrbitalRegimes'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.ORBITAL_REGIME_FILTERS_, true),
+      },
+
+      // Country presets
+      {
+        id: 'FilterMenuPlugin.showOnlyUS',
+        label: cmd('showOnlyUS'),
+        category,
+        callback: () => this.showOnlyInGroup_('unitedStates', FilterMenuPlugin.COUNTRY_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showOnlyRussia',
+        label: cmd('showOnlyRussia'),
+        category,
+        callback: () => this.showOnlyInGroup_('russia', FilterMenuPlugin.COUNTRY_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showOnlyChina',
+        label: cmd('showOnlyChina'),
+        category,
+        callback: () => this.showOnlyInGroup_('china', FilterMenuPlugin.COUNTRY_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showAllCountries',
+        label: cmd('showAllCountries'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.COUNTRY_FILTERS_, true),
+      },
+      {
+        id: 'FilterMenuPlugin.hideAllCountries',
+        label: cmd('hideAllCountries'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.COUNTRY_FILTERS_, false),
+      },
+    ];
   }
 
   private buildSideMenuHtml_(): string {
@@ -403,14 +520,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
             (filter) => {
               filter.id ??= FilterMenuPlugin.generateFilterId_(filter.name);
               filter.checked ??= settingsManager.filter[filter.id] ?? true;
-              filter.tooltip ??= `Disable to hide ${filter.name}`;
-
-              filter.cb ??= (e: Event) => {
-                const checkbox = <HTMLInputElement>e.target;
-
-                settingsManager.filter[filter.id as string] = checkbox.checked;
-                ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
-              };
+              filter.tooltip ??= t7e('plugins.FilterMenuPlugin.defaultTooltip' as Parameters<typeof t7e>[0]).replace('{name}', filter.name);
 
               return html`
             <div class="switch row">
@@ -518,15 +628,10 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
 
     const checkbox = <HTMLInputElement>e.target;
     const filterId = checkbox.id.replace('filter-', '');
-    const filter = FilterMenuPlugin.filters.find((f) => f.id === filterId);
-
-    if (filter?.cb) {
-      filter.cb(e);
-      this.saveSettings_();
-    }
 
     settingsManager.filter[filterId] = checkbox.checked;
-
+    ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
+    this.saveSettings_();
     this.updateFilterUI_();
   }
 
@@ -541,12 +646,76 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       const filterId = checkbox.id.replace('filter-', '');
       const filter = FilterMenuPlugin.filters.find((f) => f.id === filterId);
 
-      if (filter && filter.checked !== checkbox.checked) {
-        allDefault = false;
+      if (filter) {
+        const defaultChecked = filter.checked ?? !filter.disabled;
+
+        if (defaultChecked !== checkbox.checked) {
+          allDefault = false;
+        }
       }
     });
 
     return allDefault;
+  }
+
+  private static readonly OBJECT_TYPE_FILTERS_ = ['payloads', 'rocketBodies', 'debris', 'unknownType', 'notionalSatellites'];
+  private static readonly ORBITAL_REGIME_FILTERS_ = ['vLEOSatellites', 'lEOSatellites', 'mEOSatellites', 'gEOSatellites', 'hEOSatellites', 'xGEOSatellites'];
+  private static readonly COUNTRY_FILTERS_ = [
+    'unitedStates', 'unitedKingdom', 'france', 'germany', 'japan',
+    'china', 'india', 'russia', 'uSSR', 'southKorea', 'australia', 'otherCountries',
+  ];
+
+  private toggleFilter_(filterId: string): void {
+    const checkbox = <HTMLInputElement>getEl(`filter-${filterId}`);
+
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      settingsManager.filter[filterId] = checkbox.checked;
+      ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
+      this.saveSettings_();
+      this.updateFilterUI_();
+    }
+  }
+
+  private setFilters_(settings: Record<string, boolean>): void {
+    for (const [filterId, checked] of Object.entries(settings)) {
+      const checkbox = <HTMLInputElement>getEl(`filter-${filterId}`);
+
+      if (checkbox && !checkbox.disabled) {
+        checkbox.checked = checked;
+        settingsManager.filter[filterId] = checked;
+      }
+    }
+    ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+    this.saveSettings_();
+    this.updateFilterUI_();
+  }
+
+  private showOnlyInGroup_(targetId: string, groupIds: string[]): void {
+    const settings: Record<string, boolean> = {};
+
+    for (const id of groupIds) {
+      settings[id] = id === targetId;
+    }
+    this.setFilters_(settings);
+  }
+
+  private enableGroup_(groupIds: string[], enabled: boolean): void {
+    const settings: Record<string, boolean> = {};
+
+    for (const id of groupIds) {
+      settings[id] = enabled;
+    }
+    this.setFilters_(settings);
+  }
+
+  private showOnlyPayloads_(): void {
+    const settings: Record<string, boolean> = {};
+
+    for (const id of FilterMenuPlugin.OBJECT_TYPE_FILTERS_) {
+      settings[id] = id === 'payloads';
+    }
+    this.setFilters_(settings);
   }
 
   resetToDefaults() {
