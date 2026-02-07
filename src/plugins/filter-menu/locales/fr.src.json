@@ -4,7 +4,33 @@
       "title": "Menu des filtres",
       "bottomIconLabel": "Menu des filtres",
       "helpBody": "Ce menu vous permet de filtrer les objets affichés sur le globe en fonction de leur type, de leur régime orbital et de leur source de données.",
-      "resetToDefaults": "Réinitialiser par défaut"
+      "resetToDefaults": "Réinitialiser par défaut",
+      "defaultTooltip": "Désactiver pour masquer {name}",
+      "commands": {
+        "category": "Filtres",
+        "open": "Ouvrir le menu des filtres",
+        "resetDefaults": "Réinitialiser les filtres par défaut",
+        "toggleDebris": "Basculer la visibilité des débris",
+        "toggleRocketBodies": "Basculer la visibilité des étages de fusée",
+        "toggleUnknownType": "Basculer la visibilité du type inconnu",
+        "toggleNotional": "Basculer la visibilité des satellites notionnels",
+        "toggleStarlink": "Basculer la visibilité de Starlink",
+        "showOnlyPayloads": "Afficher uniquement les charges utiles",
+        "hideDebrisAndRocketBodies": "Masquer les débris et étages de fusée",
+        "showAllObjectTypes": "Afficher tous les types d'objets",
+        "toggleLEO": "Basculer la visibilité LEO",
+        "toggleMEO": "Basculer la visibilité MEO",
+        "toggleGEO": "Basculer la visibilité GEO",
+        "toggleHEO": "Basculer la visibilité HEO",
+        "showOnlyLEO": "Afficher uniquement les satellites LEO",
+        "showOnlyGEO": "Afficher uniquement les satellites GEO",
+        "showAllOrbitalRegimes": "Afficher tous les régimes orbitaux",
+        "showOnlyUS": "Afficher uniquement les objets américains",
+        "showOnlyRussia": "Afficher uniquement les objets russes",
+        "showOnlyChina": "Afficher uniquement les objets chinois",
+        "showAllCountries": "Afficher tous les pays",
+        "hideAllCountries": "Masquer tous les pays"
+      }
     }
   },
   "filterMenu": {

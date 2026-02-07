@@ -4,7 +4,33 @@
       "title": "Меню фільтрів",
       "bottomIconLabel": "Меню фільтрів",
       "helpBody": "Це меню дозволяє фільтрувати об'єкти, відображені на глобусі, за типом, орбітальним режимом та джерелом даних.",
-      "resetToDefaults": "Скинути за замовчуванням"
+      "resetToDefaults": "Скинути за замовчуванням",
+      "defaultTooltip": "Вимкніть, щоб приховати {name}",
+      "commands": {
+        "category": "Фільтри",
+        "open": "Відкрити меню фільтрів",
+        "resetDefaults": "Скинути фільтри за замовчуванням",
+        "toggleDebris": "Перемкнути видимість уламків",
+        "toggleRocketBodies": "Перемкнути видимість ракетних ступенів",
+        "toggleUnknownType": "Перемкнути видимість невідомого типу",
+        "toggleNotional": "Перемкнути видимість умовних супутників",
+        "toggleStarlink": "Перемкнути видимість Starlink",
+        "showOnlyPayloads": "Показати лише корисне навантаження",
+        "hideDebrisAndRocketBodies": "Приховати уламки та ракетні ступені",
+        "showAllObjectTypes": "Показати всі типи об'єктів",
+        "toggleLEO": "Перемкнути видимість LEO",
+        "toggleMEO": "Перемкнути видимість MEO",
+        "toggleGEO": "Перемкнути видимість GEO",
+        "toggleHEO": "Перемкнути видимість HEO",
+        "showOnlyLEO": "Показати лише супутники LEO",
+        "showOnlyGEO": "Показати лише супутники GEO",
+        "showAllOrbitalRegimes": "Показати всі орбітальні режими",
+        "showOnlyUS": "Показати лише об'єкти США",
+        "showOnlyRussia": "Показати лише російські об'єкти",
+        "showOnlyChina": "Показати лише китайські об'єкти",
+        "showAllCountries": "Показати всі країни",
+        "hideAllCountries": "Приховати всі країни"
+      }
     }
   },
   "filterMenu": {

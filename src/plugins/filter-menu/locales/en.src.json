@@ -4,7 +4,33 @@
       "title": "Filter Menu",
       "bottomIconLabel": "Filter Menu",
       "helpBody": "This menu allows you to filter the objects displayed on the globe based on their type, orbital regime, and data source.",
-      "resetToDefaults": "Reset to Defaults"
+      "resetToDefaults": "Reset to Defaults",
+      "defaultTooltip": "Disable to hide {name}",
+      "commands": {
+        "category": "Filters",
+        "open": "Open Filter Menu",
+        "resetDefaults": "Reset Filters to Defaults",
+        "toggleDebris": "Toggle Debris Visibility",
+        "toggleRocketBodies": "Toggle Rocket Bodies Visibility",
+        "toggleUnknownType": "Toggle Unknown Type Visibility",
+        "toggleNotional": "Toggle Notional Satellites Visibility",
+        "toggleStarlink": "Toggle Starlink Visibility",
+        "showOnlyPayloads": "Show Only Payloads",
+        "hideDebrisAndRocketBodies": "Hide Debris and Rocket Bodies",
+        "showAllObjectTypes": "Show All Object Types",
+        "toggleLEO": "Toggle LEO Visibility",
+        "toggleMEO": "Toggle MEO Visibility",
+        "toggleGEO": "Toggle GEO Visibility",
+        "toggleHEO": "Toggle HEO Visibility",
+        "showOnlyLEO": "Show Only LEO Satellites",
+        "showOnlyGEO": "Show Only GEO Satellites",
+        "showAllOrbitalRegimes": "Show All Orbital Regimes",
+        "showOnlyUS": "Show Only US Objects",
+        "showOnlyRussia": "Show Only Russian Objects",
+        "showOnlyChina": "Show Only Chinese Objects",
+        "showAllCountries": "Show All Countries",
+        "hideAllCountries": "Hide All Countries"
+      }
     }
   },
   "filterMenu": {

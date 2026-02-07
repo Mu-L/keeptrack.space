@@ -4,7 +4,33 @@
       "title": "Filtermenü",
       "bottomIconLabel": "Filtermenü",
       "helpBody": "Dieses Menü ermöglicht es Ihnen, die auf dem Globus angezeigten Objekte nach Typ, orbitalen Bereichen und Datenquellen zu filtern.",
-      "resetToDefaults": "Auf Standard zurücksetzen"
+      "resetToDefaults": "Auf Standard zurücksetzen",
+      "defaultTooltip": "Deaktivieren, um {name} auszublenden",
+      "commands": {
+        "category": "Filter",
+        "open": "Filtermenü öffnen",
+        "resetDefaults": "Filter auf Standardwerte zurücksetzen",
+        "toggleDebris": "Trümmer ein-/ausblenden",
+        "toggleRocketBodies": "Raketenstufen ein-/ausblenden",
+        "toggleUnknownType": "Unbekannten Typ ein-/ausblenden",
+        "toggleNotional": "Konzeptionelle Satelliten ein-/ausblenden",
+        "toggleStarlink": "Starlink ein-/ausblenden",
+        "showOnlyPayloads": "Nur Nutzlasten anzeigen",
+        "hideDebrisAndRocketBodies": "Trümmer und Raketenstufen ausblenden",
+        "showAllObjectTypes": "Alle Objekttypen anzeigen",
+        "toggleLEO": "LEO ein-/ausblenden",
+        "toggleMEO": "MEO ein-/ausblenden",
+        "toggleGEO": "GEO ein-/ausblenden",
+        "toggleHEO": "HEO ein-/ausblenden",
+        "showOnlyLEO": "Nur LEO-Satelliten anzeigen",
+        "showOnlyGEO": "Nur GEO-Satelliten anzeigen",
+        "showAllOrbitalRegimes": "Alle orbitalen Bereiche anzeigen",
+        "showOnlyUS": "Nur US-Objekte anzeigen",
+        "showOnlyRussia": "Nur russische Objekte anzeigen",
+        "showOnlyChina": "Nur chinesische Objekte anzeigen",
+        "showAllCountries": "Alle Länder anzeigen",
+        "hideAllCountries": "Alle Länder ausblenden"
+      }
     }
   },
   "filterMenu": {

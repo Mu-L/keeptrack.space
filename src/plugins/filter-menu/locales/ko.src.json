@@ -4,7 +4,33 @@
       "title": "필터 메뉴",
       "bottomIconLabel": "필터 메뉴",
       "helpBody": "이 메뉴에서는 객체 유형, 궤도 영역 및 데이터 출처에 따라 지구본에 표시되는 객체를 필터링할 수 있습니다.",
-      "resetToDefaults": "기본값으로 재설정"
+      "resetToDefaults": "기본값으로 재설정",
+      "defaultTooltip": "{name} 숨기려면 비활성화",
+      "commands": {
+        "category": "필터",
+        "open": "필터 메뉴 열기",
+        "resetDefaults": "필터를 기본값으로 재설정",
+        "toggleDebris": "파편 표시 전환",
+        "toggleRocketBodies": "로켓 본체 표시 전환",
+        "toggleUnknownType": "알 수 없는 유형 표시 전환",
+        "toggleNotional": "가상 위성 표시 전환",
+        "toggleStarlink": "스타링크 표시 전환",
+        "showOnlyPayloads": "페이로드만 표시",
+        "hideDebrisAndRocketBodies": "파편 및 로켓 본체 숨기기",
+        "showAllObjectTypes": "모든 객체 유형 표시",
+        "toggleLEO": "LEO 표시 전환",
+        "toggleMEO": "MEO 표시 전환",
+        "toggleGEO": "GEO 표시 전환",
+        "toggleHEO": "HEO 표시 전환",
+        "showOnlyLEO": "LEO 위성만 표시",
+        "showOnlyGEO": "GEO 위성만 표시",
+        "showAllOrbitalRegimes": "모든 궤도 영역 표시",
+        "showOnlyUS": "미국 객체만 표시",
+        "showOnlyRussia": "러시아 객체만 표시",
+        "showOnlyChina": "중국 객체만 표시",
+        "showAllCountries": "모든 국가 표시",
+        "hideAllCountries": "모든 국가 숨기기"
+      }
     }
   },
   "filterMenu": {

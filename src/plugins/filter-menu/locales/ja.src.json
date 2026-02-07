@@ -4,7 +4,33 @@
       "title": "フィルタメニュー",
       "bottomIconLabel": "フィルタメニュー",
       "helpBody": "このメニューでは、種類、軌道領域、データソースに基づいて地球儀に表示されるオブジェクトをフィルタリングできます。",
-      "resetToDefaults": "デフォルトにリセット"
+      "resetToDefaults": "デフォルトにリセット",
+      "defaultTooltip": "{name}を非表示にするには無効にします",
+      "commands": {
+        "category": "フィルタ",
+        "open": "フィルタメニューを開く",
+        "resetDefaults": "フィルタをデフォルトにリセット",
+        "toggleDebris": "デブリの表示切替",
+        "toggleRocketBodies": "ロケット本体の表示切替",
+        "toggleUnknownType": "不明なタイプの表示切替",
+        "toggleNotional": "仮想衛星の表示切替",
+        "toggleStarlink": "スターリンクの表示切替",
+        "showOnlyPayloads": "ペイロードのみ表示",
+        "hideDebrisAndRocketBodies": "デブリとロケット本体を非表示",
+        "showAllObjectTypes": "すべてのオブジェクトタイプを表示",
+        "toggleLEO": "LEOの表示切替",
+        "toggleMEO": "MEOの表示切替",
+        "toggleGEO": "GEOの表示切替",
+        "toggleHEO": "HEOの表示切替",
+        "showOnlyLEO": "LEO衛星のみ表示",
+        "showOnlyGEO": "GEO衛星のみ表示",
+        "showAllOrbitalRegimes": "すべての軌道領域を表示",
+        "showOnlyUS": "米国のオブジェクトのみ表示",
+        "showOnlyRussia": "ロシアのオブジェクトのみ表示",
+        "showOnlyChina": "中国のオブジェクトのみ表示",
+        "showAllCountries": "すべての国を表示",
+        "hideAllCountries": "すべての国を非表示"
+      }
     }
   },
   "filterMenu": {

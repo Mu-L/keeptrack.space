@@ -4,7 +4,33 @@
       "title": "Меню фильтров",
       "bottomIconLabel": "Меню фильтров",
       "helpBody": "Это меню позволяет фильтровать объекты, отображаемые на глобусе, по их типу, орбитальному режиму и источнику данных.",
-      "resetToDefaults": "Сбросить по умолчанию"
+      "resetToDefaults": "Сбросить по умолчанию",
+      "defaultTooltip": "Отключите, чтобы скрыть {name}",
+      "commands": {
+        "category": "Фильтры",
+        "open": "Открыть меню фильтров",
+        "resetDefaults": "Сбросить фильтры по умолчанию",
+        "toggleDebris": "Переключить видимость обломков",
+        "toggleRocketBodies": "Переключить видимость ракетных ступеней",
+        "toggleUnknownType": "Переключить видимость неизвестного типа",
+        "toggleNotional": "Переключить видимость проектируемых спутников",
+        "toggleStarlink": "Переключить видимость Starlink",
+        "showOnlyPayloads": "Показать только полезные нагрузки",
+        "hideDebrisAndRocketBodies": "Скрыть обломки и ракетные ступени",
+        "showAllObjectTypes": "Показать все типы объектов",
+        "toggleLEO": "Переключить видимость LEO",
+        "toggleMEO": "Переключить видимость MEO",
+        "toggleGEO": "Переключить видимость GEO",
+        "toggleHEO": "Переключить видимость HEO",
+        "showOnlyLEO": "Показать только спутники LEO",
+        "showOnlyGEO": "Показать только спутники GEO",
+        "showAllOrbitalRegimes": "Показать все орбитальные режимы",
+        "showOnlyUS": "Показать только объекты США",
+        "showOnlyRussia": "Показать только российские объекты",
+        "showOnlyChina": "Показать только китайские объекты",
+        "showAllCountries": "Показать все страны",
+        "hideAllCountries": "Скрыть все страны"
+      }
     }
   },
   "filterMenu": {

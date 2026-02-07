@@ -4,7 +4,33 @@
       "title": "过滤菜单",
       "bottomIconLabel": "过滤菜单",
       "helpBody": "此菜单允许您根据对象的类型、轨道类型和数据来源筛选地球仪上显示的对象。",
-      "resetToDefaults": "重置为默认值"
+      "resetToDefaults": "重置为默认值",
+      "defaultTooltip": "关闭以隐藏{name}",
+      "commands": {
+        "category": "过滤器",
+        "open": "打开过滤菜单",
+        "resetDefaults": "重置过滤器为默认值",
+        "toggleDebris": "切换碎片可见性",
+        "toggleRocketBodies": "切换火箭体可见性",
+        "toggleUnknownType": "切换未知类型可见性",
+        "toggleNotional": "切换概念卫星可见性",
+        "toggleStarlink": "切换星链可见性",
+        "showOnlyPayloads": "仅显示载荷",
+        "hideDebrisAndRocketBodies": "隐藏碎片和火箭体",
+        "showAllObjectTypes": "显示所有对象类型",
+        "toggleLEO": "切换低轨可见性",
+        "toggleMEO": "切换中轨可见性",
+        "toggleGEO": "切换地球同步轨道可见性",
+        "toggleHEO": "切换高椭圆轨道可见性",
+        "showOnlyLEO": "仅显示低轨卫星",
+        "showOnlyGEO": "仅显示地球同步轨道卫星",
+        "showAllOrbitalRegimes": "显示所有轨道类型",
+        "showOnlyUS": "仅显示美国对象",
+        "showOnlyRussia": "仅显示俄罗斯对象",
+        "showOnlyChina": "仅显示中国对象",
+        "showAllCountries": "显示所有国家",
+        "hideAllCountries": "隐藏所有国家"
+      }
     }
   },
   "filterMenu": {
