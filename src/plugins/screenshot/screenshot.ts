@@ -29,6 +29,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
+import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
 import cameraPng from '@public/img/icons/camera.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { KeepTrack } from '@app/keeptrack';
@@ -102,6 +103,29 @@ export class Screenshot extends KeepTrackPlugin {
       <li id="save-8k-rmb"><a href="#">8K (7680 x 4320)</a></li>
     </ul>
   `;
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    return [
+      {
+        id: 'Screenshot.take4k',
+        label: 'Take Screenshot (4K)',
+        category: 'Export',
+        callback: () => this.saveHiResPhoto('4k'),
+      },
+      {
+        id: 'Screenshot.takeHd',
+        label: 'Take Screenshot (HD)',
+        category: 'Export',
+        callback: () => this.saveHiResPhoto('hd'),
+      },
+      {
+        id: 'Screenshot.take8k',
+        label: 'Take Screenshot (8K)',
+        category: 'Export',
+        callback: () => this.saveHiResPhoto('8k'),
+      },
+    ];
+  }
 
   saveHiResPhoto = (resolution: string) => {
     switch (resolution) {

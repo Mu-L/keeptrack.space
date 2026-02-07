@@ -1,7 +1,7 @@
 import { MenuMode } from '@app/engine/core/interfaces';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { IBottomIconConfig } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { t7e } from '@app/locales/keys';
 import videocamPng from '@public/img/icons/videocam.png';
@@ -28,6 +28,17 @@ export class ScreenRecorder extends KeepTrackPlugin {
       image: videocamPng,
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
     };
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    return [
+      {
+        id: 'ScreenRecorder.toggle',
+        label: 'Toggle Screen Recording',
+        category: 'Export',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
   }
 
   onBottomIconClick(): void {

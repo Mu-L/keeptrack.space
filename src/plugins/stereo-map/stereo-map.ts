@@ -57,6 +57,7 @@ import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { BaseObject, Degrees, Satellite, Kilometers, LlaVec3, calcGmst, eci2lla, TemeVec3 } from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { SoundNames } from '@app/engine/audio/sounds';
@@ -93,6 +94,19 @@ export class StereoMap extends KeepTrackPlugin {
   menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
 
   bottomIconImg = mapPng;
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    return [
+      {
+        id: 'StereoMap.toggle',
+        label: 'Toggle Stereo Map',
+        category: 'Display',
+        shortcutHint: 'M',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
   bottomIconCallback: () => void = () => {
     if (!this.isMenuButtonActive) {
       return;
