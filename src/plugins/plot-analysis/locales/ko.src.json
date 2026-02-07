@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "경사각 대 고도 플롯",
+      "title": "경사각-고도 플롯 메뉴",
+      "helpBody": "경사각-고도 플롯 메뉴는 위성의 경사각을 고도에 대해 플롯하는 데 사용됩니다.",
+      "labels": {
+        "totalLeoPayloads": "총 LEO 페이로드"
+      }
+    }
+  }
+}

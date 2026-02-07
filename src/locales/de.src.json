@@ -323,11 +323,6 @@
       "title": "Breitengrad-zu-Längengrad-Diagramm-Menü",
       "helpBody": "Das Breitengrad-zu-Längengrad-Diagramm-Menü wird verwendet, um den Breitengrad gegen den Längengrad im GEO-Gürtel darzustellen."
     },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "Ink vs Höhe-Diagramm",
-      "title": "Inklination-zu-Höhe-Diagramm-Menü",
-      "helpBody": "Das Inklination-zu-Höhe-Diagramm-Menü wird verwendet, um die Inklination des Satelliten gegen seine Höhe darzustellen."
-    },
     "Inc2LonPlots": {
       "bottomIconLabel": "Ink vs Lon-Diagramm",
       "title": "Inklination-zu-Längengrad-Diagramm-Menü",

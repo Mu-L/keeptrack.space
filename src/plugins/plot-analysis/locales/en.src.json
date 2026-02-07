@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "Inc vs Alt Plot",
+      "title": "Inclination to Altitude Plot Menu",
+      "helpBody": "The Inclination to Altitude Plot Menu is used to plot the satellite's inclination against its altitude.",
+      "labels": {
+        "totalLeoPayloads": "Total LEO Payloads"
+      }
+    }
+  }
+}

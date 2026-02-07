@@ -320,11 +320,6 @@
       "title": "Menu Latitude vs Longitude",
       "helpBody": "Le menu Latitude vs Longitude permet de tracer la latitude en fonction de la longitude dans la ceinture GEO."
     },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "Trace Inc vs Alt",
-      "title": "Menu Inclinaison vs Altitude",
-      "helpBody": "Le menu Inclinaison vs Altitude permet de tracer l'inclinaison du satellite en fonction de son altitude."
-    },
     "Inc2LonPlots": {
       "bottomIconLabel": "Trace Inc vs Lon",
       "title": "Menu Inclinaison vs Longitude",

@@ -320,11 +320,6 @@
       "title": "Latitude to Longitude Plot Menu",
       "helpBody": "The Latitude vs Longitude Plot Menu is used for plotting the latitude vs longitude in the GEO belt."
     },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "Inc vs Alt Plot",
-      "title": "Inclination to Altitude Plot Menu",
-      "helpBody": "The Inclination to Altitude Plot Menu is used to plot the satellite's inclination against its altitude."
-    },
     "Inc2LonPlots": {
       "bottomIconLabel": "Inc Vs Lon Plot",
       "title": "Inclination to Longitude Plot Menu",

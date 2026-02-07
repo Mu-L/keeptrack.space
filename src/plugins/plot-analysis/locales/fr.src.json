@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "Trace Inc vs Alt",
+      "title": "Menu Inclinaison vs Altitude",
+      "helpBody": "Le menu Inclinaison vs Altitude permet de tracer l'inclinaison du satellite en fonction de son altitude.",
+      "labels": {
+        "totalLeoPayloads": "Total des charges utiles LEO"
+      }
+    }
+  }
+}

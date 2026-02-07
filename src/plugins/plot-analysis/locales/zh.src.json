@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "倾角-高度图",
+      "title": "倾角-高度绘图菜单",
+      "helpBody": "倾角-高度绘图菜单用于绘制卫星倾角与高度的关系。",
+      "labels": {
+        "totalLeoPayloads": "LEO有效载荷总数"
+      }
+    }
+  }
+}

@@ -351,11 +351,6 @@
       "title": "纬度-经度绘图菜单",
       "helpBody": "纬度-经度绘图菜单用于绘制GEO带内的纬度与经度关系。"
     },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "倾角-高度图",
-      "title": "倾角-高度绘图菜单",
-      "helpBody": "倾角-高度绘图菜单用于绘制卫星倾角与高度的关系。"
-    },
     "Inc2LonPlots": {
       "bottomIconLabel": "倾角-经度图",
       "title": "倾角-经度绘图菜单",

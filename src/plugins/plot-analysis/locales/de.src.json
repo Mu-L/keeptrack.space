@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "Ink vs Höhe-Diagramm",
+      "title": "Inklination-zu-Höhe-Diagramm-Menü",
+      "helpBody": "Das Inklination-zu-Höhe-Diagramm-Menü wird verwendet, um die Inklination des Satelliten gegen seine Höhe darzustellen.",
+      "labels": {
+        "totalLeoPayloads": "Gesamtzahl LEO-Nutzlasten"
+      }
+    }
+  }
+}

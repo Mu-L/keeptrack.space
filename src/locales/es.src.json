@@ -320,11 +320,6 @@
       "title": "Menú de Gráfico de Latitud a Longitud",
       "helpBody": "El Menú de Gráfico de Latitud vs Longitud se utiliza para graficar la latitud versus la longitud en el cinturón GEO."
     },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "Gráfico Inc vs Alt",
-      "title": "Menú de Gráfico de Inclinación a Altitud",
-      "helpBody": "El Menú de Gráfico de Inclinación a Altitud se utiliza para graficar la inclinación del satélite contra su altitud."
-    },
     "Inc2LonPlots": {
       "bottomIconLabel": "Gráfico Inc vs Lon",
       "title": "Menú de Gráfico de Inclinación a Longitud",

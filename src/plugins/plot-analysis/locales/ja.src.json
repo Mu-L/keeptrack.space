@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "傾斜角-高度プロット",
+      "title": "傾斜角-高度プロットメニュー",
+      "helpBody": "傾斜角-高度プロットメニューは、衛星の傾斜角を高度に対してプロットするために使用されます。",
+      "labels": {
+        "totalLeoPayloads": "LEOペイロード合計"
+      }
+    }
+  }
+}

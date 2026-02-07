@@ -1,0 +1,12 @@
+{
+  "plugins": {
+    "Inc2AltPlots": {
+      "bottomIconLabel": "Gráfico Inc vs Alt",
+      "title": "Menú de Gráfico de Inclinación a Altitud",
+      "helpBody": "El Menú de Gráfico de Inclinación a Altitud se utiliza para graficar la inclinación del satélite contra su altitud.",
+      "labels": {
+        "totalLeoPayloads": "Total de Cargas Útiles LEO"
+      }
+    }
+  }
+}
