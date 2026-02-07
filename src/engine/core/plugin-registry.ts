@@ -6,6 +6,13 @@ export class PluginRegistry {
 
   loadedPlugins = <KeepTrackPlugin[]>[];
 
+  /**
+   * Gets the list of all loaded plugins.
+   */
+  static get plugins(): readonly KeepTrackPlugin[] {
+    return this.instance_.loadedPlugins;
+  }
+
   /** Method for unregistering all plugins during testing */
   static unregisterAllPlugins() {
     this.instance_.loadedPlugins = [];

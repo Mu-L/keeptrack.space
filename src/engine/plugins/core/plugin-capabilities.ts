@@ -507,6 +507,68 @@ export function hasKeyboardShortcuts(plugin: unknown): plugin is IKeyboardShortc
   return typeof plugin === 'object' && plugin !== null && 'getKeyboardShortcuts' in plugin;
 }
 
+// ============================================================================
+// Command Palette Capability
+// ============================================================================
+
+/**
+ * A command that can be registered in the command palette.
+ */
+export interface ICommandPaletteCommand {
+  /**
+   * Unique identifier for this command.
+   * Convention: 'PluginId.commandName' (e.g., 'NightToggle.toggle')
+   */
+  id: string;
+
+  /**
+   * Human-readable label displayed in the palette.
+   * @example 'Toggle Night Mode'
+   */
+  label: string;
+
+  /**
+   * Optional category for organizing commands.
+   * @example 'Display', 'Sensors', 'Analysis'
+   */
+  category?: string;
+
+  /**
+   * Optional keyboard shortcut hint displayed alongside the command.
+   * This is purely informational — it does not register the shortcut.
+   * @example 'N', 'Ctrl+Shift+F'
+   */
+  shortcutHint?: string;
+
+  /**
+   * Callback invoked when the command is selected.
+   */
+  callback: () => void;
+
+  /**
+   * Optional predicate returning false to hide this command when conditions
+   * are not met (e.g., sensor not selected). Defaults to always visible.
+   */
+  isAvailable?: () => boolean;
+}
+
+/**
+ * Interface for plugins that register commands in the command palette.
+ */
+export interface ICommandPaletteCapable {
+  /**
+   * Get the list of commands this plugin exposes to the command palette.
+   */
+  getCommandPaletteCommands(): ICommandPaletteCommand[];
+}
+
+/**
+ * Type guard to check if a plugin has command palette capability.
+ */
+export function hasCommandPaletteCommands(plugin: unknown): plugin is ICommandPaletteCapable {
+  return typeof plugin === 'object' && plugin !== null && 'getCommandPaletteCommands' in plugin;
+}
+
 /**
  * Type guard to check if a plugin requires a sensor.
  */

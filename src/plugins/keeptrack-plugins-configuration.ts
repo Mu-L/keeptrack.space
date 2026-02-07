@@ -105,4 +105,5 @@ export type KeepTrackPluginsConfiguration = {
   EclipseSolarAnalysis?: PluginConfiguration;
   SymbologyPlugin?: PluginConfiguration;
   SatInfoBoxSponsor?: PluginConfiguration;
+  CommandPalettePlugin?: PluginConfiguration;
 };

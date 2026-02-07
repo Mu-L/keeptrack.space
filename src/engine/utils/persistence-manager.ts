@@ -73,6 +73,9 @@ export enum StorageKey {
   SYMBOLOGY_CONFIG = 'v2-symbology-config',
   SYMBOLOGY_ENABLED = 'v2-symbology-enabled',
 
+  // Command Palette
+  COMMAND_PALETTE_RECENT = 'v2-command-palette-recent',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
