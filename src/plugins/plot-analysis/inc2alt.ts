@@ -1,15 +1,23 @@
-import { EChartsData, GetSatType, MenuMode } from '@app/engine/core/interfaces';
+import { GetSatType, MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ISideMenuConfig } from '@app/engine/plugins/core/plugin-capabilities';
+import {
+  IBottomIconConfig,
+  IDragOptions,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
 import { Satellite, SpaceObjectType } from '@ootk/src/main';
 import waterfall2Png from '@public/img/icons/waterfall2.png';
 import * as echarts from 'echarts';
 import 'echarts-gl';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
+import './inc2alt.css';
 
 // Constellation detection patterns
 const CONSTELLATION_PATTERNS: { name: string; regex: RegExp }[] = [
@@ -35,6 +43,14 @@ const detectConstellation = (name: string): string => {
   return 'Other';
 };
 
+/** Extended data tuple: [inclination, altitude, period, name, id, raan, eccentricity, country] */
+type Inc2AltDataItem = [number, number, number, string, number, number, number, string];
+
+interface Inc2AltConstellationData {
+  name: string;
+  value: Inc2AltDataItem[];
+}
+
 export class Inc2AltPlots extends KeepTrackPlugin {
   readonly id = 'Inc2AltPlots';
   dependencies_: string[] = [SelectSatManager.name];
@@ -50,7 +66,8 @@ export class Inc2AltPlots extends KeepTrackPlugin {
   // =========================================================================
 
   private readonly plotCanvasId_ = 'plot-analysis-chart-inc2alt';
-  chart: echarts.ECharts;
+  chart: echarts.ECharts | null = null;
+  private resizeHandler_: (() => void) | null = null;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -59,7 +76,7 @@ export class Inc2AltPlots extends KeepTrackPlugin {
   getBottomIconConfig(): IBottomIconConfig {
     return {
       elementName: 'inc2alt-plots-icon',
-      label: 'Inc vs Alt',
+      label: t7e('plugins.Inc2AltPlots.bottomIconLabel'),
       image: waterfall2Png,
       menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
     };
@@ -68,20 +85,48 @@ export class Inc2AltPlots extends KeepTrackPlugin {
   getSideMenuConfig(): ISideMenuConfig {
     return {
       elementName: 'inc2alt-plots-menu',
-      title: 'Inclination vs Altitude',
+      title: t7e('plugins.Inc2AltPlots.title'),
       html: this.buildSideMenuHtml_(),
+      dragOptions: this.getDragOptions_(),
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.Inc2AltPlots.title'),
+      body: t7e('plugins.Inc2AltPlots.helpBody'),
+    };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'I',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
+  private getDragOptions_(): IDragOptions {
+    return {
+      isDraggable: true,
+      minWidth: 650,
+      maxWidth: 1200,
+      onResizeComplete: () => {
+        this.chart?.resize();
+      },
     };
   }
 
   private buildSideMenuHtml_(): string {
     return html`
       <div id="inc2alt-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal plot-analysis-menu-maximized">
-        <div id="plot-analysis-content" class="side-menu" style="height: 80%; position: relative !important;">
+        <div id="plot-analysis-content" class="side-menu">
           <div id="${this.plotCanvasId_}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
         </div>
-        <div id="inc2alt-stats" style="padding: 10px; color: #fff; font-size: 12px;">
-          <div id="inc2alt-total-count">Total LEO Payloads: --</div>
-          <div id="inc2alt-constellation-counts" style="margin-top: 5px;"></div>
+        <div id="inc2alt-stats">
+          <div id="inc2alt-total-count">--</div>
+          <div id="inc2alt-constellation-counts"></div>
         </div>
       </div>
     `;
@@ -102,7 +147,18 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     this.updateStatistics_(plotData);
   }
 
-  private updateStatistics_(data: EChartsData): void {
+  onBottomIconDeselect(): void {
+    if (this.resizeHandler_) {
+      window.removeEventListener('resize', this.resizeHandler_);
+      this.resizeHandler_ = null;
+    }
+    if (this.chart) {
+      echarts.dispose(this.chart);
+      this.chart = null;
+    }
+  }
+
+  private updateStatistics_(data: Inc2AltConstellationData[]): void {
     const totalEl = getEl('inc2alt-total-count');
     const countsEl = getEl('inc2alt-constellation-counts');
 
@@ -127,14 +183,19 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     counts.sort((a, b) => b.count - a.count);
 
     // Update total
-    totalEl.textContent = `Total LEO Payloads: ${total}`;
+    totalEl.textContent = `${t7e('plugins.Inc2AltPlots.labels.totalLeoPayloads' as Parameters<typeof t7e>[0])}: ${total}`;
 
-    // Update constellation breakdown
-    const countsHtml = counts
-      .map((c) => `<span style="margin-right: 10px;"><b>${c.name}:</b> ${c.count}</span>`)
-      .join('');
+    // Update constellation breakdown using DOM API
+    countsEl.textContent = '';
+    counts.forEach((c) => {
+      const span = document.createElement('span');
+      const bold = document.createElement('b');
 
-    countsEl.innerHTML = countsHtml;
+      bold.textContent = `${c.name}:`;
+      span.appendChild(bold);
+      span.appendChild(document.createTextNode(` ${c.count}`));
+      countsEl.appendChild(span);
+    });
   }
 
   // Bridge for legacy event system
@@ -146,26 +207,31 @@ export class Inc2AltPlots extends KeepTrackPlugin {
   // Lifecycle methods
   // =========================================================================
 
-  addHtml(): void {
-    super.addHtml();
-  }
-
-  createPlot(data: EChartsData, chartDom: HTMLElement) {
+  createPlot(data: Inc2AltConstellationData[], chartDom: HTMLElement) {
     // Dont Load Anything if the Chart is Closed
     if (!this.isMenuButtonActive) {
       return;
     }
 
     // Delete any old charts and start fresh
-    if (!this.chart) {
-      // Setup Configuration
-      this.chart = echarts.init(chartDom);
-      this.chart.on('click', (event) => {
-        if ((event.data as unknown as { id: string })?.id) {
-          this.selectSatManager_.selectSat((event.data as unknown as { id: number })?.id);
-        }
-      });
+    if (this.chart) {
+      echarts.dispose(this.chart);
     }
+    this.chart = echarts.init(chartDom);
+    this.chart.on('click', (event) => {
+      const eventData = event.data as { id?: number };
+
+      if (eventData?.id) {
+        this.selectSatManager_.selectSat(eventData.id);
+      }
+    });
+
+    // Setup resize handler
+    if (this.resizeHandler_) {
+      window.removeEventListener('resize', this.resizeHandler_);
+    }
+    this.resizeHandler_ = () => this.chart?.resize();
+    window.addEventListener('resize', this.resizeHandler_);
 
     // Setup Chart - use notMerge to ensure colors reset properly on reopen
     this.chart.setOption({
@@ -296,20 +362,15 @@ export class Inc2AltPlots extends KeepTrackPlugin {
       series: data.map((group) => ({
         type: 'scatter',
         name: group.name,
-        data: group.value?.map((item) => {
-          const extItem = item as unknown as [number, number, number, string, number, number, number, string];
-
-          return {
-            name: extItem[3],
-            id: extItem[4],
-            value: [extItem[1], extItem[0], extItem[2]],
-            // Extra data for enhanced tooltips
-            raan: extItem[5],
-            ecc: extItem[6],
-            country: extItem[7],
-            constellation: group.name,
-          };
-        }),
+        data: group.value?.map((item) => ({
+          name: item[3],
+          id: item[4],
+          value: [item[1], item[0], item[2]],
+          raan: item[5],
+          ecc: item[6],
+          country: item[7],
+          constellation: group.name,
+        })),
         symbolSize: 12,
         itemStyle: {
           borderWidth: 1,
@@ -324,9 +385,9 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     }, true);
   }
 
-  static getPlotData(): EChartsData {
+  static getPlotData(): Inc2AltConstellationData[] {
     // Group by constellation instead of country
-    const constellations: Record<string, [number, number, number, string, number][]> = {
+    const constellations: Record<string, Inc2AltDataItem[]> = {
       Starlink: [],
       OneWeb: [],
       Iridium: [],
@@ -337,7 +398,10 @@ export class Inc2AltPlots extends KeepTrackPlugin {
       Other: [],
     };
 
-    ServiceLocator.getCatalogManager().objectCache.forEach((obj) => {
+    const catalogManager = ServiceLocator.getCatalogManager();
+    const now = ServiceLocator.getTimeManager().simulationTimeObj;
+
+    catalogManager.objectCache.forEach((obj) => {
       if (obj.type !== SpaceObjectType.PAYLOAD) {
         return;
       }
@@ -348,8 +412,7 @@ export class Inc2AltPlots extends KeepTrackPlugin {
         return;
       }
 
-      sat = ServiceLocator.getCatalogManager().getSat(sat.id, GetSatType.POSITION_ONLY)!;
-      const now = ServiceLocator.getTimeManager().simulationTimeObj;
+      sat = catalogManager.getSat(sat.id, GetSatType.POSITION_ONLY)!;
 
       const alt = sat.lla(now)?.alt ?? 0;
 
@@ -370,7 +433,7 @@ export class Inc2AltPlots extends KeepTrackPlugin {
         sat.rightAscension,
         sat.eccentricity,
         sat.country,
-      ] as unknown as [number, number, number, string, number]);
+      ]);
     });
 
     // Return constellations with satellites, putting "Other" last
@@ -383,6 +446,6 @@ export class Inc2AltPlots extends KeepTrackPlugin {
       { name: 'Planet', value: constellations.Planet },
       { name: 'Spire', value: constellations.Spire },
       { name: 'Other', value: constellations.Other },
-    ] as unknown as EChartsData;
+    ];
   }
 }
