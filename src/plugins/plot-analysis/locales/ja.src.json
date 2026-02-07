@@ -7,6 +7,14 @@
       "labels": {
         "totalLeoPayloads": "LEOペイロード合計"
       }
+    },
+    "Inc2LonPlots": {
+      "bottomIconLabel": "傾斜角-経度プロット",
+      "title": "傾斜角-経度プロットメニュー",
+      "helpBody": "傾斜角-経度プロットメニューは、GEOベルトにおける傾斜角と経度の関係をプロットするために使用されます。",
+      "labels": {
+        "totalGeoPayloads": "GEOペイロード合計"
+      }
     }
   }
 }

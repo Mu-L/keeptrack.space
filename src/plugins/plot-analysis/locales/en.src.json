@@ -7,6 +7,14 @@
       "labels": {
         "totalLeoPayloads": "Total LEO Payloads"
       }
+    },
+    "Inc2LonPlots": {
+      "bottomIconLabel": "Inc Vs Lon Plot",
+      "title": "Inclination to Longitude Plot Menu",
+      "helpBody": "The Inc Vs Lon Plot Menu is used for plotting the inclination vs longitude in the GEO belt.",
+      "labels": {
+        "totalGeoPayloads": "Total GEO Payloads"
+      }
     }
   }
 }

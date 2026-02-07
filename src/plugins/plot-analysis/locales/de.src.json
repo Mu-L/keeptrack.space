@@ -7,6 +7,14 @@
       "labels": {
         "totalLeoPayloads": "Gesamtzahl LEO-Nutzlasten"
       }
+    },
+    "Inc2LonPlots": {
+      "bottomIconLabel": "Ink vs Län-Diagramm",
+      "title": "Inklination-zu-Längengrad-Diagramm-Menü",
+      "helpBody": "Das Ink-vs-Län-Diagramm-Menü wird verwendet, um die Inklination gegen den Längengrad im GEO-Gürtel darzustellen.",
+      "labels": {
+        "totalGeoPayloads": "Gesamtzahl GEO-Nutzlasten"
+      }
     }
   }
 }

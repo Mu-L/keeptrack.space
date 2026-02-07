@@ -7,6 +7,14 @@
       "labels": {
         "totalLeoPayloads": "총 LEO 페이로드"
       }
+    },
+    "Inc2LonPlots": {
+      "bottomIconLabel": "경사각 대 경도 플롯",
+      "title": "경사각-경도 플롯 메뉴",
+      "helpBody": "경사각-경도 플롯 메뉴는 GEO 벨트에서 경사각 대 경도를 플롯하는 데 사용됩니다.",
+      "labels": {
+        "totalGeoPayloads": "총 GEO 페이로드"
+      }
     }
   }
 }

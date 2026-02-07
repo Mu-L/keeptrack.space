@@ -7,6 +7,14 @@
       "labels": {
         "totalLeoPayloads": "Total de Cargas Útiles LEO"
       }
+    },
+    "Inc2LonPlots": {
+      "bottomIconLabel": "Gráfico Inc vs Lon",
+      "title": "Menú de Gráfico de Inclinación a Longitud",
+      "helpBody": "El menú de Gráfico Inc vs Lon se utiliza para graficar la inclinación contra la longitud en el cinturón GEO.",
+      "labels": {
+        "totalGeoPayloads": "Total de Cargas Útiles GEO"
+      }
     }
   }
 }
