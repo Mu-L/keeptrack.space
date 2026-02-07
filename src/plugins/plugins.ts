@@ -315,6 +315,13 @@ export class PluginManager {
         { init: () => new DrawLinesPlugin().init(), config: plugins.DrawLinesPlugin },
         { init: () => new ViewInfoRmbPlugin().init(), config: plugins.ViewInfoRmbPlugin },
         { init: () => new VcrPlugin().init(), config: plugins.VcrPlugin },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/command-palette/command-palette');
+
+            new proPlugin.CommandPalettePlugin().init();
+          }, config: plugins.CommandPalettePlugin,
+        },
       ];
 
       for (const { init, config } of pluginList) {

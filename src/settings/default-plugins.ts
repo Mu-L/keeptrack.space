@@ -354,4 +354,8 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
   ViewInfoRmbPlugin: {
     enabled: true,
   },
+  // Utility plugins
+  CommandPalettePlugin: {
+    enabled: true,
+  },
 };
