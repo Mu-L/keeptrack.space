@@ -88,7 +88,7 @@
   },
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
-      "text": "Format: <type>: :emoji: <description>"
+      "text": "Format: <type>(<scope>): :emoji: <description>"
     },
     {
       "text": "ALWAYS include the emoji - this is required"
@@ -115,7 +115,6 @@
       "text": "Only add body for breaking changes, complex reasoning, or issue references"
     }
   ],
-  "github.copilot.chat.advanced.inlineEdits.logContextRecorder.enabled": true,
   "github.copilot.enable": {
     "*": true
   },
