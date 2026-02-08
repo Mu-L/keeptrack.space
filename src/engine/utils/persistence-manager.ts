@@ -76,6 +76,9 @@ export enum StorageKey {
   // Command Palette
   COMMAND_PALETTE_RECENT = 'v2-command-palette-recent',
 
+  // Neighborhood Watch
+  NEIGHBORHOOD_WATCH_LIST = 'v2-keepTrack-neighborhoodWatchList',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
