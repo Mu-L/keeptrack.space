@@ -47,7 +47,7 @@
     display: none;
     position: absolute;
     right: 0px;
-    width: 355px;
+    width: 360px;
     background: var(--color-dark-background) !important;
     z-index: 1;
     top: var(--top-menu-height);
