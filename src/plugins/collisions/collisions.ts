@@ -83,8 +83,8 @@ export class Collisions extends KeepTrackPlugin {
   private getDragOptions_(): IDragOptions {
     return {
       isDraggable: true,
-      minWidth: 575,
-      maxWidth: 700,
+      minWidth: 650,
+      maxWidth: 900,
     };
   }
 
