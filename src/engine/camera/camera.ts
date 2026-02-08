@@ -147,6 +147,7 @@ export class Camera {
     this.state.earthCenteredYaw = this.state.camYawTarget; // Use the normalized yaw
     // if (this.earthCenteredYaw_ < 0) this.earthCenteredYaw_ = <Radians>(this.earthCenteredYaw_ + TAU);
     this.state.isAutoPitchYawToTarget = true;
+    this.state.hasPrevSatAngles = false;
   }
 
   changeCameraType(orbitManager: OrbitManager) {
@@ -1030,6 +1031,7 @@ export class Camera {
         this.state.ftsRotateReset = false;
         this.state.ftsPitch = 0;
         this.state.camPitchSpeed = 0;
+        this.state.hasPrevSatAngles = false;
       }
 
       this.state.camYaw = normalizeAngle(this.state.camYaw);
@@ -1062,6 +1064,28 @@ export class Camera {
     }
 
     if (this.cameraType === CameraType.FIXED_TO_SAT) {
+      // Compensate camera angles for satellite's orbital movement
+      // so the view stays fixed relative to Earth
+      const target = PluginRegistry.getPlugin(SelectSatManager)?.primarySatObj;
+
+      if (target && target.id !== -1 && target.position) {
+        const radius = Math.sqrt(target.position.x ** 2 + target.position.y ** 2);
+        const currentSatYaw = <Radians>(Math.atan2(target.position.y, target.position.x) + TAU / 4);
+        const currentSatPitch = <Radians>Math.atan2(target.position.z, radius);
+
+        if (this.state.hasPrevSatAngles) {
+          const deltaYaw = normalizeAngle(<Radians>(currentSatYaw - this.state.prevSatYaw));
+          const deltaPitch = normalizeAngle(<Radians>(currentSatPitch - this.state.prevSatPitch));
+
+          this.state.camYaw = <Radians>(this.state.camYaw + deltaYaw);
+          this.state.camPitch = <Radians>(this.state.camPitch + deltaPitch);
+        }
+
+        this.state.prevSatYaw = currentSatYaw;
+        this.state.prevSatPitch = currentSatPitch;
+        this.state.hasPrevSatAngles = true;
+      }
+
       this.state.camPitch = normalizeAngle(this.state.camPitch);
       this.state.ftsPitch = this.state.camPitch;
       this.state.ftsYaw = this.state.camYaw;

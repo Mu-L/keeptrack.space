@@ -42,6 +42,10 @@ export class CameraState {
   ftsPitch = 0;
   ftsYaw: Radians = 0 as Radians;
   ftsRotateReset = true;
+  // Previous frame's satellite angular position for Earth-relative compensation
+  prevSatPitch: Radians = 0 as Radians;
+  prevSatYaw: Radians = 0 as Radians;
+  hasPrevSatAngles = false;
   /**
    * This was used when there was only one camera mode and the camera was always centered on the earth
    * It is the overall yaw of the camera?
