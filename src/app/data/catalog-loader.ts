@@ -777,6 +777,10 @@ export class CatalogLoader {
       return;
     }
 
+    if (CatalogLoader.shouldSkipRegime_(resp[i].tle2)) {
+      return;
+    }
+
     const intlDes = CatalogLoader.parseIntlDes_(resp[i].tle1);
 
     resp[i].intlDes = intlDes;
@@ -894,6 +898,10 @@ export class CatalogLoader {
   }
 
   private static processAsciiCatalogUnknown_(element: AsciiTleSat, tempSatData: BaseObject[], catalogManagerInstance: CatalogManager) {
+    if (CatalogLoader.shouldSkipRegime_(element.TLE2)) {
+      return;
+    }
+
     if (typeof element.ON === 'undefined') {
       element.ON = 'Unknown';
     }
@@ -1007,6 +1015,10 @@ export class CatalogLoader {
         tempSatData[i].tle2 = element.TLE2 as TleLine2;
         tempSatData[i].source = CatalogSource.EXTRA_JSON;
       } else {
+        if (CatalogLoader.shouldSkipRegime_(element.TLE2)) {
+          continue;
+        }
+
         const intlDes = CatalogLoader.parseIntlDes_(element.TLE1);
         const extrasSatInfo = {
           static: false,
@@ -1065,6 +1077,10 @@ export class CatalogLoader {
         const isVimpel = element.TLE1[7] === 'V';
 
         if (isVimpel) {
+          if (CatalogLoader.shouldSkipRegime_(element.TLE2)) {
+            continue;
+          }
+
           const altId = element.TLE1.substring(9, 17).trim();
           const jsSatInfo = {
             static: false,
@@ -1098,6 +1114,62 @@ export class CatalogLoader {
         }
       }
     }
+  }
+
+  private static readonly EARTH_GM_ = 398600.4415;
+  private static readonly TAU_ = 2 * Math.PI;
+  private static readonly SECONDS_PER_DAY_ = 86400;
+  private static readonly EARTH_RADIUS_ = 6371;
+
+  /**
+   * Classify a satellite's orbital regime from raw TLE line 2 string.
+   * Uses the same apogee/eccentricity thresholds as color-scheme-manager.ts.
+   */
+  private static getRegimeFromTle_(tle2: string): string {
+    const n = parseFloat(tle2.substring(52, 63)); // mean motion (rev/day)
+    const ecc = parseFloat(`0.${tle2.substring(26, 33).trim()}`); // eccentricity (implied decimal)
+
+    if (isNaN(n) || isNaN(ecc) || n <= 0) {
+      return 'unknown';
+    }
+
+    const sma = CatalogLoader.EARTH_GM_ ** (1 / 3) / ((CatalogLoader.TAU_ * n / CatalogLoader.SECONDS_PER_DAY_) ** (2 / 3));
+    const apogee = sma * (1 + ecc) - CatalogLoader.EARTH_RADIUS_;
+
+    if (apogee < 400) {
+      return 'vleo';
+    }
+    if (apogee < 6000) {
+      return 'leo';
+    }
+    if (ecc >= 0.1 && apogee <= 39786) {
+      return 'heo';
+    }
+    if (ecc < 0.1 && apogee >= 6000 && apogee < 34786) {
+      return 'meo';
+    }
+    if (ecc < 0.1 && apogee >= 34786 && apogee < 36786) {
+      return 'geo';
+    }
+    if ((ecc < 0.1 && apogee > 36786) || apogee > 39786) {
+      return 'xgeo';
+    }
+
+    return 'unknown';
+  }
+
+  /**
+   * Returns true if the satellite should be skipped based on the regime filter.
+   * When regimeFilter is empty, no satellites are skipped.
+   */
+  private static shouldSkipRegime_(tle2: string): boolean {
+    if (settingsManager.regimeFilter.length === 0) {
+      return false;
+    }
+
+    const regime = CatalogLoader.getRegimeFromTle_(tle2);
+
+    return !settingsManager.regimeFilter.includes(regime);
   }
 
   private static sortByScc_(catalog: AsciiTleSat[] | ExtraSat[]) {

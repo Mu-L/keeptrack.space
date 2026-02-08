@@ -168,6 +168,9 @@ export abstract class UrlManager {
         case 'limitSats':
           settingsManager.limitSats = kv[key];
           break;
+        case 'regime':
+          this.handleRegimeParam_(kv[key]);
+          break;
         case 'earth':
           this.handleEarthParam_(kv[key]);
           isUsingParsedVariables = true;
@@ -315,6 +318,10 @@ export abstract class UrlManager {
 
     if (settingsManager.limitSats) {
       paramSlices.push(`limitSats=${settingsManager.limitSats}`);
+    }
+
+    if (settingsManager.regimeFilter.length > 0) {
+      paramSlices.push(`regime=${settingsManager.regimeFilter.join(',')}`);
     }
 
     if (settingsManager.isEnableJscCatalog === false) {
@@ -643,6 +650,23 @@ export abstract class UrlManager {
       default:
         console.warn(`Unknown sun parameter: ${val}`);
     }
+  }
+
+  private static readonly VALID_REGIMES_ = ['vleo', 'leo', 'meo', 'geo', 'heo', 'xgeo'];
+
+  private static handleRegimeParam_(val: string): void {
+    const regimes = val.toLowerCase().split(',').map((r) => r.trim()).filter((r) => r.length > 0);
+    const valid: string[] = [];
+
+    for (const r of regimes) {
+      if (UrlManager.VALID_REGIMES_.includes(r)) {
+        valid.push(r);
+      } else {
+        console.warn(`Unknown regime filter: ${r}`);
+      }
+    }
+
+    settingsManager.regimeFilter = valid;
   }
 
   private static handleDotsParam_(val: string): boolean {

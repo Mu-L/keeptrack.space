@@ -41,6 +41,12 @@ export class CoreSettings {
 
   filter: FilterPluginSettings = {};
 
+  /**
+   * URL-based regime filter. When non-empty, only satellites in the specified
+   * regimes are loaded. Valid values: vleo, leo, meo, geo, heo, xgeo
+   */
+  regimeFilter: string[] = [];
+
   // Installation and Environment
   /**
    * The relative path to the installation directory. This is necessary if the application is
