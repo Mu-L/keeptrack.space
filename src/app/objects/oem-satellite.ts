@@ -7,7 +7,10 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { LagrangeInterpolator } from '@app/engine/ootk/src/interpolator/LagrangeInterpolator';
 import { LineColors } from '@app/engine/rendering/line-manager/line';
 import { OrbitPathLine } from '@app/engine/rendering/line-manager/orbit-path';
-import { SpaceObject, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, TEME, Degrees, EcefVec3, LlaVec3, PosVel, calcGmst, eci2ecef, eci2lla, TemeVec3 } from '@ootk/src/main';
+import {
+  SpaceObject, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType,
+  type TEME, Degrees, EcefVec3, LlaVec3, PosVel, calcGmst, eci2ecef, eci2lla, TemeVec3,
+} from '@ootk/src/main';
 import { vec4 } from 'gl-matrix';
 import { SatelliteModels } from '../rendering/mesh/model-resolver';
 
@@ -75,6 +78,8 @@ export class OemSatellite extends SpaceObject {
   lagrangeInterpolator: LagrangeInterpolator | null = null;
   pointsTeme: [number, number, number, number][] = [];
   pointsJ2000: [number, number, number, number][] = [];
+  pointsITRF: [number, number, number, number][] = [];
+  useITRF = false;
   moonPositionCache_: { [key: number]: { position: { x: number; y: number; z: number } } } = {};
 
   orbitColor: vec4 = LineColors.GREEN;
@@ -233,7 +238,9 @@ export class OemSatellite extends SpaceObject {
 
     dt = (simTime - this.OemDataBlocks[this.dataBlockIdx].ephemeris[this.stateVectorIdx].epoch.posix) as Seconds;
 
-    const currentSv: TEME = this.OemDataBlocks[this.dataBlockIdx].ephemeris[this.stateVectorIdx].toTEME();
+    // Always use TEME for the satellite's rendered position in the scene
+    const ephemeris = this.OemDataBlocks[this.dataBlockIdx].ephemeris;
+    const currentSv = ephemeris[this.stateVectorIdx].toTEME();
 
     let offsetOrigin = { position: { x: 0, y: 0, z: 0 } };
 
@@ -252,7 +259,7 @@ export class OemSatellite extends SpaceObject {
     }
 
     const nextSv: TEME =
-      this.OemDataBlocks[this.dataBlockIdx].ephemeris[this.stateVectorIdx + 1]?.toTEME() ??
+      ephemeris[this.stateVectorIdx + 1]?.toTEME() ??
       this.OemDataBlocks[this.dataBlockIdx + 1]?.ephemeris[0]?.toTEME() ??
       currentSv;
 
@@ -277,6 +284,13 @@ export class OemSatellite extends SpaceObject {
     posAndVel[5] = currentSv.velocity.z;
 
     return posAndVel;
+  }
+
+  /** Compute cos/sin of current GMST for rotating ITRF coordinates to TEME scene frame */
+  private getCurrentGmstRotation_(): { cos: number; sin: number } {
+    const { gmst } = calcGmst(ServiceLocator.getTimeManager().simulationTimeObj);
+
+    return { cos: Math.cos(gmst), sin: Math.sin(gmst) };
   }
 
   private findStateVectorTime_(simTime: number): void {
@@ -399,13 +413,16 @@ export class OemSatellite extends SpaceObject {
       for (const stateVector of block.ephemeris) {
         const j2000 = stateVector;
         const teme = stateVector.toTEME();
+        const itrf = stateVector.toITRF();
 
         this.pointsTeme.push([teme.position.x, teme.position.y, teme.position.z, teme.epoch.posix * 1000]);
         this.pointsJ2000.push([j2000.position.x, j2000.position.y, j2000.position.z, j2000.epoch.posix * 1000]);
+        this.pointsITRF.push([itrf.position.x, itrf.position.y, itrf.position.z, itrf.epoch.posix * 1000]);
       }
     }
 
-    const pointsOut = new Float32Array(this.pointsTeme.flat());
+    const sourcePoints = this.useITRF ? this.pointsITRF : this.pointsTeme;
+    const pointsOut = new Float32Array(sourcePoints.flat());
 
     this.orbitPathCache_ = pointsOut;
     this.orbitFullPathCache_ = pointsOut;
@@ -434,6 +451,8 @@ export class OemSatellite extends SpaceObject {
       };
     }
 
+    const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
+
     // Calculate current position based on this.dataBlockIdx and this.stateVectorIdx
     let currentIndex = 0;
 
@@ -448,6 +467,7 @@ export class OemSatellite extends SpaceObject {
     // Fill pointsOut starting from currentIndex
     for (let i = 0; i < segments; i++) {
       if (i === 0) {
+        // First point is always the current position (already in TEME from updatePosAndVel)
         if (settingsManager.centerBody !== SolarBody.Earth) {
           pointsOut[i * 4] = this.position.x - offsetOrigin.position.x;
           pointsOut[i * 4 + 1] = this.position.y - offsetOrigin.position.y;
@@ -478,9 +498,22 @@ export class OemSatellite extends SpaceObject {
             };
           }
 
-          pointsOut[i * 4] = this.orbitFullPathCache_[idx * 4] - deltaOffsetPos.x;
-          pointsOut[i * 4 + 1] = this.orbitFullPathCache_[idx * 4 + 1] - deltaOffsetPos.y;
-          pointsOut[i * 4 + 2] = this.orbitFullPathCache_[idx * 4 + 2] - deltaOffsetPos.z;
+          let x = this.orbitFullPathCache_[idx * 4] - deltaOffsetPos.x;
+          let y = this.orbitFullPathCache_[idx * 4 + 1] - deltaOffsetPos.y;
+          const z = this.orbitFullPathCache_[idx * 4 + 2] - deltaOffsetPos.z;
+
+          // Rotate ITRF cache points to current TEME scene frame
+          if (itrfRotation) {
+            const rx = x * itrfRotation.cos - y * itrfRotation.sin;
+            const ry = x * itrfRotation.sin + y * itrfRotation.cos;
+
+            x = rx;
+            y = ry;
+          }
+
+          pointsOut[i * 4] = x;
+          pointsOut[i * 4 + 1] = y;
+          pointsOut[i * 4 + 2] = z;
           pointsOut[i * 4 + 3] = 1.0; // Alpha channel
 
           loopIdx = i;
@@ -515,20 +548,32 @@ export class OemSatellite extends SpaceObject {
     }
     currentIndex += this.stateVectorIdx;
 
+    // When useITRF, rotate cached ITRF coordinates to current TEME so orbit
+    // history appears at the correct longitude on the rotating Earth model
+    const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
+
     // Starting at currentIndex, go backwards to the start
     for (let i = currentIndex; i >= 0; i--) {
       const idx = i;
 
       if (idx < this.orbitFullPathCache_!.length / 4) {
-        points.push([
-          this.orbitFullPathCache_![idx * 4],
-          this.orbitFullPathCache_![idx * 4 + 1],
-          this.orbitFullPathCache_![idx * 4 + 2],
-        ]);
+        const x = this.orbitFullPathCache_![idx * 4];
+        const y = this.orbitFullPathCache_![idx * 4 + 1];
+        const z = this.orbitFullPathCache_![idx * 4 + 2];
+
+        if (itrfRotation) {
+          points.push([
+            x * itrfRotation.cos - y * itrfRotation.sin,
+            x * itrfRotation.sin + y * itrfRotation.cos,
+            z,
+          ]);
+        } else {
+          points.push([x, y, z]);
+        }
       }
     }
 
-    // Set the last point to the current position
+    // Set the last point to the current position (always TEME from updatePosAndVel)
     if (this.position) {
       points[0] = [
         this.position.x,
@@ -560,18 +605,70 @@ export class OemSatellite extends SpaceObject {
     const points: [number, number, number][] = [];
 
     if (!this.pointsForOrbitPath) {
+      const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
+
       for (const block of this.OemDataBlocks) {
         for (const stateVector of block.ephemeris) {
-          const teme = stateVector.toTEME();
+          if (itrfRotation) {
+            const itrf = stateVector.toITRF();
+            const x = itrf.position.x;
+            const y = itrf.position.y;
 
-          points.push([teme.position.x, teme.position.y, teme.position.z]);
+            points.push([
+              x * itrfRotation.cos - y * itrfRotation.sin,
+              x * itrfRotation.sin + y * itrfRotation.cos,
+              itrf.position.z,
+            ]);
+          } else {
+            const teme = stateVector.toTEME();
+
+            points.push([teme.position.x, teme.position.y, teme.position.z]);
+          }
         }
+      }
+
+      // Don't cache in ITRF mode since the rotation changes with time
+      if (this.useITRF) {
+        this.orbitFullPathLine = lineManager.createOrbitPath(points, LineColors.BLUE, SolarBody.Earth);
+
+        return;
       }
 
       this.pointsForOrbitPath = points;
     }
 
     this.orbitFullPathLine = lineManager.createOrbitPath(this.pointsForOrbitPath, LineColors.BLUE, SolarBody.Earth);
+  }
+
+  setReferenceFrame(useITRF: boolean): void {
+    if (this.useITRF === useITRF) {
+      return;
+    }
+
+    const hadOrbitPath = !!this.orbitFullPathLine;
+    const hadOrbitHistory = this.isDrawOrbitHistory;
+
+    this.useITRF = useITRF;
+
+    // Clear all caches
+    this.orbitFullPathCache_ = null;
+    this.orbitPathCache_ = null;
+    this.pointsForOrbitPath = null;
+
+    // Remove existing orbit lines
+    this.removeFullOrbitPath();
+    this.removeOrbitHistory();
+
+    // Regenerate the orbit path cache with the new frame
+    this.generateOrbitPath_();
+
+    // Redraw orbit visualizations that were active
+    if (hadOrbitPath) {
+      this.drawFullOrbitPath();
+    }
+    if (hadOrbitHistory) {
+      this.drawOrbitHistory();
+    }
   }
 
   removeFullOrbitPath(): void {
@@ -633,8 +730,8 @@ export class OemSatellite extends SpaceObject {
     return lastBlock.ephemeris[lastBlock.ephemeris.length - 1];
   }
 
-  toITRF(_date?: Date): ITRF {
-    throw new Error('OemSatellite does not yet support ITRF coordinate conversion. Use ecef() for Earth-fixed coordinates.');
+  toITRF(date?: Date): ITRF {
+    return this.toJ2000(date).toITRF();
   }
 
   toClassicalElements(_date?: Date): ClassicalElements {
@@ -657,6 +754,7 @@ export class OemSatellite extends SpaceObject {
     cloned.source = this.source;
     cloned.centerBody = this.centerBody;
     cloned.isInertialMoonFrame = this.isInertialMoonFrame;
+    cloned.useITRF = this.useITRF;
     cloned.orbitColor = vec4.clone(this.orbitColor);
     cloned.dotColor = [...this.dotColor] as rgbaArray;
 
@@ -671,6 +769,7 @@ export class OemSatellite extends SpaceObject {
       source: this.source,
       centerBody: this.centerBody,
       isInertialMoonFrame: this.isInertialMoonFrame,
+      useITRF: this.useITRF,
       orbitColor: Array.from(this.orbitColor),
       dotColor: this.dotColor,
     };
