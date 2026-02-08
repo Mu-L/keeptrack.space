@@ -116,6 +116,10 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
     enabled: true,
     order: 82,
   },
+  NeighborhoodWatch: {
+    enabled: true,
+    order: 83,
+  },
   Collisions: {
     enabled: true,
     order: 90,
