@@ -85,7 +85,9 @@ export class OemSatellite extends SpaceObject {
   moonPositionCache_: { [key: number]: { position: { x: number; y: number; z: number } } } = {};
 
   orbitColor: vec4 = LineColors.GREEN;
+  orbitFullPathColor: vec4 = LineColors.BLUE;
   dotColor: rgbaArray = [0, 255, 0, 1];
+  sccNum = '';
 
   eci(date?: Date): PosVel | null {
     const effectiveDate = date ?? ServiceLocator.getTimeManager().simulationTimeObj;
@@ -178,6 +180,21 @@ export class OemSatellite extends SpaceObject {
     this.lagrangeInterpolator = LagrangeInterpolator.fromEphemeris(this.OemDataBlocks.flatMap((block) => block.ephemeris), this.OemDataBlocks[0].metadata.INTERPOLATION_DEGREE);
     this.source = 'OEM Import';
     this.header = oem.header;
+
+    // Extract NORAD_ID from COMMENT lines if present
+    const allComments = [
+      ...(oem.header.COMMENT ?? []),
+      ...(oem.dataBlocks[0]?.metadata.COMMENT ?? []),
+    ];
+
+    for (const comment of allComments) {
+      const match = comment.match(/NORAD_ID\s*=\s*(?<id>\d+)/u);
+
+      if (match?.groups?.id) {
+        this.sccNum = match.groups.id;
+        break;
+      }
+    }
 
     EventBus.getInstance().on(EventBusEvent.onLinesCleared, () => {
       this.removeFullOrbitPath();
@@ -678,7 +695,7 @@ export class OemSatellite extends SpaceObject {
 
       // Don't cache in ITRF mode since the rotation changes with time
       if (this.useITRF) {
-        this.orbitFullPathLine = lineManager.createOrbitPath(points, LineColors.BLUE, SolarBody.Earth);
+        this.orbitFullPathLine = lineManager.createOrbitPath(points, this.orbitFullPathColor, SolarBody.Earth);
 
         return;
       }
@@ -686,7 +703,7 @@ export class OemSatellite extends SpaceObject {
       this.pointsForOrbitPath = points;
     }
 
-    this.orbitFullPathLine = lineManager.createOrbitPath(this.pointsForOrbitPath, LineColors.BLUE, SolarBody.Earth);
+    this.orbitFullPathLine = lineManager.createOrbitPath(this.pointsForOrbitPath, this.orbitFullPathColor, SolarBody.Earth);
   }
 
   setReferenceFrame(useITRF: boolean): void {
@@ -805,7 +822,9 @@ export class OemSatellite extends SpaceObject {
     cloned.isInertialMoonFrame = this.isInertialMoonFrame;
     cloned.useITRF = this.useITRF;
     cloned.orbitColor = vec4.clone(this.orbitColor);
+    cloned.orbitFullPathColor = vec4.clone(this.orbitFullPathColor);
     cloned.dotColor = [...this.dotColor] as rgbaArray;
+    cloned.sccNum = this.sccNum;
 
     return cloned;
   }
@@ -820,7 +839,9 @@ export class OemSatellite extends SpaceObject {
       isInertialMoonFrame: this.isInertialMoonFrame,
       useITRF: this.useITRF,
       orbitColor: Array.from(this.orbitColor),
+      orbitFullPathColor: Array.from(this.orbitFullPathColor),
       dotColor: this.dotColor,
+      sccNum: this.sccNum,
     };
   }
 }
