@@ -419,7 +419,7 @@ export abstract class SatMath {
     const objectCache = catalogManager.objectCache;
 
     for (const obj of objectCache) {
-      if (!obj.isSatellite()) {
+      if (!obj?.isSatellite()) {
         continue;
       }
 
