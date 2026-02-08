@@ -1,6 +1,7 @@
 import type { ClassicalElements } from '@app/engine/ootk/src/coordinate/ClassicalElements';
 import type { ITRF } from '@app/engine/ootk/src/coordinate/ITRF';
-import { rgbaArray, SolarBody } from '@app/engine/core/interfaces';
+import { rgbaArray, SolarBody, ToastMsgType } from '@app/engine/core/interfaces';
+import { t7e } from '@app/locales/keys';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -11,6 +12,7 @@ import {
   SpaceObject, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType,
   type TEME, Degrees, EcefVec3, LlaVec3, PosVel, calcGmst, eci2ecef, eci2lla, TemeVec3,
 } from '@ootk/src/main';
+import { Tle } from '@app/engine/ootk/src/coordinate/Tle';
 import { vec4 } from 'gl-matrix';
 import { SatelliteModels } from '../rendering/mesh/model-resolver';
 
@@ -61,6 +63,8 @@ export interface ParsedOem {
 
 
 export class OemSatellite extends SpaceObject {
+  private static hasShownOutOfRangeWarning_ = false;
+
   header: OemHeader;
   OemDataBlocks: OemDataBlock[];
   model: keyof typeof SatelliteModels = SatelliteModels.aehf;
@@ -88,9 +92,26 @@ export class OemSatellite extends SpaceObject {
   orbitFullPathColor: vec4 = LineColors.BLUE;
   dotColor: rgbaArray = [0, 255, 0, 1];
   sccNum = '';
+  sccNum5 = '';
+  sccNum6 = '';
+  intlDes = '';
 
   eci(date?: Date): PosVel | null {
     const effectiveDate = date ?? ServiceLocator.getTimeManager().simulationTimeObj;
+
+    if (effectiveDate < this.header.START_TIME || effectiveDate > this.header.STOP_TIME) {
+      if (!OemSatellite.hasShownOutOfRangeWarning_) {
+        OemSatellite.hasShownOutOfRangeWarning_ = true;
+        ServiceLocator.getUiManager().toast(
+          t7e('plugins.OemReaderPlugin.outOfRangeWarning' as Parameters<typeof t7e>[0]),
+          ToastMsgType.caution,
+          true,
+        );
+      }
+    } else {
+      OemSatellite.hasShownOutOfRangeWarning_ = false;
+    }
+
     const posAndVel = this.updatePosAndVel(effectiveDate.getTime() / 1000 as Seconds);
 
     if (!posAndVel) {
@@ -178,13 +199,13 @@ export class OemSatellite extends SpaceObject {
 
     this.OemDataBlocks = oem.dataBlocks;
     this.lagrangeInterpolator = LagrangeInterpolator.fromEphemeris(this.OemDataBlocks.flatMap((block) => block.ephemeris), this.OemDataBlocks[0].metadata.INTERPOLATION_DEGREE);
-    this.source = 'OEM Import';
+    this.source = 'OEM File';
     this.header = oem.header;
 
-    // Extract NORAD_ID from COMMENT lines if present
+    // Extract NORAD_ID from COMMENT lines if present (search all data blocks)
     const allComments = [
       ...(oem.header.COMMENT ?? []),
-      ...(oem.dataBlocks[0]?.metadata.COMMENT ?? []),
+      ...oem.dataBlocks.flatMap((block) => block.metadata.COMMENT ?? []),
     ];
 
     for (const comment of allComments) {
@@ -192,9 +213,15 @@ export class OemSatellite extends SpaceObject {
 
       if (match?.groups?.id) {
         this.sccNum = match.groups.id;
+        this.sccNum5 = Tle.convert6DigitToA5(this.sccNum);
+        this.sccNum6 = Tle.convertA5to6Digit(this.sccNum5);
+        // With a real NORAD ID, this is a known payload not a notional object
+        this.type = SpaceObjectType.PAYLOAD;
         break;
       }
     }
+
+    this.intlDes = oem.dataBlocks[0]?.metadata.OBJECT_ID ?? '';
 
     EventBus.getInstance().on(EventBusEvent.onLinesCleared, () => {
       this.removeFullOrbitPath();
@@ -576,12 +603,11 @@ export class OemSatellite extends SpaceObject {
 
     const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
 
-    // Write directly into the pre-allocated buffer.
-    // Loop from currentIndex backwards (newest→oldest),
-    // writing in forward order (oldest first) for LINE_STRIP rendering.
+    // Write directly into the pre-allocated buffer in forward order
+    // (oldest first) for LINE_STRIP rendering.
     let writeIdx = 0;
 
-    for (let i = currentIndex; i >= 0; i--) {
+    for (let i = 0; i <= currentIndex; i++) {
       if (i < cachePointCount) {
         const srcIdx = i * 4;
         const x = cache[srcIdx];
