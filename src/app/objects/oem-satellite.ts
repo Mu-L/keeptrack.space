@@ -77,8 +77,10 @@ export class OemSatellite extends SpaceObject {
   isDrawOrbitHistory = true;
   lagrangeInterpolator: LagrangeInterpolator | null = null;
   pointsTeme: [number, number, number, number][] = [];
-  pointsJ2000: [number, number, number, number][] = [];
   pointsITRF: [number, number, number, number][] = [];
+  private lastHistoryStateVectorIdx_: number = -1;
+  private lastHistoryDataBlockIdx_: number = -1;
+  private historyBuffer_: Float32Array | null = null;
   useITRF = false;
   moonPositionCache_: { [key: number]: { position: { x: number; y: number; z: number } } } = {};
 
@@ -179,6 +181,7 @@ export class OemSatellite extends SpaceObject {
 
     EventBus.getInstance().on(EventBusEvent.onLinesCleared, () => {
       this.removeFullOrbitPath();
+      this.removeOrbitHistory();
     });
   }
 
@@ -228,7 +231,14 @@ export class OemSatellite extends SpaceObject {
     }
 
     if (this.isDrawOrbitHistory) {
-      this.drawOrbitHistory();
+      const stateChanged = this.stateVectorIdx_ !== this.lastHistoryStateVectorIdx_ ||
+        this.dataBlockIdx_ !== this.lastHistoryDataBlockIdx_;
+
+      if (stateChanged || this.useITRF) {
+        this.lastHistoryStateVectorIdx_ = this.stateVectorIdx_;
+        this.lastHistoryDataBlockIdx_ = this.dataBlockIdx_;
+        this.drawOrbitHistory();
+      }
     }
 
     const posAndVel = [0, 0, 0, 0, 0, 0] as [number, number, number, number, number, number];
@@ -409,15 +419,20 @@ export class OemSatellite extends SpaceObject {
   }
 
   private generateOrbitPath_(): Float32Array {
+    this.pointsTeme = [];
+    this.pointsITRF = [];
+
     for (const block of this.OemDataBlocks) {
       for (const stateVector of block.ephemeris) {
-        const j2000 = stateVector;
-        const teme = stateVector.toTEME();
-        const itrf = stateVector.toITRF();
+        if (this.useITRF) {
+          const itrf = stateVector.toITRF();
 
-        this.pointsTeme.push([teme.position.x, teme.position.y, teme.position.z, teme.epoch.posix * 1000]);
-        this.pointsJ2000.push([j2000.position.x, j2000.position.y, j2000.position.z, j2000.epoch.posix * 1000]);
-        this.pointsITRF.push([itrf.position.x, itrf.position.y, itrf.position.z, itrf.epoch.posix * 1000]);
+          this.pointsITRF.push([itrf.position.x, itrf.position.y, itrf.position.z, itrf.epoch.posix * 1000]);
+        } else {
+          const teme = stateVector.toTEME();
+
+          this.pointsTeme.push([teme.position.x, teme.position.y, teme.position.z, teme.epoch.posix * 1000]);
+        }
       }
     }
 
@@ -453,13 +468,7 @@ export class OemSatellite extends SpaceObject {
 
     const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
 
-    // Calculate current position based on this.dataBlockIdx and this.stateVectorIdx
-    let currentIndex = 0;
-
-    for (let i = 0; i < this.dataBlockIdx; i++) {
-      currentIndex += this.OemDataBlocks[i].ephemeris.length;
-    }
-    currentIndex += this.stateVectorIdx;
+    const currentIndex = this.computeGlobalIndex_();
 
     const pointsOut = new Float32Array(segments * 4);
     let loopIdx = 0;
@@ -537,56 +546,93 @@ export class OemSatellite extends SpaceObject {
       this.generateOrbitPath_();
     }
 
-    const lineManager = ServiceLocator.getLineManager();
-    const points: [number, number, number][] = [];
+    const currentIndex = this.computeGlobalIndex_();
+    const cache = this.orbitFullPathCache_!;
+    const cachePointCount = cache.length / 4;
+    const pointCount = Math.min(currentIndex + 1, cachePointCount);
+    const requiredSize = pointCount * 4;
 
-    // Calculate current position based on this.dataBlockIdx and this.stateVectorIdx
-    let currentIndex = 0;
-
-    for (let i = 0; i < this.dataBlockIdx; i++) {
-      currentIndex += this.OemDataBlocks[i].ephemeris.length;
+    // Lazily allocate the reusable Float32Array; only reallocate when history grows
+    if (!this.historyBuffer_ || this.historyBuffer_.length < requiredSize) {
+      this.historyBuffer_ = new Float32Array(requiredSize);
     }
-    currentIndex += this.stateVectorIdx;
 
-    // When useITRF, rotate cached ITRF coordinates to current TEME so orbit
-    // history appears at the correct longitude on the rotating Earth model
     const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
 
-    // Starting at currentIndex, go backwards to the start
-    for (let i = currentIndex; i >= 0; i--) {
-      const idx = i;
+    // Write directly into the pre-allocated buffer.
+    // Loop from currentIndex backwards (newest→oldest),
+    // writing in forward order (oldest first) for LINE_STRIP rendering.
+    let writeIdx = 0;
 
-      if (idx < this.orbitFullPathCache_!.length / 4) {
-        const x = this.orbitFullPathCache_![idx * 4];
-        const y = this.orbitFullPathCache_![idx * 4 + 1];
-        const z = this.orbitFullPathCache_![idx * 4 + 2];
+    for (let i = currentIndex; i >= 0; i--) {
+      if (i < cachePointCount) {
+        const srcIdx = i * 4;
+        const x = cache[srcIdx];
+        const y = cache[srcIdx + 1];
+        const z = cache[srcIdx + 2];
 
         if (itrfRotation) {
-          points.push([
-            x * itrfRotation.cos - y * itrfRotation.sin,
-            x * itrfRotation.sin + y * itrfRotation.cos,
-            z,
-          ]);
+          this.historyBuffer_[writeIdx] = x * itrfRotation.cos - y * itrfRotation.sin;
+          this.historyBuffer_[writeIdx + 1] = x * itrfRotation.sin + y * itrfRotation.cos;
         } else {
-          points.push([x, y, z]);
+          this.historyBuffer_[writeIdx] = x;
+          this.historyBuffer_[writeIdx + 1] = y;
         }
+        this.historyBuffer_[writeIdx + 2] = z;
+        this.historyBuffer_[writeIdx + 3] = 1.0;
+        writeIdx += 4;
       }
     }
 
-    // Set the last point to the current position (always TEME from updatePosAndVel)
-    if (this.position) {
-      points[0] = [
-        this.position.x,
-        this.position.y,
-        this.position.z,
-      ];
+    // Overwrite the last written point (newest/current position) with
+    // the interpolated position for smooth rendering
+    if (this.position && writeIdx >= 4) {
+      const lastPointIdx = writeIdx - 4;
+
+      this.historyBuffer_[lastPointIdx] = this.position.x;
+      this.historyBuffer_[lastPointIdx + 1] = this.position.y;
+      this.historyBuffer_[lastPointIdx + 2] = this.position.z;
+      this.historyBuffer_[lastPointIdx + 3] = 1.0;
     }
+
+    const actualPointCount = writeIdx / 4;
 
     if (this.orbitHistoryLine) {
-      this.orbitHistoryLine.isGarbage = true;
+      // Reuse existing line — just upload new data to the same WebGLBuffer
+      this.orbitHistoryLine.updateData(
+        this.historyBuffer_.subarray(0, writeIdx),
+        actualPointCount,
+      );
+    } else {
+      // First frame: must create OrbitPathLine via the line manager
+      const lineManager = ServiceLocator.getLineManager();
+      const tempPoints: [number, number, number][] = [];
+
+      for (let i = 0; i < actualPointCount; i++) {
+        const idx = i * 4;
+
+        tempPoints.push([
+          this.historyBuffer_[idx],
+          this.historyBuffer_[idx + 1],
+          this.historyBuffer_[idx + 2],
+        ]);
+      }
+      this.orbitHistoryLine = lineManager.createOrbitPath(
+        tempPoints,
+        this.orbitColor ?? LineColors.GREEN,
+        SolarBody.Earth,
+      );
+    }
+  }
+
+  private computeGlobalIndex_(): number {
+    let index = 0;
+
+    for (let i = 0; i < this.dataBlockIdx; i++) {
+      index += this.OemDataBlocks[i].ephemeris.length;
     }
 
-    this.orbitHistoryLine = lineManager.createOrbitPath(points, this.orbitColor ?? LineColors.GREEN, SolarBody.Earth);
+    return index + this.stateVectorIdx;
   }
 
   removeOrbitHistory(): void {
@@ -594,6 +640,9 @@ export class OemSatellite extends SpaceObject {
       this.orbitHistoryLine.isGarbage = true;
       this.orbitHistoryLine = null;
     }
+    this.historyBuffer_ = null;
+    this.lastHistoryStateVectorIdx_ = -1;
+    this.lastHistoryDataBlockIdx_ = -1;
   }
 
   drawFullOrbitPath(): void {

@@ -75,6 +75,14 @@ export abstract class Path extends Line {
     GlUtils.bindBufferDynamicDraw(gl, this.vertBuf_, newData);
   }
 
+  /** Update the vertex buffer directly from a pre-built vec4 Float32Array, bypassing vec3→vec4 conversion. */
+  updateVertBufDirect(data: Float32Array, pointCount: number): void {
+    const gl = ServiceLocator.getRenderer().gl;
+
+    this.pathLength_ = pointCount;
+    GlUtils.bindBufferDynamicDraw(gl, this.vertBuf_, data);
+  }
+
   protected validateColor(color: vec4): void {
     if (color[0] < 0 || color[0] > 1 || color[1] < 0 || color[1] > 1 || color[2] < 0 || color[2] > 1 || color[3] < 0 || color[3] > 1) {
       throw new Error('Invalid color');

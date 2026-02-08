@@ -21,4 +21,8 @@ export class OrbitPathLine extends Path {
   update(): void {
     // Do nothing
   }
+
+  updateData(data: Float32Array, pointCount: number): void {
+    this.updateVertBufDirect(data, pointCount);
+  }
 }
