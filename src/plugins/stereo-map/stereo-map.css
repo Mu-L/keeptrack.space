@@ -1,0 +1,14 @@
+#map-menu-secondary {
+  z-index: 5 !important;
+  left: 0px !important;
+  width: 280px;
+  transition: transform 1s ease-in-out;
+}
+
+#map-menu-content {
+
+  li,
+  .row {
+    display: none;
+  }
+}

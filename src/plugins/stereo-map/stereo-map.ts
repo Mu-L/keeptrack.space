@@ -44,25 +44,33 @@
 
 import { MenuMode } from '@app/engine/core/interfaces';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { getEl, showEl } from '@app/engine/utils/get-el';
+import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import mapPng from '@public/img/icons/map.png';
 import radar1 from '@public/img/radar-1.png';
 import redSquare from '@public/img/red-square.png';
 import satellite2 from '@public/img/satellite-2.png';
 import yellowSquare from '@public/img/yellow-square.png';
 
-import { EventBus } from '@app/engine/events/event-bus';
-import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { dateFormat } from '@app/engine/utils/dateFormat';
-import { html } from '@app/engine/utils/development/formatter';
-import { BaseObject, Degrees, Satellite, Kilometers, LlaVec3, calcGmst, eci2lla, TemeVec3 } from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
-import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import {
+  IBottomIconConfig,
+  ICommandPaletteCommand,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISecondaryMenuConfig,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
+import { dateFormat } from '@app/engine/utils/dateFormat';
+import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
+import { BaseObject, calcGmst, Degrees, eci2lla, Kilometers, LlaVec3, Satellite, TemeVec3 } from '@ootk/src/main';
+import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
+import './stereo-map.css';
 
 interface GroundTracePoint {
   x: number;
@@ -87,13 +95,75 @@ export class StereoMap extends KeepTrackPlugin {
   private isMapUpdateOverride_ = false;
   private readonly earthImg_ = new Image();
 
+  // Settings (configurable via secondary menu)
+  private orbitMultiplier_ = 1.15;
+  private isGraticuleEnabled_ = false;
+  private mapStyle_: 'standard' | 'alt' | 'night' = 'standard';
+  private isSyncingInputs_ = false;
+  private debounceTimer_: ReturnType<typeof setTimeout> | null = null;
+
   isRequireSatelliteSelected = true;
   isIconDisabled = true;
-  isIconDisabledOnLoad = true;
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+  // =========================================================================
+  // Composition-based configuration methods
+  // =========================================================================
 
-  bottomIconImg = mapPng;
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'stereo-map-bottom-icon',
+      label: t7e('plugins.StereoMap.bottomIconLabel' as Parameters<typeof t7e>[0]) ?? 'Stereo Map',
+      image: mapPng,
+      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      isDisabledOnLoad: true,
+    };
+  }
+
+  onBottomIconClick(): void {
+    if (this.isMenuButtonActive) {
+      this.updateMap();
+    }
+  }
+
+  // Bridge for legacy event system (per CLAUDE.md)
+  bottomIconCallback = (): void => {
+    this.onBottomIconClick();
+  };
+
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'map-menu',
+      title: t7e('plugins.StereoMap.title' as Parameters<typeof t7e>[0]) ?? 'Stereographic Map Menu',
+      html: this.buildSideMenuHtml_(),
+    };
+  }
+
+  private buildSideMenuHtml_(): string {
+    return html`
+      <div id="map-menu-canvas-wrap" style="position: relative;">
+       <canvas id="map-2d" style="display: block;"></canvas>
+       <img id="map-sat" class="map-item map-look" src=${satellite2} width="40px" height="40px"/>
+       <img id="map-sensor" class="map-item map-look start-hidden" src=${radar1} width="40px" height="40px"/>
+       ${StereoMap.generateMapLooks_(50)}
+      </div>
+    `;
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.StereoMap.title' as Parameters<typeof t7e>[0]) ?? 'Stereographic Map Menu',
+      body: t7e('plugins.StereoMap.helpBody' as Parameters<typeof t7e>[0]) ?? '',
+    };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'm',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
 
   getCommandPaletteCommands(): ICommandPaletteCommand[] {
     return [
@@ -104,25 +174,109 @@ export class StereoMap extends KeepTrackPlugin {
         shortcutHint: 'M',
         callback: () => this.bottomMenuClicked(),
       },
+      {
+        id: 'StereoMap.export',
+        label: 'Export Stereo Map',
+        category: 'Export',
+        callback: () => this.onDownload(),
+        isAvailable: () => this.isMenuButtonActive,
+      },
     ];
   }
 
-  bottomIconCallback: () => void = () => {
-    if (!this.isMenuButtonActive) {
+  getSecondaryMenuConfig(): ISecondaryMenuConfig {
+    return {
+      html: this.buildSecondaryMenuHtml_(),
+      width: 280,
+    };
+  }
+
+  onSecondaryMenuOpen(): void {
+    const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
+    const graticuleInput = getEl('stereo-map-graticule') as HTMLInputElement | null;
+
+    if (orbitInput) {
+      orbitInput.value = this.orbitMultiplier_.toString();
+    }
+    if (graticuleInput) {
+      graticuleInput.checked = this.isGraticuleEnabled_;
+    }
+
+    this.syncMinutesFromOrbits_();
+
+    // Set the active radio button for map style
+    const styleRadio = getEl(`stereo-map-style-${this.mapStyle_}`) as HTMLInputElement | null;
+
+    if (styleRadio) {
+      styleRadio.checked = true;
+    }
+  }
+
+  private buildSecondaryMenuHtml_(): string {
+    return html`
+      <form id="stereo-map-settings-form">
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="stereo-map-orbit-mult" value="1.15" type="number" step="0.05" min="0.5" max="20"
+              style="text-align: center;"
+            />
+            <label for="stereo-map-orbit-mult" class="active">Orbits</label>
+          </div>
+          <div class="input-field col s6">
+            <input id="stereo-map-minutes" value="" type="number" step="1" min="1"
+              style="text-align: center;"
+            />
+            <label for="stereo-map-minutes" class="active">Minutes</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col s12">
+            <label>
+              <input id="stereo-map-graticule" type="checkbox" />
+              <span>Show Graticule</span>
+            </label>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="col s12">
+            <h5 style="text-align:center; font-size:1.1rem;">Map Style</h5>
+            <p>
+              <label>
+                <input id="stereo-map-style-standard" name="stereo-map-style" type="radio" value="standard" checked />
+                <span>Standard</span>
+              </label>
+            </p>
+            <p>
+              <label>
+                <input id="stereo-map-style-alt" name="stereo-map-style" type="radio" value="alt" />
+                <span>Political</span>
+              </label>
+            </p>
+            <p>
+              <label>
+                <input id="stereo-map-style-night" name="stereo-map-style" type="radio" value="night" />
+                <span>Night Lights</span>
+              </label>
+            </p>
+          </div>
+        </div>
+      </form>
+    `;
+  }
+
+  onDownload(): void {
+    if (!this.canvas_) {
       return;
     }
-    this.updateMap();
-  };
 
-  sideMenuElementName = 'map-menu';
-  sideMenuElementHtml = html`
-   <div id="map-menu" class="side-menu-parent start-hidden side-menu valign-wrapper">
-     <canvas id="map-2d"></canvas>
-     <img id="map-sat" class="map-item map-look" src=${satellite2} width="40px" height="40px"/>
-     <img id="map-sensor" class="map-item map-look start-hidden" src=${radar1} width="40px" height="40px"/>
-     ${StereoMap.generateMapLooks_(50)}
-    </div>
-  `;
+    const dataUrl = this.canvas_.toDataURL('image/png');
+    const link = document.createElement('a');
+
+    link.download = 'stereo-map.png';
+    link.href = dataUrl;
+    link.click();
+  }
 
   addHtml(): void {
     super.addHtml();
@@ -130,6 +284,14 @@ export class StereoMap extends KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
+        // Remove side-menu padding/border that conflicts with full-width canvas
+        const contentDiv = getEl('map-menu-content');
+
+        if (contentDiv) {
+          contentDiv.style.padding = '0';
+          contentDiv.style.borderWidth = '0';
+        }
+
         this.canvas_ = <HTMLCanvasElement>getEl('map-2d');
 
         this.resize2DMap_();
@@ -150,6 +312,22 @@ export class StereoMap extends KeepTrackPlugin {
           }
           this.mapMenuClick_(evt);
         });
+
+        const settingsForm = getEl('stereo-map-settings-form');
+
+        settingsForm?.addEventListener('submit', (e: Event) => {
+          e.preventDefault();
+        });
+        settingsForm?.addEventListener('change', () => {
+          this.applySettings_();
+        });
+
+        getEl('stereo-map-orbit-mult')?.addEventListener('input', () => {
+          this.onOrbitInputChanged_();
+        });
+        getEl('stereo-map-minutes')?.addEventListener('input', () => {
+          this.onMinutesInputChanged_();
+        });
       },
     );
   }
@@ -168,29 +346,11 @@ export class StereoMap extends KeepTrackPlugin {
           return;
         }
         if (sat) {
+          this.syncMinutesFromOrbits_();
           this.updateMap();
         }
       },
     );
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'm' && !isRepeat) {
-        if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) <= -1) {
-          return;
-        }
-
-        if (!this.isMenuButtonActive) {
-          this.openSideMenu();
-          this.setBottomIconToSelected();
-          this.updateMap();
-          ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
-        } else {
-          this.closeSideMenu();
-          this.setBottomIconToUnselected();
-          ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
-        }
-      }
-    });
   }
 
   updateMap(): void {
@@ -202,10 +362,23 @@ export class StereoMap extends KeepTrackPlugin {
         return;
       }
 
+      // Clear canvas before redrawing to prevent stale content
+      const ctx = this.canvas_?.getContext('2d');
+
+      if (ctx) {
+        ctx.clearRect(0, 0, this.canvas_.width, this.canvas_.height);
+      }
+
       this.updateSatPosition_();
       StereoMap.updateSensorPosition_();
       this.drawEarthLayer_();
+      if (this.isGraticuleEnabled_) {
+        this.drawGraticuleLines_();
+      }
       this.drawGroundTrace_();
+      if (this.isGraticuleEnabled_) {
+        this.drawGraticuleLabels_();
+      }
       this.addTextToMap_();
     } catch (e) {
       errorManagerInstance.info(e);
@@ -216,7 +389,7 @@ export class StereoMap extends KeepTrackPlugin {
     let html = '';
 
     for (let i = 1; i <= count; i++) {
-      html += `<img id="map-look${i}" class="map-item map-look"/>`;
+      html += `<img id="map-look${i}" class="map-item map-look start-hidden"/>`;
     }
 
     return html;
@@ -245,9 +418,9 @@ export class StereoMap extends KeepTrackPlugin {
 
   private drawGroundTrace_() {
     const groundTracePoints: GroundTracePoint[] = [];
-    const pointPerOrbit = 512;
+    const totalPoints = Math.min(4096, Math.max(512, Math.ceil(this.orbitMultiplier_ * 256)));
     // We only have 50 clickable markers
-    const selectableInterval = Math.ceil(pointPerOrbit / 50);
+    const selectableInterval = Math.ceil(totalPoints / 50);
     let selectableIdx = 1;
 
     const sat = ServiceLocator.getCatalogManager().getSat(this.selectSatManager_?.selectedSat ?? -1);
@@ -257,9 +430,13 @@ export class StereoMap extends KeepTrackPlugin {
       return;
     }
 
+    const timeManagerInstance = ServiceLocator.getTimeManager();
+    const periodMs = sat.period * 60 * 1000;
+
     // Start at 1 so that the first point is NOT the satellite
-    for (let i = 1; i < pointPerOrbit; i++) {
-      const now = new Date(ServiceLocator.getTimeManager().simulationTimeObj.getTime() + ((i * sat.period * 1.15) / pointPerOrbit) * 60 * 1000);
+    for (let i = 1; i < totalPoints; i++) {
+      const offset = (i * periodMs * this.orbitMultiplier_) / totalPoints;
+      const now = new Date(timeManagerInstance.simulationTimeObj.getTime() + offset);
       const mapPoints = StereoMap.getMapPoints_(now, sat, sensorList);
 
       groundTracePoints.push({
@@ -269,15 +446,23 @@ export class StereoMap extends KeepTrackPlugin {
       });
 
       if (i % selectableInterval === 0) {
-        const dotDom = <HTMLImageElement>getEl(`map-look${selectableIdx}`);
+        const dotDom = getEl(`map-look${selectableIdx}`) as HTMLImageElement | null;
 
-        dotDom.src = mapPoints.overallView ? yellowSquare : redSquare;
-        dotDom.style.left = `${groundTracePoints[i - 1].x - this.halfDotSize_}px`;
-        dotDom.style.top = `${groundTracePoints[i - 1].y - this.halfDotSize_}px`;
-        dotDom.dataset.time = mapPoints.time;
+        if (dotDom) {
+          dotDom.src = mapPoints.overallView ? yellowSquare : redSquare;
+          dotDom.style.left = `${groundTracePoints[i - 1].x - this.halfDotSize_}px`;
+          dotDom.style.top = `${groundTracePoints[i - 1].y - this.halfDotSize_}px`;
+          dotDom.dataset.time = mapPoints.time;
+          showEl(`map-look${selectableIdx}`);
+        }
 
         selectableIdx++;
       }
+    }
+
+    // Hide unused dot markers
+    for (let i = selectableIdx; i <= 50; i++) {
+      hideEl(`map-look${i}`);
     }
 
     // Draw ground trace
@@ -374,34 +559,37 @@ export class StereoMap extends KeepTrackPlugin {
 
   private static updateSensorPosition_() {
     const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const sensorDom = <HTMLImageElement>getEl('map-sensor');
+    const sensorDom = getEl('map-sensor') as HTMLImageElement | null;
     let selectableIdx = 1;
 
     // Reset all sensor elements
     document.querySelectorAll('[id^="map-sensor-"]').forEach((sensor) => {
       sensor.remove();
     });
-    if (sensorManagerInstance.isSensorSelected()) {
-      for (const sensor of sensorManagerInstance.currentSensors) {
-        const map = {
-          x: ((sensor.lon + 180) / 360) * settingsManager.mapWidth,
-          y: settingsManager.mapHeight - ((sensor.lat + 90) / 180) * settingsManager.mapHeight,
-        };
 
-        // Add new sensor dynamically
-        const newSensor = document.createElement('img');
+    if (!sensorDom || !sensorManagerInstance.isSensorSelected()) {
+      return;
+    }
 
-        newSensor.id = `map-sensor-${selectableIdx}`;
-        newSensor.className = 'map-item map-look start-hidden';
-        newSensor.src = radar1;
-        newSensor.style.left = `${map.x - sensorDom.width / 2}px`;
-        newSensor.style.top = `${map.y - sensorDom.height / 2}px`;
-        newSensor.style.width = `${sensorDom.width}px`;
-        newSensor.style.height = `${sensorDom.height}px`;
-        getEl('map-menu')?.appendChild(newSensor);
-        showEl(`map-sensor-${selectableIdx}`);
-        selectableIdx++;
-      }
+    for (const sensor of sensorManagerInstance.currentSensors) {
+      const map = {
+        x: ((sensor.lon + 180) / 360) * settingsManager.mapWidth,
+        y: settingsManager.mapHeight - ((sensor.lat + 90) / 180) * settingsManager.mapHeight,
+      };
+
+      // Add new sensor dynamically
+      const newSensor = document.createElement('img');
+
+      newSensor.id = `map-sensor-${selectableIdx}`;
+      newSensor.className = 'map-item map-look start-hidden';
+      newSensor.src = radar1;
+      newSensor.style.left = `${map.x - sensorDom.width / 2}px`;
+      newSensor.style.top = `${map.y - sensorDom.height / 2}px`;
+      newSensor.style.width = `${sensorDom.width}px`;
+      newSensor.style.height = `${sensorDom.height}px`;
+      getEl('map-menu-canvas-wrap')?.appendChild(newSensor);
+      showEl(`map-sensor-${selectableIdx}`);
+      selectableIdx++;
     }
   }
 
@@ -414,6 +602,12 @@ export class StereoMap extends KeepTrackPlugin {
       return;
     }
 
+    const satDom = getEl('map-sat') as HTMLImageElement | null;
+
+    if (!satDom) {
+      return;
+    }
+
     const satWithPos = sat as unknown as { position: TemeVec3 };
     const gmst = ServiceLocator.getTimeManager().gmst;
     const lla = eci2lla(satWithPos.position, gmst);
@@ -421,15 +615,12 @@ export class StereoMap extends KeepTrackPlugin {
       x: ((lla.lon + 180) / 360) * settingsManager.mapWidth,
       y: settingsManager.mapHeight - ((lla.lat + 90) / 180) * settingsManager.mapHeight,
     };
-    const satDom = <HTMLImageElement>getEl('map-sat');
 
-    const mapSatelliteDOM = getEl('map-sat');
-
-    if (mapSatelliteDOM) {
-      mapSatelliteDOM.style.left = `${map.x - satDom.width / 2}px`;
-      mapSatelliteDOM.style.top = `${map.y - satDom.height / 2}px`;
-    }
+    satDom.style.left = `${map.x - satDom.width / 2}px`;
+    satDom.style.top = `${map.y - satDom.height / 2}px`;
   }
+
+  private static readonly SAT_INFOBOX_WIDTH_ = 360;
 
   private resize2DMap_(isForceWidescreen?: boolean): void {
     isForceWidescreen ??= false;
@@ -437,40 +628,44 @@ export class StereoMap extends KeepTrackPlugin {
 
     if (mapMenuDOM) {
       if (isForceWidescreen || window.innerWidth > window.innerHeight) {
-        // If widescreen
-        settingsManager.mapWidth = window.innerWidth;
-        settingsManager.mapHeight = settingsManager.mapWidth / 2;
-        mapMenuDOM.style.width = `${window.innerWidth}px`;
+        // If widescreen, leave room for the sat-info-box on the right
+        const availableWidth = window.innerWidth - StereoMap.SAT_INFOBOX_WIDTH_;
 
-        this.canvas_.width = settingsManager.mapWidth;
-        this.canvas_.height = settingsManager.mapHeight;
+        settingsManager.mapWidth = availableWidth;
+        settingsManager.mapHeight = settingsManager.mapWidth / 2;
+        mapMenuDOM.style.width = `${availableWidth}px`;
       } else {
         settingsManager.mapHeight = window.innerHeight - 100; // Subtract 100 portrait (mobile)
         settingsManager.mapWidth = settingsManager.mapHeight * 2;
         mapMenuDOM.style.width = `${settingsManager.mapWidth}px`;
-
-        this.canvas_.width = settingsManager.mapWidth;
-        this.canvas_.style.width = `${settingsManager.mapWidth}px`;
-        this.canvas_.height = settingsManager.mapHeight;
-        this.canvas_.style.height = `${settingsManager.mapHeight}px`;
       }
+
+      this.canvas_.width = settingsManager.mapWidth;
+      this.canvas_.style.width = `${settingsManager.mapWidth}px`;
+      this.canvas_.height = settingsManager.mapHeight;
+      this.canvas_.style.height = `${settingsManager.mapHeight}px`;
     }
 
     this.drawEarthLayer_();
   }
 
+  private getMapTextureUrl_(): string {
+    const textures: Record<string, string> = {
+      standard: 'earthmap4k.jpg',
+      alt: 'earthmapalt4k.jpg',
+      night: 'earthmap-night4k.jpg',
+    };
+
+    return `${settingsManager.installDirectory}textures/${textures[this.mapStyle_]}`;
+  }
+
   private drawEarthLayer_(): void {
     const ctx = this.canvas_.getContext('2d');
+    const expectedFilename = this.getMapTextureUrl_().split('/').pop()!;
+    const needsReload = !this.earthImg_.src || !this.earthImg_.src.endsWith(expectedFilename);
 
-    // Only draw if the image is completely loaded and not broken
-    if (this.earthImg_.complete && this.earthImg_.naturalWidth !== 0) {
-      try {
-        ctx?.drawImage(this.earthImg_, 0, 0, settingsManager.mapWidth, settingsManager.mapHeight);
-      } catch (e) {
-        errorManagerInstance.warn(`Failed to draw earth image on canvas: ${(e as Error).message}`);
-      }
-    } else if (!this.earthImg_.src) {
-      this.earthImg_.src = `${settingsManager.installDirectory}textures/earthmap4k.jpg`;
+    if (needsReload) {
+      this.earthImg_.src = this.getMapTextureUrl_();
       this.earthImg_.onload = () => {
         try {
           ctx?.drawImage(this.earthImg_, 0, 0, settingsManager.mapWidth, settingsManager.mapHeight);
@@ -481,7 +676,130 @@ export class StereoMap extends KeepTrackPlugin {
       this.earthImg_.onerror = () => {
         errorManagerInstance.warn('Earth image failed to load for stereo map.');
       };
+    } else if (this.earthImg_.complete && this.earthImg_.naturalWidth !== 0) {
+      try {
+        ctx?.drawImage(this.earthImg_, 0, 0, settingsManager.mapWidth, settingsManager.mapHeight);
+      } catch (e) {
+        errorManagerInstance.warn(`Failed to draw earth image on canvas: ${(e as Error).message}`);
+      }
     }
+  }
+
+  private drawGraticuleLines_(): void {
+    const ctx = this.canvas_.getContext('2d');
+
+    if (!ctx) {
+      return;
+    }
+
+    const w = settingsManager.mapWidth;
+    const h = settingsManager.mapHeight;
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1;
+
+    // Latitude lines every 20°
+    for (let lat = -80; lat <= 80; lat += 20) {
+      const y = h - ((lat + 90) / 180) * h;
+
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // Longitude lines every 20°
+    for (let lon = -160; lon <= 160; lon += 20) {
+      const x = ((lon + 180) / 360) * w;
+
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+  }
+
+  private drawGraticuleLabels_(): void {
+    const ctx = this.canvas_.getContext('2d');
+
+    if (!ctx) {
+      return;
+    }
+
+    const w = settingsManager.mapWidth;
+    const h = settingsManager.mapHeight;
+    const pad = 4;
+
+    ctx.font = 'bold 12px sans-serif';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.lineWidth = 3;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+
+    // Latitude labels on left and right edges
+    ctx.textBaseline = 'middle';
+    for (let lat = -80; lat <= 80; lat += 20) {
+      const y = h - ((lat + 90) / 180) * h;
+      const absLat = Math.abs(lat);
+      const label = lat === 0 ? '0\u00B0' : `${absLat}\u00B0${lat > 0 ? 'N' : 'S'}`;
+
+      // Left edge
+      ctx.textAlign = 'left';
+      ctx.strokeText(label, pad, y);
+      ctx.fillText(label, pad, y);
+
+      // Right edge
+      ctx.textAlign = 'right';
+      ctx.strokeText(label, w - pad, y);
+      ctx.fillText(label, w - pad, y);
+    }
+
+    // Longitude labels on top and bottom edges
+    ctx.textAlign = 'center';
+    for (let lon = -160; lon <= 160; lon += 20) {
+      const x = ((lon + 180) / 360) * w;
+      const absLon = Math.abs(lon);
+      const label = lon === 0 ? '0\u00B0' : `${absLon}\u00B0${lon > 0 ? 'E' : 'W'}`;
+
+      // Bottom edge
+      ctx.textBaseline = 'bottom';
+      ctx.strokeText(label, x, h - pad);
+      ctx.fillText(label, x, h - pad);
+
+      // Top edge
+      ctx.textBaseline = 'top';
+      ctx.strokeText(label, x, pad);
+      ctx.fillText(label, x, pad);
+    }
+
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  private applySettings_(): void {
+    const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
+    const graticuleInput = getEl('stereo-map-graticule') as HTMLInputElement | null;
+    const styleRadios = document.querySelectorAll<HTMLInputElement>('input[name="stereo-map-style"]');
+
+    if (orbitInput) {
+      const val = parseFloat(orbitInput.value);
+
+      if (!isNaN(val) && val >= 0.5 && val <= 20) {
+        this.orbitMultiplier_ = val;
+      }
+    }
+
+    if (graticuleInput) {
+      this.isGraticuleEnabled_ = graticuleInput.checked;
+    }
+
+    styleRadios.forEach((radio) => {
+      if (radio.checked) {
+        this.mapStyle_ = radio.value as 'standard' | 'alt' | 'night';
+      }
+    });
+
+    this.isMapUpdateOverride_ = true;
+    this.updateMap();
   }
 
   private onCruncherMessage_(): void {
@@ -515,5 +833,99 @@ export class StereoMap extends KeepTrackPlugin {
 
       timeManagerInstance.changeStaticOffset(timeObj.getTime() - today.getTime()); // Find the offset from today
     }
+  }
+
+  private getSelectedSatPeriod_(): number {
+    const sat = ServiceLocator.getCatalogManager().getSat(this.selectSatManager_?.selectedSat ?? -1);
+
+    return sat?.period ?? 0;
+  }
+
+  private syncMinutesFromOrbits_(): void {
+    const minutesInput = getEl('stereo-map-minutes') as HTMLInputElement | null;
+    const period = this.getSelectedSatPeriod_();
+
+    if (!minutesInput || period <= 0) {
+      return;
+    }
+
+    minutesInput.value = Math.round(this.orbitMultiplier_ * period).toString();
+  }
+
+  private syncOrbitsFromMinutes_(): void {
+    const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
+    const period = this.getSelectedSatPeriod_();
+
+    if (!orbitInput || period <= 0) {
+      return;
+    }
+
+    orbitInput.value = (this.orbitMultiplier_).toFixed(2);
+  }
+
+  private onOrbitInputChanged_(): void {
+    if (this.isSyncingInputs_) {
+      return;
+    }
+
+    const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
+
+    if (!orbitInput) {
+      return;
+    }
+
+    const val = parseFloat(orbitInput.value);
+
+    if (isNaN(val) || val < 0.5 || val > 20) {
+      return;
+    }
+
+    this.orbitMultiplier_ = val;
+
+    this.isSyncingInputs_ = true;
+    this.syncMinutesFromOrbits_();
+    this.isSyncingInputs_ = false;
+
+    this.debouncedMapUpdate_();
+  }
+
+  private onMinutesInputChanged_(): void {
+    if (this.isSyncingInputs_) {
+      return;
+    }
+
+    const minutesInput = getEl('stereo-map-minutes') as HTMLInputElement | null;
+    const period = this.getSelectedSatPeriod_();
+
+    if (!minutesInput || period <= 0) {
+      return;
+    }
+
+    const minutes = parseFloat(minutesInput.value);
+
+    if (isNaN(minutes) || minutes < 1) {
+      return;
+    }
+
+    const orbits = Math.min(20, Math.max(0.5, minutes / period));
+
+    this.orbitMultiplier_ = orbits;
+
+    this.isSyncingInputs_ = true;
+    this.syncOrbitsFromMinutes_();
+    this.isSyncingInputs_ = false;
+
+    this.debouncedMapUpdate_();
+  }
+
+  private debouncedMapUpdate_(): void {
+    if (this.debounceTimer_) {
+      clearTimeout(this.debounceTimer_);
+    }
+    this.debounceTimer_ = setTimeout(() => {
+      this.isMapUpdateOverride_ = true;
+      this.updateMap();
+      this.debounceTimer_ = null;
+    }, 200);
   }
 }
