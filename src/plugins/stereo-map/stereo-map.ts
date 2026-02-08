@@ -61,7 +61,6 @@ import {
   ICommandPaletteCommand,
   IHelpConfig,
   IKeyboardShortcut,
-  ISecondaryMenuConfig,
   ISideMenuConfig,
 } from '@app/engine/plugins/core/plugin-capabilities';
 import { dateFormat } from '@app/engine/utils/dateFormat';
@@ -86,21 +85,30 @@ export class StereoMap extends KeepTrackPlugin {
   constructor() {
     super();
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
+
+    this.logo_.src = `${settingsManager.installDirectory}img/logo-primary.png`;
+    this.logo_.onerror = () => errorManagerInstance.warn('Failed to load primary logo image.');
+    if (settingsManager.isShowSecondaryLogo) {
+      this.secondaryLogo_.src = `${settingsManager.installDirectory}img/logo-secondary.png`;
+      this.secondaryLogo_.onerror = () => errorManagerInstance.warn('Failed to load secondary logo image.');
+    }
   }
 
   /** The size of half of the dot used in the stereo map. (See CSS) */
   private readonly halfDotSize_ = 6;
-  private canvas_: HTMLCanvasElement;
+  protected canvas_: HTMLCanvasElement;
   private satCrunchNow_ = 0;
-  private isMapUpdateOverride_ = false;
-  private readonly earthImg_ = new Image();
+  protected isMapUpdateOverride_ = false;
+  protected readonly earthImg_ = new Image();
+  private readonly logo_ = new Image();
+  private readonly secondaryLogo_ = new Image();
 
   // Settings (configurable via secondary menu)
-  private orbitMultiplier_ = 1.15;
-  private isGraticuleEnabled_ = false;
-  private mapStyle_: 'standard' | 'alt' | 'night' = 'standard';
-  private isSyncingInputs_ = false;
-  private debounceTimer_: ReturnType<typeof setTimeout> | null = null;
+  protected orbitMultiplier_ = 1.15;
+  protected isGraticuleEnabled_ = false;
+  protected mapStyle_: 'day' | 'alt' | 'night' | 'daynight' = 'day';
+  protected isSyncingInputs_ = false;
+  protected debounceTimer_: ReturnType<typeof setTimeout> | null = null;
 
   isRequireSatelliteSelected = true;
   isIconDisabled = true;
@@ -121,6 +129,7 @@ export class StereoMap extends KeepTrackPlugin {
 
   onBottomIconClick(): void {
     if (this.isMenuButtonActive) {
+      this.syncMinutesFromOrbits_();
       this.updateMap();
     }
   }
@@ -182,87 +191,6 @@ export class StereoMap extends KeepTrackPlugin {
         isAvailable: () => this.isMenuButtonActive,
       },
     ];
-  }
-
-  getSecondaryMenuConfig(): ISecondaryMenuConfig {
-    return {
-      html: this.buildSecondaryMenuHtml_(),
-      width: 280,
-    };
-  }
-
-  onSecondaryMenuOpen(): void {
-    const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
-    const graticuleInput = getEl('stereo-map-graticule') as HTMLInputElement | null;
-
-    if (orbitInput) {
-      orbitInput.value = this.orbitMultiplier_.toString();
-    }
-    if (graticuleInput) {
-      graticuleInput.checked = this.isGraticuleEnabled_;
-    }
-
-    this.syncMinutesFromOrbits_();
-
-    // Set the active radio button for map style
-    const styleRadio = getEl(`stereo-map-style-${this.mapStyle_}`) as HTMLInputElement | null;
-
-    if (styleRadio) {
-      styleRadio.checked = true;
-    }
-  }
-
-  private buildSecondaryMenuHtml_(): string {
-    return html`
-      <form id="stereo-map-settings-form">
-        <div class="row">
-          <div class="input-field col s6">
-            <input id="stereo-map-orbit-mult" value="1.15" type="number" step="0.05" min="0.5" max="20"
-              style="text-align: center;"
-            />
-            <label for="stereo-map-orbit-mult" class="active">Orbits</label>
-          </div>
-          <div class="input-field col s6">
-            <input id="stereo-map-minutes" value="" type="number" step="1" min="1"
-              style="text-align: center;"
-            />
-            <label for="stereo-map-minutes" class="active">Minutes</label>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col s12">
-            <label>
-              <input id="stereo-map-graticule" type="checkbox" />
-              <span>Show Graticule</span>
-            </label>
-          </div>
-        </div>
-        <div class="divider"></div>
-        <div class="row">
-          <div class="col s12">
-            <h5 style="text-align:center; font-size:1.1rem;">Map Style</h5>
-            <p>
-              <label>
-                <input id="stereo-map-style-standard" name="stereo-map-style" type="radio" value="standard" checked />
-                <span>Standard</span>
-              </label>
-            </p>
-            <p>
-              <label>
-                <input id="stereo-map-style-alt" name="stereo-map-style" type="radio" value="alt" />
-                <span>Political</span>
-              </label>
-            </p>
-            <p>
-              <label>
-                <input id="stereo-map-style-night" name="stereo-map-style" type="radio" value="night" />
-                <span>Night Lights</span>
-              </label>
-            </p>
-          </div>
-        </div>
-      </form>
-    `;
   }
 
   onDownload(): void {
@@ -478,28 +406,50 @@ export class StereoMap extends KeepTrackPlugin {
     ctx.beginPath();
     ctx.moveTo(groundTracePoints[0].x, groundTracePoints[0].y);
     for (let i = 1; i < groundTracePoints.length; i++) {
-      if (!groundTracePoints[i].inView && groundTracePoints[i - 1].inView) {
-        // We are now out of view
+      const isBigJump = Math.abs(groundTracePoints[i].x - groundTracePoints[i - 1].x) > bigJumpSize;
+      const viewChanged = groundTracePoints[i].inView !== groundTracePoints[i - 1].inView;
+
+      if (isBigJump) {
+        // Interpolate to the map edge and continue from the opposite side
+        const prev = groundTracePoints[i - 1];
+        const curr = groundTracePoints[i];
+        const mapW = settingsManager.mapWidth;
+        let edgeX: number;
+        let edgeY: number;
+        let oppositeX: number;
+
+        if (curr.x < prev.x) {
+          // Right-to-left wrap
+          const virtualX = curr.x + mapW;
+          const t = (mapW - prev.x) / (virtualX - prev.x);
+
+          edgeY = prev.y + t * (curr.y - prev.y);
+          edgeX = mapW;
+          oppositeX = 0;
+        } else {
+          // Left-to-right wrap
+          const virtualX = curr.x - mapW;
+          const t = -prev.x / (virtualX - prev.x);
+
+          edgeY = prev.y + t * (curr.y - prev.y);
+          edgeX = 0;
+          oppositeX = mapW;
+        }
+
+        ctx.lineTo(edgeX, edgeY);
         ctx.stroke();
         ctx.beginPath();
-        ctx.strokeStyle = '#ff0000';
+        if (viewChanged) {
+          ctx.strokeStyle = curr.inView ? '#ffff00' : '#ff0000';
+        }
+        ctx.moveTo(oppositeX, edgeY);
+        ctx.lineTo(curr.x, curr.y);
+      } else if (viewChanged) {
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = groundTracePoints[i].inView ? '#ffff00' : '#ff0000';
         ctx.moveTo(groundTracePoints[i - 1].x, groundTracePoints[i - 1].y);
         ctx.lineTo(groundTracePoints[i].x, groundTracePoints[i].y);
-      } else if (groundTracePoints[i].inView && !groundTracePoints[i - 1].inView) {
-        // We are now in view
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.strokeStyle = '#ffff00';
-        ctx.moveTo(groundTracePoints[i - 1].x, groundTracePoints[i - 1].y);
-        ctx.lineTo(groundTracePoints[i].x, groundTracePoints[i].y);
-      } else if (groundTracePoints[i].x - groundTracePoints[i - 1].x > bigJumpSize || groundTracePoints[i - 1].x - groundTracePoints[i].x > bigJumpSize) {
-        /*
-         * If there is a big jump assume we crossed a pole and should
-         * jump to the next point to continue drawing the line
-         */
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(groundTracePoints[i].x, groundTracePoints[i].y);
       } else {
         ctx.lineTo(groundTracePoints[i].x, groundTracePoints[i].y);
       }
@@ -509,9 +459,6 @@ export class StereoMap extends KeepTrackPlugin {
 
   private addTextToMap_() {
     const ctx = this.canvas_.getContext('2d');
-    const d = new Date();
-    const n = d.getUTCFullYear();
-    const copyrightStr = !settingsManager.copyrightOveride ? `©${n} KEEPTRACK.SPACE` : '';
     const cw = this.canvas_.width;
     const ch = this.canvas_.height;
 
@@ -519,16 +466,27 @@ export class StereoMap extends KeepTrackPlugin {
       return;
     }
 
-    ctx.font = '24px nasalization';
-    let textWidth = ctx.measureText(copyrightStr).width;
+    // Draw logo watermark in bottom-right corner
+    if (!settingsManager.copyrightOveride && this.logo_.complete && this.logo_.naturalWidth > 0) {
+      const padding = 15;
+      const logoHeight = Math.max(40, ch * 0.06);
+      const logoWidth = this.logo_.width * (logoHeight / this.logo_.height);
 
-    ctx.globalAlpha = 1.0;
-    ctx.fillStyle = 'black';
-    ctx.fillText(copyrightStr, cw - textWidth - 30, ch - 30);
+      if (settingsManager.isShowSecondaryLogo && this.secondaryLogo_.complete && this.secondaryLogo_.naturalWidth > 0) {
+        const secLogoWidth = this.secondaryLogo_.width * (logoHeight / this.secondaryLogo_.height);
 
+        ctx.drawImage(this.secondaryLogo_, padding, ch - logoHeight - padding, secLogoWidth, logoHeight);
+        ctx.drawImage(this.logo_, padding + secLogoWidth + padding, ch - logoHeight - padding, logoWidth, logoHeight);
+      } else {
+        ctx.drawImage(this.logo_, cw - logoWidth - padding, ch - logoHeight - padding, logoWidth, logoHeight);
+      }
+    }
+
+    // Draw classification text
     if (settingsManager.classificationStr !== '') {
       ctx.font = '24px nasalization';
-      textWidth = ctx.measureText(settingsManager.classificationStr ?? '').width;
+      const textWidth = ctx.measureText(settingsManager.classificationStr ?? '').width;
+
       ctx.globalAlpha = 1.0;
       switch (settingsManager.classificationStr) {
         case 'Top Secret//SCI':
@@ -649,17 +607,17 @@ export class StereoMap extends KeepTrackPlugin {
     this.drawEarthLayer_();
   }
 
-  private getMapTextureUrl_(): string {
+  protected getMapTextureUrl_(): string {
     const textures: Record<string, string> = {
-      standard: 'earthmap4k.jpg',
-      alt: 'earthmapalt4k.jpg',
+      day: 'earthmap4k.jpg',
       night: 'earthmap-night4k.jpg',
+      alt: 'earthmapalt4k.jpg',
     };
 
-    return `${settingsManager.installDirectory}textures/${textures[this.mapStyle_]}`;
+    return `${settingsManager.installDirectory}textures/${textures[this.mapStyle_] ?? textures.day}`;
   }
 
-  private drawEarthLayer_(): void {
+  protected drawEarthLayer_(): void {
     const ctx = this.canvas_.getContext('2d');
     const expectedFilename = this.getMapTextureUrl_().split('/').pop()!;
     const needsReload = !this.earthImg_.src || !this.earthImg_.src.endsWith(expectedFilename);
@@ -775,7 +733,7 @@ export class StereoMap extends KeepTrackPlugin {
     ctx.textBaseline = 'alphabetic';
   }
 
-  private applySettings_(): void {
+  protected applySettings_(): void {
     const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
     const graticuleInput = getEl('stereo-map-graticule') as HTMLInputElement | null;
     const styleRadios = document.querySelectorAll<HTMLInputElement>('input[name="stereo-map-style"]');
@@ -794,7 +752,7 @@ export class StereoMap extends KeepTrackPlugin {
 
     styleRadios.forEach((radio) => {
       if (radio.checked) {
-        this.mapStyle_ = radio.value as 'standard' | 'alt' | 'night';
+        this.mapStyle_ = radio.value as typeof this.mapStyle_;
       }
     });
 
@@ -835,13 +793,13 @@ export class StereoMap extends KeepTrackPlugin {
     }
   }
 
-  private getSelectedSatPeriod_(): number {
+  protected getSelectedSatPeriod_(): number {
     const sat = ServiceLocator.getCatalogManager().getSat(this.selectSatManager_?.selectedSat ?? -1);
 
     return sat?.period ?? 0;
   }
 
-  private syncMinutesFromOrbits_(): void {
+  protected syncMinutesFromOrbits_(): void {
     const minutesInput = getEl('stereo-map-minutes') as HTMLInputElement | null;
     const period = this.getSelectedSatPeriod_();
 
@@ -852,7 +810,7 @@ export class StereoMap extends KeepTrackPlugin {
     minutesInput.value = Math.round(this.orbitMultiplier_ * period).toString();
   }
 
-  private syncOrbitsFromMinutes_(): void {
+  protected syncOrbitsFromMinutes_(): void {
     const orbitInput = getEl('stereo-map-orbit-mult') as HTMLInputElement | null;
     const period = this.getSelectedSatPeriod_();
 
@@ -863,7 +821,7 @@ export class StereoMap extends KeepTrackPlugin {
     orbitInput.value = (this.orbitMultiplier_).toFixed(2);
   }
 
-  private onOrbitInputChanged_(): void {
+  protected onOrbitInputChanged_(): void {
     if (this.isSyncingInputs_) {
       return;
     }
@@ -889,7 +847,7 @@ export class StereoMap extends KeepTrackPlugin {
     this.debouncedMapUpdate_();
   }
 
-  private onMinutesInputChanged_(): void {
+  protected onMinutesInputChanged_(): void {
     if (this.isSyncingInputs_) {
       return;
     }
@@ -918,7 +876,7 @@ export class StereoMap extends KeepTrackPlugin {
     this.debouncedMapUpdate_();
   }
 
-  private debouncedMapUpdate_(): void {
+  protected debouncedMapUpdate_(): void {
     if (this.debounceTimer_) {
       clearTimeout(this.debounceTimer_);
     }

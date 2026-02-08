@@ -63,18 +63,10 @@ describe('StereoMapPlugin_class', () => {
       expect(shortcuts[0].callback).toBeDefined();
     });
 
-    it('should return correct secondary menu config', () => {
+    it('should not have secondary menu config (pro only)', () => {
       const plugin = new StereoMap();
-      const config = plugin.getSecondaryMenuConfig();
 
-      expect(config.html).toContain('stereo-map-orbit-mult');
-      expect(config.html).toContain('stereo-map-minutes');
-      expect(config.html).toContain('max="20"');
-      expect(config.html).toContain('stereo-map-graticule');
-      expect(config.html).toContain('stereo-map-style-standard');
-      expect(config.html).toContain('stereo-map-style-alt');
-      expect(config.html).toContain('stereo-map-style-night');
-      expect(config.width).toBe(280);
+      expect((plugin as unknown as Record<string, unknown>).getSecondaryMenuConfig).toBeUndefined();
     });
   });
 
