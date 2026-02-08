@@ -4,7 +4,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { RADIUS_OF_EARTH } from '@app/engine/utils/constants';
 import { alt2zoom } from '@app/engine/utils/transforms';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { Degrees, Kilometers, Radians } from '@ootk/src/main';
+import { Degrees, GreenwichMeanSiderealTime, Kilometers, Radians } from '@ootk/src/main';
 import { vec3 } from 'gl-matrix';
 
 /**
@@ -46,6 +46,9 @@ export class CameraState {
   prevSatPitch: Radians = 0 as Radians;
   prevSatYaw: Radians = 0 as Radians;
   hasPrevSatAngles = false;
+  // Previous frame's GMST for Earth rotation compensation in FIXED_TO_EARTH mode
+  prevGmst: GreenwichMeanSiderealTime = 0 as GreenwichMeanSiderealTime;
+  hasPrevGmst = false;
   /**
    * This was used when there was only one camera mode and the camera was always centered on the earth
    * It is the overall yaw of the camera?
@@ -304,6 +307,10 @@ export class CameraState {
     this.camYawTarget = 0 as Radians;
     this.camYawSpeed = 0;
     this.camRotateSpeed = 0;
+
+    // Reset GMST tracking
+    this.prevGmst = 0 as GreenwichMeanSiderealTime;
+    this.hasPrevGmst = false;
 
     // Reset FPS state
     this.fpsPitch = 0 as Degrees;

@@ -719,6 +719,28 @@ export class Camera {
 
     this.updateCameraSnapMode(dt);
 
+    // Compensate for Earth rotation in FIXED_TO_EARTH mode
+    // so the camera stays fixed to geographic coordinates
+    if (this.cameraType === CameraType.FIXED_TO_EARTH || this.cameraType === CameraType.OFFSET) {
+      const currentGmst = ServiceLocator.getTimeManager().gmst;
+
+      if (this.state.hasPrevGmst) {
+        const deltaGmst = <Radians>(currentGmst - this.state.prevGmst);
+
+        if (deltaGmst !== 0) {
+          this.state.camYaw = <Radians>(this.state.camYaw + deltaGmst);
+          if (!this.state.camAngleSnappedOnSat) {
+            this.state.camYawTarget = <Radians>(this.state.camYawTarget + deltaGmst);
+          }
+        }
+      }
+
+      this.state.prevGmst = currentGmst;
+      this.state.hasPrevGmst = true;
+    } else {
+      this.state.hasPrevGmst = false;
+    }
+
     if (this.cameraType !== CameraType.FIXED_TO_SAT) {
       if (this.state.camPitch > TAU / 4) {
         this.state.camPitch = <Radians>(TAU / 4);
