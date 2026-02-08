@@ -3,6 +3,7 @@ import Draggabilly from 'draggabilly';
 /* eslint-disable max-lines */
 import { country2flagIcon } from '@app/app/data/catalogs/countries';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -14,7 +15,6 @@ import { KeepTrack } from '@app/keeptrack';
 import { BaseObject, CatalogSource, Satellite } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
 import { CONTAINER_ID, EL, SECTIONS } from './sat-info-box-html';
 import './sat-info-box.css';
 
@@ -323,10 +323,16 @@ export class SatInfoBox extends KeepTrackPlugin {
      * getEl('edit-satinfo-link').innerHTML = "<a class='iframe' href='editor.htm?scc=" + sat.sccNum + "&popup=true'>Edit Satellite Info</a>";
      */
 
-    if (obj.isMissile() || obj instanceof OemSatellite) {
+    if (obj.isMissile()) {
       setInnerHtml(EL.INTL_DES, 'N/A');
       setInnerHtml(EL.OBJNUM, 'N/A');
       setInnerHtml(EL.SOURCE, 'N/A');
+    } else if (obj instanceof OemSatellite) {
+      const oemSat = obj as OemSatellite;
+
+      setInnerHtml(EL.INTL_DES, oemSat.intlDes || 'N/A');
+      setInnerHtml(EL.OBJNUM, oemSat.sccNum || 'N/A');
+      setInnerHtml(EL.SOURCE, oemSat.source || 'OEM File');
     } else {
       const sat = obj as Satellite;
 
