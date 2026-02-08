@@ -1,12 +1,12 @@
 /* eslint-disable max-lines */
 import { BottomMenu } from '@app/app/ui/bottom-menu';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, Singletons } from '@app/engine/core/interfaces';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
 import { t7e, TranslationKey } from '@app/locales/keys';
 import { BaseObject } from '@ootk/src/main';
 import Module from 'module';
 import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
@@ -712,7 +712,9 @@ export abstract class KeepTrackPlugin {
           <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden text-select"
             style="z-index: 5; width: ${menuWidthStr};">
             <div id="${this.sideMenuElementName}-content" class="side-menu">
-              <div class="row" style="margin-top: 5px;margin-bottom: 0px;display: flex;justify-content: space-evenly;align-items: center;flex-direction: row;flex-wrap: nowrap;">
+              <div class="row"
+                style="margin-left: 1rem;margin-right: 1rem;margin-top: 5px;margin-bottom: 0px;display: flex;
+                justify-content: space-evenly;align-items: center;flex-direction: row;flex-wrap: nowrap;">
                 ${spacerDiv}
                 ${this.downloadIconCb ? spacerDiv : ''}
                 <h5 class="center-align" style="margin: 0px auto">${this.sideMenuTitle}</h5>
