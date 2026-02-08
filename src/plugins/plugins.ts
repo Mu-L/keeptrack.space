@@ -70,7 +70,6 @@ import { MultiSiteLookAnglesPlugin } from './sensor/multi-site-look-angles-plugi
 import { SensorInfoPlugin } from './sensor/sensor-info-plugin';
 import { SettingsMenuPlugin } from './settings-menu/settings-menu';
 import { ShortTermFences } from './short-term-fences/short-term-fences';
-import { StereoMap } from './stereo-map/stereo-map';
 import { TimeMachine } from './time-machine/time-machine';
 import { TimeSlider } from './time-slider/time-slider';
 import { SatelliteTimeline } from './timeline-satellite/satellite-timeline';
@@ -212,6 +211,13 @@ export class PluginManager {
             new proPlugin.TocaPocaPlugin().init();
           }, config: plugins.TocaPocaPlugin,
         },
+        {
+          init: async () => {
+            const proPlugin = await import('../plugins-pro/neighborhood-watch/neighborhood-watch');
+
+            new proPlugin.NeighborhoodWatch().init();
+          }, config: plugins.NeighborhoodWatch,
+        },
         { init: () => new OrbitGuardMenuPlugin().init(), config: plugins.OrbitGuardMenuPlugin },
         { init: () => new TrackingImpactPredict().init(), config: plugins.TrackingImpactPredict },
         { init: () => new Breakup().init(), config: plugins.Breakup },
@@ -230,7 +236,19 @@ export class PluginManager {
         { init: () => new MissilePlugin().init(), config: plugins.MissilePlugin },
         { init: () => new SatelliteViewPlugin().init(), config: plugins.SatelliteViewPlugin },
         { init: () => new SatelliteFov().init(), config: plugins.SatelliteFov },
-        { init: () => new StereoMap().init(), config: plugins.StereoMap },
+        {
+          init: async () => {
+            try {
+              const proPlugin = await import('../plugins-pro/stereo-map/stereo-map-pro');
+
+              new proPlugin.StereoMapPro().init();
+            } catch {
+              const freePlugin = await import('./stereo-map/stereo-map');
+
+              new freePlugin.StereoMap().init();
+            }
+          }, config: plugins.StereoMap,
+        },
         {
           init: async () => {
             const proPlugin = await import('../plugins-pro/planetarium/planetarium');
