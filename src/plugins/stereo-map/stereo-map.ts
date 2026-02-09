@@ -148,12 +148,27 @@ export class StereoMap extends KeepTrackPlugin {
   }
 
   private buildSideMenuHtml_(): string {
-    return html`
+    const innerHtml = html`
       <div id="map-menu-canvas-wrap" style="position: relative;">
        <canvas id="map-2d" style="display: block;"></canvas>
        <img id="map-sat" class="map-item map-look" src=${satellite2} width="40px" height="40px"/>
        <img id="map-sensor" class="map-item map-look start-hidden" src=${radar1} width="40px" height="40px"/>
        ${StereoMap.generateMapLooks_(50)}
+      </div>
+    `;
+
+    // When a secondary menu exists (pro), generateSideMenuHtml_() in the base plugin
+    // wraps sideMenuElementHtml in the standard side-menu template. Without a secondary
+    // menu (OSS), the raw HTML is inserted directly, so we must include the wrapper.
+    if ('getSecondaryMenuConfig' in this) {
+      return innerHtml;
+    }
+
+    return html`
+      <div id="map-menu" class="side-menu-parent start-hidden text-select">
+        <div id="map-menu-content" class="side-menu">
+          ${innerHtml}
+        </div>
       </div>
     `;
   }
@@ -468,17 +483,18 @@ export class StereoMap extends KeepTrackPlugin {
 
     // Draw logo watermark in bottom-right corner
     if (!settingsManager.copyrightOveride && this.logo_.complete && this.logo_.naturalWidth > 0) {
-      const padding = 15;
+      const paddingX = 40;
+      const paddingY = 25;
       const logoHeight = Math.max(40, ch * 0.06);
       const logoWidth = this.logo_.width * (logoHeight / this.logo_.height);
 
       if (settingsManager.isShowSecondaryLogo && this.secondaryLogo_.complete && this.secondaryLogo_.naturalWidth > 0) {
         const secLogoWidth = this.secondaryLogo_.width * (logoHeight / this.secondaryLogo_.height);
 
-        ctx.drawImage(this.secondaryLogo_, padding, ch - logoHeight - padding, secLogoWidth, logoHeight);
-        ctx.drawImage(this.logo_, padding + secLogoWidth + padding, ch - logoHeight - padding, logoWidth, logoHeight);
+        ctx.drawImage(this.secondaryLogo_, paddingX, ch - logoHeight - paddingY, secLogoWidth, logoHeight);
+        ctx.drawImage(this.logo_, paddingX + secLogoWidth + paddingX, ch - logoHeight - paddingY, logoWidth, logoHeight);
       } else {
-        ctx.drawImage(this.logo_, cw - logoWidth - padding, ch - logoHeight - padding, logoWidth, logoHeight);
+        ctx.drawImage(this.logo_, cw - logoWidth - paddingX, ch - logoHeight - paddingY, logoWidth, logoHeight);
       }
     }
 
