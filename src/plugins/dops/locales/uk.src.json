@@ -1,0 +1,35 @@
+{
+  "plugins": {
+    "DopsPlugin": {
+      "bottomIconLabel": "Перегляд DOP",
+      "title": "Меню розбавлення точності",
+      "helpTitle": "Dilution of Precision (DOP) Menu",
+      "helpBody": "Меню розбавлення точності (DOP) використовується для розрахунку значень DOP для супутника та сенсора. <br><br> Значення DOP: <ul style=\"margin-left: 40px;\"> <li> GDOP — геометричне розбавлення точності </li> <li> PDOP — розбавлення точності позиції </li> <li> HDOP — розбавлення точності по горизонталі </li> <li> VDOP — розбавлення точності по вертикалі </li> <li> TDOP — розбавлення точності часу </li> <li> NDOP — розбавлення точності за кількістю супутників </li> </ul>",
+      "labels": {
+        "dopTable": "DOP Table",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "altitude": "Altitude",
+        "mask": "Mask",
+        "updateDopData": "Update DOP Data"
+      },
+      "tooltips": {
+        "latitude": "Latitude in Degrees",
+        "longitude": "Longitude in Degrees",
+        "altitude": "Altitude in KM",
+        "mask": "Minimum Elevation for GPS Lock"
+      },
+      "rmb": {
+        "dops": "DOPs",
+        "currentGpsDops": "Current GPS DOPs",
+        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+      },
+      "toast": {
+        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+      },
+      "errorMsgs": {
+        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+      }
+    }
+  }
+}

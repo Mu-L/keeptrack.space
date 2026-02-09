@@ -1,0 +1,35 @@
+{
+  "plugins": {
+    "DopsPlugin": {
+      "bottomIconLabel": "Ver DOPs",
+      "title": "Menú de Dilución de Precisión",
+      "helpTitle": "Dilution of Precision (DOP) Menu",
+      "helpBody": "El menú de Dilución de Precisión (DOP) se utiliza para calcular los valores DOP para un satélite y sensor. <br><br> Los valores DOP son: <ul style=\"margin-left: 40px;\"> <li> GDOP - Dilución de Precisión Geométrica </li> <li> PDOP - Dilución de Precisión de Posición </li> <li> HDOP - Dilución de Precisión Horizontal </li> <li> VDOP - Dilución de Precisión Vertical </li> <li> TDOP - Dilución de Precisión de Tiempo </li> <li> NDOP - Dilución de Precisión del Número de Satélites </li> </ul>",
+      "labels": {
+        "dopTable": "DOP Table",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "altitude": "Altitude",
+        "mask": "Mask",
+        "updateDopData": "Update DOP Data"
+      },
+      "tooltips": {
+        "latitude": "Latitude in Degrees",
+        "longitude": "Longitude in Degrees",
+        "altitude": "Altitude in KM",
+        "mask": "Minimum Elevation for GPS Lock"
+      },
+      "rmb": {
+        "dops": "DOPs",
+        "currentGpsDops": "Current GPS DOPs",
+        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+      },
+      "toast": {
+        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+      },
+      "errorMsgs": {
+        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+      }
+    }
+  }
+}

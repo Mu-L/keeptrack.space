@@ -1,0 +1,35 @@
+{
+  "plugins": {
+    "DopsPlugin": {
+      "bottomIconLabel": "查看DOP",
+      "title": "精度因子菜单",
+      "helpTitle": "Dilution of Precision (DOP) Menu",
+      "helpBody": "精度因子（DOP）菜单用于计算卫星和传感器的DOP值。<br><br>DOP值包括：<ul style=\"margin-left: 40px;\"><li>GDOP - 几何精度因子</li><li>PDOP - 位置精度因子</li><li>HDOP - 水平精度因子</li><li>VDOP - 垂直精度因子</li><li>TDOP - 时间精度因子</li><li>NDOP - 卫星数量精度因子</li></ul>",
+      "labels": {
+        "dopTable": "DOP Table",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "altitude": "Altitude",
+        "mask": "Mask",
+        "updateDopData": "Update DOP Data"
+      },
+      "tooltips": {
+        "latitude": "Latitude in Degrees",
+        "longitude": "Longitude in Degrees",
+        "altitude": "Altitude in KM",
+        "mask": "Minimum Elevation for GPS Lock"
+      },
+      "rmb": {
+        "dops": "DOPs",
+        "currentGpsDops": "Current GPS DOPs",
+        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+      },
+      "toast": {
+        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+      },
+      "errorMsgs": {
+        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+      }
+    }
+  }
+}

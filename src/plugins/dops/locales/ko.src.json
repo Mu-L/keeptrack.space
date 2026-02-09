@@ -1,0 +1,35 @@
+{
+  "plugins": {
+    "DopsPlugin": {
+      "bottomIconLabel": "DOP 보기",
+      "title": "정밀도 희석 메뉴",
+      "helpTitle": "Dilution of Precision (DOP) Menu",
+      "helpBody": "정밀도 희석(DOP) 메뉴는 위성 및 센서에 대한 DOP 값을 계산하는 데 사용됩니다. <br><br> DOP 값은 다음과 같습니다: <ul style='margin-left: 40px;'> <li> GDOP - 기하학적 정밀도 희석 </li> <li> PDOP - 위치 정밀도 희석 </li> <li> HDOP - 수평 정밀도 희석 </li> <li> VDOP - 수직 정밀도 희석 </li> <li> TDOP - 시간 정밀도 희석 </li> <li> NDOP - 위성 수 정밀도 희석 </li> </ul>",
+      "labels": {
+        "dopTable": "DOP Table",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "altitude": "Altitude",
+        "mask": "Mask",
+        "updateDopData": "Update DOP Data"
+      },
+      "tooltips": {
+        "latitude": "Latitude in Degrees",
+        "longitude": "Longitude in Degrees",
+        "altitude": "Altitude in KM",
+        "mask": "Minimum Elevation for GPS Lock"
+      },
+      "rmb": {
+        "dops": "DOPs",
+        "currentGpsDops": "Current GPS DOPs",
+        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+      },
+      "toast": {
+        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+      },
+      "errorMsgs": {
+        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+      }
+    }
+  }
+}

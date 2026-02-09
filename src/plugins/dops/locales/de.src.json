@@ -1,0 +1,35 @@
+{
+  "plugins": {
+    "DopsPlugin": {
+      "bottomIconLabel": "DOPs anzeigen",
+      "title": "Präzisionsverdünnungs-Menü",
+      "helpTitle": "Dilution of Precision (DOP) Menu",
+      "helpBody": "Das Präzisionsverdünnungs-Menü (DOP) wird verwendet, um DOP-Werte für einen Satelliten und Sensor zu berechnen. <br><br> Die DOP-Werte sind: <ul style=\"margin-left: 40px;\"> <li> GDOP - Geometrische Präzisionsverdünnung </li> <li> PDOP - Positions-Präzisionsverdünnung </li> <li> HDOP - Horizontale Präzisionsverdünnung </li> <li> VDOP - Vertikale Präzisionsverdünnung </li> <li> TDOP - Zeit-Präzisionsverdünnung </li> <li> NDOP - Satellitenzahl-Präzisionsverdünnung </li> </ul>",
+      "labels": {
+        "dopTable": "DOP Table",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "altitude": "Altitude",
+        "mask": "Mask",
+        "updateDopData": "Update DOP Data"
+      },
+      "tooltips": {
+        "latitude": "Latitude in Degrees",
+        "longitude": "Longitude in Degrees",
+        "altitude": "Altitude in KM",
+        "mask": "Minimum Elevation for GPS Lock"
+      },
+      "rmb": {
+        "dops": "DOPs",
+        "currentGpsDops": "Current GPS DOPs",
+        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+      },
+      "toast": {
+        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+      },
+      "errorMsgs": {
+        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+      }
+    }
+  }
+}

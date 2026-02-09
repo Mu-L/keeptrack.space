@@ -1,0 +1,35 @@
+{
+  "plugins": {
+    "DopsPlugin": {
+      "bottomIconLabel": "DOPを表示",
+      "title": "精度低下率メニュー",
+      "helpTitle": "Dilution of Precision (DOP) Menu",
+      "helpBody": "精度低下率（DOP）メニューは、衛星とセンサーのDOP値を計算するために使用されます。<br><br>DOP値は以下の通りです：<ul style=\"margin-left: 40px;\"><li>GDOP - 幾何学的精度低下率</li><li>PDOP - 位置精度低下率</li><li>HDOP - 水平精度低下率</li><li>VDOP - 垂直精度低下率</li><li>TDOP - 時間精度低下率</li><li>NDOP - 衛星数精度低下率</li></ul>",
+      "labels": {
+        "dopTable": "DOP Table",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "altitude": "Altitude",
+        "mask": "Mask",
+        "updateDopData": "Update DOP Data"
+      },
+      "tooltips": {
+        "latitude": "Latitude in Degrees",
+        "longitude": "Longitude in Degrees",
+        "altitude": "Altitude in KM",
+        "mask": "Minimum Elevation for GPS Lock"
+      },
+      "rmb": {
+        "dops": "DOPs",
+        "currentGpsDops": "Current GPS DOPs",
+        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+      },
+      "toast": {
+        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+      },
+      "errorMsgs": {
+        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+      }
+    }
+  }
+}
