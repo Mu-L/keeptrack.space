@@ -313,11 +313,6 @@
       "title": "视频导演菜单",
       "helpBody": "视频导演菜单用于操作场景中的摄像机和对象以创建视频。"
     },
-    "DopsPlugin": {
-      "bottomIconLabel": "查看DOP",
-      "title": "精度因子菜单",
-      "helpBody": "精度因子（DOP）菜单用于计算卫星和传感器的DOP值。<br><br>DOP值包括：<ul style=\"margin-left: 40px;\"><li>GDOP - 几何精度因子</li><li>PDOP - 位置精度因子</li><li>HDOP - 水平精度因子</li><li>VDOP - 垂直精度因子</li><li>TDOP - 时间精度因子</li><li>NDOP - 卫星数量精度因子</li></ul>"
-    },
     "EciPlot": {
       "bottomIconLabel": "ECI绘图",
       "title": "ECI绘图菜单",

@@ -282,11 +282,6 @@
       "title": "Video Director Menu",
       "helpBody": "The Video Director Menu is used to manipulate the camera and objects in the scene to create a video."
     },
-    "DopsPlugin": {
-      "bottomIconLabel": "View DOPs",
-      "title": "Dilution of Precision Menu",
-      "helpBody": "The Dilution of Precision (DOP) menu is used to calculate the DOP values for a satellite and sensor. <br><br> The DOP values are: <ul style=\"margin-left: 40px;\"> <li> GDOP - Geometric Dilution of Precision </li> <li> PDOP - Position Dilution of Precision </li> <li> HDOP - Horizontal Dilution of Precision </li> <li> VDOP - Vertical Dilution of Precision </li> <li> TDOP - Time Dilution of Precision </li> <li> NDOP - Number of Satellites Dilution of Precision </li> </ul>"
-    },
     "EciPlot": {
       "bottomIconLabel": "ECI Plot",
       "title": "ECI Plot Menu",

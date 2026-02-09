@@ -282,11 +282,6 @@
       "title": "비디오 디렉터 메뉴",
       "helpBody": "비디오 디렉터 메뉴는 비디오를 만들기 위해 장면의 카메라와 객체를 조작하는 데 사용됩니다."
     },
-    "DopsPlugin": {
-      "bottomIconLabel": "DOP 보기",
-      "title": "정밀도 희석 메뉴",
-      "helpBody": "정밀도 희석(DOP) 메뉴는 위성 및 센서에 대한 DOP 값을 계산하는 데 사용됩니다. <br><br> DOP 값은 다음과 같습니다: <ul style='margin-left: 40px;'> <li> GDOP - 기하학적 정밀도 희석 </li> <li> PDOP - 위치 정밀도 희석 </li> <li> HDOP - 수평 정밀도 희석 </li> <li> VDOP - 수직 정밀도 희석 </li> <li> TDOP - 시간 정밀도 희석 </li> <li> NDOP - 위성 수 정밀도 희석 </li> </ul>"
-    },
     "EciPlot": {
       "bottomIconLabel": "ECI 플롯",
       "title": "ECI 플롯 메뉴",

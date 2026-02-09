@@ -285,11 +285,6 @@
       "title": "Video-Direktor-Menü",
       "helpBody": "Das Video-Direktor-Menü wird verwendet, um die Kamera und Objekte in der Szene zu manipulieren, um ein Video zu erstellen."
     },
-    "DopsPlugin": {
-      "bottomIconLabel": "DOPs anzeigen",
-      "title": "Präzisionsverdünnungs-Menü",
-      "helpBody": "Das Präzisionsverdünnungs-Menü (DOP) wird verwendet, um DOP-Werte für einen Satelliten und Sensor zu berechnen. <br><br> Die DOP-Werte sind: <ul style=\"margin-left: 40px;\"> <li> GDOP - Geometrische Präzisionsverdünnung </li> <li> PDOP - Positions-Präzisionsverdünnung </li> <li> HDOP - Horizontale Präzisionsverdünnung </li> <li> VDOP - Vertikale Präzisionsverdünnung </li> <li> TDOP - Zeit-Präzisionsverdünnung </li> <li> NDOP - Satellitenzahl-Präzisionsverdünnung </li> </ul>"
-    },
     "EciPlot": {
       "bottomIconLabel": "ECI-Diagramm",
       "title": "ECI-Diagramm-Menü",

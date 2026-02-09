@@ -282,11 +282,6 @@
       "title": "Menu Réalisateur vidéo",
       "helpBody": "Le menu Réalisateur vidéo permet de manipuler la caméra et les objets de la scène pour créer une vidéo."
     },
-    "DopsPlugin": {
-      "bottomIconLabel": "Voir les DOPs",
-      "title": "Menu Dilution de Précision",
-      "helpBody": "Le menu Dilution de Précision (DOP) permet de calculer les valeurs DOP pour un satellite et un capteur. <br><br> Les valeurs DOP sont : <ul style=\"margin-left: 40px;\"> <li> GDOP - Dilution géométrique de précision </li> <li> PDOP - Dilution de précision de position </li> <li> HDOP - Dilution de précision horizontale </li> <li> VDOP - Dilution de précision verticale </li> <li> TDOP - Dilution de précision temporelle </li> <li> NDOP - Dilution de précision selon le nombre de satellites </li> </ul>"
-    },
     "EciPlot": {
       "bottomIconLabel": "Trace ECI",
       "title": "Menu Trace ECI",

@@ -313,11 +313,6 @@
       "title": "ビデオディレクターメニュー",
       "helpBody": "ビデオディレクターメニューは、ビデオを作成するためにシーン内のカメラやオブジェクトを操作するために使用されます。"
     },
-    "DopsPlugin": {
-      "bottomIconLabel": "DOPを表示",
-      "title": "精度低下率メニュー",
-      "helpBody": "精度低下率（DOP）メニューは、衛星とセンサーのDOP値を計算するために使用されます。<br><br>DOP値は以下の通りです：<ul style=\"margin-left: 40px;\"><li>GDOP - 幾何学的精度低下率</li><li>PDOP - 位置精度低下率</li><li>HDOP - 水平精度低下率</li><li>VDOP - 垂直精度低下率</li><li>TDOP - 時間精度低下率</li><li>NDOP - 衛星数精度低下率</li></ul>"
-    },
     "EciPlot": {
       "bottomIconLabel": "ECIプロット",
       "title": "ECIプロットメニュー",
