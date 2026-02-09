@@ -272,6 +272,13 @@ export class PluginManager {
           'OemReaderPlugin',
         ), config: plugins.OemReaderPlugin,
       },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/neighborhood-history/neighborhood-history'),
+          () => import('./neighborhood-history/neighborhood-history'),
+          'NeighborhoodHistoryPlugin',
+        ), config: plugins.NeighborhoodHistoryPlugin,
+      },
       { init: () => new EditSat().init(), config: plugins.EditSat },
       {
         init: async () => {

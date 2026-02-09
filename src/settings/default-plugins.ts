@@ -85,6 +85,10 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
     enabled: true,
     order: 71.5,
   },
+  NeighborhoodHistoryPlugin: {
+    enabled: true,
+    order: 71.6,
+  },
   NewLaunch: {
     enabled: true,
     order: 72,

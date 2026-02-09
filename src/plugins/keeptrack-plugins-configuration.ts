@@ -102,6 +102,7 @@ export type KeepTrackPluginsConfiguration = {
   VcrPlugin?: PluginConfiguration;
   TimeSlider?: PluginConfiguration;
   OemReaderPlugin?: PluginConfiguration;
+  NeighborhoodHistoryPlugin?: PluginConfiguration;
   EclipseSolarAnalysis?: PluginConfiguration;
   SymbologyPlugin?: PluginConfiguration;
   SatInfoBoxSponsor?: PluginConfiguration;
