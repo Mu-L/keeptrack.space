@@ -64,10 +64,7 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
     enabled: true,
     order: 41,
   },
-  SatelliteListsPlugin: {
-    enabled: true,
-    order: 42,
-  },
+
   ReportsPlugin: {
     enabled: true,
     order: 50,

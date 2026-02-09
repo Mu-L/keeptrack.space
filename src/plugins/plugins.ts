@@ -1,6 +1,5 @@
 import { SoundManager } from '@app/engine/audio/sound-manager';
 import { CountriesMenu } from '@app/plugins/countries/countries';
-import { FindSatPlugin } from '@app/plugins/find-sat/find-sat';
 import { SatelliteViewPlugin } from '@app/plugins/satellite-view/satellite-view';
 import { SoundToggle } from '@app/plugins/sound-toggle/sound-toggle';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
@@ -55,7 +54,7 @@ import { SatInfoBoxOrbital } from './sat-info-box-orbital/sat-info-box-orbital';
 import { SatInfoBoxSensor } from './sat-info-box-sensor/sat-info-box-sensor';
 import { SatInfoBox } from './sat-info-box/sat-info-box';
 import { SatelliteFov } from './satellite-fov/satellite-fov';
-import { SatelliteListsPlugin } from './satellite-lists/satellite-lists';
+
 import { SatellitePhotos } from './satellite-photos/satellite-photos';
 import { ScenarioManagementPlugin } from './scenario-management/scenario-management';
 import { ScreenRecorder } from './screen-recorder/screen-recorder';
@@ -194,13 +193,35 @@ export class PluginManager {
         { init: () => new MultiSiteLookAnglesPlugin().init(), config: plugins.MultiSiteLookAnglesPlugin },
         { init: () => new SensorTimeline().init(), config: plugins.SensorTimeline },
         { init: () => new SatelliteTimeline().init(), config: plugins.SatelliteTimeline },
-        { init: () => new WatchlistPlugin().init(), config: plugins.WatchlistPlugin },
+        {
+          init: async () => {
+            try {
+              const proPlugin = await import('../plugins-pro/satellite-lists/satellite-lists');
+
+              new proPlugin.SatelliteListsPlugin().init();
+            } catch {
+              new WatchlistPlugin().init();
+            }
+          },
+          config: plugins.WatchlistPlugin,
+        },
         { init: () => new WatchlistOverlay().init(), config: plugins.WatchlistOverlay },
-        { init: () => new SatelliteListsPlugin().init(), config: plugins.SatelliteListsPlugin },
         { init: () => new ReportsPlugin().init(), config: plugins.ReportsPlugin },
         { init: () => new PolarPlotPlugin().init(), config: plugins.PolarPlotPlugin },
         { init: () => new NextLaunchesPlugin().init(), config: plugins.NextLaunchesPlugin },
-        { init: () => new FindSatPlugin().init(), config: plugins.FindSatPlugin },
+        {
+          init: async () => {
+            try {
+              const proPlugin = await import('../plugins-pro/find-sat/find-sat-pro');
+
+              new proPlugin.FindSatPro().init();
+            } catch {
+              const freePlugin = await import('./find-sat/find-sat');
+
+              new freePlugin.FindSatPlugin().init();
+            }
+          }, config: plugins.FindSatPlugin,
+        },
         { init: () => new ProximityOps().init(), config: plugins.ProximityOps },
         { init: () => new OrbitReferences().init(), config: plugins.OrbitReferences },
         { init: () => new Collisions().init(), config: plugins.Collisions },
@@ -232,7 +253,17 @@ export class PluginManager {
           }, config: plugins.OemReaderPlugin,
         },
         { init: () => new EditSat().init(), config: plugins.EditSat },
-        { init: () => new NewLaunch().init(), config: plugins.NewLaunch },
+        {
+          init: async () => {
+            try {
+              const proPlugin = await import('../plugins-pro/new-launch/new-launch-pro');
+
+              new proPlugin.NewLaunchPro().init();
+            } catch {
+              new NewLaunch().init();
+            }
+          }, config: plugins.NewLaunch,
+        },
         { init: () => new MissilePlugin().init(), config: plugins.MissilePlugin },
         { init: () => new SatelliteViewPlugin().init(), config: plugins.SatelliteViewPlugin },
         { init: () => new SatelliteFov().init(), config: plugins.SatelliteFov },
