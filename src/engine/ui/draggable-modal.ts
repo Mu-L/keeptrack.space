@@ -27,7 +27,7 @@ export abstract class DraggableModal extends DraggableBox {
     if (!this.boxEl) {
       // Should it be KeepTrack.getInstance().containerRoot instead of document.body?
       document.body.insertAdjacentHTML('beforeend', html`
-        <div id="${this.boxId}-container" class="modal" style="display:none;">
+        <div id="${this.boxId}-container" class="draggable-modal-overlay" style="display:none;">
           <div id="${this.boxId}" class="draggable-box" style="pointer-events:auto;">
             <div class="draggable-box__title-bar">
               <div class="draggable-box__title">

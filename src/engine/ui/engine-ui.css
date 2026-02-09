@@ -19,7 +19,7 @@
    DRAGGABLE MODAL BASE STYLES
    ========================================================================== */
 
-.modal {
+.draggable-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -264,6 +264,16 @@
   height: 16px;
   accent-color: var(--color-primary);
   cursor: pointer;
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+  opacity: 1 !important;
+  position: static !important;
+  pointer-events: auto !important;
+}
+
+.list-selector-modal__checkbox + .list-selector-modal__name::before,
+.list-selector-modal__checkbox + .list-selector-modal__name::after {
+  display: none !important;
 }
 
 .list-selector-modal__name {
