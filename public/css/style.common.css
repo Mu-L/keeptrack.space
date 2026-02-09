@@ -2313,6 +2313,10 @@ button.ui-button::-moz-focus-inner {
   bottom: auto;
 }
 
+#info-overlay-menu.side-menu-parent {
+  border: none;
+}
+
 #iss-stream-menu {
   display: none;
   position: absolute;
@@ -3749,7 +3753,7 @@ input:focus {
   color: white;
   max-width: 550px;
   padding-left: 20px;
-  top: 80px;
+  top: 110px;
   height: auto;
   overflow: auto;
   z-index: 10;
