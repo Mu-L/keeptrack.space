@@ -20,7 +20,6 @@ import { ColorMenu } from './colors-menu/colors-menu';
 import { CreateSat } from './create-sat/create-sat';
 import { DateTimeManager } from './date-time-manager/date-time-manager';
 import { DebrisScreening } from './debris-screening/debris-screening';
-import { DopsPlugin } from './dops/dops';
 import { DrawLinesPlugin } from './draw-lines/draw-lines';
 import { EarthPresetsPlugin } from './earth-presets/earth-presets';
 import { EditSat } from './edit-sat/edit-sat';
@@ -55,6 +54,8 @@ import { SatInfoBoxSensor } from './sat-info-box-sensor/sat-info-box-sensor';
 import { SatInfoBox } from './sat-info-box/sat-info-box';
 import { SatelliteFov } from './satellite-fov/satellite-fov';
 
+import { WatchlistPlugin } from './satellite-lists/satellite-lists';
+import { WatchlistOverlay } from './satellite-lists/watchlist-overlay';
 import { SatellitePhotos } from './satellite-photos/satellite-photos';
 import { ScenarioManagementPlugin } from './scenario-management/scenario-management';
 import { ScreenRecorder } from './screen-recorder/screen-recorder';
@@ -79,8 +80,6 @@ import { TransponderChannelData } from './transponder-channel-data/transponder-c
 import { VcrPlugin } from './vcr/vcr';
 import { VideoDirectorPlugin } from './video-director/video-director';
 import { ViewInfoRmbPlugin } from './view-info-rmb/view-info-rmb';
-import { WatchlistPlugin } from './satellite-lists/satellite-lists';
-import { WatchlistOverlay } from './satellite-lists/watchlist-overlay';
 
 export class PluginManager {
   /**
@@ -314,7 +313,14 @@ export class PluginManager {
         ), config: plugins.Astronomy,
       },
       { init: () => new NightToggle().init(), config: plugins.NightToggle },
-      { init: () => new DopsPlugin().init(), config: plugins.DopsPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/dops/dops'),
+          () => import('./dops/dops'),
+          'DopsPluginPro',
+          'DopsPlugin',
+        ), config: plugins.DopsPlugin,
+      },
       { init: () => new SatConstellations().init(), config: plugins.SatConstellations },
       { init: () => new CountriesMenu().init(), config: plugins.CountriesMenu },
       { init: () => new ColorMenu().init(), config: plugins.ColorMenu },
