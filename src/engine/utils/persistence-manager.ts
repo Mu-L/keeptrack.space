@@ -82,6 +82,9 @@ export enum StorageKey {
   // Find Satellite Pro
   FIND_SAT_PRO_SAVED_SEARCHES = 'v2-find-sat-pro-saved-searches',
 
+  // DOP Terrain Masks
+  DOPS_TERRAIN_STORE = 'v2-keepTrack-dopsTerrainStore',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
