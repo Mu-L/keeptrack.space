@@ -4,7 +4,6 @@ import { MultiCompiler, MultiRspackOptions, MultiStats, rspack } from '@rspack/c
 import { BuildError, ConsoleStyles, ErrorCodes, handleBuildError, logWithStyle } from './lib/build-error';
 import { ConfigManager } from './lib/config-manager';
 import { FileSystemManager } from './lib/filesystem-manager';
-import { PluginManager } from './lib/plugin-manager';
 import { VersionManager } from './lib/version-manager';
 import { WebpackManager } from './webpack-manager';
 
@@ -20,7 +19,6 @@ class BuildManager {
       // Initialize utilities
       const fileManager = new FileSystemManager(import.meta.url);
       const configManager = new ConfigManager();
-      const pluginManager = new PluginManager(fileManager);
       const versionManager = new VersionManager(fileManager);
 
       // Check for .env file - if it is missing copy from .env.example
@@ -89,9 +87,6 @@ class BuildManager {
       } else {
         fileManager.compileLocales('src');
       }
-
-      // Configure plugins
-      pluginManager.configurePlugins(config.isPro);
 
       // Update version information
       versionManager.generateVersionFile('./package.json', 'src/settings/version.js');

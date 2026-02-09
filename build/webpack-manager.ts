@@ -1,7 +1,7 @@
 import { Configuration, HtmlRspackPlugin, LightningCssMinimizerRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
 import CleanTerminalPlugin from 'clean-terminal-webpack-plugin';
 import DotEnv from 'dotenv-webpack';
-import { dirname } from 'path';
+import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import WebpackBar from 'webpackbar/rspack';
 import { BuildConfig } from './lib/config-manager';
@@ -109,6 +109,10 @@ export class WebpackManager {
           '@css/style.css': `${dirName}/../${this.config.styleCssPath}`,
           '@css/loading-screen.css': `${dirName}/../${this.config.loadingScreenCssPath}`,
           '@css': `${dirName}/../public/css`,
+          // In OSS builds, redirect plugins-pro imports to open-source stubs
+          ...(this.config.isPro ? {} : {
+            [resolve(dirName, '../src/plugins-pro')]: resolve(dirName, '../src/plugins'),
+          }),
         },
       },
       module: {
