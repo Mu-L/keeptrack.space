@@ -1,4 +1,5 @@
 /* eslint-disable max-lines */
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { rgbaArray, SolarBody } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { CelestialBody } from '@app/engine/rendering/draw-manager/celestial-bodies/celestial-body';
@@ -16,8 +17,8 @@ import {
   Star,
   Tle,
   TleLine1,
-  TleLine2} from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+  TleLine2
+} from '@ootk/src/main';
 import { SettingsManager } from '../../settings/settings';
 import { Planet } from '../objects/planet';
 import { CatalogManager } from './catalog-manager';
@@ -1163,13 +1164,13 @@ export class CatalogLoader {
    * When regimeFilter is empty, no satellites are skipped.
    */
   private static shouldSkipRegime_(tle2: string): boolean {
-    if (settingsManager.regimeFilter.length === 0) {
+    if (settingsManager.core.regimeFilter.length === 0) {
       return false;
     }
 
     const regime = CatalogLoader.getRegimeFromTle_(tle2);
 
-    return !settingsManager.regimeFilter.includes(regime);
+    return !settingsManager.core.regimeFilter.includes(regime);
   }
 
   private static sortByScc_(catalog: AsciiTleSat[] | ExtraSat[]) {

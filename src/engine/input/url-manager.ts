@@ -2,14 +2,14 @@ import { ToastMsgType } from '@app/engine/core/interfaces';
 import { NightToggle } from '@app/plugins/night-toggle/night-toggle';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { SettingsManager, settingsManager } from '@app/settings/settings';
-import { DEG2RAD, Degrees, Satellite, RAD2DEG, Radians } from '@ootk/src/main';
+import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
+import { DEG2RAD, Degrees, RAD2DEG, Radians, Satellite } from '@ootk/src/main';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { AtmosphereSettings, EarthTextureStyle } from '../rendering/draw-manager/earth-quality-enums';
 import { getEl } from '../utils/get-el';
-import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
 
 export abstract class UrlManager {
   private static selectedSat_: Satellite | null = null;
@@ -320,8 +320,8 @@ export abstract class UrlManager {
       paramSlices.push(`limitSats=${settingsManager.limitSats}`);
     }
 
-    if (settingsManager.regimeFilter.length > 0) {
-      paramSlices.push(`regime=${settingsManager.regimeFilter.join(',')}`);
+    if (settingsManager.core.regimeFilter.length > 0) {
+      paramSlices.push(`regime=${settingsManager.core.regimeFilter.join(',')}`);
     }
 
     if (settingsManager.isEnableJscCatalog === false) {
@@ -666,7 +666,7 @@ export abstract class UrlManager {
       }
     }
 
-    settingsManager.regimeFilter = valid;
+    settingsManager.core.regimeFilter = valid;
   }
 
   private static handleDotsParam_(val: string): boolean {
