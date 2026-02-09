@@ -41,7 +41,7 @@ import { Satellite, eci2rae, TemeVec3, Kilometers, MILLISECONDS_PER_SECOND, MINU
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import folderCodePng from '@public/img/icons/folder-code.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { WatchlistPlugin } from '../watchlist/watchlist';
+import { WatchlistPlugin } from '../satellite-lists/satellite-lists';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
