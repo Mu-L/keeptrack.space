@@ -46,7 +46,7 @@ import { EL as SAT_INFO_EL } from '../sat-info-box/sat-info-box-html';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { TopMenu } from '../top-menu/top-menu';
 
-interface UpdateWatchlistParams {
+export interface UpdateWatchlistParams {
   updateWatchlistList?: { id: number, inView: boolean }[];
   isSkipSearch?: boolean;
 }
