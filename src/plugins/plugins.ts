@@ -79,10 +79,320 @@ import { TransponderChannelData } from './transponder-channel-data/transponder-c
 import { VcrPlugin } from './vcr/vcr';
 import { VideoDirectorPlugin } from './video-director/video-director';
 import { ViewInfoRmbPlugin } from './view-info-rmb/view-info-rmb';
-import { WatchlistPlugin } from './watchlist/watchlist';
-import { WatchlistOverlay } from './watchlist/watchlist-overlay';
+import { WatchlistPlugin } from './satellite-lists/satellite-lists';
+import { WatchlistOverlay } from './satellite-lists/watchlist-overlay';
 
 export class PluginManager {
+  /**
+   * Loads a plugin with pro/OSS fallback based on IS_PRO env var.
+   * When IS_PRO=true, tries the pro import first and falls back to OSS on failure.
+   * When IS_PRO=false, loads the OSS version directly.
+   */
+  private static async loadProPlugin_(
+    proImport: () => Promise<Record<string, unknown>>,
+    ossImport: () => Promise<Record<string, unknown>>,
+    proClassName: string,
+    ossClassName?: string,
+  ): Promise<void> {
+    if (process.env.IS_PRO === 'true') {
+      try {
+        const mod = await proImport();
+
+        new (mod[proClassName] as new () => KeepTrackPlugin)().init();
+
+        return;
+      } catch { /* fall through to OSS */ }
+    }
+    const mod = await ossImport();
+
+    new (mod[ossClassName ?? proClassName] as new () => KeepTrackPlugin)().init();
+  }
+
+  private static buildPluginList_(plugins: KeepTrackPluginsConfiguration): { init: () => void | Promise<void>, config?: { enabled: boolean } }[] {
+    return [
+      {
+        init: async () => {
+          if (process.env.IS_PRO === 'true') {
+            try {
+              const mod = await import('../plugins-pro/telemetry/telemetry');
+
+              PluginRegistry.addPlugin(new mod.Telemetry() as unknown as KeepTrackPlugin);
+
+              return;
+            } catch { /* fall through to OSS */ }
+          }
+          const mod = await import('./telemetry/telemetry');
+
+          PluginRegistry.addPlugin(new mod.Telemetry() as unknown as KeepTrackPlugin);
+        }, config: { enabled: true },
+      },
+      { init: () => new SelectSatManager().init(), config: { enabled: true } },
+      { init: () => new ScenarioManagementPlugin().init(), config: plugins.ScenarioManagementPlugin },
+      { init: () => new TopMenu().init(), config: plugins.TopMenu },
+      { init: () => new TimeSlider().init(), config: plugins.TimeSlider },
+      { init: () => new TooltipsPlugin().init(), config: plugins.TooltipsPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/user-account/user-account'),
+          () => import('./user-account/user-account'),
+          'UserAccountPlugin',
+        ), config: plugins.UserAccountPlugin,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/debug/debug'),
+          () => import('./debug/debug'),
+          'DebugMenuPlugin',
+        ), config: plugins.DebugMenuPlugin,
+      },
+      { init: () => new SatInfoBox().init(), config: plugins.SatInfoBoxCore },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/sat-info-box-actions/sat-info-box-actions'),
+          () => import('./sat-info-box-actions/sat-info-box-actions'),
+          'SatInfoBoxActions',
+        ), config: plugins.SatInfoBoxActions,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/sat-info-box-links/sat-info-box-links'),
+          () => import('./sat-info-box-links/sat-info-box-links'),
+          'SatInfoBoxLinks',
+        ), config: plugins.SatInfoBoxLinks,
+      },
+      { init: () => new SatInfoBoxOrbital().init(), config: plugins.SatInfoBoxOrbital },
+      { init: () => new SatInfoBoxOrbitGuard().init(), config: plugins.SatInfoBoxManeuver },
+      { init: () => new SatInfoBoxObject().init(), config: plugins.SatInfoBoxObject },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/sat-info-box-mission/sat-info-box-mission'),
+          () => import('./sat-info-box-mission/sat-info-box-mission'),
+          'SatInfoBoxMission',
+        ), config: plugins.SatInfoBoxMission,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/sat-info-box-sponsor/sat-info-box-sponsor'),
+          () => import('./sat-info-box-sponsor/sat-info-box-sponsor'),
+          'SatInfoBoxSponsor',
+        ), config: plugins.SatInfoBoxSponsor,
+      },
+      { init: () => new SatInfoBoxSensor().init(), config: plugins.SatInfoBoxSensor },
+      { init: () => new DateTimeManager().init(), config: plugins.DateTimeManager },
+
+      /*
+       * Top Menu Plugins are loaded right to left.
+       * TODO: This should be based on an "order" property in the configuration
+       */
+      { init: () => new GithubLinkPlugin().init(), config: plugins.GithubLinkPlugin },
+      { init: () => new LinkedInLinkPlugin().init(), config: plugins.LinkedInLinkPlugin },
+
+      { init: () => new ClassificationBar().init(), config: plugins.ClassificationBar },
+      { init: () => new SoundManager().init(), config: plugins.SoundManager },
+      { init: () => new SoundToggle().init(), config: plugins.SoundManager },
+
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/earth-atmosphere/earth-atmosphere'),
+          () => import('./earth-atmosphere/earth-atmosphere'),
+          'EarthAtmosphere',
+        ), config: plugins.EarthAtmosphere,
+      },
+
+      // Bottom Menu Plugins
+      { init: () => new SensorListPlugin().init(), config: plugins.SensorListPlugin },
+      { init: () => new SensorInfoPlugin().init(), config: plugins.SensorInfoPlugin },
+      { init: () => new CustomSensorPlugin().init(), config: plugins.CustomSensorPlugin },
+      { init: () => new SensorFov().init(), config: plugins.SensorFov },
+      { init: () => new SensorSurvFence().init(), config: plugins.SensorSurvFence },
+      { init: () => new ShortTermFences().init(), config: plugins.ShortTermFences },
+      { init: () => new LookAnglesPlugin().init(), config: plugins.LookAnglesPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/link-budget/link-budget'),
+          () => import('./link-budget/link-budget'),
+          'LinkBudgetPlugin',
+        ), config: plugins.LinkBudgetPlugin,
+      },
+      { init: () => new MultiSiteLookAnglesPlugin().init(), config: plugins.MultiSiteLookAnglesPlugin },
+      { init: () => new SensorTimeline().init(), config: plugins.SensorTimeline },
+      { init: () => new SatelliteTimeline().init(), config: plugins.SatelliteTimeline },
+      {
+        init: async () => {
+          if (process.env.IS_PRO === 'true') {
+            try {
+              const mod = await import('../plugins-pro/satellite-lists/satellite-lists');
+
+              new mod.SatelliteListsPlugin().init();
+
+              return;
+            } catch { /* fall through to OSS */ }
+          }
+          new WatchlistPlugin().init();
+        }, config: plugins.WatchlistPlugin,
+      },
+      { init: () => new WatchlistOverlay().init(), config: plugins.WatchlistOverlay },
+      { init: () => new ReportsPlugin().init(), config: plugins.ReportsPlugin },
+      { init: () => new PolarPlotPlugin().init(), config: plugins.PolarPlotPlugin },
+      { init: () => new NextLaunchesPlugin().init(), config: plugins.NextLaunchesPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/find-sat/find-sat'),
+          () => import('./find-sat/find-sat'),
+          'FindSatPro',
+          'FindSatPlugin',
+        ), config: plugins.FindSatPlugin,
+      },
+      { init: () => new ProximityOps().init(), config: plugins.ProximityOps },
+      { init: () => new OrbitReferences().init(), config: plugins.OrbitReferences },
+      { init: () => new Collisions().init(), config: plugins.Collisions },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/toca-poca-plugin/toca-poca-plugin'),
+          () => import('./toca-poca-plugin/toca-poca-plugin'),
+          'TocaPocaPlugin',
+        ), config: plugins.TocaPocaPlugin,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/neighborhood-watch/neighborhood-watch'),
+          () => import('./neighborhood-watch/neighborhood-watch'),
+          'NeighborhoodWatch',
+        ), config: plugins.NeighborhoodWatch,
+      },
+      { init: () => new OrbitGuardMenuPlugin().init(), config: plugins.OrbitGuardMenuPlugin },
+      { init: () => new TrackingImpactPredict().init(), config: plugins.TrackingImpactPredict },
+      { init: () => new Breakup().init(), config: plugins.Breakup },
+      { init: () => new DebrisScreening().init(), config: plugins.DebrisScreening },
+      { init: () => new TransponderChannelData().init(), config: plugins.transponderChannelData },
+      { init: () => new CreateSat().init(), config: plugins.CreateSat },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/oem-reader/oem-reader'),
+          () => import('./oem-reader/oem-reader'),
+          'OemReaderPlugin',
+        ), config: plugins.OemReaderPlugin,
+      },
+      { init: () => new EditSat().init(), config: plugins.EditSat },
+      {
+        init: async () => {
+          if (process.env.IS_PRO === 'true') {
+            try {
+              const mod = await import('../plugins-pro/new-launch/new-launch');
+
+              new mod.NewLaunchPro().init();
+
+              return;
+            } catch { /* fall through to OSS */ }
+          }
+          new NewLaunch().init();
+        }, config: plugins.NewLaunch,
+      },
+      { init: () => new MissilePlugin().init(), config: plugins.MissilePlugin },
+      { init: () => new SatelliteViewPlugin().init(), config: plugins.SatelliteViewPlugin },
+      { init: () => new SatelliteFov().init(), config: plugins.SatelliteFov },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/stereo-map/stereo-map'),
+          () => import('./stereo-map/stereo-map'),
+          'StereoMapPro',
+          'StereoMap',
+        ), config: plugins.StereoMap,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/planetarium/planetarium'),
+          () => import('./planetarium/planetarium'),
+          'Planetarium',
+        ), config: plugins.Planetarium,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/astronomy/astronomy'),
+          () => import('./astronomy/astronomy'),
+          'Astronomy',
+        ), config: plugins.Astronomy,
+      },
+      { init: () => new NightToggle().init(), config: plugins.NightToggle },
+      { init: () => new DopsPlugin().init(), config: plugins.DopsPlugin },
+      { init: () => new SatConstellations().init(), config: plugins.SatConstellations },
+      { init: () => new CountriesMenu().init(), config: plugins.CountriesMenu },
+      { init: () => new ColorMenu().init(), config: plugins.ColorMenu },
+      { init: () => new PlanetsMenuPlugin().init(), config: plugins.PlanetsMenuPlugin },
+      { init: () => new Screenshot().init(), config: plugins.Screenshot },
+      { init: () => new LaunchCalendar().init(), config: plugins.LaunchCalendar },
+      { init: () => new TimeMachine().init(), config: plugins.TimeMachine },
+      { init: () => new SatellitePhotos().init(), config: plugins.SatellitePhotos },
+      { init: () => new ScreenRecorder().init(), config: plugins.ScreenRecorder },
+      { init: () => new AnalysisMenu().init(), config: plugins.AnalysisMenu },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/eclipse-solar-analysis/eclipse-solar-analysis'),
+          () => import('./eclipse-solar-analysis/eclipse-solar-analysis'),
+          'EclipseSolarAnalysis',
+        ), config: plugins.EclipseSolarAnalysis,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/maneuver/maneuver'),
+          () => import('./maneuver/maneuver'),
+          'ManeuverPlugin',
+        ), config: plugins.ManeuverPlugin,
+      },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/initial-orbit/initial-orbit'),
+          () => import('./initial-orbit/initial-orbit'),
+          'InitialOrbitDeterminationPlugin',
+        ), config: plugins.InitialOrbitDeterminationPlugin,
+      },
+      { init: () => new Calculator().init(), config: plugins.Calculator },
+      { init: () => new EciPlot().init(), config: plugins.EciPlot },
+      { init: () => new EcfPlot().init(), config: plugins.EcfPlot },
+      { init: () => new RicPlot().init(), config: plugins.RicPlot },
+      { init: () => new Time2LonPlots().init(), config: plugins.Time2LonPlots },
+      { init: () => new Lat2LonPlots().init(), config: plugins.Lat2LonPlots },
+      { init: () => new Inc2AltPlots().init(), config: plugins.Inc2AltPlots },
+      { init: () => new Inc2LonPlots().init(), config: plugins.Inc2LonPlots },
+      { init: () => new FilterMenuPlugin().init(), config: plugins.FilterMenuPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/symbology/symbology-plugin'),
+          () => import('./symbology/symbology-plugin'),
+          'SymbologyPlugin',
+        ), config: plugins.SymbologyPlugin,
+      },
+      { init: () => new SettingsMenuPlugin().init(), config: plugins.SettingsMenuPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/graphics-menu/graphics-menu'),
+          () => import('./graphics-menu/graphics-menu'),
+          'GraphicsMenuPlugin',
+        ), config: plugins.GraphicsMenuPlugin,
+      },
+      { init: () => new GamepadPlugin().init(), config: plugins.GamepadPlugin },
+      { init: () => new VideoDirectorPlugin().init(), config: plugins.VideoDirectorPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/about-menu/about-menu'),
+          () => import('./about-menu/about-menu'),
+          'AboutMenuPlugin',
+        ), config: plugins.AboutMenuPlugin,
+      },
+      { init: () => new EarthPresetsPlugin().init(), config: plugins.EarthPresetsPlugin },
+      { init: () => new DrawLinesPlugin().init(), config: plugins.DrawLinesPlugin },
+      { init: () => new ViewInfoRmbPlugin().init(), config: plugins.ViewInfoRmbPlugin },
+      { init: () => new VcrPlugin().init(), config: plugins.VcrPlugin },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/command-palette/command-palette'),
+          () => import('./command-palette/command-palette'),
+          'CommandPalettePlugin',
+        ), config: plugins.CommandPalettePlugin,
+      },
+    ];
+  }
+
   // Register all core modules
   async loadPlugins(plugins: KeepTrackPluginsConfiguration): Promise<void> {
     if (isThisNode()) {
@@ -92,286 +402,7 @@ export class PluginManager {
 
     plugins ??= <KeepTrackPluginsConfiguration>{};
     try {
-      const pluginList: { init: () => void | Promise<void>, config?: { enabled: boolean } }[] = [
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/telemetry/telemetry');
-
-            PluginRegistry.addPlugin(new proPlugin.Telemetry() as unknown as KeepTrackPlugin);
-          }, config: {
-            enabled: true,
-          },
-        },
-        { init: () => new SelectSatManager().init(), config: { enabled: true } },
-        { init: () => new ScenarioManagementPlugin().init(), config: plugins.ScenarioManagementPlugin },
-        { init: () => new TopMenu().init(), config: plugins.TopMenu },
-        { init: () => new TimeSlider().init(), config: plugins.TimeSlider },
-        { init: () => new TooltipsPlugin().init(), config: plugins.TooltipsPlugin },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/user-account/user-account');
-
-            new proPlugin.UserAccountPlugin().init();
-          }, config: plugins.UserAccountPlugin,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/debug/debug');
-
-            new proPlugin.DebugMenuPlugin().init();
-          }, config: plugins.DebugMenuPlugin,
-        },
-        { init: () => new SatInfoBox().init(), config: plugins.SatInfoBoxCore },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/sat-info-box-actions/sat-info-box-actions');
-
-            new proPlugin.SatInfoBoxActions().init();
-          }, config: plugins.SatInfoBoxActions,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/sat-info-box-links/sat-info-box-links');
-
-            new proPlugin.SatInfoBoxLinks().init();
-          }, config: plugins.SatInfoBoxLinks,
-        },
-        { init: () => new SatInfoBoxOrbital().init(), config: plugins.SatInfoBoxOrbital },
-        { init: () => new SatInfoBoxOrbitGuard().init(), config: plugins.SatInfoBoxManeuver },
-        { init: () => new SatInfoBoxObject().init(), config: plugins.SatInfoBoxObject },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/sat-info-box-mission/sat-info-box-mission');
-
-            new proPlugin.SatInfoBoxMission().init();
-          }, config: plugins.SatInfoBoxMission,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/sat-info-box-sponsor/sat-info-box-sponsor');
-
-            new proPlugin.SatInfoBoxSponsor().init();
-          }, config: plugins.SatInfoBoxSponsor,
-        },
-        { init: () => new SatInfoBoxSensor().init(), config: plugins.SatInfoBoxSensor },
-        { init: () => new DateTimeManager().init(), config: plugins.DateTimeManager },
-
-        /*
-         * Top Menu Plugins are loaded right to left.
-         * TODO: This should be based on an "order" property in the configuration
-         */
-        { init: () => new GithubLinkPlugin().init(), config: plugins.GithubLinkPlugin },
-        { init: () => new LinkedInLinkPlugin().init(), config: plugins.LinkedInLinkPlugin },
-
-        { init: () => new ClassificationBar().init(), config: plugins.ClassificationBar },
-        { init: () => new SoundManager().init(), config: plugins.SoundManager },
-        { init: () => new SoundToggle().init(), config: plugins.SoundManager },
-
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/earth-atmosphere/earth-atmosphere');
-
-            new proPlugin.EarthAtmosphere().init();
-          }, config: plugins.EarthAtmosphere,
-        },
-
-        // Bottom Menu Plugins
-        { init: () => new SensorListPlugin().init(), config: plugins.SensorListPlugin },
-        { init: () => new SensorInfoPlugin().init(), config: plugins.SensorInfoPlugin },
-        { init: () => new CustomSensorPlugin().init(), config: plugins.CustomSensorPlugin },
-        { init: () => new SensorFov().init(), config: plugins.SensorFov },
-        { init: () => new SensorSurvFence().init(), config: plugins.SensorSurvFence },
-        { init: () => new ShortTermFences().init(), config: plugins.ShortTermFences },
-        { init: () => new LookAnglesPlugin().init(), config: plugins.LookAnglesPlugin },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/link-budget/link-budget');
-
-            new proPlugin.LinkBudgetPlugin().init();
-          }, config: plugins.LinkBudgetPlugin,
-        },
-        { init: () => new MultiSiteLookAnglesPlugin().init(), config: plugins.MultiSiteLookAnglesPlugin },
-        { init: () => new SensorTimeline().init(), config: plugins.SensorTimeline },
-        { init: () => new SatelliteTimeline().init(), config: plugins.SatelliteTimeline },
-        {
-          init: async () => {
-            try {
-              const proPlugin = await import('../plugins-pro/satellite-lists/satellite-lists');
-
-              new proPlugin.SatelliteListsPlugin().init();
-            } catch {
-              new WatchlistPlugin().init();
-            }
-          },
-          config: plugins.WatchlistPlugin,
-        },
-        { init: () => new WatchlistOverlay().init(), config: plugins.WatchlistOverlay },
-        { init: () => new ReportsPlugin().init(), config: plugins.ReportsPlugin },
-        { init: () => new PolarPlotPlugin().init(), config: plugins.PolarPlotPlugin },
-        { init: () => new NextLaunchesPlugin().init(), config: plugins.NextLaunchesPlugin },
-        {
-          init: async () => {
-            try {
-              const proPlugin = await import('../plugins-pro/find-sat/find-sat-pro');
-
-              new proPlugin.FindSatPro().init();
-            } catch {
-              const freePlugin = await import('./find-sat/find-sat');
-
-              new freePlugin.FindSatPlugin().init();
-            }
-          }, config: plugins.FindSatPlugin,
-        },
-        { init: () => new ProximityOps().init(), config: plugins.ProximityOps },
-        { init: () => new OrbitReferences().init(), config: plugins.OrbitReferences },
-        { init: () => new Collisions().init(), config: plugins.Collisions },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/toca-poca-plugin/toca-poca-plugin');
-
-            new proPlugin.TocaPocaPlugin().init();
-          }, config: plugins.TocaPocaPlugin,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/neighborhood-watch/neighborhood-watch');
-
-            new proPlugin.NeighborhoodWatch().init();
-          }, config: plugins.NeighborhoodWatch,
-        },
-        { init: () => new OrbitGuardMenuPlugin().init(), config: plugins.OrbitGuardMenuPlugin },
-        { init: () => new TrackingImpactPredict().init(), config: plugins.TrackingImpactPredict },
-        { init: () => new Breakup().init(), config: plugins.Breakup },
-        { init: () => new DebrisScreening().init(), config: plugins.DebrisScreening },
-        { init: () => new TransponderChannelData().init(), config: plugins.transponderChannelData },
-        { init: () => new CreateSat().init(), config: plugins.CreateSat },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/oem-reader/oem-reader');
-
-            new proPlugin.OemReaderPlugin().init();
-          }, config: plugins.OemReaderPlugin,
-        },
-        { init: () => new EditSat().init(), config: plugins.EditSat },
-        {
-          init: async () => {
-            try {
-              const proPlugin = await import('../plugins-pro/new-launch/new-launch-pro');
-
-              new proPlugin.NewLaunchPro().init();
-            } catch {
-              new NewLaunch().init();
-            }
-          }, config: plugins.NewLaunch,
-        },
-        { init: () => new MissilePlugin().init(), config: plugins.MissilePlugin },
-        { init: () => new SatelliteViewPlugin().init(), config: plugins.SatelliteViewPlugin },
-        { init: () => new SatelliteFov().init(), config: plugins.SatelliteFov },
-        {
-          init: async () => {
-            try {
-              const proPlugin = await import('../plugins-pro/stereo-map/stereo-map-pro');
-
-              new proPlugin.StereoMapPro().init();
-            } catch {
-              const freePlugin = await import('./stereo-map/stereo-map');
-
-              new freePlugin.StereoMap().init();
-            }
-          }, config: plugins.StereoMap,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/planetarium/planetarium');
-
-            new proPlugin.Planetarium().init();
-          }, config: plugins.Planetarium,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/astronomy/astronomy');
-
-            new proPlugin.Astronomy().init();
-          }, config: plugins.Astronomy,
-        },
-        { init: () => new NightToggle().init(), config: plugins.NightToggle },
-        { init: () => new DopsPlugin().init(), config: plugins.DopsPlugin },
-        { init: () => new SatConstellations().init(), config: plugins.SatConstellations },
-        { init: () => new CountriesMenu().init(), config: plugins.CountriesMenu },
-        { init: () => new ColorMenu().init(), config: plugins.ColorMenu },
-        { init: () => new PlanetsMenuPlugin().init(), config: plugins.PlanetsMenuPlugin },
-        { init: () => new Screenshot().init(), config: plugins.Screenshot },
-        { init: () => new LaunchCalendar().init(), config: plugins.LaunchCalendar },
-        { init: () => new TimeMachine().init(), config: plugins.TimeMachine },
-        { init: () => new SatellitePhotos().init(), config: plugins.SatellitePhotos },
-        { init: () => new ScreenRecorder().init(), config: plugins.ScreenRecorder },
-        { init: () => new AnalysisMenu().init(), config: plugins.AnalysisMenu },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/eclipse-solar-analysis/eclipse-solar-analysis');
-
-            new proPlugin.EclipseSolarAnalysis().init();
-          }, config: plugins.EclipseSolarAnalysis,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/maneuver/maneuver');
-
-            new proPlugin.ManeuverPlugin().init();
-          }, config: plugins.ManeuverPlugin,
-        },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/initial-orbit/initial-orbit');
-
-            new proPlugin.InitialOrbitDeterminationPlugin().init();
-          }, config: plugins.InitialOrbitDeterminationPlugin,
-        },
-        { init: () => new Calculator().init(), config: plugins.Calculator },
-        { init: () => new EciPlot().init(), config: plugins.EciPlot },
-        { init: () => new EcfPlot().init(), config: plugins.EcfPlot },
-        { init: () => new RicPlot().init(), config: plugins.RicPlot },
-        { init: () => new Time2LonPlots().init(), config: plugins.Time2LonPlots },
-        { init: () => new Lat2LonPlots().init(), config: plugins.Lat2LonPlots },
-        { init: () => new Inc2AltPlots().init(), config: plugins.Inc2AltPlots },
-        { init: () => new Inc2LonPlots().init(), config: plugins.Inc2LonPlots },
-        { init: () => new FilterMenuPlugin().init(), config: plugins.FilterMenuPlugin },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/symbology/symbology-plugin');
-
-            new proPlugin.SymbologyPlugin().init();
-          }, config: plugins.SymbologyPlugin,
-        },
-        { init: () => new SettingsMenuPlugin().init(), config: plugins.SettingsMenuPlugin },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/graphics-menu/graphics-menu');
-
-            new proPlugin.GraphicsMenuPlugin().init();
-          }, config: plugins.GraphicsMenuPlugin,
-        },
-        { init: () => new GamepadPlugin().init(), config: plugins.GamepadPlugin },
-        { init: () => new VideoDirectorPlugin().init(), config: plugins.VideoDirectorPlugin },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/about-menu/about-menu');
-
-            new proPlugin.AboutMenuPlugin().init();
-          }, config: plugins.AboutMenuPlugin,
-        },
-        { init: () => new EarthPresetsPlugin().init(), config: plugins.EarthPresetsPlugin },
-        { init: () => new DrawLinesPlugin().init(), config: plugins.DrawLinesPlugin },
-        { init: () => new ViewInfoRmbPlugin().init(), config: plugins.ViewInfoRmbPlugin },
-        { init: () => new VcrPlugin().init(), config: plugins.VcrPlugin },
-        {
-          init: async () => {
-            const proPlugin = await import('../plugins-pro/command-palette/command-palette');
-
-            new proPlugin.CommandPalettePlugin().init();
-          }, config: plugins.CommandPalettePlugin,
-        },
-      ];
+      const pluginList = PluginManager.buildPluginList_(plugins);
 
       for (const { init, config } of pluginList) {
         if (config?.enabled) {
