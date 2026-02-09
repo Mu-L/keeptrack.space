@@ -6,7 +6,8 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import blueMarbleJpg from '@public/img/wallpaper/blue-marble.jpg';
-import cubesatJpg from '@public/img/wallpaper/cubesat.jpg';
+import cspocJpg from '@public/img/wallpaper/cspoc.jpg';
+import cspoc2Jpg from '@public/img/wallpaper/cspoc2.jpg';
 import earthJpg from '@public/img/wallpaper/Earth.jpg';
 import epfl1Jpg from '@public/img/wallpaper/epfl-1.jpg';
 import epfl2Jpg from '@public/img/wallpaper/epfl-2.jpg';
@@ -21,8 +22,6 @@ import rocketJpg from '@public/img/wallpaper/rocket.jpg';
 import rocket2Jpg from '@public/img/wallpaper/rocket2.jpg';
 import rocket3Jpg from '@public/img/wallpaper/rocket3.jpg';
 import rocket4Jpg from '@public/img/wallpaper/rocket4.jpg';
-import satJpg from '@public/img/wallpaper/sat.jpg';
-import sat2Jpg from '@public/img/wallpaper/sat2.jpg';
 import telescopeJpg from '@public/img/wallpaper/telescope.jpg';
 import thuleJpg from '@public/img/wallpaper/thule.jpg';
 
@@ -30,7 +29,8 @@ export abstract class SplashScreen {
   /** An image is picked at random and then if the screen is bigger than 1080p then it loads the next one in the list */
   private static splashScreenImgList_ =
     [
-      blueMarbleJpg, moonJpg, observatoryJpg, thuleJpg, rocketJpg, rocket2Jpg, telescopeJpg, rocket3Jpg, rocket4Jpg, cubesatJpg, satJpg, sat2Jpg, earthJpg,
+      cspocJpg, cspoc2Jpg,
+      blueMarbleJpg, moonJpg, observatoryJpg, thuleJpg, rocketJpg, rocket2Jpg, telescopeJpg, rocket3Jpg, rocket4Jpg, earthJpg,
       epfl1Jpg, epfl2Jpg, opsJpg, ops2Jpg, ops3Jpg,
       marsJpg, marsSurfaceJpg,
     ];
@@ -64,7 +64,7 @@ export abstract class SplashScreen {
           <img src="img/logo.png" alt="Keep Track" id="logo-text" class="logo-font">
           <!-- <span id="logo-text-version" class="logo-font">10</span> -->
           </div>
-          <div style="height: 50px; min-height: 50px; max-height: 50px; overflow: hidden; display: flex; align-items: center;">
+          <div style="height: 50px; min-height: 50px; max-height: 50px; margin-top: 1rem; display: flex; align-items: center;">
             <span id="loader-text" style="width: 100%;">Downloading Science...</span>
           </div>
           <div id="adsense-placeholder"
