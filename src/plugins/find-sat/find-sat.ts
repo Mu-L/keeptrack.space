@@ -52,8 +52,8 @@ export interface SearchSatParams {
 
 export class FindSatPlugin extends KeepTrackPlugin {
   readonly id = 'FindSatPlugin';
-  private lastResults_ = <Satellite[]>[];
-  private hasSearchBeenRun_ = false;
+  protected lastResults_ = <Satellite[]>[];
+  protected hasSearchBeenRun_ = false;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -78,7 +78,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     };
   }
 
-  private getDragOptions_(): IDragOptions {
+  protected getDragOptions_(): IDragOptions {
     return {
       isDraggable: true,
       minWidth: 500,
@@ -112,7 +112,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     CatalogExporter.exportTle2Csv(this.lastResults_);
   }
 
-  private buildSideMenuHtml_(): string {
+  protected buildSideMenuHtml_(): string {
     const l = (key: string) => t7e(`plugins.FindSatPlugin.labels.${key}` as Parameters<typeof t7e>[0]);
 
     return html`
@@ -300,7 +300,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     errorManagerInstance.info(this.lastResults_.map((sat) => sat.name).join('\n'));
   }
 
-  private uiManagerFinal_() {
+  protected uiManagerFinal_() {
     const satData = ServiceLocator.getCatalogManager().objectCache;
 
     getEl('fbl-error')!.addEventListener('click', () => {
@@ -367,7 +367,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     });
   }
 
-  private findByLooksSubmit_(): Promise<void> {
+  protected findByLooksSubmit_(): Promise<void> {
     this.hasSearchBeenRun_ = true;
 
     return new Promise(() => {
@@ -427,7 +427,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
           source,
         };
 
-        this.lastResults_ = FindSatPlugin.searchSats_(searchParams as SearchSatParams);
+        this.lastResults_ = this.searchSats_(searchParams as SearchSatParams);
         if (this.lastResults_.length === 0) {
           uiManagerInstance.toast(t7e('plugins.FindSatPlugin.errorMsgs.NoSatellitesFound'), ToastMsgType.critical);
         }
@@ -439,7 +439,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     });
   }
 
-  private static checkAz_(posAll: Satellite[], min: number, max: number) {
+  protected static checkAz_(posAll: Satellite[], min: number, max: number) {
     return posAll.filter((pos) => {
       if (!pos.isSatellite() && !pos.isMissile()) {
         return false;
@@ -462,7 +462,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     });
   }
 
-  private static checkEl_(posAll: Satellite[], min: number, max: number) {
+  protected static checkEl_(posAll: Satellite[], min: number, max: number) {
     return posAll.filter((pos) => {
       if (!pos.isSatellite() && !pos.isMissile()) {
         return false;
@@ -485,18 +485,18 @@ export class FindSatPlugin extends KeepTrackPlugin {
     });
   }
 
-  private static checkInview_(posAll: Satellite[]) {
+  protected static checkInview_(posAll: Satellite[]) {
     const dotsManagerInstance = ServiceLocator.getDotsManager();
 
 
     return posAll.filter((pos) => dotsManagerInstance.inViewData[pos.id] === 1);
   }
 
-  private static checkObjtype_(posAll: Satellite[], objtype: number) {
+  protected static checkObjtype_(posAll: Satellite[], objtype: number) {
     return posAll.filter((pos) => pos.type === objtype);
   }
 
-  private static checkRange_(posAll: Satellite[], min: number, max: number) {
+  protected static checkRange_(posAll: Satellite[], min: number, max: number) {
     return posAll.filter((pos) => {
       if (!pos.isSatellite() && !pos.isMissile()) {
         return false;
@@ -519,7 +519,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     });
   }
 
-  private static limitPossibles_(possibles: Satellite[], limit: number): Satellite[] {
+  protected static limitPossibles_(possibles: Satellite[], limit: number): Satellite[] {
     const uiManagerInstance = ServiceLocator.getUiManager();
 
     if (possibles.length >= limit) {
@@ -532,7 +532,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
     return possibles;
   }
 
-  private static searchSats_(searchParams: SearchSatParams): Satellite[] {
+  protected searchSats_(searchParams: SearchSatParams): Satellite[] {
     let {
       az,
       el,
@@ -680,19 +680,19 @@ export class FindSatPlugin extends KeepTrackPlugin {
     return res;
   }
 
-  private static checkArgPe_(possibles: Satellite[], min: Degrees, max: Degrees) {
+  protected static checkArgPe_(possibles: Satellite[], min: Degrees, max: Degrees) {
     return possibles.filter((possible) => possible.argOfPerigee < max && possible.argOfPerigee > min);
   }
 
-  private static checkInc_(possibles: Satellite[], min: Degrees, max: Degrees) {
+  protected static checkInc_(possibles: Satellite[], min: Degrees, max: Degrees) {
     return possibles.filter((possible) => possible.inclination < max && possible.inclination > min);
   }
 
-  private static checkPeriod_(possibles: Satellite[], minPeriod: Minutes, maxPeriod: Minutes) {
+  protected static checkPeriod_(possibles: Satellite[], minPeriod: Minutes, maxPeriod: Minutes) {
     return possibles.filter((possible) => possible.period > minPeriod && possible.period < maxPeriod);
   }
 
-  private static checkTleAge_(possibles: Satellite[], minTleAge_: Hours, maxTleAge: Hours) {
+  protected static checkTleAge_(possibles: Satellite[], minTleAge_: Hours, maxTleAge: Hours) {
     const minTleAge = minTleAge_ < 0 ? 0 : minTleAge_;
     const now = new Date();
 
@@ -704,11 +704,11 @@ export class FindSatPlugin extends KeepTrackPlugin {
     });
   }
 
-  private static checkRightAscension_(possibles: Satellite[], min: Degrees, max: Degrees) {
+  protected static checkRightAscension_(possibles: Satellite[], min: Degrees, max: Degrees) {
     return possibles.filter((possible) => possible.rightAscension < max && possible.rightAscension > min);
   }
 
-  private static checkRcs_(possibles: Satellite[], minRcs: number, maxRcs: number) {
+  protected static checkRcs_(possibles: Satellite[], minRcs: number, maxRcs: number) {
     return possibles.filter((possible) => (possible?.rcs ?? -Infinity) > minRcs && (possible?.rcs ?? Infinity) < maxRcs);
   }
 }
