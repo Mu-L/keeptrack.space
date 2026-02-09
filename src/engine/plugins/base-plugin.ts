@@ -3,6 +3,7 @@ import { BottomMenu } from '@app/app/ui/bottom-menu';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, Singletons } from '@app/engine/core/interfaces';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
+import { KeepTrack } from '@app/keeptrack';
 import { t7e, TranslationKey } from '@app/locales/keys';
 import { BaseObject } from '@ootk/src/main';
 import Module from 'module';
@@ -233,6 +234,12 @@ export abstract class KeepTrackPlugin {
    */
   dragOptionsSecondary: ClickDragOptions;
   menuMode: MenuMode[] = [MenuMode.ALL];
+
+  /**
+   * When true, the engine render loop is paused while the side menu is open.
+   * This improves performance when the canvas is fully hidden behind a full-width menu.
+   */
+  isRenderPausedOnOpen = false;
 
   /**
    * The callback to run when the bottom icon is deselected for any reason
@@ -1125,6 +1132,10 @@ export abstract class KeepTrackPlugin {
     this.hideSideMenus();
     slideInRight(getEl(this.sideMenuElementName), 1000);
     KeepTrackPlugin.openSideMenu_();
+
+    if (this.isRenderPausedOnOpen) {
+      KeepTrack.getInstance().engine.pause();
+    }
   }
 
   /**
@@ -1249,6 +1260,9 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.hideSideMenus,
       (): void => {
+        if (this.isRenderPausedOnOpen && this.isMenuButtonActive) {
+          KeepTrack.getInstance().engine.resume();
+        }
         slideCb();
         getEl(bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
         this.isMenuButtonActive = false;
