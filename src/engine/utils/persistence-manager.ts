@@ -79,6 +79,9 @@ export enum StorageKey {
   // Neighborhood Watch
   NEIGHBORHOOD_WATCH_LIST = 'v2-keepTrack-neighborhoodWatchList',
 
+  // Find Satellite Pro
+  FIND_SAT_PRO_SAVED_SEARCHES = 'v2-find-sat-pro-saved-searches',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
