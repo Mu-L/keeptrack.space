@@ -13,6 +13,8 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl, setInnerHtml, showEl } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
 import { BaseObject, CatalogSource, Satellite } from '@ootk/src/main';
+import bookmarkAddPng from '@public/img/icons/bookmark-add.png';
+import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { CONTAINER_ID, EL, SECTIONS } from './sat-info-box-html';
@@ -47,27 +49,16 @@ export class SatInfoBox extends KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.onWatchlistUpdated,
       (watchlistList: { id: number, inView: boolean }[]) => {
-        let isOnList = false;
+        const isOnList = watchlistList.some(({ id }) => id === PluginRegistry.getPlugin(SelectSatManager)!.selectedSat);
+        const toggleEl = getEl('sat-watchlist-toggle', true) as HTMLImageElement | null;
 
-        watchlistList.forEach(({ id }) => {
-          if (id === PluginRegistry.getPlugin(SelectSatManager)!.selectedSat) {
-            isOnList = true;
-          }
-        });
-
-        const addRemoveWatchlistDom = getEl('sat-add-watchlist', true);
-
-        /*
-         * TODO: There should be a placeholder on the left side to keep the
-         * satellite name centered when the add/remove watchlist icon is not shown.
-         */
-        if (addRemoveWatchlistDom) {
+        if (toggleEl) {
           if (isOnList) {
-            (<HTMLImageElement>getEl('sat-remove-watchlist')).style.display = 'block';
-            (<HTMLImageElement>getEl('sat-add-watchlist')).style.display = 'none';
+            toggleEl.src = bookmarkRemovePng;
+            toggleEl.classList.replace('off-watchlist', 'on-watchlist');
           } else {
-            (<HTMLImageElement>getEl('sat-add-watchlist')).style.display = 'block';
-            (<HTMLImageElement>getEl('sat-remove-watchlist')).style.display = 'none';
+            toggleEl.src = bookmarkAddPng;
+            toggleEl.classList.replace('on-watchlist', 'off-watchlist');
           }
         }
       },

@@ -64,8 +64,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
   };
 
   EL = {
-    ADD_WATCHLIST: 'sat-add-watchlist',
-    REMOVE_WATCHLIST: 'sat-remove-watchlist',
+    WATCHLIST_TOGGLE: 'sat-watchlist-toggle',
   };
 
   bottomIconElementName: string = 'menu-watchlist';
@@ -174,18 +173,15 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     const satInfoBoxPlugin = PluginRegistry.getPlugin(SatInfoBox)!;
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxAddListeners, () => {
-      getEl(this.EL.ADD_WATCHLIST)?.addEventListener('click', satInfoBoxPlugin.withClickSound(this.addRemoveWatchlist_.bind(this)));
-      getEl(this.EL.REMOVE_WATCHLIST)?.addEventListener('click', satInfoBoxPlugin.withClickSound(this.addRemoveWatchlist_.bind(this)));
+      getEl(this.EL.WATCHLIST_TOGGLE)?.addEventListener('click', satInfoBoxPlugin.withClickSound(this.addRemoveWatchlist_.bind(this)));
     });
 
     EventBus.getInstance().on(EventBusEvent.selectSatData, this.selectSatData_.bind(this));
   }
 
   private satInfoBoxFinal_() {
-    // Add html to EL.TITLE
     getEl(SAT_INFO_EL.NAME)?.insertAdjacentHTML('beforebegin', html`
-      <img id="${this.EL.ADD_WATCHLIST}" src="${bookmarkAddPng}"/>
-      <img id="${this.EL.REMOVE_WATCHLIST}" src="${bookmarkRemovePng}"/>
+      <img id="${this.EL.WATCHLIST_TOGGLE}" src="${bookmarkAddPng}" class="sat-watchlist-icon off-watchlist"/>
     `);
   }
 
@@ -194,12 +190,18 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       return;
     }
 
+    const toggleEl = getEl(this.EL.WATCHLIST_TOGGLE) as HTMLImageElement | null;
+
+    if (!toggleEl) {
+      return;
+    }
+
     if (this.isOnWatchlist(obj.id)) {
-      getEl(this.EL.REMOVE_WATCHLIST)!.style.display = 'block';
-      getEl(this.EL.ADD_WATCHLIST)!.style.display = 'none';
+      toggleEl.src = bookmarkRemovePng;
+      toggleEl.classList.replace('off-watchlist', 'on-watchlist');
     } else {
-      getEl(this.EL.ADD_WATCHLIST)!.style.display = 'block';
-      getEl(this.EL.REMOVE_WATCHLIST)!.style.display = 'none';
+      toggleEl.src = bookmarkAddPng;
+      toggleEl.classList.replace('on-watchlist', 'off-watchlist');
     }
   }
 

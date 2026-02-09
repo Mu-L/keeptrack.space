@@ -14,19 +14,23 @@
   margin-bottom: 5px;
 }
 
-#sat-add-watchlist,
-#sat-remove-watchlist {
+.sat-watchlist-icon {
   width: 25px;
   height: 25px;
   cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
 }
 
-#sat-add-watchlist {
-  filter: hue-rotate(275deg) brightness(1.2);
+.sat-watchlist-icon:hover {
+  transform: scale(1.15);
 }
 
-#sat-remove-watchlist {
-  filter: invert(52%) sepia(130%) saturate(7323%) hue-rotate(353deg) brightness(100%) contrast(86%);
+.sat-watchlist-icon.off-watchlist {
+  filter: brightness(0) invert(1) opacity(0.6);
+}
+
+.sat-watchlist-icon.on-watchlist {
+  filter: invert(52%) sepia(130%) saturate(7323%) hue-rotate(120deg) brightness(100%) contrast(86%);
 }
 
 .sat-info-section-header {
