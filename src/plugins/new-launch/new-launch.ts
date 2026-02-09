@@ -30,7 +30,7 @@ import { PluginRegistry } from '@app/engine/core/plugin-registry';
 export class NewLaunch extends KeepTrackPlugin {
   readonly id = 'NewLaunch';
   dependencies_ = [SelectSatManager.name];
-  private readonly selectSatManager_: SelectSatManager;
+  protected readonly selectSatManager_: SelectSatManager;
 
   constructor() {
     super();
@@ -70,9 +70,14 @@ export class NewLaunch extends KeepTrackPlugin {
   isIconDisabledOnLoad = true;
   isIconDisabled = true;
   sideMenuElementName: string = 'newLaunch-menu';
-  sideMenuElementHtml: string = (() => {
+
+  /**
+   * Build the grouped launch facility `<select>` options HTML.
+   * Extracted as a static method so pro subclasses can reuse it.
+   */
+  static buildFacilityOptionsHtml(): string {
     // Group launchSites by country
-    const grouped: { [country: string]: { key: string; name: string, site: string }[] } = {};
+    const grouped: { [country: string]: { key: string; name: string; site: string }[] } = {};
 
     for (const [key, site] of Object.entries(launchSites)) {
       const country = site.country || 'Other';
@@ -98,12 +103,15 @@ export class NewLaunch extends KeepTrackPlugin {
       });
     }
 
-    // Build the select options HTML
-    const optionsHtml = countryKeys.map((country) =>
+    return countryKeys.map((country) =>
       `<optgroup label="${country}"> ${grouped[country]
         .map((site) => `<option value="${site.key}">${site.name}<br/> - ${site.site}</option>`).join('\n')}
       </optgroup>`,
     ).join('\n');
+  }
+
+  sideMenuElementHtml: string = (() => {
+    const optionsHtml = NewLaunch.buildFacilityOptionsHtml();
 
     return html`
       <div id="newLaunch-menu" class="side-menu-parent start-hidden text-select">
@@ -154,22 +162,34 @@ export class NewLaunch extends KeepTrackPlugin {
     isDraggable: true,
   };
 
-  isDoingCalculations = false;
+  protected isDoingCalculations_ = false;
   submitCallback: () => void = () => {
-    if (this.isDoingCalculations) {
+    const sccNum = (<HTMLInputElement>getEl('nl-scc')).value;
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const inputSat = catalogManagerInstance.sccNum2Sat(parseInt(sccNum))!;
+
+    this.executeLaunch_(inputSat);
+  };
+
+  /**
+   * Core launch execution logic. Finds a nominal satellite slot, creates the
+   * nominal satellite, rotates its orbit over the selected launch site, and
+   * waits for the position cruncher to process the result.
+   *
+   * Extracted as a protected method so subclasses can call it with different
+   * satellite sources (selected sat, SCC lookup, or custom-built sat).
+   */
+  protected executeLaunch_(inputSat: Satellite): void {
+    if (this.isDoingCalculations_) {
       return;
     }
-    this.isDoingCalculations = true;
+    this.isDoingCalculations_ = true;
 
-    const timeManagerInstance = ServiceLocator.getTimeManager();
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const uiManagerInstance = ServiceLocator.getUiManager();
-    const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
     showLoadingSticky();
 
-    const sccNum = (<HTMLInputElement>getEl('nl-scc')).value;
-    const inputSat = catalogManagerInstance.sccNum2Sat(parseInt(sccNum))!;
     let nominalSat: Satellite | null = null;
     let id = -1;
 
@@ -185,7 +205,7 @@ export class NewLaunch extends KeepTrackPlugin {
 
     if (id === -1 || !nominalSat) {
       uiManagerInstance.toast('No more nominal satellites available!', ToastMsgType.critical);
-      this.isDoingCalculations = false;
+      this.isDoingCalculations_ = false;
       hideLoading();
 
       return;
@@ -194,11 +214,27 @@ export class NewLaunch extends KeepTrackPlugin {
     const sat = this.createNominalSat_(inputSat, nominalSat.sccNum, id);
 
     if (!sat) {
-      this.isDoingCalculations = false;
+      this.isDoingCalculations_ = false;
       hideLoading();
 
       return;
     }
+
+    this.launchFromSite_(sat, id);
+  }
+
+  /**
+   * Rotate the satellite's orbit over the selected launch site using OrbitFinder,
+   * then update the cruncher and wait for propagation results.
+   *
+   * This is the second half of the launch flow — call it directly when the
+   * nominal satellite is already created (e.g. custom orbit mode).
+   */
+  protected launchFromSite_(sat: Satellite, id: number): void {
+    const timeManagerInstance = ServiceLocator.getTimeManager();
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const uiManagerInstance = ServiceLocator.getUiManager();
+    const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
     const upOrDown = <'N' | 'S'>(<HTMLInputElement>getEl('nl-updown')).value;
     const launchFac = (<HTMLInputElement>getEl('nl-facility')).value;
@@ -260,7 +296,7 @@ export class NewLaunch extends KeepTrackPlugin {
 
       // We have to change the time for the TLE creation, but it failed, so revert it.
       timeManagerInstance.changeStaticOffset(cacheStaticOffset);
-      this.isDoingCalculations = false;
+      this.isDoingCalculations_ = false;
       hideLoading();
 
       return;
@@ -297,7 +333,7 @@ export class NewLaunch extends KeepTrackPlugin {
     waitForCruncher({
       cruncher: catalogManagerInstance.satCruncher,
       cb: () => {
-        this.isDoingCalculations = false;
+        this.isDoingCalculations_ = false;
         hideLoading();
 
         // Deseletect the satellite
@@ -311,19 +347,19 @@ export class NewLaunch extends KeepTrackPlugin {
       },
       validationFunc: (data: PositionCruncherOutgoingMsg) => typeof data.satPos !== 'undefined',
       error: () => {
-        if (!this.isDoingCalculations) {
+        if (!this.isDoingCalculations_) {
           // If we are not doing calculations, then it must have finished already.
           return;
         }
 
-        this.isDoingCalculations = false;
+        this.isDoingCalculations_ = false;
         hideLoading();
         uiManagerInstance.toast('Cruncher failed to meet requirement after multiple tries! Is this launch even possible?', ToastMsgType.critical);
       },
       skipNumber: 2,
       maxRetries: 50,
     });
-  };
+  }
 
   addJs(): void {
     super.addJs();
@@ -333,8 +369,11 @@ export class NewLaunch extends KeepTrackPlugin {
       (obj: BaseObject) => {
         if (obj?.isSatellite()) {
           const sat = obj as Satellite;
+          const sccEl = getEl('nl-scc') as HTMLInputElement | null;
 
-          (<HTMLInputElement>getEl('nl-scc')).value = sat.sccNum;
+          if (sccEl) {
+            sccEl.value = sat.sccNum;
+          }
           this.setBottomIconToEnabled();
         } else if (obj?.type === SpaceObjectType.LAUNCH_SITE) {
           this.selectLaunchSite(obj as LaunchSite);
@@ -373,7 +412,7 @@ export class NewLaunch extends KeepTrackPlugin {
     }
   }
 
-  private preValidate_(sat: Satellite): void {
+  protected preValidate_(sat: Satellite): void {
     // Get Current LaunchSiteOptionValue
     const launchSiteOptionValue = (<HTMLInputElement>getEl('nl-facility')).value;
     const lat = launchSites[launchSiteOptionValue].lat;
@@ -392,7 +431,7 @@ export class NewLaunch extends KeepTrackPlugin {
     }
   }
 
-  private createNominalSat_(inputParams: Satellite, scc: string, id: number): Satellite | null {
+  protected createNominalSat_(inputParams: Satellite, scc: string, id: number): Satellite | null {
     const country = inputParams.country;
     const type = inputParams.type;
     const intl = `${inputParams.epochYear}69B`; // International designator
