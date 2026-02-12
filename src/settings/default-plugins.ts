@@ -363,4 +363,7 @@ export const defaultPlugins = <KeepTrackPluginsConfiguration>{
   CommandPalettePlugin: {
     enabled: true,
   },
+  FavoritesMenuPlugin: {
+    enabled: true,
+  },
 };

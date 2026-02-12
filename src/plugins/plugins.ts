@@ -403,6 +403,13 @@ export class PluginManager {
           'CommandPalettePlugin',
         ), config: plugins.CommandPalettePlugin,
       },
+      {
+        init: () => PluginManager.loadProPlugin_(
+          () => import('../plugins-pro/favorites-menu/favorites-menu'),
+          () => import('./favorites-menu/favorites-menu'),
+          'FavoritesMenuPlugin',
+        ), config: plugins.FavoritesMenuPlugin,
+      },
     ];
   }
 

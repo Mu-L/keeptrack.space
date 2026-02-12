@@ -108,4 +108,5 @@ export type KeepTrackPluginsConfiguration = {
   SatInfoBoxSponsor?: PluginConfiguration;
   CommandPalettePlugin?: PluginConfiguration;
   NeighborhoodWatch?: PluginConfiguration;
+  FavoritesMenuPlugin?: PluginConfiguration;
 };

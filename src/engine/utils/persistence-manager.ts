@@ -85,6 +85,9 @@ export enum StorageKey {
   // DOP Terrain Masks
   DOPS_TERRAIN_STORE = 'v2-keepTrack-dopsTerrainStore',
 
+  // Favorites Menu
+  FAVORITES_LIST = 'v2-keepTrack-favoritesList',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
