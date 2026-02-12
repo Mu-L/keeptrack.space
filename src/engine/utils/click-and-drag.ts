@@ -15,7 +15,6 @@ export const clickAndDragWidth = (el: HTMLElement | null, options: ClickDragOpti
   width = width < minWidth ? minWidth : width;
   width = width > maxWidth ? maxWidth : width;
   el.style.width = `${width}px`;
-  el.style.display = 'block';
 
   settingsManager.isDragging = false;
 
