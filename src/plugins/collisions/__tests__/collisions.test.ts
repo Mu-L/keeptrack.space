@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable max-lines-per-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable dot-notation */
@@ -75,8 +76,8 @@ describe('Collisions_class', () => {
 
       expect(config.elementName).toBe('Collisions-menu');
       expect(config.dragOptions?.isDraggable).toBe(true);
-      expect(config.dragOptions?.minWidth).toBe(575);
-      expect(config.dragOptions?.maxWidth).toBe(700);
+      expect(config.dragOptions?.minWidth).toBe(650);
+      expect(config.dragOptions?.maxWidth).toBe(900);
     });
 
     it('should return correct help config', () => {
@@ -92,8 +93,8 @@ describe('Collisions_class', () => {
       const dragOptions = plugin['getDragOptions_']();
 
       expect(dragOptions.isDraggable).toBe(true);
-      expect(dragOptions.minWidth).toBe(575);
-      expect(dragOptions.maxWidth).toBe(700);
+      expect(dragOptions.minWidth).toBe(650);
+      expect(dragOptions.maxWidth).toBe(900);
     });
 
     it('should build side menu HTML', () => {
@@ -167,7 +168,8 @@ describe('Collisions_class', () => {
       await Promise.resolve();
 
       expect(plugin['collisionList_'].length).toBe(2);
-      vi.useRealTimers();
+      // Restore fake timers to avoid leaking real timers to other test files
+      vi.useFakeTimers();
     });
 
     it('should not fetch if collision list is already populated', async () => {

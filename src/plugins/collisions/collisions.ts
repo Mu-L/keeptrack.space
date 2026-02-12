@@ -129,7 +129,7 @@ export class Collisions extends KeepTrackPlugin {
   }
 
   private uiManagerFinal_() {
-    getEl('Collisions-menu')!.addEventListener('click', (evt: MouseEvent) => {
+    getEl('Collisions-menu', true)?.addEventListener('click', (evt: MouseEvent) => {
       const el = (<HTMLElement>evt.target).parentElement;
 
       if (!el!.classList.contains('Collisions-object')) {

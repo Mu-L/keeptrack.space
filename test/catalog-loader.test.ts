@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { CatalogLoader } from '@app/app/data/catalog-loader';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { readFileSync } from 'fs';

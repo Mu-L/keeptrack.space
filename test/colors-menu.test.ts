@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrack } from '@app/keeptrack';
 import { ColorMenu } from '@app/plugins/colors-menu/colors-menu';

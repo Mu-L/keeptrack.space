@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * @jest-environment jsdom
  */

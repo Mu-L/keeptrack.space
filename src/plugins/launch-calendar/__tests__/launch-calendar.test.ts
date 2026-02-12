@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LaunchCalendar } from '@app/plugins/launch-calendar/launch-calendar';
 import { setupDefaultHtml } from '@test/environment/standard-env';
 import { standardPluginSuite, websiteInit } from '@test/generic-tests';

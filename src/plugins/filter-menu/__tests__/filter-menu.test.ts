@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-undefined */
 /* eslint-disable max-lines-per-function */
@@ -621,7 +622,8 @@ describe('FilterMenuPlugin_class', () => {
           vi.advanceTimersByTime(100);
         }).not.toThrow();
       });
-      vi.useRealTimers();
+      // Restore fake timers to avoid leaking real timers to other test files
+      vi.useFakeTimers();
     }, 30000);
 
     it('should have all filters include required id property', () => {

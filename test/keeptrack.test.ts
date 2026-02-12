@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import { Container } from '@app/engine/core/container';
 import { ServiceLocator } from '@app/engine/core/service-locator';

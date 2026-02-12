@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable dot-notation */
 import { MenuMode } from '@app/engine/core/interfaces';
 import { getEl } from '@app/engine/utils/get-el';

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable dot-notation */
 import { MenuMode } from '@app/engine/core/interfaces';
@@ -223,7 +224,8 @@ describe('ColorMenu_class', () => {
           vi.advanceTimersByTime(1000);
         }).not.toThrow();
       });
-      vi.useRealTimers();
+      // Restore fake timers to avoid leaking real timers to other test files
+      vi.useFakeTimers();
     }, 20000);
   });
 

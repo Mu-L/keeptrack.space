@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import * as isThisNode from '@app/engine/utils/isThisNode';
 import { getClass } from '../src/engine/utils/get-class';
 import { KeepTrack } from '@app/keeptrack';

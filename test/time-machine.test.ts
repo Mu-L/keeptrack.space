@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { TimeMachine } from '@app/plugins/time-machine/time-machine';
 import { Milliseconds } from '@ootk/src/main';
@@ -32,6 +33,7 @@ describe('TimeMachine_class', () => {
     vi.advanceTimersByTime(1000);
     expect(timeMachinePlugin.isMenuButtonActive).toBe(true);
     vi.advanceTimersByTime(10000);
-    vi.useRealTimers();
+    // Restore fake timers to avoid leaking real timers to other test files
+    vi.useFakeTimers();
   }, 15000);
 });

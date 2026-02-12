@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getEl } from '@app/engine/utils/get-el';
 import { hasBottomIcon, hasHelp, hasSecondaryMenu, hasSideMenu } from '@app/engine/plugins/core/plugin-capabilities';
 import { DebrisScreening } from '@app/plugins/debris-screening/debris-screening';

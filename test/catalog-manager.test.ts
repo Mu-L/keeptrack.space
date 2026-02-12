@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { CatalogExporter } from '@app/app/data/catalog-exporter';
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import { CatalogSearch } from '@app/app/data/catalog-search';

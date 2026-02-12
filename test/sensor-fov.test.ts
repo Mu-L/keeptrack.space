@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SensorManager } from '@app/app/sensors/sensorManager';
 import { Container } from '@app/engine/core/container';
 import { Singletons } from '@app/engine/core/interfaces';

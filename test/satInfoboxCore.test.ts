@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { getEl } from '@app/engine/utils/get-el';
 import { SatInfoBoxObject } from '@app/plugins/sat-info-box-object/sat-info-box-object';

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getEl } from '@app/engine/utils/get-el';
 import { EditSat } from '@app/plugins/edit-sat/edit-sat';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';

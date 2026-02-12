@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LayersManager } from '@app/app/ui/layers-manager';
 import { CelestrakColorScheme } from '@app/engine/rendering/color-schemes/celestrak-color-scheme';
 import { GpAgeColorScheme } from '@app/engine/rendering/color-schemes/gp-age-color-scheme';

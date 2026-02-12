@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SensorInfoPlugin } from '@app/plugins/sensor/sensor-info-plugin';
 import { setupStandardEnvironment } from './environment/standard-env';
 import { standardClickTests, standardPluginMenuButtonTests, standardPluginSuite } from './generic-tests';

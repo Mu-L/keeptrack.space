@@ -256,7 +256,7 @@ export class StereoMap extends KeepTrackPlugin {
           this.mapMenuClick_(evt);
         });
 
-        const settingsForm = getEl('stereo-map-settings-form');
+        const settingsForm = getEl('stereo-map-settings-form', true);
 
         settingsForm?.addEventListener('submit', (e: Event) => {
           e.preventDefault();
@@ -265,10 +265,10 @@ export class StereoMap extends KeepTrackPlugin {
           this.applySettings_();
         });
 
-        getEl('stereo-map-orbit-mult')?.addEventListener('input', () => {
+        getEl('stereo-map-orbit-mult', true)?.addEventListener('input', () => {
           this.onOrbitInputChanged_();
         });
-        getEl('stereo-map-minutes')?.addEventListener('input', () => {
+        getEl('stereo-map-minutes', true)?.addEventListener('input', () => {
           this.onMinutesInputChanged_();
         });
       },

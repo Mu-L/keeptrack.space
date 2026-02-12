@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SatMath } from '@app/app/analysis/sat-math';
 import { SensorMath } from '@app/app/sensors/sensor-math';
 import { Container } from '@app/engine/core/container';

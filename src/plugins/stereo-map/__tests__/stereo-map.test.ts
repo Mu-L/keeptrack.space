@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
@@ -7,6 +8,38 @@ import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from '@test/generic-tests';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrack } from '@app/keeptrack';
+
+// Mock canvas getContext for jsdom (not implemented in jsdom)
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  drawImage: vi.fn(),
+  clearRect: vi.fn(),
+  fillRect: vi.fn(),
+  fillText: vi.fn(),
+  strokeText: vi.fn(),
+  measureText: vi.fn(() => ({ width: 0 })),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  stroke: vi.fn(),
+  arc: vi.fn(),
+  fill: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
+  translate: vi.fn(),
+  scale: vi.fn(),
+  rotate: vi.fn(),
+  setTransform: vi.fn(),
+  createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+  createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+  canvas: { width: 1920, height: 1080 },
+  font: '',
+  fillStyle: '',
+  strokeStyle: '',
+  lineWidth: 1,
+  globalAlpha: 1,
+  textAlign: '',
+  textBaseline: '',
+})) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 
 describe('StereoMapPlugin_class', () => {
   beforeEach(() => {

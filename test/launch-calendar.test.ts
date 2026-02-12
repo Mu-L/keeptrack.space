@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { createColorbox } from '@app/engine/utils/colorbox';
 import { LaunchCalendar } from '@app/plugins/launch-calendar/launch-calendar';

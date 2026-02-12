@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Screenshot } from '@app/plugins/screenshot/screenshot';
 import { setupDefaultHtml } from './environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginRmbTests, standardPluginSuite } from './generic-tests';

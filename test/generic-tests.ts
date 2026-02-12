@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { BottomMenu } from '@app/app/ui/bottom-menu';
 import { Constructor } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';

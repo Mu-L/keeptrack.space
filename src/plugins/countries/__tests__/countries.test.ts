@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable dot-notation */
 import { GroupsManager } from '@app/app/data/groups-manager';

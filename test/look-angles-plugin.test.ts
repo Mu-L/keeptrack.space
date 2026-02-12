@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { LookAnglesPlugin } from '@app/plugins/sensor/look-angles-plugin';
 import { setupStandardEnvironment } from './environment/standard-env';

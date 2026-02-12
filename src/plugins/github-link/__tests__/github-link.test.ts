@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { GithubLinkPlugin } from '@app/plugins/github-link/github-link';

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ToastMsgType } from '@app/engine/core/interfaces';

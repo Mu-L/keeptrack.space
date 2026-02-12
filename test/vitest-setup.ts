@@ -200,6 +200,20 @@ vi.mock('eruda', () => ({
   add: vi.fn(),
 }));
 
+// Mock Draggabilly - jsdom doesn't support getComputedStyle properly for elements
+vi.mock('draggabilly', () => {
+  class MockDraggabilly {
+    on = vi.fn();
+    off = vi.fn();
+    enable = vi.fn();
+    disable = vi.fn();
+    destroy = vi.fn();
+    position = { x: 0, y: 0 };
+  }
+
+  return { default: MockDraggabilly, __esModule: true };
+});
+
 /** Setup catalog, webgl, and other standard environment */
 import('./environment/standard-env').then((module) => {
   module.setupStandardEnvironment();

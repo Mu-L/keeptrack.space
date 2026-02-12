@@ -1,6 +1,6 @@
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { getEl } from '@app/engine/utils/get-el';
-import { WatchlistPlugin } from '@app/plugins/watchlist/watchlist';
+import { WatchlistPlugin } from '@app/plugins/satellite-lists/satellite-lists';
 import { disableConsoleErrors, enableConsoleErrors, setupDefaultHtml } from './environment/standard-env';
 import { standardClickTests, standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from './generic-tests';
 import { KeepTrack } from '@app/keeptrack';

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { KeepTrack } from '@app/keeptrack';
@@ -178,7 +179,8 @@ describe('StreamManager', () => {
       expect(mockAnchor.click).toHaveBeenCalled();
       vi.advanceTimersByTime(100);
       expect(window.URL.revokeObjectURL).toHaveBeenCalled();
-      vi.useRealTimers();
+      // Restore fake timers to avoid leaking real timers to other test files
+      vi.useFakeTimers();
     });
   });
 

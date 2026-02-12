@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { SoundManager } from '@app/engine/audio/sound-manager';
 import { SoundNames, sounds } from '@app/engine/audio/sounds';

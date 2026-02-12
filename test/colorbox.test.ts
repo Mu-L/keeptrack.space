@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getEl } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
 import { openColorbox } from '../src/engine/utils/colorbox';
@@ -37,6 +38,7 @@ import * as getElAll from '../src/engine/utils/get-el';
 
 describe('openColorbox_function', () => {
   beforeEach(() => {
+    KeepTrack.getInstance().containerRoot = document.body as HTMLDivElement;
     KeepTrack.getDefaultBodyHtml();
     KeepTrack.getInstance().containerRoot.innerHTML = `
         <div id="colorbox-container" style="display:none;"></div>

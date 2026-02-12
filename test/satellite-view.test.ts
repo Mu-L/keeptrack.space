@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { UiManager } from '@app/app/ui/ui-manager';
 import { Camera, CameraType } from '@app/engine/camera/camera';
 import { Container } from '@app/engine/core/container';

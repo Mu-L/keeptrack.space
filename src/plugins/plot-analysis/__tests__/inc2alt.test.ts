@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable dot-notation */
 import { Inc2AltPlots } from '@app/plugins/plot-analysis/inc2alt';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';

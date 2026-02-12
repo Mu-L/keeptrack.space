@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { GroupsManager } from '@app/app/data/groups-manager';
 import { GroupType } from '@app/app/data/object-group';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';

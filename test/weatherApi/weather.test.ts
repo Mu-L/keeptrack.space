@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable dot-notation */
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable dot-notation */
 import { getEl } from '@app/engine/utils/get-el';
 import { CollisionEvent, Collisions } from '@app/plugins/collisions/collisions';

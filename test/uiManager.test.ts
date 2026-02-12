@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { UiManager } from '@app/app/ui/ui-manager';
 import { UiGeolocation } from '@app/app/ui/ui-manager-geolocation';
 import { GeolocationPosition } from '@app/engine/core/interfaces';

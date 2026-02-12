@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import { GroupType } from '@app/app/data/object-group';
 import { UiManager } from '@app/app/ui/ui-manager';
