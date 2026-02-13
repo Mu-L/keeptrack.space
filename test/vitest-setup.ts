@@ -132,7 +132,9 @@ vi.mock('echarts', () => {
   const dispose = vi.fn();
   const getZr = vi.fn(() => ({ dispose: vi.fn() }));
   const on = vi.fn();
-  const chartInstance = { setOption, resize, dispose, getZr, on };
+  const showLoading = vi.fn();
+  const hideLoading = vi.fn();
+  const chartInstance = { setOption, resize, dispose, getZr, on, showLoading, hideLoading };
   const init = vi.fn(() => chartInstance);
   const use = vi.fn();
   const registerTheme = vi.fn();
