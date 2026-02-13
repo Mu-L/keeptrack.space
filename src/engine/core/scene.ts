@@ -227,7 +227,7 @@ export class Scene {
 
         // Draw a black earth mesh on top of the sun in the godrays frame buffer
         // Skip in astronomy mode since Earth is hidden
-        if (centerBodyEntity?.drawOcclusion && camera.cameraType !== CameraType.ASTRONOMY) {
+        if (centerBodyEntity?.drawOcclusion && camera.cameraType !== CameraType.ASTRONOMY && camera.cameraType !== CameraType.PLANETARIUM) {
           centerBodyEntity?.drawOcclusion(
             camera.projectionMatrix, camera.matrixWorldInverse, renderer?.postProcessingManager?.programs?.occlusion, this.frameBuffers.godrays,
           );
@@ -267,7 +267,7 @@ export class Scene {
         }
 
         if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
-          if (camera.cameraType !== CameraType.ASTRONOMY) {
+          if (camera.cameraType !== CameraType.ASTRONOMY && camera.cameraType !== CameraType.PLANETARIUM) {
             this.earth.draw(renderer.postProcessingManager.curBuffer);
           }
           this.getBodyById(SolarBody.Moon)?.draw(this.sun.position, renderer.postProcessingManager.curBuffer);
@@ -343,8 +343,10 @@ export class Scene {
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
     const hoverManagerInstance = ServiceLocator.getHoverManager();
 
-    // Draw Earth (skip in astronomy mode - replaced by ground plane)
-    if (camera.cameraType !== CameraType.ASTRONOMY) {
+    // Draw Earth (atmosphere-only in ground view modes; full draw otherwise)
+    if (camera.cameraType === CameraType.PLANETARIUM || camera.cameraType === CameraType.ASTRONOMY) {
+      this.earth.drawAtmosphereOnly(renderer.postProcessingManager.curBuffer);
+    } else {
       this.earth.draw(renderer.postProcessingManager.curBuffer);
     }
 
