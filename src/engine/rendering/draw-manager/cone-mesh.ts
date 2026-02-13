@@ -2,7 +2,7 @@
 import { Scene } from '@app/engine/core/scene';
 import { glsl } from '@app/engine/utils/development/formatter';
 import { BaseObject, Degrees, Kilometers, RADIUS_OF_EARTH } from '@ootk/src/main';
-import { mat4, quat, vec3 } from 'gl-matrix';
+import { mat4, vec3 } from 'gl-matrix';
 import { DepthManager } from '../depth-manager';
 import { CustomMesh } from './custom-mesh';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -21,16 +21,16 @@ export interface ConeSettings {
 }
 
 export class ConeMesh extends CustomMesh {
+  private static readonly N_PHI_ = 100;
+
   uniforms_ = {
     u_pMatrix: null as unknown as WebGLUniformLocation,
     u_camMatrix: null as unknown as WebGLUniformLocation,
     u_mvMatrix: null as unknown as WebGLUniformLocation,
     u_color: null as unknown as WebGLUniformLocation,
-    u_worldOffset: null as unknown as WebGLUniformLocation,
     logDepthBufFC: null as unknown as WebGLUniformLocation,
   };
-  private verticesTmp_: number[] = [];
-  private indicesTmp_: number[] = [];
+  private static readonly IDENTITY_MATRIX_ = mat4.create();
   /** The angle of the cone mesh. Tied to the object's FOV */
   fieldOfView: number;
   color: [number, number, number, number] = [0.2, 1.0, 1.0, 1.0];
@@ -51,11 +51,7 @@ export class ConeMesh extends CustomMesh {
   }
 
   editSettings(settings: ConeSettings) {
-    if (this.fieldOfView !== settings.fieldOfView) {
-      this.fieldOfView = settings.fieldOfView;
-      this.init(this.gl_);
-    }
-
+    this.fieldOfView = settings.fieldOfView;
     this.color = settings.color || this.color;
     this.range = settings.range || this.range;
   }
@@ -67,31 +63,95 @@ export class ConeMesh extends CustomMesh {
     this.pos = vec3.fromValues(positionData[Number(id) * 3], positionData[Number(id) * 3 + 1], positionData[Number(id) * 3 + 2]);
   }
 
+  /**
+   * Computes cone vertex positions directly in world-shifted coordinates using
+   * float64 JS math, then uploads to the GPU. This avoids the accumulated float32
+   * precision loss that occurs when using a translate*rotate*scale mvMatrix chain —
+   * which caused visible jitter in FIXED_TO_SAT mode, especially for distant satellites
+   * where the scale factor (coneHeight) is very large.
+   */
   update() {
+    if (!this.isLoaded_) {
+      return;
+    }
+
     this.updatePosition_();
 
-    this.mvMatrix_ = mat4.create();
-    mat4.identity(this.mvMatrix_);
+    const worldShift = Scene.getInstance().worldShift;
 
-    // Calculate the height of the cone
-    const satDistance = vec3.length(this.pos);
+    // All intermediate math uses float64 (regular JS numbers)
+    const px = this.pos[0];
+    const py = this.pos[1];
+    const pz = this.pos[2];
+
+    const satDistance = Math.sqrt(px * px + py * py + pz * pz);
     const coneHeight = satDistance - this.offsetDistance;
 
-    // Translate RADIUS_OF_EARTH units along the satellite's position vector
-    const normalizedPositionScaled = vec3.scale(vec3.create(), vec3.normalize(vec3.create(), this.pos), this.offsetDistance);
+    // Normalized satellite direction
+    const dx = px / satDistance;
+    const dy = py / satDistance;
+    const dz = pz / satDistance;
 
-    mat4.translate(this.mvMatrix_, this.mvMatrix_, normalizedPositionScaled);
+    // Apex = satellite position + worldShift (float64 subtraction of large values)
+    this.vertices_[0] = px + worldShift[0];
+    this.vertices_[1] = py + worldShift[1];
+    this.vertices_[2] = pz + worldShift[2];
 
-    // Create a rotation matrix to align the cone with the satellite's position
-    const rotationMatrix = mat4.create();
+    // Base center = offsetDistance along direction + worldShift
+    const baseCX = dx * this.offsetDistance + worldShift[0];
+    const baseCY = dy * this.offsetDistance + worldShift[1];
+    const baseCZ = dz * this.offsetDistance + worldShift[2];
 
-    mat4.fromQuat(rotationMatrix, quat.rotationTo(quat.create(), [0, 0, 1], vec3.normalize(vec3.create(), this.pos)));
+    // Base circle radius from FOV angle
+    const baseRadius = coneHeight * Math.tan((this.fieldOfView * Math.PI) / 180);
 
-    // Apply the rotation
-    mat4.multiply(this.mvMatrix_, this.mvMatrix_, rotationMatrix);
+    // Build orthonormal basis perpendicular to the satellite direction
+    // Pick a reference vector not parallel to d
+    let refX = 0;
+    let refY = 1;
+    let refZ = 0;
 
-    // Scale the cone to the correct height
-    mat4.scale(this.mvMatrix_, this.mvMatrix_, [coneHeight, coneHeight, coneHeight]);
+    if (Math.abs(dy) > 0.9) {
+      refX = 1;
+      refY = 0;
+      refZ = 0;
+    }
+
+    // u = normalize(cross(d, ref))
+    let ux = dy * refZ - dz * refY;
+    let uy = dz * refX - dx * refZ;
+    let uz = dx * refY - dy * refX;
+    const uLen = Math.sqrt(ux * ux + uy * uy + uz * uz);
+
+    ux /= uLen;
+    uy /= uLen;
+    uz /= uLen;
+
+    // v = cross(d, u)
+    const vx = dy * uz - dz * uy;
+    const vy = dz * ux - dx * uz;
+    const vz = dx * uy - dy * ux;
+
+    // Base circle vertices
+    const nPhi = ConeMesh.N_PHI_;
+    const dPhi = (2 * Math.PI) / nPhi;
+
+    for (let i = 0; i <= nPhi; i++) {
+      const phi = i * dPhi;
+      const cosPhi = Math.cos(phi);
+      const sinPhi = Math.sin(phi);
+      const idx = (i + 1) * 3;
+
+      this.vertices_[idx] = baseCX + baseRadius * (cosPhi * ux + sinPhi * vx);
+      this.vertices_[idx + 1] = baseCY + baseRadius * (cosPhi * uy + sinPhi * vy);
+      this.vertices_[idx + 2] = baseCZ + baseRadius * (cosPhi * uz + sinPhi * vz);
+    }
+
+    // Upload updated positions to GPU
+    const gl = this.gl_;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers_.vertPosBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices_);
   }
 
   draw(pMatrix: mat4, camMatrix: mat4, tgtBuffer?: WebGLFramebuffer) {
@@ -106,11 +166,11 @@ export class ConeMesh extends CustomMesh {
       gl.bindFramebuffer(gl.FRAMEBUFFER, tgtBuffer);
     }
 
-    // Set the uniforms
-    gl.uniformMatrix4fv(this.uniforms_.u_mvMatrix, false, this.mvMatrix_);
+    // Set the uniforms — u_mvMatrix is identity because vertex positions are
+    // pre-computed in world-shifted coordinates on the CPU (see update())
+    gl.uniformMatrix4fv(this.uniforms_.u_mvMatrix, false, ConeMesh.IDENTITY_MATRIX_);
     gl.uniformMatrix4fv(this.uniforms_.u_pMatrix, false, pMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_camMatrix, false, camMatrix);
-    gl.uniform3fv(this.uniforms_.u_worldOffset, Scene.getInstance().worldShift);
     gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform4fv(this.uniforms_.u_color, this.color);
 
@@ -136,37 +196,35 @@ export class ConeMesh extends CustomMesh {
   }
 
   initGeometry_() {
-    // Clear the arrays
-    this.verticesTmp_ = [];
-    this.indicesTmp_ = [];
+    const nPhi = ConeMesh.N_PHI_;
 
-    const height = 1; // Use a unit height, scale in update method
-    const radius = Math.tan((this.fieldOfView * Math.PI) / 180);
-    const nPhi = 100;
+    // Allocate vertex array — positions are computed each frame in update()
+    // 1 apex + (nPhi+1) base vertices, 3 components each
+    this.vertices_ = new Float32Array((1 + nPhi + 1) * 3);
 
-    const dPhi = (2 * Math.PI) / nPhi;
+    // Indices are static: nPhi triangles from apex to base
+    const indices: number[] = [];
 
-
-    // Apex of the cone
-    this.verticesTmp_.push(0, 0, height);
-
-    // Base vertices
-    for (let i = 0; i <= nPhi; i++) {
-      const phi = i * dPhi;
-      const x = radius * Math.cos(phi);
-      const y = radius * Math.sin(phi);
-
-      this.verticesTmp_.push(x, y, 0);
-    }
-
-    // Triangles
     for (let i = 0; i < nPhi; i++) {
-      // Triangle from apex to base
-      this.indicesTmp_.push(0, i + 1, i + 2);
+      indices.push(0, i + 1, i + 2);
     }
 
-    this.vertices_ = new Float32Array(this.verticesTmp_);
-    this.indices_ = new Uint16Array(this.indicesTmp_);
+    this.indices_ = new Uint16Array(indices);
+  }
+
+  protected initBuffers_() {
+    const gl = this.gl_;
+
+    this.buffers_.vertCount = this.indices_.length;
+
+    // DYNAMIC_DRAW because vertex positions are updated every frame
+    this.buffers_.vertPosBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers_.vertPosBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, this.vertices_, gl.DYNAMIC_DRAW);
+
+    this.buffers_.vertIndexBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers_.vertIndexBuf);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices_, gl.STATIC_DRAW);
   }
 
   shaders_ = {
@@ -185,15 +243,12 @@ export class ConeMesh extends CustomMesh {
       uniform mat4 u_pMatrix;
       uniform mat4 u_camMatrix;
       uniform mat4 u_mvMatrix;
-      uniform vec3 u_worldOffset;
       uniform float logDepthBufFC;
 
       in vec3 a_position;
 
       void main(void) {
-        vec4 worldPosition = u_mvMatrix * vec4(a_position, 1.0);
-        worldPosition.xyz += u_worldOffset;
-        gl_Position = u_pMatrix * u_camMatrix * worldPosition;
+        gl_Position = u_pMatrix * u_camMatrix * u_mvMatrix * vec4(a_position, 1.0);
 
         ${DepthManager.getLogDepthVertCode()}
       }
