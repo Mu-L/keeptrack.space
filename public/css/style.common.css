@@ -2688,6 +2688,12 @@ button.ui-button::-moz-focus-inner {
   padding: 5px;
 }
 
+/* Secondary menu panels (ID ends with "-secondary") must sit above their primary side menu */
+[id$="-secondary"].side-menu-parent {
+  z-index: 6 !important;
+  left: 0px !important;
+}
+
 .side-menu-settings {
   position: relative;
   height: 100%;
@@ -2706,6 +2712,27 @@ button.ui-button::-moz-focus-inner {
   flex-direction: column;
   flex-wrap: nowrap;
   gap: 10px;
+}
+
+/* Override Materialize teal with the app's theme color for all secondary menu controls */
+.side-menu-settings [type="checkbox"]:checked + span:not(.lever)::before {
+  border-right-color: var(--color-primary) !important;
+  border-bottom-color: var(--color-primary) !important;
+}
+
+.side-menu-settings [type="checkbox"].filled-in:checked + span:not(.lever)::after {
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-primary) !important;
+}
+
+.side-menu-settings [type="radio"]:checked + span::after,
+.side-menu-settings [type="radio"].with-gap:checked + span::after {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.side-menu-settings [type="radio"].with-gap:checked + span::before {
+  border-color: var(--color-primary) !important;
 }
 
 .submenu {
