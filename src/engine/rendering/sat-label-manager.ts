@@ -1,4 +1,5 @@
 import { mat4 } from 'gl-matrix';
+import { CameraType } from '../camera/camera';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { glsl } from '../utils/development/formatter';
@@ -193,7 +194,13 @@ export class SatLabelManager {
     // Draw
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.disable(gl.DEPTH_TEST);
+
+    // In planetarium mode, keep depth test enabled so labels are occluded by the ground plane
+    const isPlanetarium = ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM;
+
+    if (!isPlanetarium) {
+      gl.disable(gl.DEPTH_TEST);
+    }
 
     gl.bindVertexArray(this.vao_);
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.instanceCount_);
@@ -304,7 +311,7 @@ export class SatLabelManager {
         // Convert back to NDC
         vec2 finalNdc = (screenPos / u_screenSize) * 2.0 - 1.0;
 
-        gl_Position = vec4(finalNdc, 0.0, 1.0);
+        gl_Position = vec4(finalNdc, clipPos.z / clipPos.w, 1.0);
 
         // Compute texture coordinates into glyph atlas
         // Flip Y because canvas Y=0 is top but WebGL texture Y=0 is bottom

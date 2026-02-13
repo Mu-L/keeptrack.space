@@ -275,71 +275,23 @@ export class WebGLRenderer {
       const labelTexts: string[] = [];
 
       if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
+        // Only label satellites on the current watchlist/satellite list
         const catalogManagerInstance = ServiceLocator.getCatalogManager();
-        const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-        for (let i = 0; i < catalogManagerInstance.orbitalSats && visibleSatIds.length < settingsManager.maxLabels; i++) {
-          const obj = catalogManagerInstance.getObject(i, GetSatType.POSITION_ONLY);
+        watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
+          if (visibleSatIds.length >= settingsManager.maxLabels) {
+            return;
+          }
+          const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY);
 
           if (!obj?.isSatellite()) {
-            continue;
+            return;
           }
           const sat = <Satellite>obj;
 
-          if (colorSchemeManagerInstance.isPayloadOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isRocketBodyOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isDebrisOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isJscVimpelSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isNotionalSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isvLeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isGeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isLeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isMeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isHeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isXGeoSatOff(sat)) {
-            continue;
-          }
-
-          const satScreenPositionArray = this.getScreenCoords(sat);
-
-          if (satScreenPositionArray.error) {
-            continue;
-          }
-          if (typeof satScreenPositionArray.x === 'undefined' || typeof satScreenPositionArray.y === 'undefined') {
-            continue;
-          }
-          if (satScreenPositionArray.x > window.innerWidth || satScreenPositionArray.y > window.innerHeight) {
-            continue;
-          }
-
-          // Draw Orbits
-          if (!settingsManager.isShowSatNameNotOrbit) {
-            orbitManagerInstance.addInViewOrbit(i);
-          }
-
-          visibleSatIds.push(i);
+          visibleSatIds.push(id);
           labelTexts.push(sat.source === CatalogSource.VIMPEL ? `JSC${sat.altId}` : sat.sccNum);
-        }
+        });
       } else {
         const catalogManagerInstance = ServiceLocator.getCatalogManager();
         const dotsManagerInstance = ServiceLocator.getDotsManager();
