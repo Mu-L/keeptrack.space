@@ -135,6 +135,12 @@ export class Earth {
     this.drawBlackGpuPickingEarth_();
   }
 
+  drawAtmosphereOnly(tgtBuffer: WebGLFramebuffer | null) {
+    if (settingsManager.isDrawAtmosphere === AtmosphereSettings.ON) {
+      this.drawEarthAtmosphere_(tgtBuffer);
+    }
+  }
+
   changeEarthTextureStyle(style: EarthTextureStyle) {
     settingsManager.earthTextureStyle = style;
     // Reinit the current textures
