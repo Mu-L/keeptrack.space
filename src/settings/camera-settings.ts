@@ -17,7 +17,7 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
-import { Radians, Kilometers } from '@app/engine/ootk/src/main';
+import { Kilometers, Radians } from '@app/engine/ootk/src/main';
 import { RADIUS_OF_EARTH } from '../engine/utils/constants';
 
 /**
@@ -42,7 +42,7 @@ export class CameraSettings {
    *
    * * TODO: Implement this for FPS, Planetarium, Astronomy, and Satellite View
    */
-  fieldOfViewMin = 0.04;
+  fieldOfViewMin = 0.005;
 
   // Camera Movement
   /**
