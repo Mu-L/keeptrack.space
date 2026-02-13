@@ -3,7 +3,7 @@ import { t7e } from '@app/locales/keys';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { SettingsMenuPlugin } from '@app/plugins/settings-menu/settings-menu';
 import { Milliseconds } from '@ootk/src/main';
-import { Camera } from '../camera/camera';
+import { Camera, CameraType } from '../camera/camera';
 import { Engine } from '../engine';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
@@ -226,7 +226,8 @@ export class Scene {
         const centerBodyEntity = sceneManager.getBodyById(settingsManager.centerBody);
 
         // Draw a black earth mesh on top of the sun in the godrays frame buffer
-        if (centerBodyEntity?.drawOcclusion) {
+        // Skip in astronomy mode since Earth is hidden
+        if (centerBodyEntity?.drawOcclusion && camera.cameraType !== CameraType.ASTRONOMY) {
           centerBodyEntity?.drawOcclusion(
             camera.projectionMatrix, camera.matrixWorldInverse, renderer?.postProcessingManager?.programs?.occlusion, this.frameBuffers.godrays,
           );
@@ -266,7 +267,9 @@ export class Scene {
         }
 
         if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
-          this.earth.draw(renderer.postProcessingManager.curBuffer);
+          if (camera.cameraType !== CameraType.ASTRONOMY) {
+            this.earth.draw(renderer.postProcessingManager.curBuffer);
+          }
           this.getBodyById(SolarBody.Moon)?.draw(this.sun.position, renderer.postProcessingManager.curBuffer);
         }
       }
@@ -340,8 +343,10 @@ export class Scene {
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
     const hoverManagerInstance = ServiceLocator.getHoverManager();
 
-    // Draw Earth
-    this.earth.draw(renderer.postProcessingManager.curBuffer);
+    // Draw Earth (skip in astronomy mode - replaced by ground plane)
+    if (camera.cameraType !== CameraType.ASTRONOMY) {
+      this.earth.draw(renderer.postProcessingManager.curBuffer);
+    }
 
     // Draw Dots
     dotsManagerInstance.draw(renderer.projectionCameraMatrix, renderer.postProcessingManager.curBuffer);

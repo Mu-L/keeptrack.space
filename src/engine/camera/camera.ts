@@ -686,7 +686,9 @@ export class Camera {
 
     this.state.camRotateSpeed -= this.state.camRotateSpeed * dt * settingsManager.cameraMovementSpeed;
 
-    if (this.cameraType === CameraType.FPS || this.cameraType === CameraType.SATELLITE || this.cameraType === CameraType.ASTRONOMY) {
+    if (this.cameraType === CameraType.ASTRONOMY) {
+      this.updateAstronomyLookAround_(dt);
+    } else if (this.cameraType === CameraType.FPS || this.cameraType === CameraType.SATELLITE) {
       this.updateFpsMovement_(dt);
     } else {
       if (this.state.camPitchSpeed !== 0) {
@@ -770,29 +772,102 @@ export class Camera {
     return this.state.zoomLevel;
   }
 
+  private astronomyEye_ = vec3.create();
+  private astronomyZenith_ = vec3.create();
+  private astronomyEast_ = vec3.create();
+  private astronomyNorth_ = vec3.create();
+
   private drawAstronomy_(sensorPos: { lat: number; lon: number; gmst: GreenwichMeanSiderealTime; x: number; y: number; z: number }) {
-    this.state.fpsPitch = <Degrees>(-1 * sensorPos.lat * DEG2RAD);
+    // Eye position = sensor ECI position
+    vec3.set(this.astronomyEye_, sensorPos.x, sensorPos.y, sensorPos.z);
 
-    const sensorPosU = vec3.fromValues(-sensorPos.x * 1.01, -sensorPos.y * 1.01, -sensorPos.z * 1.01);
+    // Zenith = radial direction (normalized sensor position)
+    vec3.normalize(this.astronomyZenith_, this.astronomyEye_);
 
-    this.state.fpsPos[0] = sensorPos.x;
-    this.state.fpsPos[1] = sensorPos.y;
-    this.state.fpsPos[2] = sensorPos.z;
+    // Compute tangent plane basis vectors
+    // Use X-axis instead of Z-axis near poles to avoid degenerate cross product
+    const refAxis = Math.abs(this.astronomyZenith_[2]) > 0.99
+      ? vec3.fromValues(1, 0, 0)
+      : vec3.fromValues(0, 0, 1);
 
-    mat4.rotate(this.matrixWorldInverse, this.matrixWorldInverse, this.state.fpsPitch + -this.state.fpsPitch * DEG2RAD, [1, 0, 0]);
-    mat4.rotate(this.matrixWorldInverse, this.matrixWorldInverse, -this.state.fpsRotate * DEG2RAD, [0, 1, 0]);
-    vec3.normalize(this.normUp_, sensorPosU);
-    mat4.rotate(this.matrixWorldInverse, this.matrixWorldInverse, -this.state.fpsYaw * DEG2RAD, this.normUp_);
+    // East = normalize(cross(refAxis, zenith))
+    vec3.cross(this.astronomyEast_, refAxis, this.astronomyZenith_);
+    vec3.normalize(this.astronomyEast_, this.astronomyEast_);
 
-    mat4.translate(this.matrixWorldInverse, this.matrixWorldInverse, [-sensorPos.x * 1.01, -sensorPos.y * 1.01, -sensorPos.z * 1.01]);
+    // North = normalize(cross(zenith, east))
+    vec3.cross(this.astronomyNorth_, this.astronomyZenith_, this.astronomyEast_);
+    vec3.normalize(this.astronomyNorth_, this.astronomyNorth_);
 
-    /*
-     * const q = quat.create();
-     * const newrot = mat4.create();
-     * quat.fromEuler(q, this.ftsPitch * RAD2DEG, 0, -this.ftsYaw_ * RAD2DEG);
-     * mat4.fromQuat(newrot, q);
-     * mat4.multiply(this.camMatrix, newrot, this.camMatrix);
-     */
+    // Build camera axes from azimuth (fpsYaw) and elevation (fpsPitch)
+    // This avoids mat4.lookAt which degenerates when forward ≈ up (at zenith)
+    const azRad = this.state.fpsYaw * DEG2RAD;
+    const elRad = this.state.fpsPitch * DEG2RAD;
+    const cosEl = Math.cos(elRad);
+    const sinEl = Math.sin(elRad);
+    const cosAz = Math.cos(azRad);
+    const sinAz = Math.sin(azRad);
+
+    // Step 1: Rotate base frame by azimuth around zenith
+    // forwardTangent = cos(az)*north + sin(az)*east  (forward projected on tangent plane)
+    // right = cos(az)*east - sin(az)*north
+    const ftX = cosAz * this.astronomyNorth_[0] + sinAz * this.astronomyEast_[0];
+    const ftY = cosAz * this.astronomyNorth_[1] + sinAz * this.astronomyEast_[1];
+    const ftZ = cosAz * this.astronomyNorth_[2] + sinAz * this.astronomyEast_[2];
+
+    const rX = cosAz * this.astronomyEast_[0] - sinAz * this.astronomyNorth_[0];
+    const rY = cosAz * this.astronomyEast_[1] - sinAz * this.astronomyNorth_[1];
+    const rZ = cosAz * this.astronomyEast_[2] - sinAz * this.astronomyNorth_[2];
+
+    // Step 2: Rotate by elevation around the right axis
+    // camForward = cos(el)*forwardTangent + sin(el)*zenith
+    // camUp = -sin(el)*forwardTangent + cos(el)*zenith
+    // camRight = right (unchanged)
+    const cfX = cosEl * ftX + sinEl * this.astronomyZenith_[0];
+    const cfY = cosEl * ftY + sinEl * this.astronomyZenith_[1];
+    const cfZ = cosEl * ftZ + sinEl * this.astronomyZenith_[2];
+
+    const cuX = -sinEl * ftX + cosEl * this.astronomyZenith_[0];
+    const cuY = -sinEl * ftY + cosEl * this.astronomyZenith_[1];
+    const cuZ = -sinEl * ftZ + cosEl * this.astronomyZenith_[2];
+
+    // Step 3: Build view matrix manually (world-to-camera)
+    //
+    // The projection matrix includes eciToOpenGlMat (E) which swaps Y/Z axes:
+    //   X_gl = X_eci,  Y_gl = Z_eci,  Z_gl = -Y_eci
+    //
+    // To get the correct view matrix for ECI coordinates, we compute:
+    //   V_eci = E^-1 * L_gl * E
+    // where L_gl is the standard OpenGL lookAt matrix.
+    // This yields: Row 0 = right, Row 1 = forward, Row 2 = up (all positive)
+    // with negative dot-product translations (standard lookAt pattern).
+    const eyeX = this.astronomyEye_[0];
+    const eyeY = this.astronomyEye_[1];
+    const eyeZ = this.astronomyEye_[2];
+
+    const tx = -(rX * eyeX + rY * eyeY + rZ * eyeZ);
+    const ty = -(cfX * eyeX + cfY * eyeY + cfZ * eyeZ);
+    const tz = -(cuX * eyeX + cuY * eyeY + cuZ * eyeZ);
+
+    // Column-major layout for glMatrix
+    // V_eci = E^-1 * L_gl * E  where E = eciToOpenGlMat
+    // This similarity transform accounts for the ECI→OpenGL axis swap (Y↔Z)
+    // Row 0: right,  Row 1: forward (positive),  Row 2: up (positive)
+    this.matrixWorldInverse[0] = rX;
+    this.matrixWorldInverse[1] = cfX;
+    this.matrixWorldInverse[2] = cuX;
+    this.matrixWorldInverse[3] = 0;
+    this.matrixWorldInverse[4] = rY;
+    this.matrixWorldInverse[5] = cfY;
+    this.matrixWorldInverse[6] = cuY;
+    this.matrixWorldInverse[7] = 0;
+    this.matrixWorldInverse[8] = rZ;
+    this.matrixWorldInverse[9] = cfZ;
+    this.matrixWorldInverse[10] = cuZ;
+    this.matrixWorldInverse[11] = 0;
+    this.matrixWorldInverse[12] = tx;
+    this.matrixWorldInverse[13] = ty;
+    this.matrixWorldInverse[14] = tz;
+    this.matrixWorldInverse[15] = 1;
   }
 
   private drawFixedToEarth_() {
@@ -951,6 +1026,41 @@ export class Camera {
         ? this.state.camYawTarget
         : <Radians>(this.state.camYaw + this.yawErr_ * this.chaseSpeed_ * dt);
     }
+  }
+
+  private updateAstronomyLookAround_(dt: Milliseconds): void {
+    // Update elevation and azimuth from mouse drag speeds
+    // Yaw sign is flipped vs FPS because azimuth increases eastward (drag right = look right)
+    this.state.fpsPitch = <Degrees>(this.state.fpsPitch - 20 * this.state.camPitchSpeed * dt);
+    this.state.fpsYaw = <Degrees>(this.state.fpsYaw - 20 * this.state.camYawSpeed * dt);
+
+    // Clamp elevation: slightly below horizon to just past zenith
+    // Allow a few degrees past 90 so the ground plane clears the view at zenith
+    if (this.state.fpsPitch > 95) {
+      this.state.fpsPitch = <Degrees>95;
+    }
+    if (this.state.fpsPitch < -10) {
+      this.state.fpsPitch = <Degrees>-10;
+    }
+
+    // Wrap azimuth 0-360
+    if (this.state.fpsYaw > 360) {
+      this.state.fpsYaw = <Degrees>(this.state.fpsYaw - 360);
+    }
+    if (this.state.fpsYaw < 0) {
+      this.state.fpsYaw = <Degrees>(this.state.fpsYaw + 360);
+    }
+
+    // Handle numpad pitch/yaw rates
+    const fpsTimeNow = <Milliseconds>Date.now();
+
+    if (this.fpsLastTime_ !== 0) {
+      const fpsElapsed = <Milliseconds>(fpsTimeNow - this.fpsLastTime_);
+
+      this.state.fpsPitch = <Degrees>(this.state.fpsPitch + this.state.fpsPitchRate * fpsElapsed);
+      this.state.fpsYaw = <Degrees>(this.state.fpsYaw + this.state.fpsRotateRate * fpsElapsed);
+    }
+    this.fpsLastTime_ = fpsTimeNow;
   }
 
   /*
