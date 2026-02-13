@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "GEO有效载荷总数"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "瀑布图",
+      "title": "瀑布图菜单",
+      "helpBody": "时间-经度（瀑布）图显示GEO卫星经度随时间的漂移。",
+      "labels": {
+        "totalGeoPayloads": "GEO有效载荷总数"
+      }
     }
   }
 }

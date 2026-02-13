@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "Total GEO Payloads"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "Waterfall Plot",
+      "title": "Waterfall Plot Menu",
+      "helpBody": "The Time to Longitude (Waterfall) Plot displays GEO satellite longitude drift over time.",
+      "labels": {
+        "totalGeoPayloads": "Total GEO Payloads"
+      }
     }
   }
 }

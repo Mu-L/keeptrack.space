@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "GEOペイロード合計"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "ウォーターフォールプロット",
+      "title": "ウォーターフォールプロットメニュー",
+      "helpBody": "時間-経度（ウォーターフォール）プロットは、GEO衛星の経度ドリフトを時間経過で表示します。",
+      "labels": {
+        "totalGeoPayloads": "GEOペイロード合計"
+      }
     }
   }
 }

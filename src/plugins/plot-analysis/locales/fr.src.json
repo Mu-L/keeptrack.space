@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "Total des charges utiles GEO"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "Graphique en Cascade",
+      "title": "Menu Graphique en Cascade",
+      "helpBody": "Le graphique Temps-Longitude (Cascade) affiche la dérive en longitude des satellites GEO au fil du temps.",
+      "labels": {
+        "totalGeoPayloads": "Total des charges utiles GEO"
+      }
     }
   }
 }

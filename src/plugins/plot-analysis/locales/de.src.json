@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "Gesamtzahl GEO-Nutzlasten"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "Wasserfall-Diagramm",
+      "title": "Wasserfall-Diagramm-Menü",
+      "helpBody": "Das Zeit-zu-Längengrad (Wasserfall) Diagramm zeigt die GEO-Satelliten-Längengradverschiebung über die Zeit.",
+      "labels": {
+        "totalGeoPayloads": "Gesamtzahl GEO-Nutzlasten"
+      }
     }
   }
 }

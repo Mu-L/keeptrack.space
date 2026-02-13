@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "Total de Cargas Útiles GEO"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "Gráfico Cascada",
+      "title": "Menú de Gráfico Cascada",
+      "helpBody": "El gráfico de Tiempo a Longitud (Cascada) muestra la deriva de longitud de los satélites GEO a lo largo del tiempo.",
+      "labels": {
+        "totalGeoPayloads": "Total de Cargas Útiles GEO"
+      }
     }
   }
 }

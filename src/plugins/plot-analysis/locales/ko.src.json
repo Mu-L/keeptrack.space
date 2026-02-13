@@ -15,6 +15,14 @@
       "labels": {
         "totalGeoPayloads": "총 GEO 페이로드"
       }
+    },
+    "Time2LonPlots": {
+      "bottomIconLabel": "워터폴 플롯",
+      "title": "워터폴 플롯 메뉴",
+      "helpBody": "시간-경도 (워터폴) 플롯은 GEO 위성의 경도 드리프트를 시간에 따라 표시합니다.",
+      "labels": {
+        "totalGeoPayloads": "총 GEO 페이로드"
+      }
     }
   }
 }
