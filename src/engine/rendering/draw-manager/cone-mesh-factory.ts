@@ -24,7 +24,7 @@ export class ConeMeshFactory extends CustomMeshFactory<ConeMesh> {
   }
 
   generateMesh(cone: BaseObject, settings: ConeSettings = this.defaultConeSettings_) {
-    const foundSensorFovMesh = this.checkCacheForMesh_(cone);
+    const foundSensorFovMesh = this.checkCacheForMesh_(cone, settings.targetObj);
 
     if (foundSensorFovMesh) {
       return;
@@ -33,8 +33,21 @@ export class ConeMeshFactory extends CustomMeshFactory<ConeMesh> {
     this.create_(cone, settings);
   }
 
-  checkCacheForMesh_(coneAttachPoint: BaseObject) {
-    return this.meshes.find((mesh) => mesh.obj.id === coneAttachPoint.id);
+  checkCacheForMesh_(coneAttachPoint: BaseObject, targetObj?: BaseObject) {
+    return this.meshes.find((mesh) => {
+      const sameSource = mesh.obj.id === coneAttachPoint.id;
+      const sameTarget = (mesh.targetObj?.id ?? -1) === (targetObj?.id ?? -1);
+
+      return sameSource && sameTarget;
+    });
+  }
+
+  get earthCenterMeshes(): ConeMesh[] {
+    return this.meshes.filter((m) => !m.targetObj);
+  }
+
+  get satToSatMeshes(): ConeMesh[] {
+    return this.meshes.filter((m) => !!m.targetObj);
   }
 
   editSettings(settings: ConeSettings) {
@@ -55,6 +68,18 @@ export class ConeMeshFactory extends CustomMeshFactory<ConeMesh> {
 
   removeByObjectId(id: number) {
     const index = this.meshes.findIndex((mesh) => mesh.obj.id === id);
+
+    if (index !== -1) {
+      this.remove(index);
+    }
+
+    EventBus.getInstance().emit(EventBusEvent.ConeMeshUpdate);
+  }
+
+  removeBySourceAndTarget(sourceId: number, targetId: number) {
+    const index = this.meshes.findIndex(
+      (mesh) => mesh.obj.id === sourceId && (mesh.targetObj?.id ?? -1) === targetId,
+    );
 
     if (index !== -1) {
       this.remove(index);

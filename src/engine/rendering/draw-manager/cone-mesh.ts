@@ -18,6 +18,8 @@ export interface ConeSettings {
    * This is not implemented yet
    */
   range?: Kilometers;
+  /** When set, the cone points toward this target satellite instead of Earth center */
+  targetObj?: BaseObject;
 }
 
 export class ConeMesh extends CustomMesh {
@@ -38,6 +40,7 @@ export class ConeMesh extends CustomMesh {
   pos: vec3 = vec3.create();
   offsetDistance: number = (RADIUS_OF_EARTH + settingsManager.coneDistanceFromEarth) as Kilometers;
   obj: BaseObject;
+  targetObj: BaseObject | null = null;
 
 
   constructor(obj: BaseObject, settings: ConeSettings) {
@@ -46,6 +49,7 @@ export class ConeMesh extends CustomMesh {
     this.fieldOfView = settings.fieldOfView;
     this.color = settings.color || this.color;
     this.range = settings.range || this.range;
+    this.targetObj = settings.targetObj ?? null;
 
     this.updatePosition_();
   }
@@ -54,6 +58,7 @@ export class ConeMesh extends CustomMesh {
     this.fieldOfView = settings.fieldOfView;
     this.color = settings.color || this.color;
     this.range = settings.range || this.range;
+    this.targetObj = settings.targetObj ?? this.targetObj;
   }
 
   private updatePosition_() {
@@ -77,6 +82,20 @@ export class ConeMesh extends CustomMesh {
 
     this.updatePosition_();
 
+    if (this.targetObj) {
+      this.updateSatToSat_();
+    } else {
+      this.updateEarthCenter_();
+    }
+
+    // Upload updated positions to GPU
+    const gl = this.gl_;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers_.vertPosBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices_);
+  }
+
+  private updateEarthCenter_() {
     const worldShift = Scene.getInstance().worldShift;
 
     // All intermediate math uses float64 (regular JS numbers)
@@ -105,7 +124,55 @@ export class ConeMesh extends CustomMesh {
     // Base circle radius from FOV angle
     const baseRadius = coneHeight * Math.tan((this.fieldOfView * Math.PI) / 180);
 
-    // Build orthonormal basis perpendicular to the satellite direction
+    this.computeBaseCircle_(dx, dy, dz, baseCX, baseCY, baseCZ, baseRadius);
+  }
+
+  private updateSatToSat_() {
+    const worldShift = Scene.getInstance().worldShift;
+    const positionData = ServiceLocator.getDotsManager()?.positionData;
+    const targetId = this.targetObj!.id;
+
+    // Target position from position buffer
+    const tx = positionData[Number(targetId) * 3];
+    const ty = positionData[Number(targetId) * 3 + 1];
+    const tz = positionData[Number(targetId) * 3 + 2];
+
+    const px = this.pos[0];
+    const py = this.pos[1];
+    const pz = this.pos[2];
+
+    // Direction from source to target
+    const dirX = tx - px;
+    const dirY = ty - py;
+    const dirZ = tz - pz;
+    const dist = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+
+    if (dist < 1) {
+      return;
+    }
+
+    const dx = dirX / dist;
+    const dy = dirY / dist;
+    const dz = dirZ / dist;
+
+    // Apex = source satellite position + worldShift
+    this.vertices_[0] = px + worldShift[0];
+    this.vertices_[1] = py + worldShift[1];
+    this.vertices_[2] = pz + worldShift[2];
+
+    // Base center = target satellite position + worldShift
+    const baseCX = tx + worldShift[0];
+    const baseCY = ty + worldShift[1];
+    const baseCZ = tz + worldShift[2];
+
+    // Base circle radius from FOV angle and inter-satellite distance
+    const baseRadius = dist * Math.tan((this.fieldOfView * Math.PI) / 180);
+
+    this.computeBaseCircle_(dx, dy, dz, baseCX, baseCY, baseCZ, baseRadius);
+  }
+
+  private computeBaseCircle_(dx: number, dy: number, dz: number, baseCX: number, baseCY: number, baseCZ: number, baseRadius: number) {
+    // Build orthonormal basis perpendicular to the direction
     // Pick a reference vector not parallel to d
     let refX = 0;
     let refY = 1;
@@ -146,12 +213,6 @@ export class ConeMesh extends CustomMesh {
       this.vertices_[idx + 1] = baseCY + baseRadius * (cosPhi * uy + sinPhi * vy);
       this.vertices_[idx + 2] = baseCZ + baseRadius * (cosPhi * uz + sinPhi * vz);
     }
-
-    // Upload updated positions to GPU
-    const gl = this.gl_;
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers_.vertPosBuf);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices_);
   }
 
   draw(pMatrix: mat4, camMatrix: mat4, tgtBuffer?: WebGLFramebuffer) {
