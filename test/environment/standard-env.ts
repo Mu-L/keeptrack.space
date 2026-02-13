@@ -212,6 +212,10 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
     Dropdown: {
       init: vi.fn(),
     },
+    Tabs: {
+      init: vi.fn(),
+      getInstance: vi.fn(() => ({ updateTabIndicator: vi.fn() })),
+    },
   } as unknown as typeof window.M;
 
   dependencies?.forEach((Dependency) => {

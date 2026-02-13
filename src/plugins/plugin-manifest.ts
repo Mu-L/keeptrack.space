@@ -7,8 +7,8 @@
  * 1. Add a PluginDescriptor entry here (import path, class name, default config)
  * 2. Optionally add the config key to KeepTrackPluginsConfiguration for type-safe access
  */
-import { satInfoBoxOrbitalConfigurationDefaults } from './sat-info-box-orbital/sat-info-box-orbital-settings';
 import type { PluginDescriptor } from './plugin-descriptor';
+import { satInfoBoxOrbitalConfigurationDefaults } from './sat-info-box-orbital/sat-info-box-orbital-settings';
 
 export const pluginManifest: PluginDescriptor[] = [
   // ── Always-enabled infrastructure ──────────────────────────────────────────
@@ -217,7 +217,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossImport: () => import('./link-budget/link-budget'),
     ossClassName: 'LinkBudgetPlugin',
     proImport: () => import('../plugins-pro/link-budget/link-budget'),
-    defaultConfig: { enabled: true, order: 94 },
+    defaultConfig: { enabled: false, order: 94 },
   },
   {
     configKey: 'MultiSiteLookAnglesPlugin',
@@ -389,6 +389,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'SatelliteFov',
     ossImport: () => import('./satellite-fov/satellite-fov'),
     ossClassName: 'SatelliteFov',
+    proImport: () => import('../plugins-pro/satellite-fov/satellite-fov'),
+    proClassName: 'SatelliteFovPro',
     defaultConfig: { enabled: true, order: 75 },
   },
   {

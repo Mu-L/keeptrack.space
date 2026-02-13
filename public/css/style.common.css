@@ -2664,6 +2664,11 @@ button.ui-button::-moz-focus-inner {
   padding: 0px 5px;
 }
 
+.side-menu .input-field {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .side-menu-parent {
   display: none;
   position: absolute;
