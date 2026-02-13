@@ -351,6 +351,12 @@ export class Scene {
     // Draw Dots
     dotsManagerInstance.draw(renderer.projectionCameraMatrix, renderer.postProcessingManager.curBuffer);
 
+    // Draw Satellite Labels (GPU-rendered)
+    const satLabelManager = ServiceLocator.getSatLabelManager();
+
+    satLabelManager?.updatePositions();
+    satLabelManager?.draw(renderer.projectionCameraMatrix, renderer.postProcessingManager.curBuffer);
+
     orbitManagerInstance.draw(renderer.projectionCameraMatrix, renderer.postProcessingManager.curBuffer, hoverManagerInstance, colorSchemeManagerInstance, camera);
 
     ServiceLocator.getLineManager().draw(renderer.projectionCameraMatrix, renderer.postProcessingManager.curBuffer);

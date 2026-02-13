@@ -270,6 +270,7 @@ export enum Singletons {
   Scene = 'Scene',
   MeshManager = 'MeshManager',
   SymbologyManager = 'SymbologyManager',
+  SatLabelManager = 'SatLabelManager',
 }
 export enum SolarBody {
   Sun = 'Sun',

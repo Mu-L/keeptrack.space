@@ -270,12 +270,8 @@ export class SensorManager {
   resetSensorSelected() {
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-    // Remove satellite minibox hover
-    const satMinibox = getEl('sat-minibox');
-
-    if (satMinibox) {
-      satMinibox.innerHTML = '';
-    }
+    // Clear GPU satellite labels
+    ServiceLocator.getSatLabelManager()?.updateLabels([], []);
 
     // Return to default settings with nothing 'inview'
     SensorManager.updateSensorUiStyling(null);

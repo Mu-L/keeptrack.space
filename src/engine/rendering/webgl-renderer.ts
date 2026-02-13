@@ -24,13 +24,8 @@ import { Sun } from './draw-manager/sun';
 import { MeshManager } from './mesh-manager';
 
 export class WebGLRenderer {
-  private hoverBoxOnSatMiniElements_: HTMLElement | null = null;
   private isRotationEvent_: boolean;
-  private isSatMiniBoxInUse_ = false;
-  private labelCount_ = 0;
-  private satHoverMiniDOM_: HTMLDivElement;
   private satLabelModeLastTime_ = 0;
-  private satMiniBox_: HTMLDivElement;
   private settings_: SettingsManager;
   isContextLost = false;
 
@@ -196,7 +191,6 @@ export class WebGLRenderer {
     this.settings_ = settings;
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
 
-    this.satMiniBox_ = <HTMLDivElement>(<unknown>getEl('sat-minibox'));
     ServiceLocator.getHoverManager()?.init();
     this.startWithOrbits();
 
@@ -259,16 +253,9 @@ export class WebGLRenderer {
 
         return;
       }
-      // Previously called showOrbitsAbove();
-      if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
-        if (this.isSatMiniBoxInUse_) {
-          this.hoverBoxOnSatMiniElements_ = getEl('sat-minibox');
 
-          if (this.hoverBoxOnSatMiniElements_) {
-            this.hoverBoxOnSatMiniElements_.innerHTML = '';
-          }
-        }
-        this.isSatMiniBoxInUse_ = false;
+      if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
+        ServiceLocator.getSatLabelManager()?.updateLabels([], []);
 
         return;
       }
@@ -284,30 +271,20 @@ export class WebGLRenderer {
 
       orbitManagerInstance.clearInViewOrbit();
 
-      let obj: BaseObject | null;
+      const visibleSatIds: number[] = [];
+      const labelTexts: string[] = [];
 
-      this.labelCount_ = 0;
-
-      this.hoverBoxOnSatMiniElements_ = getEl('sat-minibox');
-
-      /**
-       * @todo Reuse hoverBoxOnSatMini DOM Elements
-       * @body Currently are writing and deleting the nodes every draw element. Reusuing them with a transition effect will make it smoother
-       */
-      if (this.hoverBoxOnSatMiniElements_) {
-        this.hoverBoxOnSatMiniElements_.innerHTML = '';
-      }
       if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
         const catalogManagerInstance = ServiceLocator.getCatalogManager();
+        const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-        for (let i = 0; i < catalogManagerInstance.orbitalSats && this.labelCount_ < settingsManager.maxLabels; i++) {
-          obj = catalogManagerInstance.getObject(i, GetSatType.POSITION_ONLY);
+        for (let i = 0; i < catalogManagerInstance.orbitalSats && visibleSatIds.length < settingsManager.maxLabels; i++) {
+          const obj = catalogManagerInstance.getObject(i, GetSatType.POSITION_ONLY);
 
           if (!obj?.isSatellite()) {
             continue;
           }
           const sat = <Satellite>obj;
-          const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
           if (colorSchemeManagerInstance.isPayloadOff(sat)) {
             continue;
@@ -360,26 +337,8 @@ export class WebGLRenderer {
             orbitManagerInstance.addInViewOrbit(i);
           }
 
-          /*
-           * Draw Sat Labels
-           * if (!settingsManager.enableHoverOverlay) continue
-           */
-          this.satHoverMiniDOM_ = document.createElement('div');
-          this.satHoverMiniDOM_.id = `sat-minibox-${i}`;
-          if (sat.source === CatalogSource.VIMPEL) {
-            this.satHoverMiniDOM_.textContent = `JSC${sat.altId}`;
-          } else {
-            this.satHoverMiniDOM_.textContent = sat.sccNum;
-          }
-
-          this.satHoverMiniDOM_.style.display = 'block';
-          this.satHoverMiniDOM_.style.position = 'absolute';
-          this.satHoverMiniDOM_.style.textShadow = '-2px -2px 5px #000, 2px -2px 5px #000, -2px 2px 5px #000, 2px 2px 5px #000';
-          this.satHoverMiniDOM_.style.left = `${satScreenPositionArray.x + 20}px`;
-          this.satHoverMiniDOM_.style.top = `${satScreenPositionArray.y}px`;
-
-          this.hoverBoxOnSatMiniElements_?.appendChild(this.satHoverMiniDOM_);
-          this.labelCount_++;
+          visibleSatIds.push(i);
+          labelTexts.push(sat.source === CatalogSource.VIMPEL ? `JSC${sat.altId}` : sat.sccNum);
         }
       } else {
         const catalogManagerInstance = ServiceLocator.getCatalogManager();
@@ -407,47 +366,28 @@ export class WebGLRenderer {
             return;
           }
 
-          /*
-           * Draw Sat Labels
-           * if (!settingsManager.enableHoverOverlay) continue
-           */
-          this.satHoverMiniDOM_ = document.createElement('div');
-          this.satHoverMiniDOM_.id = `sat-minibox-${id}`;
-          if (obj.source === CatalogSource.VIMPEL) {
-            this.satHoverMiniDOM_.textContent = `JSC${obj.altId}`;
-          } else {
-            this.satHoverMiniDOM_.textContent = obj.sccNum;
-          }
-
           // Draw Orbits
           if (!settingsManager.isShowSatNameNotOrbit) {
             orbitManagerInstance.addInViewOrbit(id);
           }
 
-          this.satHoverMiniDOM_.style.display = 'block';
-          this.satHoverMiniDOM_.style.position = 'absolute';
-          this.satHoverMiniDOM_.style.textShadow = '-2px -2px 5px #000, 2px -2px 5px #000, -2px 2px 5px #000, 2px 2px 5px #000';
-          this.satHoverMiniDOM_.style.left = `${satScreenPositionArray.x + 20}px`;
-          this.satHoverMiniDOM_.style.top = `${satScreenPositionArray.y}px`;
-
-          this.hoverBoxOnSatMiniElements_?.appendChild(this.satHoverMiniDOM_);
-          this.labelCount_++;
+          visibleSatIds.push(id);
+          labelTexts.push(obj.source === CatalogSource.VIMPEL ? `JSC${obj.altId}` : obj.sccNum);
         });
       }
-      this.isSatMiniBoxInUse_ = true;
+
+      // Update GPU label manager with visible satellite data
+      ServiceLocator.getSatLabelManager()?.updateLabels(visibleSatIds, labelTexts);
+
       this.satLabelModeLastTime_ = timeManagerInstance.realTime;
     } else {
       this.sensorPos = null;
       this.isDrawOrbitsAbove = false;
     }
 
-    // Hide satMiniBoxes When Not in Use
+    // Clear labels when not in label mode
     if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
-      if (this.isSatMiniBoxInUse_) {
-        this.satMiniBox_ = <HTMLDivElement>(<unknown>getEl('sat-minibox'));
-        this.satMiniBox_.innerHTML = '';
-      }
-      this.isSatMiniBoxInUse_ = false;
+      ServiceLocator.getSatLabelManager()?.updateLabels([], []);
     }
   }
 

@@ -47,6 +47,7 @@ import { EventBus } from './engine/events/event-bus';
 import { EventBusEvent } from './engine/events/event-bus-events';
 import { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import { DotsManager } from './engine/rendering/dots-manager';
+import { SatLabelManager } from './engine/rendering/sat-label-manager';
 import { SymbologyManager } from './engine/rendering/symbology/symbology-manager';
 import { lineManagerInstance } from './engine/rendering/line-manager';
 import { WebWorkerThreadManager } from './engine/threads/web-worker-thread';
@@ -118,6 +119,7 @@ export class KeepTrack {
     const groupManagerInstance = new GroupsManager();
     const sensorManagerInstance = new SensorManager();
     const dotsManagerInstance = new DotsManager();
+    const satLabelManagerInstance = new SatLabelManager();
     const uiManagerInstance = new UiManager();
     const colorSchemeManagerInstance = new ColorSchemeManager();
     const symbologyManagerInstance = new SymbologyManager();
@@ -129,6 +131,7 @@ export class KeepTrack {
     Container.getInstance().registerSingleton(Singletons.GroupsManager, groupManagerInstance);
     Container.getInstance().registerSingleton(Singletons.SensorManager, sensorManagerInstance);
     Container.getInstance().registerSingleton(Singletons.DotsManager, dotsManagerInstance);
+    Container.getInstance().registerSingleton(Singletons.SatLabelManager, satLabelManagerInstance);
     Container.getInstance().registerSingleton(Singletons.UiManager, uiManagerInstance);
     Container.getInstance().registerSingleton(Singletons.ColorSchemeManager, colorSchemeManagerInstance);
     Container.getInstance().registerSingleton(Singletons.SymbologyManager, symbologyManagerInstance);
@@ -171,8 +174,6 @@ export class KeepTrack {
               <span id="sat-hoverbox2"></span>
               <span id="sat-hoverbox3"></span>
             </div>
-            <div id="sat-minibox"></div>
-
             <div id="layers-hover-menu" class="start-hidden"></div>
             <aside id="left-menus"></aside>
           </div>
@@ -379,6 +380,8 @@ theodore.kruczek at gmail dot com.
       uiManagerInstance.init();
 
       dotsManagerInstance.initBuffers(colorSchemeManagerInstance.colorBuffer!);
+
+      ServiceLocator.getSatLabelManager()?.init(renderer.gl, settingsManager.maxLabels || settingsManager.desktopMaxLabels);
 
       inputManagerInstance.init();
 
