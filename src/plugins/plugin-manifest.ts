@@ -540,6 +540,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'Time2LonPlots',
     ossImport: () => import('./plot-analysis/time2lon'),
     ossClassName: 'Time2LonPlots',
+    proImport: () => import('../plugins-pro/plot-analysis/time2lon'),
+    proClassName: 'Time2LonPlotsPro',
     defaultConfig: { enabled: true, order: 263 },
   },
   {
