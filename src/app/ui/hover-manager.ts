@@ -1,5 +1,4 @@
 import { country2flagIcon } from '@app/app/data/catalogs/countries';
-import { CameraType } from '@app/engine/camera/camera';
 import { SolarBody } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -207,23 +206,6 @@ export class HoverManager {
     this.satHoverBoxNode3.style.display = 'none';
   }
 
-  private planetariumView_(satId: number) {
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && !settingsManager.isDemoModeOn) {
-      this.satHoverBoxDOM.style.display = 'none';
-
-      const renderer = ServiceLocator.getRenderer();
-
-      if (satId !== -1) {
-        renderer.setCursor('pointer');
-      } else {
-        renderer.setCursor('default');
-      }
-
-      return true;
-    }
-
-    return false;
-  }
 
   private satObj_(sat: Satellite) {
     if (!settingsManager.enableHoverOverlay) {
@@ -355,10 +337,6 @@ export class HoverManager {
 
   private showHoverDetails_(id: number, satX?: number, satY?: number) {
     if (typeof this.satHoverBoxDOM === 'undefined' || this.satHoverBoxDOM === null) {
-      return;
-    }
-
-    if (this.planetariumView_(id)) {
       return;
     }
 
