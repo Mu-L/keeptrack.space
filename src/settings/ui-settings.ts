@@ -146,7 +146,7 @@ export class UiSettings {
   /**
    * The maximum number of satellite labels to display on desktop devices.
    */
-  desktopMaxLabels = 500;
+  desktopMaxLabels = 2000;
   /**
    * Maximum number of satellite labels to display on mobile devices
    */
