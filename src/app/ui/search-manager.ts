@@ -5,6 +5,7 @@ import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeyboardComponent } from '@app/engine/plugins/components/keyboard/keyboard-component';
 import { SatInfoBox } from '@app/plugins/sat-info-box/sat-info-box';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { Satellite, SpaceObjectType, Star } from '@ootk/src/main';
@@ -54,16 +55,27 @@ export class SearchManager {
     EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.addListeners_.bind(this));
 
     this.setupTopMenu_();
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'F' && !isRepeat) {
-        this.toggleSearch();
-        if (this.isSearchOpen) {
-          setTimeout(() => {
-            getEl('search')?.focus();
-          }, 1000);
-        }
-      }
-    });
+    this.setupKeyboardShortcut_();
+  }
+
+  private setupKeyboardShortcut_() {
+    const keyboard = new KeyboardComponent('SearchManager', [
+      {
+        key: 'F',
+        ctrl: false,
+        shift: false,
+        callback: () => {
+          this.toggleSearch();
+          if (this.isSearchOpen) {
+            setTimeout(() => {
+              getEl('search')?.focus();
+            }, 1000);
+          }
+        },
+      },
+    ]);
+
+    keyboard.init();
   }
 
   private setupTopMenu_() {

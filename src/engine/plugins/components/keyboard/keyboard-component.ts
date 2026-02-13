@@ -19,6 +19,7 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { KeyboardShortcutRegistry } from '@app/engine/core/keyboard-shortcut-registry';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { IKeyboardShortcut } from '../../core/plugin-capabilities';
@@ -68,6 +69,8 @@ export class KeyboardComponent {
       return;
     }
 
+    const validShortcuts = KeyboardShortcutRegistry.register(this.pluginId_, this.shortcuts_);
+
     EventBus.getInstance().on(
       EventBusEvent.KeyDown,
       (key: string, code: string, isRepeat: boolean, isShift: boolean, isCtrl: boolean) => {
@@ -75,7 +78,7 @@ export class KeyboardComponent {
           return;
         }
 
-        for (const shortcut of this.shortcuts_) {
+        for (const shortcut of validShortcuts) {
           if (this.matchesShortcut_(shortcut, key, code, isShift, isCtrl)) {
             shortcut.callback();
             break;

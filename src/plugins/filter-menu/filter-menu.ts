@@ -321,6 +321,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     return [
       {
         key: 'F',
+        ctrl: false,
         callback: () => this.bottomMenuClicked(),
       },
     ];
