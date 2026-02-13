@@ -327,14 +327,10 @@ export class Camera {
         this.drawFirstPersonView_();
         break;
       case CameraType.PLANETARIUM: {
-        /*
-         * Pitch is the opposite of the angle to the latitude
-         * Yaw is 90 degrees to the left of the angle to the longitude
-         */
         if (!sensorPos) {
           throw new Error('Sensor Position is undefined');
         }
-        this.drawPlanetarium_(sensorPos);
+        this.drawAstronomy_(sensorPos);
         break;
       }
       case CameraType.SATELLITE: {
@@ -686,7 +682,7 @@ export class Camera {
 
     this.state.camRotateSpeed -= this.state.camRotateSpeed * dt * settingsManager.cameraMovementSpeed;
 
-    if (this.cameraType === CameraType.ASTRONOMY) {
+    if (this.cameraType === CameraType.ASTRONOMY || this.cameraType === CameraType.PLANETARIUM) {
       this.updateAstronomyLookAround_(dt);
     } else if (this.cameraType === CameraType.FPS || this.cameraType === CameraType.SATELLITE) {
       this.updateFpsMovement_(dt);
@@ -940,13 +936,6 @@ export class Camera {
     mat4.rotateZ(this.matrixWorldInverse, this.matrixWorldInverse, -this.state.earthCenteredYaw);
   }
 
-  private drawPlanetarium_(sensorPos: { lat: number; lon: number; gmst: GreenwichMeanSiderealTime; x: number; y: number; z: number }) {
-    this.state.fpsPitch = <Degrees>(-1 * sensorPos.lat * DEG2RAD);
-    this.state.fpsRotate = <Degrees>((90 - sensorPos.lon) * DEG2RAD - sensorPos.gmst);
-    mat4.rotate(this.matrixWorldInverse, this.matrixWorldInverse, this.state.fpsPitch, [1, 0, 0]);
-    mat4.rotate(this.matrixWorldInverse, this.matrixWorldInverse, this.state.fpsRotate, [0, 0, 1]);
-    mat4.translate(this.matrixWorldInverse, this.matrixWorldInverse, [-sensorPos.x, -sensorPos.y, -sensorPos.z]);
-  }
 
   private drawPreValidate_(sensorPos?: { lat: number; lon: number; gmst: GreenwichMeanSiderealTime; x: number; y: number; z: number } | null) {
     if (
@@ -1411,6 +1400,7 @@ export class Camera {
         this.cameraType === CameraType.FPS ||
         this.cameraType === CameraType.SATELLITE ||
         this.cameraType === CameraType.ASTRONOMY ||
+        this.cameraType === CameraType.PLANETARIUM ||
         settingsManager.isMobileModeEnabled
       ) {
         // random screen drag
