@@ -1,5 +1,6 @@
 import { Milliseconds } from '@ootk/src/main';
 import { PluginManager } from '../plugins/plugins';
+import { SoundManager } from './audio/sound-manager';
 import { Camera } from './camera/camera';
 import { Container } from './core/container';
 import { Singletons } from './core/interfaces';
@@ -34,6 +35,7 @@ export class Engine {
   readonly eventBus: EventBus;
   readonly pluginManager: PluginManager;
   readonly timeManager: TimeManager;
+  readonly soundManager: SoundManager;
 
   constructor(application: Application) {
     // Initialize core engine systems
@@ -45,6 +47,10 @@ export class Engine {
     this.timeManager = new TimeManager();
     this.inputManager = new InputManager();
     this.pluginManager = new PluginManager();
+    // Reuse existing SoundManager if already registered (e.g., test environments)
+    const existingSoundManager = Container.getInstance().get<SoundManager>(Singletons.SoundManager);
+
+    this.soundManager = existingSoundManager ?? new SoundManager();
 
     Container.getInstance().registerSingleton(Singletons.TimeManager, this.timeManager);
     Container.getInstance().registerSingleton(Singletons.WebGLRenderer, this.renderer);
@@ -52,6 +58,9 @@ export class Engine {
     Container.getInstance().registerSingleton(Singletons.Scene, this.scene);
     Container.getInstance().registerSingleton(Singletons.InputManager, this.inputManager);
     Container.getInstance().registerSingleton(Singletons.MainCamera, this.camera);
+    if (!existingSoundManager) {
+      Container.getInstance().registerSingleton(Singletons.SoundManager, this.soundManager);
+    }
   }
 
   init() {
@@ -60,6 +69,7 @@ export class Engine {
     this.eventBus.init();
     this.camera.init();
     this.timeManager.init();
+    this.soundManager.init();
 
     this.isReady_ = true;
   }

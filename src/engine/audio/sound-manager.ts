@@ -1,5 +1,3 @@
-import { Container } from '@app/engine/core/container';
-import { Singletons } from '@app/engine/core/interfaces';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
@@ -68,7 +66,7 @@ export class SoundManager {
 
   init() {
     if (this.isAudioReady) {
-      throw new Error('SoundManager is already initialized.');
+      return;
     }
 
     try {
@@ -85,9 +83,6 @@ export class SoundManager {
       this.preloadHtmlAudio();
       this.isAudioReady = true;
     }
-
-    // Register with Container
-    Container.getInstance().registerSingleton<SoundManager>(Singletons.SoundManager, this);
 
     // Voice initialization via EventBus
     EventBus.getInstance().on(EventBusEvent.uiManagerInit, () => {

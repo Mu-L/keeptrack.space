@@ -41,9 +41,6 @@ describe('plugins', () => {
       ScreenRecorder: {
         enabled: true,
       },
-      SatChangesPlugin: {
-        enabled: true,
-      },
       StereoMap: {
         enabled: true,
       },

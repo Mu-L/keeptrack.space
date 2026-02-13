@@ -12,7 +12,7 @@ export const stemEnvironment = (settingsManager: SettingsManager) => {
   settingsManager.isBlockPersistence = true;
 
   settingsManager.disableAllPlugins();
-  settingsManager.plugins.SoundManager = { enabled: true };
+  settingsManager.plugins.SoundToggle = { enabled: true };
   settingsManager.plugins.SatInfoBoxCore = { enabled: true };
   settingsManager.plugins.SatInfoBoxObject = { enabled: true };
   settingsManager.plugins.EarthAtmosphere = { enabled: true };
