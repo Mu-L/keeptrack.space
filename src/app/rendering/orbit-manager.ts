@@ -14,6 +14,7 @@ import { PluginRegistry } from '../../engine/core/plugin-registry';
 import { ServiceLocator } from '../../engine/core/service-locator';
 import { EventBus } from '../../engine/events/event-bus';
 import { EventBusEvent } from '../../engine/events/event-bus-events';
+import { KeyboardComponent } from '../../engine/plugins/components/keyboard/keyboard-component';
 import { ColorSchemeManager } from '../../engine/rendering/color-scheme-manager';
 import { LineManager } from '../../engine/rendering/line-manager';
 import { HoverManager } from '../ui/hover-manager';
@@ -193,24 +194,24 @@ export class OrbitManager {
 
     this.isInitialized_ = true;
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (!isRepeat) {
-        switch (key) {
-          case 'L':
-            this.toggleOrbitLines_();
-            SettingsMenuPlugin.syncOnLoad();
-            SettingsManager.preserveSettings();
-            break;
-          case 'E':
-            this.toggleEciToEcf_();
-            SettingsMenuPlugin.syncOnLoad();
-            SettingsManager.preserveSettings();
-            break;
-          default:
-            break;
-        }
-      }
-    });
+    new KeyboardComponent('OrbitManager', [
+      {
+        key: 'L',
+        callback: () => {
+          this.toggleOrbitLines_();
+          SettingsMenuPlugin.syncOnLoad();
+          SettingsManager.preserveSettings();
+        },
+      },
+      {
+        key: 'E',
+        callback: () => {
+          this.toggleEciToEcf_();
+          SettingsMenuPlugin.syncOnLoad();
+          SettingsManager.preserveSettings();
+        },
+      },
+    ]).init();
 
     EventBus.getInstance().on(EventBusEvent.highPerformanceRender, () => {
       this.updateAllVisibleOrbits();

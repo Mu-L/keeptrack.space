@@ -8,6 +8,7 @@ import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
+import { KeyboardComponent } from '../plugins/components/keyboard/keyboard-component';
 import { AtmosphereSettings, EarthTextureStyle } from '../rendering/draw-manager/earth-quality-enums';
 import { getEl } from '../utils/get-el';
 
@@ -57,11 +58,12 @@ export abstract class UrlManager {
       this.updateURL();
     });
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key) => {
-      if (key === 'U') {
-        this.updateURL(true);
-      }
-    });
+    new KeyboardComponent('UrlManager', [
+      {
+        key: 'U',
+        callback: () => this.updateURL(true),
+      },
+    ]).init();
   }
 
   static getParams(): string[] {

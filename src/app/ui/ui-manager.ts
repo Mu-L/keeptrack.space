@@ -30,6 +30,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import { KeyboardComponent } from '@app/engine/plugins/components/keyboard/keyboard-component';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import '@materializecss/materialize';
 import { BaseObject, Milliseconds, MILLISECONDS_PER_SECOND, Satellite } from '@ootk/src/main';
@@ -270,17 +271,18 @@ export class UiManager {
     // Initialize Navigation and Select Menus
     const elems = document.querySelectorAll('.dropdown-button');
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean, isShift: boolean) => {
-      if (key === 'F2' && isShift && !isRepeat) {
-        this.hideUi();
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'B' && !isRepeat) {
-        this.toggleBottomMenu();
-      }
-    });
+    new KeyboardComponent('UiManager', [
+      {
+        key: 'F2',
+        shift: true,
+        callback: () => this.hideUi(),
+      },
+      {
+        key: 'b',
+        shift: false,
+        callback: () => this.toggleBottomMenu(),
+      },
+    ]).init();
 
     window.M.Dropdown.init(elems);
     this.isInitialized_ = true;

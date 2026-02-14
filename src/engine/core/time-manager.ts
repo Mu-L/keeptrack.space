@@ -7,6 +7,7 @@ import { getDayOfYear, GreenwichMeanSiderealTime, Milliseconds } from '@ootk/src
 import { DateTimeManager } from '../../plugins/date-time-manager/date-time-manager';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
+import { KeyboardComponent } from '../plugins/components/keyboard/keyboard-component';
 import { getEl } from '../utils/get-el';
 import { PluginRegistry } from './plugin-registry';
 import { ServiceLocator } from './service-locator';
@@ -207,168 +208,141 @@ export class TimeManager {
     if (this.isKeyboardBindingsInitialized_) {
       return;
     }
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 't' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
 
-          return;
-        }
-        ServiceLocator.getUiManager().toast('Time Set to Real Time', ToastMsgType.normal);
-        this.changeStaticOffset(0); // Reset to Current Time
-      }
-    });
+    new KeyboardComponent('TimeManager', [
+      {
+        key: 't',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          ServiceLocator.getUiManager().toast('Time Set to Real Time', ToastMsgType.normal);
+          this.changeStaticOffset(0);
+        },
+      },
+      {
+        key: ',',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          let newPropRate = this.propRate;
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === ',' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
+          if (this.propRate < 0.001 && this.propRate > -0.001) {
+            newPropRate = -0.001;
+          }
+          if (this.propRate < -1000) {
+            newPropRate = -1000;
+          }
+          if (newPropRate < 0) {
+            newPropRate = (this.propRate * 1.5);
+          } else {
+            newPropRate = ((this.propRate * 2) / 3);
+          }
+          this.applyPropRate_(newPropRate);
+        },
+      },
+      {
+        key: '.',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          let newPropRate = this.propRate;
 
-          return;
-        }
+          if (this.propRate < 0.001 && this.propRate > -0.001) {
+            newPropRate = 0.001;
+          }
+          if (this.propRate > 1000) {
+            newPropRate = 1000;
+          }
+          if (newPropRate > 0) {
+            newPropRate = (this.propRate * 1.5);
+          } else {
+            newPropRate = ((this.propRate * 2) / 3);
+          }
+          this.applyPropRate_(newPropRate);
+        },
+      },
+      {
+        key: '<',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountBig);
+        },
+      },
+      {
+        key: '>',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountBig);
+        },
+      },
+      {
+        key: '/',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          const newPropRate = this.propRate === 1 ? 0 : 1;
 
-        this.calculateSimulationTime();
-        let newPropRate = this.propRate;
-
-        if (this.propRate < 0.001 && this.propRate > -0.001) {
-          newPropRate = -0.001;
-        }
-
-        if (this.propRate < -1000) {
-          newPropRate = -1000;
-        }
-
-        if (newPropRate < 0) {
-          newPropRate = (this.propRate * 1.5);
-        } else {
-          newPropRate = ((this.propRate * 2) / 3);
-        }
-
-        const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
-
-        if (calendarInstance) {
-          calendarInstance.updatePropRate(newPropRate);
-        } else {
-          this.changePropRate(newPropRate);
-        }
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '.' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        let newPropRate = this.propRate;
-
-        if (this.propRate < 0.001 && this.propRate > -0.001) {
-          newPropRate = 0.001;
-        }
-
-        if (this.propRate > 1000) {
-          newPropRate = 1000;
-        }
-
-        if (newPropRate > 0) {
-          newPropRate = (this.propRate * 1.5);
-        } else {
-          newPropRate = ((this.propRate * 2) / 3);
-        }
-
-        const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
-
-        if (calendarInstance) {
-          calendarInstance.updatePropRate(newPropRate);
-        } else {
-          this.changePropRate(newPropRate);
-        }
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '<' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountBig);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '>' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountBig);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '/' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        let newPropRate: number;
-
-        if (this.propRate === 1) {
-          newPropRate = 0;
-        } else {
-          newPropRate = 1;
-        }
-
-        const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
-
-        if (calendarInstance) {
-          calendarInstance.updatePropRate(newPropRate);
-        } else {
-          this.changePropRate(newPropRate);
-        }
-        this.calculateSimulationTime();
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (_key: string, code: string, isRepeat: boolean) => {
-      if (code === 'Equal' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountSmall);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (_key: string, code: string, isRepeat: boolean) => {
-      if (code === 'Minus' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountSmall);
-      }
-    });
+          this.applyPropRate_(newPropRate);
+          this.calculateSimulationTime();
+        },
+      },
+      {
+        key: '=',
+        code: 'Equal',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountSmall);
+        },
+      },
+      {
+        key: '-',
+        code: 'Minus',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountSmall);
+        },
+      },
+    ]).init();
 
     this.isKeyboardBindingsInitialized_ = true;
+  }
+
+  private guardTimeChange_(): boolean {
+    if (!this.isTimeChangingEnabled) {
+      ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
+
+      return false;
+    }
+
+    return true;
+  }
+
+  private applyPropRate_(newPropRate: number): void {
+    const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
+
+    if (calendarInstance) {
+      calendarInstance.updatePropRate(newPropRate);
+    } else {
+      this.changePropRate(newPropRate);
+    }
   }
 
   setNow(realTime: Milliseconds) {
