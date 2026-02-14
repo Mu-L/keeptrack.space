@@ -151,4 +151,41 @@ export class CatalogExporter {
        */
     }
   }
+
+  static exportTce(objData: BaseObject[], isDeleteAnalysts = true) {
+    try {
+      const tleLines = [] as string[];
+      const satOnlyData = objData.filter((obj: BaseObject) => obj.isSatellite() && (obj as Satellite).tle1) as Satellite[];
+
+      if (satOnlyData.length === 0) {
+        errorManagerInstance.info('No TLE data to export');
+
+        return;
+      }
+
+      satOnlyData.sort((a, b) => parseInt(a.sccNum) - parseInt(b.sccNum));
+      for (const sat of satOnlyData) {
+        if (typeof sat.tle1 === 'undefined' || typeof sat.tle2 === 'undefined') {
+          continue;
+        }
+        if (isDeleteAnalysts && sat.country === 'ANALSAT') {
+          continue;
+        }
+        if (sat.tle1.includes('NO TLE') || sat.tle2.includes('NO TLE')) {
+          continue;
+        }
+
+        tleLines.push(sat.tle1);
+        tleLines.push(sat.tle2);
+      }
+
+      const blob = new Blob([tleLines.join('\n')], {
+        type: 'text/plain;charset=utf-8',
+      });
+
+      saveAs(blob, 'stkSatDb.tce');
+    } catch {
+      // intentionally empty
+    }
+  }
 }
