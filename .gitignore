@@ -139,3 +139,6 @@ src/locales/*.json
 
 #plans/
 docs-local
+
+# R2 Data
+public/data/ephemeris
