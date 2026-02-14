@@ -24,15 +24,15 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { SoundNames } from '@app/engine/audio/sounds';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { isThisNode } from '@app/engine/utils/isThisNode';
-import { SoundNames } from '@app/engine/audio/sounds';
 import '@materializecss/materialize';
-import { BaseObject, Satellite, Milliseconds, MILLISECONDS_PER_SECOND } from '@ootk/src/main';
+import { BaseObject, Milliseconds, MILLISECONDS_PER_SECOND, Satellite } from '@ootk/src/main';
 import { ColorScheme } from '../../engine/rendering/color-schemes/color-scheme';
 import { clickAndDragHeight, clickAndDragWidth } from '../../engine/utils/click-and-drag';
 import { closeColorbox } from '../../engine/utils/colorbox';
@@ -53,7 +53,6 @@ export class UiManager {
   M = window.M;
   bottomIconPress: (el: HTMLElement) => void;
   hideSideMenus: () => void;
-  isAnalysisMenuOpen = false;
   isCurrentlyTyping = false;
   isUiVisible = true;
   lastBoxUpdateTime = 0;

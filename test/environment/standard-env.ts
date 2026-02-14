@@ -282,7 +282,6 @@ export const mockUiManager: UiManager = <UiManager>(<unknown>{
   M: null,
   bottomIconPress: vi.fn(),
   hideSideMenus: vi.fn(),
-  isAnalysisMenuOpen: false,
   isCurrentlyTyping: false,
   isUiVisible: false,
   lastBoxUpdateTime: 0,
