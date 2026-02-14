@@ -90,14 +90,10 @@ export class ObjectTypeColorScheme extends ColorScheme {
      */
 
     if (
-      obj.type === SpaceObjectType.TERRESTRIAL_PLANET ||
-      obj.type === SpaceObjectType.GAS_GIANT ||
-      obj.type === SpaceObjectType.ICE_GIANT ||
-      obj.type === SpaceObjectType.DWARF_PLANET ||
-      obj.type === SpaceObjectType.MOON
+      obj instanceof Planet
     ) {
       return {
-        color: (obj as Planet).color,
+        color: obj.color,
         pickable: Pickable.Yes,
       };
     }
