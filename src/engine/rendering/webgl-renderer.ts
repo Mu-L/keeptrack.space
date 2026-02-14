@@ -569,6 +569,13 @@ export class WebGLRenderer {
       sceneInstance.primaryCovBubble.update(primarySat);
     } else {
       sceneInstance.searchBox.update(null);
+
+      // Update mesh for deep-space satellite when centered (no satellite selected)
+      const deepSpaceSat = sceneInstance.deepSpaceSatellites?.[settingsManager.centerBody];
+
+      if (deepSpaceSat) {
+        this.meshManager.updateForBody(deepSpaceSat.position, deepSpaceSat.getModelName());
+      }
     }
   }
 
