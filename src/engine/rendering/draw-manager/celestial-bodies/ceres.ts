@@ -25,36 +25,36 @@ import { TemeVec3, Kilometers, Seconds, SpaceObjectType } from '@ootk/src/main';
 import { KM_PER_AU } from 'astronomy-engine';
 import { PlanetColors } from './celestial-body';
 import { DwarfPlanet } from './dwarf-planet';
-import { makemakeChebyshevCoeffs } from './makemake-chebyshev';
+import { ceresChebyshevCoeffs } from './ceres-chebyshev';
 
-export enum MakemakeTextureQuality {
+export enum CeresTextureQuality {
   POTATO = '512',
   MEDIUM = '2k',
   HIGH = '4k'
 }
 
-export class Makemake extends DwarfPlanet {
-  readonly RADIUS = 717;
+export class Ceres extends DwarfPlanet {
+  readonly RADIUS = 469.7;
   protected readonly NUM_HEIGHT_SEGS = 64;
   protected readonly NUM_WIDTH_SEGS = 64;
-  orbitalPeriod = 306.70 * 365.25 * 24 * 3600 as Seconds;
-  meanDistanceToSun = 45.499 * KM_PER_AU as Kilometers;
+  orbitalPeriod = 4.60 * 365.25 * 24 * 3600 as Seconds;
+  meanDistanceToSun = 2.77 * KM_PER_AU as Kilometers;
   type: SpaceObjectType = SpaceObjectType.DWARF_PLANET;
   eci: TemeVec3;
-  rotation = [0, 0, Math.PI * 7 / 10];
-  color = PlanetColors.MAKEMAKE;
-  textureQuality: MakemakeTextureQuality = MakemakeTextureQuality.POTATO;
-  protected interpolator_ = new ChebyshevInterpolator(makemakeChebyshevCoeffs);
+  rotation = [0, 0, 0];
+  color = PlanetColors.CERES;
+  textureQuality: CeresTextureQuality = CeresTextureQuality.HIGH;
+  protected interpolator_ = new ChebyshevInterpolator(ceresChebyshevCoeffs);
 
   getName(): SolarBody {
-    return 'Makemake' as SolarBody;
+    return 'Ceres' as SolarBody;
   }
   getTexturePath(): string {
-    return `${settingsManager.installDirectory}textures/makemake${this.textureQuality}.jpg`;
+    return `${settingsManager.installDirectory}textures/ceres${this.textureQuality}.jpg`;
   }
 
   useHighestQualityTexture(): void {
-    this.textureQuality = MakemakeTextureQuality.HIGH;
+    this.textureQuality = CeresTextureQuality.HIGH;
     this.loadTexture();
   }
 }

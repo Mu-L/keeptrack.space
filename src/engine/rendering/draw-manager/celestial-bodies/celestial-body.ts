@@ -36,6 +36,14 @@ export const PlanetColors = {
   NEPTUNE: [0.48, 0.69, 1, 0.7] as rgbaArray,
   PLUTO: [0.8, 0.7, 0.5, 0.7] as rgbaArray,
   MAKEMAKE: [1.0, 0.8, 0.6, 1.0] as rgbaArray,
+  CERES: [0.45, 0.42, 0.38, 0.7] as rgbaArray,
+  HAUMEA: [0.85, 0.82, 0.78, 0.7] as rgbaArray,
+  ERIS: [0.9, 0.9, 0.92, 0.7] as rgbaArray,
+  SEDNA: [0.75, 0.25, 0.15, 0.7] as rgbaArray,
+  QUAOAR: [0.6, 0.35, 0.25, 0.7] as rgbaArray,
+  ORCUS: [0.55, 0.55, 0.58, 0.7] as rgbaArray,
+  GONGGONG: [0.7, 0.3, 0.2, 0.7] as rgbaArray,
+  CHARON: [0.6, 0.6, 0.65, 0.7] as rgbaArray,
 } as const;
 
 export abstract class CelestialBody {
@@ -49,6 +57,8 @@ export abstract class CelestialBody {
   protected readonly normalMatrix_ = mat3.create();
 
   color = PlanetColors.EARTH;
+  /** RGB tint applied to the texture in the fragment shader. Default [1,1,1] = no tint. */
+  tintColor: [number, number, number] = [1, 1, 1];
   /** Position in EME2000 */
   position = [0, 0, 0] as EciArr3;
   rotation = [0, 0, 0];
@@ -99,6 +109,7 @@ export abstract class CelestialBody {
         uniforms: {
           sampler: null as unknown as WebGLUniformLocation,
           sunPos: null as unknown as WebGLUniformLocation,
+          tintColor: null as unknown as WebGLUniformLocation,
         },
         map: texture,
         vertexShader: this.shaders.vert,
@@ -250,6 +261,7 @@ export abstract class CelestialBody {
     gl.uniform1i(this.mesh.material.uniforms.sampler, 0);
     gl.uniform3fv(this.mesh.material.uniforms.cameraPosition, ServiceLocator.getMainCamera().getForwardVector());
     gl.uniform1f(this.mesh.material.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    gl.uniform3fv(this.mesh.material.uniforms.tintColor, this.tintColor);
   }
 
   update(simTime: Date) {
@@ -287,6 +299,7 @@ export abstract class CelestialBody {
     frag: glsl`
       uniform sampler2D sampler;
       uniform vec3 sunPos;
+      uniform vec3 tintColor;
       in vec2 v_texcoord;
       in vec3 v_normal;
       in vec3 vVertToCamera;
@@ -299,7 +312,7 @@ export abstract class CelestialBody {
         vec3 lightDirection = sunPos - vec3(0.0,0.0,0.0);
         lightDirection = normalize(lightDirection);
         float lightFromBody = max(dot(v_normal, lightDirection), 0.0) * 1.0;
-        vec3 litTexColor = texture(sampler, v_texcoord).rgb * (vec3(0.0025, 0.0025, 0.0025) + lightFromBody);
+        vec3 litTexColor = texture(sampler, v_texcoord).rgb * tintColor * (vec3(0.0025, 0.0025, 0.0025) + lightFromBody);
         fragColor = vec4(litTexColor, 1.0);
         ${DepthManager.getLogDepthFragCode()}
       }

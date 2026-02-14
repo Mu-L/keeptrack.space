@@ -25,36 +25,37 @@ import { TemeVec3, Kilometers, Seconds, SpaceObjectType } from '@ootk/src/main';
 import { KM_PER_AU } from 'astronomy-engine';
 import { PlanetColors } from './celestial-body';
 import { DwarfPlanet } from './dwarf-planet';
-import { makemakeChebyshevCoeffs } from './makemake-chebyshev';
+import { quaoarChebyshevCoeffs } from './quaoar-chebyshev';
 
-export enum MakemakeTextureQuality {
+export enum QuaoarTextureQuality {
   POTATO = '512',
   MEDIUM = '2k',
   HIGH = '4k'
 }
 
-export class Makemake extends DwarfPlanet {
-  readonly RADIUS = 717;
+export class Quaoar extends DwarfPlanet {
+  readonly RADIUS = 555;
   protected readonly NUM_HEIGHT_SEGS = 64;
   protected readonly NUM_WIDTH_SEGS = 64;
-  orbitalPeriod = 306.70 * 365.25 * 24 * 3600 as Seconds;
-  meanDistanceToSun = 45.499 * KM_PER_AU as Kilometers;
+  orbitalPeriod = 288.83 * 365.25 * 24 * 3600 as Seconds;
+  meanDistanceToSun = 43.694 * KM_PER_AU as Kilometers;
   type: SpaceObjectType = SpaceObjectType.DWARF_PLANET;
   eci: TemeVec3;
-  rotation = [0, 0, Math.PI * 7 / 10];
-  color = PlanetColors.MAKEMAKE;
-  textureQuality: MakemakeTextureQuality = MakemakeTextureQuality.POTATO;
-  protected interpolator_ = new ChebyshevInterpolator(makemakeChebyshevCoeffs);
+  rotation = [0, 0, 0];
+  color = PlanetColors.QUAOAR;
+  tintColor: [number, number, number] = [1.1, 0.85, 0.75];
+  textureQuality: QuaoarTextureQuality = QuaoarTextureQuality.HIGH;
+  protected interpolator_ = new ChebyshevInterpolator(quaoarChebyshevCoeffs);
 
   getName(): SolarBody {
-    return 'Makemake' as SolarBody;
+    return 'Quaoar' as SolarBody;
   }
   getTexturePath(): string {
     return `${settingsManager.installDirectory}textures/makemake${this.textureQuality}.jpg`;
   }
 
   useHighestQualityTexture(): void {
-    this.textureQuality = MakemakeTextureQuality.HIGH;
+    this.textureQuality = QuaoarTextureQuality.HIGH;
     this.loadTexture();
   }
 }

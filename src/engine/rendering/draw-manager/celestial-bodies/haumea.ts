@@ -25,36 +25,36 @@ import { TemeVec3, Kilometers, Seconds, SpaceObjectType } from '@ootk/src/main';
 import { KM_PER_AU } from 'astronomy-engine';
 import { PlanetColors } from './celestial-body';
 import { DwarfPlanet } from './dwarf-planet';
-import { makemakeChebyshevCoeffs } from './makemake-chebyshev';
+import { haumeaChebyshevCoeffs } from './haumea-chebyshev';
 
-export enum MakemakeTextureQuality {
+export enum HaumeaTextureQuality {
   POTATO = '512',
   MEDIUM = '2k',
   HIGH = '4k'
 }
 
-export class Makemake extends DwarfPlanet {
-  readonly RADIUS = 717;
+export class Haumea extends DwarfPlanet {
+  readonly RADIUS = 816;
   protected readonly NUM_HEIGHT_SEGS = 64;
   protected readonly NUM_WIDTH_SEGS = 64;
-  orbitalPeriod = 306.70 * 365.25 * 24 * 3600 as Seconds;
-  meanDistanceToSun = 45.499 * KM_PER_AU as Kilometers;
+  orbitalPeriod = 283.28 * 365.25 * 24 * 3600 as Seconds;
+  meanDistanceToSun = 43.335 * KM_PER_AU as Kilometers;
   type: SpaceObjectType = SpaceObjectType.DWARF_PLANET;
   eci: TemeVec3;
-  rotation = [0, 0, Math.PI * 7 / 10];
-  color = PlanetColors.MAKEMAKE;
-  textureQuality: MakemakeTextureQuality = MakemakeTextureQuality.POTATO;
-  protected interpolator_ = new ChebyshevInterpolator(makemakeChebyshevCoeffs);
+  rotation = [0, 0, 0];
+  color = PlanetColors.HAUMEA;
+  textureQuality: HaumeaTextureQuality = HaumeaTextureQuality.HIGH;
+  protected interpolator_ = new ChebyshevInterpolator(haumeaChebyshevCoeffs);
 
   getName(): SolarBody {
-    return 'Makemake' as SolarBody;
+    return 'Haumea' as SolarBody;
   }
   getTexturePath(): string {
-    return `${settingsManager.installDirectory}textures/makemake${this.textureQuality}.jpg`;
+    return `${settingsManager.installDirectory}textures/haumea${this.textureQuality}.jpg`;
   }
 
   useHighestQualityTexture(): void {
-    this.textureQuality = MakemakeTextureQuality.HIGH;
+    this.textureQuality = HaumeaTextureQuality.HIGH;
     this.loadTexture();
   }
 }

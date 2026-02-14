@@ -10,12 +10,20 @@ import { EventBusEvent } from '../events/event-bus-events';
 import { CelestialBody } from '../rendering/draw-manager/celestial-bodies/celestial-body';
 import { DwarfPlanet } from '../rendering/draw-manager/celestial-bodies/dwarf-planet';
 import { Jupiter } from '../rendering/draw-manager/celestial-bodies/jupiter';
+import { Ceres } from '../rendering/draw-manager/celestial-bodies/ceres';
+import { Charon } from '../rendering/draw-manager/celestial-bodies/charon';
+import { Eris } from '../rendering/draw-manager/celestial-bodies/eris';
+import { Gonggong } from '../rendering/draw-manager/celestial-bodies/gonggong';
+import { Haumea } from '../rendering/draw-manager/celestial-bodies/haumea';
 import { Makemake } from '../rendering/draw-manager/celestial-bodies/makemake';
 import { Mars } from '../rendering/draw-manager/celestial-bodies/mars';
 import { Mercury } from '../rendering/draw-manager/celestial-bodies/mercury';
 import { Moon } from '../rendering/draw-manager/celestial-bodies/moon';
 import { Neptune } from '../rendering/draw-manager/celestial-bodies/neptune';
+import { Orcus } from '../rendering/draw-manager/celestial-bodies/orcus';
 import { Pluto } from '../rendering/draw-manager/celestial-bodies/pluto';
+import { Quaoar } from '../rendering/draw-manager/celestial-bodies/quaoar';
+import { Sedna } from '../rendering/draw-manager/celestial-bodies/sedna';
 import { Saturn } from '../rendering/draw-manager/celestial-bodies/saturn';
 import { Uranus } from '../rendering/draw-manager/celestial-bodies/uranus';
 import { Venus } from '../rendering/draw-manager/celestial-bodies/venus';
@@ -69,10 +77,15 @@ export class Scene {
   };
   dwarfPlanets: {
     [SolarBody.Makemake]?: DwarfPlanet;
-    [SolarBody.Pluto]?: CelestialBody;
-    [SolarBody.Eris]?: CelestialBody;
-    [SolarBody.Haumea]?: CelestialBody;
-    [SolarBody.Ceres]?: CelestialBody;
+    [SolarBody.Pluto]?: DwarfPlanet;
+    [SolarBody.Eris]?: DwarfPlanet;
+    [SolarBody.Haumea]?: DwarfPlanet;
+    [SolarBody.Ceres]?: DwarfPlanet;
+    [SolarBody.Sedna]?: DwarfPlanet;
+    [SolarBody.Quaoar]?: DwarfPlanet;
+    [SolarBody.Orcus]?: DwarfPlanet;
+    [SolarBody.Gonggong]?: DwarfPlanet;
+    [SolarBody.Charon]?: DwarfPlanet;
   };
   sun: Sun;
   godrays: Godrays;
@@ -119,6 +132,14 @@ export class Scene {
     this.dwarfPlanets = {
       [SolarBody.Makemake]: new Makemake(),
       [SolarBody.Pluto]: new Pluto(),
+      [SolarBody.Ceres]: new Ceres(),
+      [SolarBody.Haumea]: new Haumea(),
+      [SolarBody.Eris]: new Eris(),
+      [SolarBody.Sedna]: new Sedna(),
+      [SolarBody.Quaoar]: new Quaoar(),
+      [SolarBody.Orcus]: new Orcus(),
+      [SolarBody.Gonggong]: new Gonggong(),
+      [SolarBody.Charon]: new Charon(),
     };
     this.moons = {
       [SolarBody.Moon]: new Moon(),
@@ -171,6 +192,14 @@ export class Scene {
         break;
       case SolarBody.Pluto:
       case SolarBody.Makemake:
+      case SolarBody.Ceres:
+      case SolarBody.Haumea:
+      case SolarBody.Eris:
+      case SolarBody.Sedna:
+      case SolarBody.Quaoar:
+      case SolarBody.Orcus:
+      case SolarBody.Gonggong:
+      case SolarBody.Charon:
         this.worldShift = (this.dwarfPlanets[settingsManager.centerBody]!.position as [number, number, number]).map((coord: number) => -coord) as [number, number, number];
         break;
       case SolarBody.Sun:
@@ -432,6 +461,14 @@ export class Scene {
         return this.planets[solarBody] ?? null;
       case SolarBody.Pluto:
       case SolarBody.Makemake:
+      case SolarBody.Ceres:
+      case SolarBody.Haumea:
+      case SolarBody.Eris:
+      case SolarBody.Sedna:
+      case SolarBody.Quaoar:
+      case SolarBody.Orcus:
+      case SolarBody.Gonggong:
+      case SolarBody.Charon:
         return this.dwarfPlanets[solarBody] ?? null;
       case SolarBody.Sun:
         return this.sun as unknown as CelestialBody;
