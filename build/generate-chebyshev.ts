@@ -300,6 +300,18 @@ function generateTypeScript(segments: ChebyshevSegment[], exportName: string): s
   return lines.join('\n');
 }
 
+function generateJSON(segments: ChebyshevSegment[]): string {
+  const data = segments.map((seg) => ({
+    a: seg.a,
+    b: seg.b,
+    cx: Array.from(seg.cx),
+    cy: Array.from(seg.cy),
+    cz: Array.from(seg.cz),
+  }));
+
+  return JSON.stringify(data);
+}
+
 // ---------- Horizons .txt parser ----------
 
 /**
@@ -360,16 +372,28 @@ async function main() {
   );
   const horizonsDir = path.join(celestialDir, 'horizons');
 
-  const bodies = [
+  const publicDir = path.resolve(__dirname, '../public/data/ephemeris');
+
+  const bodies: {
+    name: string;
+    file: string;
+    exportName: string;
+    outFile: string;
+    lagrangeOrder: number;
+    segmentYears: number;
+    outputFormat?: 'ts' | 'json';
+  }[] = [
     // Ceres: short orbital period (4.6 yr) needs shorter segments for accurate Chebyshev fitting
-    { name: 'Ceres', file: 'ceres.txt', exportName: 'ceresChebyshevCoeffs', outFile: 'ceres-chebyshev.ts', lagrangeOrder: 10, segmentYears: 1 },
-    { name: 'Haumea', file: 'haumea.txt', exportName: 'haumeaChebyshevCoeffs', outFile: 'haumea-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
-    { name: 'Eris', file: 'eris.txt', exportName: 'erisChebyshevCoeffs', outFile: 'eris-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
-    { name: 'Sedna', file: 'sedna.txt', exportName: 'sednaChebyshevCoeffs', outFile: 'sedna-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
-    { name: 'Quaoar', file: 'quaoar.txt', exportName: 'quaoarChebyshevCoeffs', outFile: 'quaoar-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
-    { name: 'Orcus', file: 'orcus.txt', exportName: 'orcusChebyshevCoeffs', outFile: 'orcus-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
-    { name: 'Gonggong', file: 'gonggong.txt', exportName: 'gonggongChebyshevCoeffs', outFile: 'gonggong-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
-    { name: 'Charon', file: 'charon.txt', exportName: 'charonChebyshevCoeffs', outFile: 'charon-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Ceres', file: 'dwarf-planets/ceres.txt', exportName: 'ceresChebyshevCoeffs', outFile: 'ceres-chebyshev.ts', lagrangeOrder: 10, segmentYears: 1 },
+    { name: 'Haumea', file: 'dwarf-planets/haumea.txt', exportName: 'haumeaChebyshevCoeffs', outFile: 'haumea-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Eris', file: 'dwarf-planets/eris.txt', exportName: 'erisChebyshevCoeffs', outFile: 'eris-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Sedna', file: 'dwarf-planets/sedna.txt', exportName: 'sednaChebyshevCoeffs', outFile: 'sedna-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Quaoar', file: 'dwarf-planets/quaoar.txt', exportName: 'quaoarChebyshevCoeffs', outFile: 'quaoar-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Orcus', file: 'dwarf-planets/orcus.txt', exportName: 'orcusChebyshevCoeffs', outFile: 'orcus-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Gonggong', file: 'dwarf-planets/gonggong.txt', exportName: 'gonggongChebyshevCoeffs', outFile: 'gonggong-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    { name: 'Charon', file: 'dwarf-planets/charon.txt', exportName: 'charonChebyshevCoeffs', outFile: 'charon-chebyshev.ts', lagrangeOrder: 10, segmentYears: 5 },
+    // Deep-space satellites — JSON output, fetched at runtime from public/data/ephemeris/
+    { name: 'Voyager 1', file: 'satellites/voyager-1.txt', exportName: 'voyager1ChebyshevCoeffs', outFile: 'voyager-1.json', lagrangeOrder: 10, segmentYears: 5, outputFormat: 'json' },
   ];
 
   // Configuration — with heliocentric data, fewer coefficients give ultra-smooth orbits
@@ -433,11 +457,19 @@ async function main() {
       anyExceeded = true;
     }
 
-    const ts = generateTypeScript(segments, body.exportName);
-    const outPath = path.join(celestialDir, body.outFile);
+    if (body.outputFormat === 'json') {
+      const json = generateJSON(segments);
+      const outPath = path.join(publicDir, body.outFile);
 
-    writePromises.push(fs.promises.writeFile(outPath, ts, 'utf-8'));
-    console.log(`  Written: ${outPath} (${(ts.length / 1024).toFixed(1)} KB)`);
+      writePromises.push(fs.promises.writeFile(outPath, json, 'utf-8'));
+      console.log(`  Written: ${outPath} (${(json.length / 1024).toFixed(1)} KB)`);
+    } else {
+      const ts = generateTypeScript(segments, body.exportName);
+      const outPath = path.join(celestialDir, body.outFile);
+
+      writePromises.push(fs.promises.writeFile(outPath, ts, 'utf-8'));
+      console.log(`  Written: ${outPath} (${(ts.length / 1024).toFixed(1)} KB)`);
+    }
   }
 
   await Promise.all(writePromises);
