@@ -22,6 +22,10 @@ export enum EventBusEvent {
   orbitManagerInit = 'orbitManagerInit',
   drawManagerLoadScene = 'drawManagerLoadScene',
   drawOptionalScenery = 'drawOptionalScenery',
+  /**
+   * Emitted after renderOpaque() completes. Use for transparent overlays that must draw on top of the Earth surface.
+   */
+  drawOverlay = 'drawOverlay',
   updateLoop = 'updateLoop',
   /**
    * Run as the default case in the rmbMenuActions event with parameters (targetId: string, clickedSat: number)

@@ -45,6 +45,10 @@ export class GraphicsSettings {
 
   // Earth Rendering
   /**
+   * If false, skip drawing the Earth mesh entirely (debug only).
+   */
+  isDrawEarth = true;
+  /**
    * If true, hide the earth textures and make the globe black
    */
   isBlackEarth = false;

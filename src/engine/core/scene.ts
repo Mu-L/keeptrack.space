@@ -241,6 +241,9 @@ export class Scene {
 
     this.renderBackground(renderer, camera);
     this.renderOpaque(renderer, camera);
+
+    EventBus.getInstance().emit(EventBusEvent.drawOverlay);
+
     this.renderTransparent(renderer, camera);
 
     this.sensorFovFactory.drawAll(camera.projectionMatrix, camera.matrixWorldInverse, renderer.postProcessingManager.curBuffer as WebGLBuffer);
@@ -311,7 +314,7 @@ export class Scene {
         }
 
         if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
-          if (camera.cameraType !== CameraType.ASTRONOMY && camera.cameraType !== CameraType.PLANETARIUM) {
+          if (settingsManager.isDrawEarth !== false && camera.cameraType !== CameraType.ASTRONOMY && camera.cameraType !== CameraType.PLANETARIUM) {
             this.earth.draw(renderer.postProcessingManager.curBuffer);
           }
           this.getBodyById(SolarBody.Moon)?.draw(this.sun.position, renderer.postProcessingManager.curBuffer);
@@ -388,10 +391,12 @@ export class Scene {
     const hoverManagerInstance = ServiceLocator.getHoverManager();
 
     // Draw Earth (atmosphere-only in ground view modes; full draw otherwise)
-    if (camera.cameraType === CameraType.PLANETARIUM || camera.cameraType === CameraType.ASTRONOMY) {
-      this.earth.drawAtmosphereOnly(renderer.postProcessingManager.curBuffer);
-    } else {
-      this.earth.draw(renderer.postProcessingManager.curBuffer);
+    if (settingsManager.isDrawEarth !== false) {
+      if (camera.cameraType === CameraType.PLANETARIUM || camera.cameraType === CameraType.ASTRONOMY) {
+        this.earth.drawAtmosphereOnly(renderer.postProcessingManager.curBuffer);
+      } else {
+        this.earth.draw(renderer.postProcessingManager.curBuffer);
+      }
     }
 
     // Draw Dots

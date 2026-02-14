@@ -14,6 +14,7 @@ export interface EngineEventMap {
   [EventBusEvent.orbitManagerInit]: [];
   [EventBusEvent.drawManagerLoadScene]: [];
   [EventBusEvent.drawOptionalScenery]: [];
+  [EventBusEvent.drawOverlay]: [];
   [EventBusEvent.updateLoop]: [];
   [EventBusEvent.rmbMenuActions]: [string, number];
   [EventBusEvent.rightBtnMenuOpen]: [boolean, number];
