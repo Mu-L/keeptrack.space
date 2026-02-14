@@ -1,3 +1,4 @@
+import { CameraType } from '@app/engine/camera/camera';
 import { MenuMode, SolarBody } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -150,6 +151,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
 
     PluginRegistry.getPlugin(SelectSatManager)?.selectSat(-1); // Deselect any selected satellite
     settingsManager.centerBody = planetName;
+    ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_EARTH;
     ServiceLocator.getUiManager().hideSideMenus();
 
     if (planetName === SolarBody.Sun) {
