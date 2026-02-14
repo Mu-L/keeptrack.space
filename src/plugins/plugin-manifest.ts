@@ -326,9 +326,9 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: false, order: 91 },
   },
   {
-    configKey: 'TrackingImpactPredict',
-    ossImport: () => import('./tracking-impact-predict/tracking-impact-predict'),
-    ossClassName: 'TrackingImpactPredict',
+    configKey: 'Reentries',
+    ossImport: () => import('./reentries/reentries'),
+    ossClassName: 'Reentries',
     defaultConfig: { enabled: true, order: 92 },
   },
   {
@@ -503,10 +503,32 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 451 },
   },
   {
-    configKey: 'AnalysisMenu',
-    ossImport: () => import('./analysis/analysis'),
-    ossClassName: 'AnalysisMenu',
+    configKey: 'DataExportPlugin',
+    ossImport: () => import('./data-export/data-export'),
+    ossClassName: 'DataExportPlugin',
     defaultConfig: { enabled: true, order: 420 },
+  },
+  {
+    configKey: 'CloseObjectsPlugin',
+    ossImport: () => import('./close-objects/close-objects'),
+    ossClassName: 'CloseObjectsPlugin',
+    proImport: () => import('../plugins-pro/close-objects/close-objects'),
+    proClassName: 'CloseObjectsPro',
+    defaultConfig: { enabled: true, order: 421 },
+  },
+  {
+    configKey: 'BestPassPlugin',
+    ossImport: () => import('./best-pass/best-pass'),
+    ossClassName: 'BestPassPlugin',
+    proImport: () => import('../plugins-pro/best-pass/best-pass'),
+    proClassName: 'BestPassPro',
+    defaultConfig: { enabled: true, order: 422 },
+  },
+  {
+    configKey: 'OverflightPlugin',
+    proImport: () => import('../plugins-pro/overflight/overflight'),
+    proClassName: 'OverflightPlugin',
+    defaultConfig: { enabled: true, order: 423 },
   },
   {
     configKey: 'EclipseSolarAnalysis',

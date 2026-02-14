@@ -11,11 +11,11 @@ export interface PluginDescriptor {
   /** Config key in KeepTrackPluginsConfiguration. Must match the key used in settingsManager.plugins */
   configKey: string;
 
-  /** Dynamic import for the OSS version of the plugin */
-  ossImport: () => Promise<Record<string, unknown>>;
+  /** Dynamic import for the OSS version of the plugin (omit for pro-only plugins) */
+  ossImport?: () => Promise<Record<string, unknown>>;
 
-  /** Exported class name in the OSS module */
-  ossClassName: string;
+  /** Exported class name in the OSS module (omit for pro-only plugins) */
+  ossClassName?: string;
 
   /** Dynamic import for the Pro version (omit if no pro variant exists) */
   proImport?: () => Promise<Record<string, unknown>>;

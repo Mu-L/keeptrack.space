@@ -17,12 +17,22 @@ export class PluginManager {
     if (process.env.IS_PRO === 'true' && descriptor.proImport) {
       try {
         const mod = await descriptor.proImport();
-        const PluginClass = mod[descriptor.proClassName ?? descriptor.ossClassName] as new () => KeepTrackPlugin;
+        const className = descriptor.proClassName ?? descriptor.ossClassName;
+
+        if (!className) {
+          return;
+        }
+        const PluginClass = mod[className] as new () => KeepTrackPlugin;
 
         new PluginClass().init();
 
         return;
       } catch { /* fall through to OSS */ }
+    }
+
+    if (!descriptor.ossImport || !descriptor.ossClassName) {
+      // Pro-only plugin with no OSS fallback — skip for non-pro builds
+      return;
     }
 
     const mod = await descriptor.ossImport();

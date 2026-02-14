@@ -74,7 +74,10 @@ describe('plugins', () => {
       OrbitReferences: {
         enabled: true,
       },
-      AnalysisMenu: {
+      DataExportPlugin: {
+        enabled: true,
+      },
+      CloseObjectsPlugin: {
         enabled: true,
       },
       SensorFov: {

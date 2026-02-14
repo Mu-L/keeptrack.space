@@ -104,7 +104,7 @@ const settingsOverride = {
     Collisions: {
       enabled: true,
     },
-    TrackingImpactPredict: {
+    Reentries: {
       enabled: true,
     },
     StereoMap: {
@@ -183,7 +183,10 @@ const settingsOverride = {
     InitialOrbitDeterminationPlugin: {
       enabled: false,
     },
-    AnalysisMenu: {
+    DataExportPlugin: {
+      enabled: false,
+    },
+    CloseObjectsPlugin: {
       enabled: false,
     },
     Screenshot: {

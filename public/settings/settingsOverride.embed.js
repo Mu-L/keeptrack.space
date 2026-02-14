@@ -135,7 +135,7 @@ const settingsOverride = {
       enabled: false,
       order: 91,
     },
-    TrackingImpactPredict: {
+    Reentries: {
       enabled: false,
       order: 92,
     },
@@ -238,9 +238,13 @@ const settingsOverride = {
       enabled: false,
       order: 410,
     },
-    AnalysisMenu: {
+    DataExportPlugin: {
       enabled: false,
       order: 420,
+    },
+    CloseObjectsPlugin: {
+      enabled: false,
+      order: 421,
     },
     Screenshot: {
       enabled: false,

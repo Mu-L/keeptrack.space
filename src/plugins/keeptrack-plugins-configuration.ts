@@ -59,7 +59,7 @@ export type KeepTrackPluginsConfiguration = {
   TocaPocaPlugin?: PluginConfiguration;
   NeighborhoodWatch?: PluginConfiguration;
   OrbitGuardMenuPlugin?: PluginConfiguration;
-  TrackingImpactPredict?: PluginConfiguration;
+  Reentries?: PluginConfiguration;
   Breakup?: PluginConfiguration;
   DebrisScreening?: PluginConfiguration;
   transponderChannelData?: PluginConfiguration;
@@ -86,7 +86,10 @@ export type KeepTrackPluginsConfiguration = {
   TimeMachine?: PluginConfiguration;
   SatellitePhotos?: PluginConfiguration;
   ScreenRecorder?: PluginConfiguration;
-  AnalysisMenu?: PluginConfiguration;
+  DataExportPlugin?: PluginConfiguration;
+  CloseObjectsPlugin?: PluginConfiguration;
+  BestPassPlugin?: PluginConfiguration;
+  OverflightPlugin?: PluginConfiguration;
   EclipseSolarAnalysis?: PluginConfiguration;
   ManeuverPlugin?: PluginConfiguration;
   InitialOrbitDeterminationPlugin?: PluginConfiguration;
