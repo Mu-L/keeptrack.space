@@ -96,8 +96,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'F',
-        ctrl: true,
+        key: 'S',
         callback: () => this.bottomMenuClicked(),
       },
     ];
@@ -116,172 +115,165 @@ export class FindSatPlugin extends KeepTrackPlugin {
     const l = (key: string) => t7e(`plugins.FindSatPlugin.labels.${key}` as Parameters<typeof t7e>[0]);
 
     return html`
-      <div id="findByLooks-menu" class="side-menu-parent start-hidden text-select">
-        <div id="findByLooks-content" class="side-menu">
-          <div class="row">
-            <h5 class="center-align">${t7e('plugins.FindSatPlugin.title')}</h5>
-            <form id="findByLooks-menu-form">
-              <div class="row">
-                <div class="input-field col s12">
-                  <select value=0 id="fbl-type" type="text">
-                    <option value=0>${l('all')}</option>
-                    <option value=1>Payload</option>
-                    <option value=2>Rocket Body</option>
-                    <option value=3>Debris</option>
-                  </select>
-                  <label for="disabled">${l('objectType')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select value=0 id="fbl-country" type="text">
-                    <option value='All'>${l('all')}</option>
-                  </select>
-                  <label for="disabled">${l('country')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select value=0 id="fbl-bus" type="text">
-                    <option value='All'>${l('all')}</option>
-                  </select>
-                  <label for="disabled">${l('satelliteBus')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select value=0 id="fbl-payload" type="text">
-                    <option value='All'>${l('all')}</option>
-                  </select>
-                  <label for="disabled">${l('payload')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select value=0 id="fbl-shape" type="text">
-                    <option value='All'>${l('all')}</option>
-                  </select>
-                  <label for="disabled">${l('shape')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select value=0 id="fbl-source" type="text">
-                    <option value='All'>${l('all')}</option>
-                  </select>
-                  <label for="disabled">${l('source')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="xxx.x" id="fbl-azimuth" type="text">
-                  <label for="fbl-azimuth" class="active">${l('azimuth')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="5" id="fbl-azimuth-margin" type="text">
-                  <label for="fbl-azimuth-margin" class="active">${l('azimuthMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-elevation" type="text">
-                  <label for="fbl-elevation" class="active">${l('elevation')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="5" id="fbl-elevation-margin" type="text">
-                  <label for="fbl-elevation-margin" class="active">${l('elevationMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="xxxx.x" id="fbl-range" type="text">
-                  <label for="fbl-range" class="active">${l('range')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="500" id="fbl-range-margin" type="text">
-                  <label for="fbl-range-margin" class="active">${l('rangeMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-inc" type="text">
-                  <label for="fbl-inc" class="active">${l('inclination')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input value="0.5" placeholder="0.5" id="fbl-inc-margin" type="text">
-                  <label for="fbl-inc-margin" class="active">${l('inclinationMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-period" type="text">
-                  <label for="fbl-period" class="active">${l('period')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input value="10" placeholder="10" id="fbl-period-margin" type="text">
-                  <label for="fbl-period-margin" class="active">${l('periodMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-tleAge" type="text">
-                  <label for="fbl-tleAge" class="active">${l('tleAge')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input value="1" placeholder="1" id="fbl-tleAge-margin" type="text">
-                  <label for="fbl-tleAge-margin" class="active">${l('tleAgeMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-rcs" type="text">
-                  <label for="fbl-rcs" class="active">${l('rcs')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input value="10" placeholder="10" id="fbl-rcs-margin" type="text">
-                  <label for="fbl-rcs-margin" class="active">${l('rcsMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-raan" type="text">
-                  <label for="fbl-raan" class="active">${l('rightAscension')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input value="0.5" placeholder="0.5" id="fbl-raan-margin" type="text">
-                  <label for="fbl-raan-margin" class="active">${l('rightAscensionMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12 m6 l6">
-                  <input placeholder="XX.X" id="fbl-argPe" type="text">
-                  <label for="fbl-argPe" class="active">${l('argOfPerigee')}</label>
-                </div>
-                <div class="input-field col s12 m6 l6">
-                  <input value="0.5" placeholder="0.5" id="fbl-argPe-margin" type="text">
-                  <label for="fbl-argPe-margin" class="active">${l('argOfPerigeeMargin')}</label>
-                </div>
-              </div>
-              <div class="row">
-                <center>
-                  <button id="findByLooks-submit" class="btn btn-ui waves-effect waves-light" type="submit"
-                    name="action">${l('findSatellites')} &#9658;
-                  </button>
-                </center>
-              </div>
-              <div class="row">
-                <center>
-                  <button id="findByLooks-export" class="btn btn-ui waves-effect waves-light" type="button"
-                    name="action">${l('exportData')} &#9658;
-                  </button>
-                </center>
-              </div>
-            </form>
-            <div class="row center-align" style="margin-top:20px;">
-              <span id="fbl-error" class="menu-selectable"></span>
-            </div>
+      <form id="findByLooks-menu-form">
+        <div class="row">
+          <div class="input-field col s12">
+            <select value=0 id="fbl-type" type="text">
+              <option value=0>${l('all')}</option>
+              <option value=1>Payload</option>
+              <option value=2>Rocket Body</option>
+              <option value=3>Debris</option>
+            </select>
+            <label for="disabled">${l('objectType')}</label>
           </div>
         </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <select value=0 id="fbl-country" type="text">
+              <option value='All'>${l('all')}</option>
+            </select>
+            <label for="disabled">${l('country')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <select value=0 id="fbl-bus" type="text">
+              <option value='All'>${l('all')}</option>
+            </select>
+            <label for="disabled">${l('satelliteBus')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <select value=0 id="fbl-payload" type="text">
+              <option value='All'>${l('all')}</option>
+            </select>
+            <label for="disabled">${l('payload')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <select value=0 id="fbl-shape" type="text">
+              <option value='All'>${l('all')}</option>
+            </select>
+            <label for="disabled">${l('shape')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <select value=0 id="fbl-source" type="text">
+              <option value='All'>${l('all')}</option>
+            </select>
+            <label for="disabled">${l('source')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="xxx.x" id="fbl-azimuth" type="text">
+            <label for="fbl-azimuth" class="active">${l('azimuth')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="5" id="fbl-azimuth-margin" type="text">
+            <label for="fbl-azimuth-margin" class="active">${l('azimuthMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-elevation" type="text">
+            <label for="fbl-elevation" class="active">${l('elevation')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="5" id="fbl-elevation-margin" type="text">
+            <label for="fbl-elevation-margin" class="active">${l('elevationMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="xxxx.x" id="fbl-range" type="text">
+            <label for="fbl-range" class="active">${l('range')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="500" id="fbl-range-margin" type="text">
+            <label for="fbl-range-margin" class="active">${l('rangeMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-inc" type="text">
+            <label for="fbl-inc" class="active">${l('inclination')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input value="0.5" placeholder="0.5" id="fbl-inc-margin" type="text">
+            <label for="fbl-inc-margin" class="active">${l('inclinationMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-period" type="text">
+            <label for="fbl-period" class="active">${l('period')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input value="10" placeholder="10" id="fbl-period-margin" type="text">
+            <label for="fbl-period-margin" class="active">${l('periodMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-tleAge" type="text">
+            <label for="fbl-tleAge" class="active">${l('tleAge')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input value="1" placeholder="1" id="fbl-tleAge-margin" type="text">
+            <label for="fbl-tleAge-margin" class="active">${l('tleAgeMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-rcs" type="text">
+            <label for="fbl-rcs" class="active">${l('rcs')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input value="10" placeholder="10" id="fbl-rcs-margin" type="text">
+            <label for="fbl-rcs-margin" class="active">${l('rcsMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-raan" type="text">
+            <label for="fbl-raan" class="active">${l('rightAscension')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input value="0.5" placeholder="0.5" id="fbl-raan-margin" type="text">
+            <label for="fbl-raan-margin" class="active">${l('rightAscensionMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12 m6 l6">
+            <input placeholder="XX.X" id="fbl-argPe" type="text">
+            <label for="fbl-argPe" class="active">${l('argOfPerigee')}</label>
+          </div>
+          <div class="input-field col s12 m6 l6">
+            <input value="0.5" placeholder="0.5" id="fbl-argPe-margin" type="text">
+            <label for="fbl-argPe-margin" class="active">${l('argOfPerigeeMargin')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <center>
+            <button id="findByLooks-submit" class="btn btn-ui waves-effect waves-light" type="submit"
+              name="action">${l('findSatellites')} &#9658;
+            </button>
+          </center>
+        </div>
+        <div class="row">
+          <center>
+            <button id="findByLooks-export" class="btn btn-ui waves-effect waves-light" type="button"
+              name="action">${l('exportData')} &#9658;
+            </button>
+          </center>
+        </div>
+      </form>
+      <div class="row center-align" style="margin-top:20px;">
+        <span id="fbl-error" class="menu-selectable"></span>
       </div>
     `;
   }

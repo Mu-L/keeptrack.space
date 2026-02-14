@@ -157,10 +157,10 @@ export class StereoMap extends KeepTrackPlugin {
       </div>
     `;
 
-    // When a secondary menu exists (pro), generateSideMenuHtml_() in the base plugin
-    // wraps sideMenuElementHtml in the standard side-menu template. Without a secondary
-    // menu (OSS), the raw HTML is inserted directly, so we must include the wrapper.
-    if ('getSecondaryMenuConfig' in this) {
+    // When a secondary menu or download exists, generateSideMenuHtml_() in the base plugin
+    // wraps sideMenuElementHtml in the standard side-menu template. Without either,
+    // the raw HTML is inserted directly, so we must include the wrapper.
+    if ('getSecondaryMenuConfig' in this || 'onDownload' in this) {
       return innerHtml;
     }
 
