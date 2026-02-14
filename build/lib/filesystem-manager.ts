@@ -347,7 +347,7 @@ export class FileSystemManager {
         logWithStyle(`Reading source locale file: ${srcPath}`, ConsoleStyles.DEBUG);
         const srcContent = JSON.parse(this.readFile(srcPath));
 
-        mergedContent = { ...mergedContent, ...srcContent, ...{ plugins: { ...mergedContent.plugins, ...srcContent.plugins } } };
+        mergedContent = this.deepMergeLocaleContent_(mergedContent, srcContent);
       }
 
       // Use the relative path of the first file for output
@@ -389,10 +389,34 @@ export class FileSystemManager {
     const srcJson = JSON.parse(srcContent);
     const pluginJson = JSON.parse(pluginContent);
 
-    const mergedJson = { ...srcJson, ...pluginJson, ...{ plugins: { ...srcJson.plugins, ...pluginJson.plugins } } };
+    const mergedJson = this.deepMergeLocaleContent_(srcJson, pluginJson);
 
     console.log(`Merged locale files: ${srcPath} + ${pluginPath}`);
 
     return JSON.stringify(mergedJson, null, 2);
+  }
+
+  private deepMergeLocaleContent_(base: any, overlay: any): any {
+    const result = { ...base, ...overlay };
+
+    // Deep-merge known nested sections so plugin-level keys are merged, not overwritten
+    for (const section of ['plugins', 'errorMsgs']) {
+      if (base[section] && overlay[section]) {
+        const merged: any = { ...base[section] };
+
+        for (const key of Object.keys(overlay[section])) {
+          if (typeof merged[key] === 'object' && merged[key] !== null &&
+              typeof overlay[section][key] === 'object' && overlay[section][key] !== null &&
+              !Array.isArray(merged[key])) {
+            merged[key] = { ...merged[key], ...overlay[section][key] };
+          } else {
+            merged[key] = overlay[section][key];
+          }
+        }
+        result[section] = merged;
+      }
+    }
+
+    return result;
   }
 }
