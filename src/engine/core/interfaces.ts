@@ -23,6 +23,7 @@ export interface SatShader {
   maxAllowedSize: number;
   maxSizePlanetarium: number;
   minSizePlanetarium: number;
+  starMinSize: number;
   starSize: string;
 }
 

@@ -118,6 +118,7 @@ export class DotsManager {
         u_pMvCamMatrix: <WebGLUniformLocation><unknown>null,
         u_minSize: <WebGLUniformLocation><unknown>null,
         u_maxSize: <WebGLUniformLocation><unknown>null,
+        u_starMinSize: <WebGLUniformLocation><unknown>null,
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
         u_symbologyEnabled: <WebGLUniformLocation><unknown>null,
@@ -208,9 +209,11 @@ export class DotsManager {
     if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
       gl.uniform1f(this.programs.dots.uniforms.u_minSize, this.settings_.satShader.minSizePlanetarium);
       gl.uniform1f(this.programs.dots.uniforms.u_maxSize, this.settings_.satShader.maxSizePlanetarium);
+      gl.uniform1f(this.programs.dots.uniforms.u_starMinSize, this.settings_.satShader.minSizePlanetarium);
     } else {
       gl.uniform1f(this.programs.dots.uniforms.u_minSize, this.settings_.satShader.minSize);
       gl.uniform1f(this.programs.dots.uniforms.u_maxSize, this.settings_.satShader.maxSize);
+      gl.uniform1f(this.programs.dots.uniforms.u_starMinSize, this.settings_.satShader.starMinSize);
     }
 
     // Set symbology enabled uniform
@@ -796,9 +799,7 @@ export class DotsManager {
       return 1.0; // Return size for search results
     }
 
-    if ((i >= this.starIndex1 && i <= this.starIndex2)) {
-      return 1.0; // Return size for stars
-    }
+    // Stars use distance-based sizing (size 0) — at 3e10 km they naturally get u_minSize
 
     // If a planet and we aren't centered on Earth or Moon
     if ((i >= this.planetDot1 && i <= this.planetDot2) &&
@@ -829,14 +830,10 @@ export class DotsManager {
       this.sizeData = new Int8Array(bufferLen);
     }
 
-    // This has to happen first because it resets things to 0
+    // Reset everything to 0 (distance-based sizing).
+    // Stars stay at 0 — at 3e10 km they naturally get u_minSize in the shader.
     for (let i = 0; i < bufferLen; i++) {
-      // Stars are always bigger
-      if (i >= this.starIndex1 && i <= this.starIndex2) {
-        this.sizeData[i] = 1.0;
-      } else {
-        this.sizeData[i] = 0.0;
-      }
+      this.sizeData[i] = 0.0;
     }
 
     const selectedSat = PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1;
@@ -1034,6 +1031,7 @@ export class DotsManager {
 
           uniform float u_minSize;
           uniform float u_maxSize;
+          uniform float u_starMinSize;
           uniform vec3 worldOffset;
           uniform mat4 u_pMvCamMatrix;
           uniform float logDepthBufFC;
@@ -1063,10 +1061,13 @@ export class DotsManager {
               float dist = distance(vec3(0.0, 0.0, 0.0), a_position.xyz);
               float baseSize = pow(${settingsManager.satShader.distanceBeforeGrow} \/ position.z, 2.1);
 
-              // Satellite
+              // Use star min size for objects beyond 1e8 km (stars), regular min size for satellites
+              float effectiveMinSize = mix(u_minSize, u_starMinSize, step(1.0e8, dist));
+
+              // Satellite / Star
               drawSize +=
               when_lt(a_size, 0.5) *
-              (min(max(baseSize, u_minSize), u_maxSize) * 1.0);
+              (min(max(baseSize, effectiveMinSize), u_maxSize) * 1.0);
 
               // Something on the ground
               drawSize +=

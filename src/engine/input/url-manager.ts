@@ -679,6 +679,7 @@ export abstract class UrlManager {
           largeObjectMaxZoom: 0.58,
           minSizePlanetarium: 20.0,
           maxSizePlanetarium: 20.0,
+          starMinSize: 8.0,
           maxAllowedSize: 35.0,
           isUseDynamicSizing: false,
           dynamicSizeScalar: 1.0,

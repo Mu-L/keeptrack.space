@@ -1,11 +1,11 @@
 import { DensityBin } from '@app/app/data/catalog-manager';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { BaseObject, Star } from '@app/engine/ootk/src/objects';
 import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { SpaceObjectType } from '@ootk/src/main';
 import { CameraType } from '../../camera/camera';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export interface ColorSchemeColorMap {
   version: string;
@@ -252,6 +252,24 @@ export abstract class ColorScheme {
       };
     }
 
+    // Use color temperature when available for realistic star colors
+    if (sat.colorTemp) {
+      const rgba = ColorScheme.colorTempToRgba_(sat.colorTemp, sat.vmag);
+
+      // Check magnitude-based visibility flags
+      if (sat.vmag >= 4.7 && !this.objectTypeFlags.starLow) {
+        return { color: this.colorTheme.deselected, pickable: Pickable.No };
+      }
+      if (sat.vmag >= 3.5 && sat.vmag < 4.7 && !this.objectTypeFlags.starMed) {
+        return { color: this.colorTheme.deselected, pickable: Pickable.No };
+      }
+      if (sat.vmag < 3.5 && !this.objectTypeFlags.starHi) {
+        return { color: this.colorTheme.deselected, pickable: Pickable.No };
+      }
+
+      return { color: rgba, pickable: Pickable.Yes };
+    }
+
     if (sat.vmag >= 4.7 && this.objectTypeFlags.starLow) {
       return {
         color: this.colorTheme.starLow,
@@ -268,12 +286,52 @@ export abstract class ColorScheme {
         pickable: Pickable.Yes,
       };
     }
-    // Deselected
 
     return {
       color: this.colorTheme.deselected,
       pickable: Pickable.No,
     };
+  }
 
+  /**
+   * Convert color temperature to RGBA, with brightness scaled by visual magnitude.
+   */
+  private static colorTempToRgba_(kelvin: number, vmag: number): [number, number, number, number] {
+    const temp = Math.max(1000, Math.min(40000, kelvin)) / 100;
+
+    let r: number;
+    let g: number;
+    let b: number;
+
+    if (temp <= 66) {
+      r = 255;
+    } else {
+      r = Math.max(0, Math.min(255, 329.698727446 * ((temp - 60) ** -0.1332047592)));
+    }
+
+    if (temp <= 66) {
+      g = Math.max(0, Math.min(255, 99.4708025861 * Math.log(temp) - 161.1195681661));
+    } else {
+      g = Math.max(0, Math.min(255, 288.1221695283 * ((temp - 60) ** -0.0755148492)));
+    }
+
+    if (temp >= 66) {
+      b = 255;
+    } else if (temp <= 19) {
+      b = 0;
+    } else {
+      b = Math.max(0, Math.min(255, 138.5177312231 * Math.log(temp - 10) - 305.0447927307));
+    }
+
+    // Each magnitude step reduces brightness by ~35% for higher contrast
+    const mag = typeof vmag === 'number' ? vmag : 3.0;
+    const brightness = Math.max(0.08, Math.min(1.0, 0.65 ** Math.max(0, mag + 1.0)));
+
+    return [
+      r / 255,
+      g / 255,
+      b / 255,
+      brightness,
+    ];
   }
 }

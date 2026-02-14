@@ -36,7 +36,6 @@ import {
   Milliseconds,
   Minutes,
   PI,
-  RAD2DEG,
   Radians,
   RaeVec3,
   Sgp4,
@@ -48,8 +47,7 @@ import {
   eci2ecef,
   eci2lla,
   lla2eci,
-  rae2eci} from '@ootk/src/main';
-import { Horizon, MakeTime, Observer } from 'astronomy-engine';
+} from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { GROUND_BUFFER_DISTANCE, RADIUS_OF_EARTH, STAR_DISTANCE } from '../engine/utils/constants';
 import { PosCruncherCachedObject, PositionCruncherIncomingMsg, PositionCruncherOutgoingMsg } from './constants';
@@ -101,31 +99,6 @@ export enum MarkerMode {
 
 const EMPTY_FLOAT32_ARRAY = new Float32Array(0);
 const EMPTY_INT8_ARRAY = new Int8Array(0);
-const STAR_LAT = <Degrees>0;
-const STAR_LON = <Degrees>188; // TODO: This is a hack.
-
-/**
- * Convert star RA/Dec coordinates to Az/El for a given observer location and time.
- * This replaces the old Celestial.azEl function.
- */
-const starRaDecToAzEl = (
-  date: Date,
-  observerLat: Degrees,
-  observerLon: Degrees,
-  ra: Radians,
-  dec: Radians,
-): { az: Degrees; el: Degrees } => {
-  // Convert RA from radians to sidereal hours (RA is in radians, need hours for astronomy-engine)
-  const raHours = (ra * RAD2DEG) / 15; // degrees / 15 = hours
-  const decDegrees = dec * RAD2DEG;
-
-  const time = MakeTime(date);
-  const observer = new Observer(observerLat, observerLon, 0); // Altitude in meters
-
-  const horizontal = Horizon(time, observer, raHours, decDegrees, 'normal');
-
-  return { az: horizontal.azimuth as Degrees, el: horizontal.altitude as Degrees };
-};
 
 let isResponseCount = 0;
 
@@ -490,27 +463,16 @@ export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSidereal
   }
 };
 
-export const updateStar = (i: number, now: Date, gmst: GreenwichMeanSiderealTime): void => {
-  /*
-   * INFO: 0 Latitude returns upside down results. Using 180 looks right, but more verification needed.
-   * WARNING: 180 and 0 really matter...unclear why
-   */
-  const starPosition = starRaDecToAzEl(now, STAR_LAT, STAR_LON, objCache[i].ra!, objCache[i].dec!);
-  const rae: RaeVec3 = { az: starPosition.az, el: starPosition.el, rng: STAR_DISTANCE };
-  const pos = rae2eci(rae, { lat: <Degrees>0, lon: <Degrees>0, alt: <Kilometers>0 }, gmst);
+export const updateStar = (i: number, _now: Date, _gmst: GreenwichMeanSiderealTime): void => {
+  const ra = objCache[i].ra!;
+  const dec = objCache[i].dec!;
 
-  /*
-   * Reduce Random Jitter by Requiring New Positions to be Similar to Old
-   * THIS MIGHT BE A HORRIBLE
-   */
-  satPos[i * 3] = pos.x;
-  satPos[i * 3 + 1] = pos.y;
-  satPos[i * 3 + 2] = pos.z;
-  /*
-   * if (satPos[i * 3] === 0 || (satPos[i * 3] - pos.x < 0.1 && satPos[i * 3] - pos.x > -0.1)) satPos[i * 3] = pos.x;
-   * if (satPos[i * 3 + 1] === 0 || (satPos[i * 3 + 1] - pos.y < 0.1 && satPos[i * 3 + 1] - pos.y > -0.1)) satPos[i * 3 + 1] = pos.y;
-   * if (satPos[i * 3 + 2] === 0 || (satPos[i * 3 + 2] - pos.z < 0.1 && satPos[i * 3 + 2] - pos.z > -0.1)) satPos[i * 3 + 2] = pos.z;
-   */
+  // J2000 RA/Dec → cartesian (already in the inertial frame, no GMST rotation needed)
+  const cosDec = Math.cos(dec);
+
+  satPos[i * 3] = STAR_DISTANCE * cosDec * Math.cos(ra);
+  satPos[i * 3 + 1] = STAR_DISTANCE * cosDec * Math.sin(ra);
+  satPos[i * 3 + 2] = STAR_DISTANCE * Math.sin(dec);
 };
 export const updateMissile = (i: number, now: Date, gmstNext: number, gmst: GreenwichMeanSiderealTime): boolean => {
   const missile = objCache[i];

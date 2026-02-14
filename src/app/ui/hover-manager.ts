@@ -106,6 +106,20 @@ export class HoverManager {
     }
   }
 
+  private star_(star: Star): void {
+    const name = star.pname
+      || (star.bayer && star.constellation ? `${star.bayer} ${star.constellation}` : '')
+      || (star.flamsteed && star.constellation ? `${star.flamsteed} ${star.constellation}` : '')
+      || (star.hr ? `HR ${star.hr}` : star.name);
+
+    this.satHoverBoxNode1.textContent = name;
+    this.satHoverBoxNode2.textContent = star.constellation
+      ? `${star.constellation} · Mag ${star.vmag?.toFixed(2) ?? '?'}`
+      : `Mag ${star.vmag?.toFixed(2) ?? '?'}`;
+    this.satHoverBoxNode3.textContent = star.colorTemp
+      ? `${star.colorTemp.toLocaleString()}K` : '';
+  }
+
   private hoverOverNothing_() {
     this.satHoverBoxDOM = <HTMLDivElement>(<unknown>getEl('sat-hoverbox'));
     if (this.satHoverBoxDOM.style.display === 'none' || !settingsManager.enableHoverOverlay) {
@@ -363,7 +377,7 @@ export class HoverManager {
     ) {
       this.planet_(obj as unknown as PlanetDot);
     } else if (obj.type === SpaceObjectType.STAR) {
-      // Do nothing
+      this.star_(obj as Star);
     } else {
       // It is a Sensor at this point
       const sensor = obj as DetailedSensor;
@@ -401,14 +415,10 @@ export class HoverManager {
     }
 
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
-    const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const gl = ServiceLocator.getRenderer().gl;
 
     this.hoveringSat = i;
     if (i === this.lasthoveringSat) {
-      return;
-    }
-    if (i !== -1 && catalogManagerInstance.objectCache[i].type === SpaceObjectType.STAR) {
       return;
     }
 

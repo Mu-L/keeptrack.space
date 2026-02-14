@@ -307,12 +307,15 @@ export class CatalogLoader {
     externalCatalog?: Promise<AsciiTleSat[] | null> | null;
     vimpelCatalog?: Promise<JsSat[]> | null;
   }): Promise<void> {
-    await Promise.all([extraSats, asciiCatalog, externalCatalog, jsCatalog]).then(([extraSats, asciiCatalog, externalCatalog, jsCatalog]) => {
+    await Promise.all([extraSats, asciiCatalog, externalCatalog, jsCatalog]).then(async ([extraSats, asciiCatalog, externalCatalog, jsCatalog]) => {
       asciiCatalog = externalCatalog || asciiCatalog;
 
       // Make sure everyone agrees on what time it is
       ServiceLocator.getTimeManager().init();
       ServiceLocator.getTimeManager().synchronize();
+
+      // Inject pro star catalog data before processing static objects
+      await CatalogLoader.injectStarData_();
 
       /*
        * Filter TLEs
@@ -364,6 +367,13 @@ export class CatalogLoader {
         tempObjData.push(sensor);
       } else if (staticSat instanceof LaunchSite) {
         tempObjData.push(staticSat);
+      } else if (staticSat.type === SpaceObjectType.STAR) {
+        const star = new Star({
+          id: tempObjData.length,
+          ...staticSat,
+        });
+
+        tempObjData.push(star);
       } else {
         const landObj = new LandObject({
           id: tempObjData.length,
@@ -462,6 +472,20 @@ export class CatalogLoader {
       const marker = new Marker(fieldOfViewMarker);
 
       tempObjData.push(marker);
+    }
+  }
+
+  /**
+   * Injects star data from the pro StarsPlugin if it is registered.
+   * This is called before filterTLEDatabase so stars are part of the static set.
+   */
+  private static async injectStarData_(): Promise<void> {
+    try {
+      const { StarsPlugin } = await import('../../plugins-pro/stars/stars-plugin');
+
+      await StarsPlugin.injectStars();
+    } catch {
+      // StarsPlugin not available (OSS build) — skip silently
     }
   }
 

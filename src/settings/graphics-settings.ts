@@ -219,6 +219,7 @@ export class GraphicsSettings {
      * The maximum size of objects in the shader when in planetarium mode.
      */
     maxSizePlanetarium: 20.0,
+    starMinSize: 8.0,
     /**
      * The maximum allowed size of objects in the shader.
      * This value is dynamically changed based on zoom level.

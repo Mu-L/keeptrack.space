@@ -28,6 +28,16 @@ export const pluginManifest: PluginDescriptor[] = [
     alwaysEnabled: true,
   },
 
+  // ── Data plugins (must load before catalog) ──────────────────────────────
+  {
+    configKey: 'StarsPlugin',
+    ossImport: () => import('./stars/stars-stub'),
+    ossClassName: 'StarsPlugin',
+    proImport: () => import('../plugins-pro/stars/stars-plugin'),
+    proClassName: 'StarsPlugin',
+    defaultConfig: { enabled: true },
+  },
+
   // ── Core UI ────────────────────────────────────────────────────────────────
   {
     configKey: 'ScenarioManagementPlugin',

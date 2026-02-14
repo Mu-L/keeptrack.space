@@ -13,6 +13,7 @@ export type PluginConfiguration = {
 export type KeepTrackPluginsConfiguration = {
   Telemetry?: PluginConfiguration;
   SelectSatManager?: PluginConfiguration;
+  StarsPlugin?: PluginConfiguration;
   ScenarioManagementPlugin?: PluginConfiguration;
   TopMenu?: PluginConfiguration;
   TimeSlider?: PluginConfiguration;
