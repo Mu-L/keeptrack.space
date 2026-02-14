@@ -3,7 +3,7 @@
     "CreateSat": {
       "bottomIconLabel": "衛星を作成",
       "title": "衛星を作成",
-      "helpBody": "衛星作成メニューは、ケプラー要素から衛星を作成するために使用されます。",
+      "helpBody": "衛星作成メニューでは、軌道要素を手動で入力するか、STKエフェメリスファイル (.e) をインポートして衛星を作成できます。<br><br><b>基本タブ</b>：遠地点、近地点、軌道傾斜角を入力して素早く衛星を作成します。<br><br><b>詳細タブ</b>：完全なケプラー要素（軌道傾斜角、昇交点赤経、離心率、近地点引数、平均近点角、平均運動）を入力します。<br><br><b>STK .eインポート</b>：STKエフェメリスファイルをメニューにドラッグ＆ドロップします。対応形式：EphemerisTimePosVel、EphemerisTimePos、EphemerisTimePosVelAcc（慣性座標系：J2000、ICRF、TEMEなど）。時刻形式はEpSecとUTCGに対応。キーワードは大文字小文字を区別しません。<br><br><b>非対応</b>：測地形式（LLA、LLR、MSL、Terrain）、非慣性座標系（Fixed、TrueOfDate）、共分散データには対応していません。",
       "errorMsgs": {
         "errorCreatingSat": "衛星の作成中にエラーが発生しました！"
       }

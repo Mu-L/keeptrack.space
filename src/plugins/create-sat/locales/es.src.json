@@ -3,7 +3,7 @@
     "CreateSat": {
       "bottomIconLabel": "Crear Satélite",
       "title": "Crear Satélite",
-      "helpBody": "El menú de Crear Satélite se utiliza para crear un satélite a partir de sus elementos keplerianos",
+      "helpBody": "El menú Crear Satélite permite crear un satélite ingresando elementos orbitales manualmente o importando un archivo de efemérides STK (.e).<br><br><b>Pestaña Básica</b>: Ingrese apogeo, perigeo e inclinación para crear rápidamente un satélite.<br><br><b>Pestaña Avanzada</b>: Ingrese elementos keplerianos completos (inclinación, RAAN, excentricidad, argumento del perigeo, anomalía media, movimiento medio).<br><br><b>Importar STK .e</b>: Arrastre y suelte un archivo de efemérides STK en el menú. Formatos compatibles: EphemerisTimePosVel, EphemerisTimePos y EphemerisTimePosVelAcc en sistemas de coordenadas inerciales (J2000, ICRF, TEME, etc.). Se admiten los formatos de tiempo EpSec y UTCG. Las palabras clave no distinguen mayúsculas de minúsculas.<br><br><b>No compatible</b>: Los formatos geodésicos (LLA, LLR, MSL, Terrain), los marcos no inerciales (Fixed, TrueOfDate) y los datos de covarianza no son compatibles.",
       "errorMsgs": {
         "errorCreatingSat": "¡Error al crear el satélite!"
       }

@@ -3,7 +3,7 @@
     "CreateSat": {
       "bottomIconLabel": "创建卫星",
       "title": "创建卫星",
-      "helpBody": "创建卫星菜单用于根据开普勒元素创建卫星。",
+      "helpBody": "创建卫星菜单允许您通过手动输入轨道元素或导入 STK 星历文件 (.e) 来创建卫星。<br><br><b>基本选项卡</b>：输入远地点、近地点和倾角，快速创建卫星。<br><br><b>高级选项卡</b>：输入完整的开普勒元素（倾角、升交点赤经、离心率、近地点幅角、平近点角、平均运动）。<br><br><b>STK .e 导入</b>：将 STK 星历文件拖放到菜单上。支持的格式：EphemerisTimePosVel、EphemerisTimePos 和 EphemerisTimePosVelAcc，使用惯性坐标系（J2000、ICRF、TEME 等）。支持 EpSec 和 UTCG 时间格式。关键字不区分大小写。<br><br><b>不支持</b>：不支持大地测量格式（LLA、LLR、MSL、Terrain）、非惯性参考系（Fixed、TrueOfDate）和协方差数据。",
       "errorMsgs": {
         "errorCreatingSat": "创建卫星时出错！"
       }

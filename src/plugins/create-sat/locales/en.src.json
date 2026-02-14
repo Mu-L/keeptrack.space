@@ -3,7 +3,7 @@
     "CreateSat": {
       "bottomIconLabel": "Create Satellite",
       "title": "Create Satellite",
-      "helpBody": "The Create Satellite menu is used to create a satellite from its keplerian elements",
+      "helpBody": "The Create Satellite menu allows you to create a satellite by entering orbital elements manually or by importing an STK ephemeris (.e) file.<br><br><b>Basic Tab</b>: Enter apogee, perigee, and inclination to quickly create a satellite.<br><br><b>Advanced Tab</b>: Enter full Keplerian elements (inclination, RAAN, eccentricity, argument of perigee, mean anomaly, mean motion).<br><br><b>STK .e Import</b>: Drag and drop an STK ephemeris file onto the menu. Supported formats: EphemerisTimePosVel, EphemerisTimePos, and EphemerisTimePosVelAcc in inertial coordinate systems (J2000, ICRF, TEME, etc.). Time formats EpSec and UTCG are supported. Keywords are case-insensitive.<br><br><b>Not Supported</b>: Geodetic formats (LLA, LLR, MSL, Terrain), non-inertial frames (Fixed, TrueOfDate), and covariance data are not supported.",
       "errorMsgs": {
         "errorCreatingSat": "Error creating satellite!"
       }

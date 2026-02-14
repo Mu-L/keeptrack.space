@@ -3,7 +3,7 @@
     "CreateSat": {
       "bottomIconLabel": "Créer un satellite",
       "title": "Créer un satellite",
-      "helpBody": "Le menu Créer un satellite permet de créer un satellite à partir de ses éléments képlériens.",
+      "helpBody": "Le menu Créer un satellite vous permet de créer un satellite en saisissant manuellement les éléments orbitaux ou en important un fichier d'éphémérides STK (.e).<br><br><b>Onglet Basique</b> : Entrez l'apogée, le périgée et l'inclinaison pour créer rapidement un satellite.<br><br><b>Onglet Avancé</b> : Entrez les éléments képlériens complets (inclinaison, RAAN, excentricité, argument du périgée, anomalie moyenne, mouvement moyen).<br><br><b>Import STK .e</b> : Glissez-déposez un fichier d'éphémérides STK sur le menu. Formats pris en charge : EphemerisTimePosVel, EphemerisTimePos et EphemerisTimePosVelAcc dans les systèmes de coordonnées inertiels (J2000, ICRF, TEME, etc.). Les formats de temps EpSec et UTCG sont pris en charge. Les mots-clés ne sont pas sensibles à la casse.<br><br><b>Non pris en charge</b> : Les formats géodésiques (LLA, LLR, MSL, Terrain), les référentiels non inertiels (Fixed, TrueOfDate) et les données de covariance ne sont pas pris en charge.",
       "errorMsgs": {
         "errorCreatingSat": "Erreur lors de la création du satellite !"
       }

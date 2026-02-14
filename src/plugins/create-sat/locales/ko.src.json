@@ -3,7 +3,7 @@
     "CreateSat": {
       "bottomIconLabel": "위성 생성",
       "title": "위성 생성",
-      "helpBody": "위성 생성 메뉴는 케플러 요소에서 위성을 생성하는 데 사용됩니다",
+      "helpBody": "위성 생성 메뉴에서는 궤도 요소를 수동으로 입력하거나 STK 천체력 파일 (.e)을 가져와 위성을 생성할 수 있습니다.<br><br><b>기본 탭</b>: 원지점, 근지점, 경사각을 입력하여 빠르게 위성을 생성합니다.<br><br><b>고급 탭</b>: 전체 케플러 요소(경사각, RAAN, 이심률, 근지점 편각, 평균 근점 이각, 평균 운동)를 입력합니다.<br><br><b>STK .e 가져오기</b>: STK 천체력 파일을 메뉴에 끌어다 놓으세요. 지원 형식: EphemerisTimePosVel, EphemerisTimePos, EphemerisTimePosVelAcc (관성 좌표계: J2000, ICRF, TEME 등). EpSec 및 UTCG 시간 형식을 지원합니다. 키워드는 대소문자를 구분하지 않습니다.<br><br><b>미지원</b>: 측지 형식(LLA, LLR, MSL, Terrain), 비관성 좌표계(Fixed, TrueOfDate) 및 공분산 데이터는 지원되지 않습니다.",
       "errorMsgs": {
         "errorCreatingSat": "위성 생성 중 오류 발생!"
       }
