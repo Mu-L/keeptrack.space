@@ -131,6 +131,36 @@ export class MeshManager {
     this.currentMeshObject.model = model;
   }
 
+  /**
+   * Update mesh for a non-catalog body (e.g., deep-space satellite) using position and model name.
+   */
+  updateForBody(position: EciArr3, modelName: string): void {
+    this.currentMeshObject.id = 0;
+    this.currentMeshObject.inSun = 1;
+    this.currentMeshObject.isRotationStable = false;
+
+    const resolvedMesh = this.meshRegistry_.get(modelName) ?? { id: -1, name: modelName };
+
+    this.setCurrentModel(resolvedMesh);
+
+    if (!this.currentMeshObject.model?.mesh && this.currentMeshObject.model?.name) {
+      this.meshRegistry_.load(modelName, `${settingsManager.installDirectory}meshes/${modelName}.obj`, this.gl_);
+    }
+
+    const drawPosition = position.map((coord) => coord / 1e11) as EciArr3;
+
+    this.mvMatrix_ = mat4.create();
+    mat4.translate(this.mvMatrix_, this.mvMatrix_, drawPosition);
+
+    // Apply manual rotation
+    mat4.rotateX(this.mvMatrix_, this.mvMatrix_, settingsManager.meshRotation.x * DEG2RAD);
+    mat4.rotateY(this.mvMatrix_, this.mvMatrix_, settingsManager.meshRotation.y * DEG2RAD);
+    mat4.rotateZ(this.mvMatrix_, this.mvMatrix_, settingsManager.meshRotation.z * DEG2RAD);
+
+    this.nMatrix_ = mat3.create();
+    mat3.normalFromMat4(this.nMatrix_, this.mvMatrix_);
+  }
+
   update(selectedDate: Date, sat: Satellite | OemSatellite | MissileObject) {
     if (!sat.isSatellite() && !sat.isMissile()) {
       return;
