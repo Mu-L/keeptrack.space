@@ -180,7 +180,7 @@
       "title": "Kurzzeit-Zäune (STF) Menü",
       "helpBody": "Das Kurzzeit-Zäune (STF) Menü wird verwendet, um Sensor-Suchboxen zu visualisieren. <br><br> Dies ist wahrscheinlich nicht sehr hilfreich, es sei denn, Sie besitzen/betreiben einen Sensor mit einer Suchbox-Funktionalität."
     },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "Wiedereintrittsvorhersage",
       "title": "Menü für Verfolgung und Einschlagsvorhersage",
       "helpBody": "Das Menü für Verfolgung und Einschlagsvorhersage (TIP) zeigt die neuesten Nachrichten zur Verfolgung und Einschlagsvorhersage für Satelliten an. Die Tabelle zeigt die folgenden Spalten:<br><br> <b>NORAD</b>: Die NORAD-Katalog-ID des Satelliten.<br><br> <b>Zerfallsdatum</b>: Das Datum des vorhergesagten Zerfalls des Satelliten.<br><br> <b>Breitengrad</b>: Der Breitengrad des Satelliten zum Zeitpunkt des Zerfalls.<br><br> <b>Längengrad</b>: Der Längengrad des Satelliten zum Zeitpunkt des Zerfalls.<br><br> <b>Fenster (min)</b>: Das Zeitfenster in Minuten für die Vorhersage.<br><br> <b>Nächster Bericht (Std)</b>: Die Zeit in Stunden bis zum nächsten Bericht.<br><br> <b>Wiedereintrittswinkel (deg)</b>: Der Wiedereintrittswinkel des Satelliten in Grad.<br><br> <b>RCS (m²)</b>: Der Radarquerschnitt des Satelliten in Quadratmetern.<br><br> <b>GP-Alter (Std)</b>: Das Alter des neuesten Elementsatzes in Stunden.<br><br> <b>Trockenmasse (kg)</b>: Die Trockenmasse des Satelliten in Kilogramm.<br><br> <b>Volumen (m³)</b>: Das geschätzte Volumen des Satelliten in Kubikmetern.<br><br>"
@@ -259,11 +259,6 @@
     },
     "Astronomy": {
       "bottomIconLabel": "Sternenhimmel"
-    },
-    "AnalysisMenu": {
-      "bottomIconLabel": "Analyse",
-      "title": "Analyse-Menü",
-      "helpBody": "Das Analyse-Menü bietet eine Reihe von Werkzeugen, die Ihnen helfen, die Daten in der aktuellen Ansicht zu analysieren. Die Werkzeuge sind: <ul style=\"margin-left: 40px;\"> <li>Offizielle TLEs exportieren - Exportieren Sie echte Two-Line Element Sets.</li> <li>3LES exportieren - Exportieren Sie Three-Line Element Sets.</li> <li>KeepTrack TLEs exportieren - Exportieren Sie alle KeepTrack Two-Line Element Sets einschließlich Analysten.</li> <li>KeepTrack 3LES exportieren - Exportieren Sie alle KeepTrack Three-Line Element Sets einschließlich Analysten.</li> <li>Nahe Objekte finden - Finden Sie Objekte, die sich nahe beieinander befinden.</li> <li>Wiedereintritte finden - Finden Sie Objekte, die wahrscheinlich wieder in die Atmosphäre eintreten werden.</li> <li>Beste Durchgänge - Finden Sie die besten Durchgänge für einen Satelliten basierend auf dem aktuell ausgewählten Sensor.</li> </ul>"
     },
     "Calculator": {
       "bottomIconLabel": "Referenzrahmen-Transformationen",

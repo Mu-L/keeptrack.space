@@ -180,7 +180,7 @@
       "title": "Menú de Cercas a Corto Plazo (STF)",
       "helpBody": "El Menú de Cercas a Corto Plazo (STF) se usa para visualizar cajas de búsqueda de sensores. <br><br> Es poco probable que esto sea muy útil a menos que poseas/operes un sensor con funcionalidad de caja de búsqueda."
     },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "Predicción de Reentrada",
       "title": "Menú de Seguimiento y Predicción de Impacto",
       "helpBody": "El menú de Seguimiento y Predicción de Impacto (TIP) muestra los últimos mensajes de seguimiento y predicción de impacto para satélites. La tabla muestra las siguientes columnas:<br><br> <b>NORAD</b>: El ID de catálogo NORAD del satélite.<br><br> <b>Fecha de Decaimiento</b>: La fecha de la predicción de decaimiento del satélite.<br><br> <b>Latitud</b>: La latitud del satélite en el momento del decaimiento.<br><br> <b>Longitud</b>: La longitud del satélite en el momento del decaimiento.<br><br> <b>Ventana (min)</b>: La ventana de tiempo en minutos para la predicción.<br><br> <b>Próximo Informe (hrs)</b>: El tiempo en horas hasta el próximo informe.<br><br> <b>Ángulo de Reentrada (deg)</b>: El ángulo de reentrada del satélite en grados.<br><br> <b>RCS (m²)</b>: La sección transversal de radar del satélite en metros cuadrados.<br><br> <b>Edad del GP (hrs)</b>: La edad del último conjunto de elementos en horas.<br><br> <b>Masa en Seco (kg)</b>: La masa en seco del satélite en kilogramos.<br><br> <b>Volumen (m³)</b>: El volumen estimado del satélite en metros cúbicos.<br><br>"
@@ -256,11 +256,6 @@
     },
     "Astronomy": {
       "bottomIconLabel": "Astronomía"
-    },
-    "AnalysisMenu": {
-      "bottomIconLabel": "Análisis",
-      "title": "Menú de Análisis",
-      "helpBody": "El Menú de Análisis proporciona una serie de herramientas para ayudarte a analizar los datos en la vista actual. Las herramientas son: <ul style=\"margin-left: 40px;\"> <li>Exportar TLEs Oficiales - Exportar conjuntos de elementos de dos líneas reales.</li> <li>Exportar 3LES - Exportar conjuntos de elementos de tres líneas.</li> <li>Exportar TLEs de KeepTrack - Exportar todos los conjuntos de elementos de dos líneas de KeepTrack, incluyendo analistas.</li> <li>Exportar 3LES de KeepTrack - Exportar todos los conjuntos de elementos de tres líneas de KeepTrack, incluyendo analistas.</li> <li>Encontrar Objetos Cercanos - Encontrar objetos que están cerca unos de otros.</li> <li>Encontrar Reentradas - Encontrar objetos que probablemente reentren en la atmósfera.</li> <li>Mejores Pases - Encontrar los mejores pases para un satélite basado en el sensor actualmente seleccionado.</li> </ul>"
     },
     "Calculator": {
       "bottomIconLabel": "Transformaciones de Marco de Referencia",

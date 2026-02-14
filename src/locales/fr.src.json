@@ -180,7 +180,7 @@
       "title": "Menu Barrières court terme (STF)",
       "helpBody": "Le menu Barrières court terme (STF) permet de visualiser les zones de recherche des capteurs. <br><br> Ceci n'est probablement utile que si vous possédez/exploitez un capteur avec cette fonctionnalité."
     },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "Prédiction de rentrée",
       "title": "Menu Prédiction de suivi et d'impact",
       "helpBody": "Le menu Prédiction de suivi et d'impact (TIP) affiche les derniers messages de suivi et de prédiction d'impact pour les satellites. Le tableau affiche les colonnes suivantes :<br><br> <b>NORAD</b> : L’ID catalogue NORAD du satellite.<br><br> <b>Date de désintégration</b> : La date prévue de désintégration du satellite.<br><br> <b>Latitude</b> : La latitude du satellite au moment de la désintégration.<br><br> <b>Longitude</b> : La longitude du satellite au moment de la désintégration.<br><br> <b>Fenêtre (min)</b> : La fenêtre temporelle en minutes pour la prédiction.<br><br> <b>Prochain rapport (h)</b> : Le temps en heures avant le prochain rapport.<br><br> <b>Angle de rentrée (°)</b> : L’angle de rentrée du satellite en degrés.<br><br> <b>RCS (m²)</b> : La section efficace radar du satellite en mètres carrés.<br><br> <b>Âge GP (h)</b> : L’âge du dernier jeu d’éléments en heures.<br><br> <b>Masse à vide (kg)</b> : La masse à vide du satellite en kilogrammes.<br><br> <b>Volume (m³)</b> : Le volume estimé du satellite en mètres cubes.<br><br>"
@@ -266,11 +266,6 @@
       "bottomIconLabel": "Manœuvre",
       "title": "Menu Manœuvre",
       "helpBody": "Le menu Manœuvre permet de créer une manœuvre pour un satellite.<br><br>Le menu vous permet de sélectionner le type de manœuvre, l'heure de la manœuvre et l'amplitude de la manœuvre. La manœuvre peut être appliquée à un satellite en le sélectionnant dans la liste des satellites."
-    },
-    "AnalysisMenu": {
-      "bottomIconLabel": "Analyse",
-      "title": "Menu Analyse",
-      "helpBody": "Le menu Analyse propose plusieurs outils pour vous aider à analyser les données de la vue actuelle. Les outils sont : <ul style=\"margin-left: 40px;\"> <li>Exporter les TLEs officiels - Exporter les vrais ensembles de deux lignes d'éléments.</li> <li>Exporter les 3LES - Exporter les ensembles de trois lignes d'éléments.</li> <li>Exporter les TLEs KeepTrack - Exporter tous les ensembles de deux lignes d'éléments KeepTrack, y compris les analystes.</li> <li>Exporter les 3LES KeepTrack - Exporter tous les ensembles de trois lignes d'éléments KeepTrack, y compris les analystes.</li> <li>Trouver les objets proches - Trouver les objets proches les uns des autres.</li> <li>Trouver les rentrées - Trouver les objets susceptibles de rentrer dans l'atmosphère.</li> <li>Meilleurs passages - Trouver les meilleurs passages pour un satellite selon le capteur sélectionné.</li> </ul>"
     },
     "SettingsMenuPlugin": {
       "bottomIconLabel": "Paramètres",

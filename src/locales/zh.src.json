@@ -211,7 +211,7 @@
       "title": "短期搜索框（STF）菜单",
       "helpBody": "短期搜索框（STF）菜单用于可视化传感器搜索区域。<br><br>除非您拥有/操作带有搜索框功能的传感器，否则该功能可能用处不大。"
     },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "再入预测",
       "title": "跟踪与再入预测菜单",
       "helpBody": "跟踪与再入预测（TIP）菜单显示卫星的最新跟踪与再入预测信息。表格包含以下列：<br><br><b>NORAD</b>：卫星的NORAD目录编号。<br><br><b>衰减日期</b>：预测的卫星衰减日期。<br><br><b>纬度</b>：卫星衰减时的纬度。<br><br><b>经度</b>：卫星衰减时的经度。<br><br><b>窗口（分钟）</b>：预测时间窗口（分钟）。<br><br><b>下次报告（小时）</b>：距离下次报告的时间（小时）。<br><br><b>再入角（度）</b>：卫星再入角度（度）。<br><br><b>雷达截面积（平方米）</b>：卫星的雷达截面积。<br><br><b>GP数据龄（小时）</b>：最新轨道参数集的时效（小时）。<br><br><b>干质量（千克）</b>：卫星干质量。<br><br><b>体积（立方米）</b>：卫星估算体积。"
@@ -297,11 +297,6 @@
       "bottomIconLabel": "机动",
       "title": "机动菜单",
       "helpBody": "机动菜单用于为卫星创建机动。<br><br>菜单允许您选择机动类型、机动时间和机动幅度。可通过从卫星列表中选择卫星来应用机动。"
-    },
-    "AnalysisMenu": {
-      "bottomIconLabel": "分析",
-      "title": "分析菜单",
-      "helpBody": "分析菜单提供多种工具，帮助您分析当前视图中的数据。工具包括：<ul style=\"margin-left: 40px;\"><li>导出官方TLE - 导出真实的两行元数据。</li><li>导出3LES - 导出三行元数据。</li><li>导出KeepTrack TLE - 导出所有KeepTrack两行元数据（含分析员数据）。</li><li>导出KeepTrack 3LES - 导出所有KeepTrack三行元数据（含分析员数据）。</li><li>查找近距离物体 - 查找彼此接近的物体。</li><li>查找再入 - 查找可能再入大气层的物体。</li><li>最佳过境 - 基于当前选中传感器查找卫星的最佳过境。</li></ul>"
     },
     "SettingsMenuPlugin": {
       "bottomIconLabel": "设置",

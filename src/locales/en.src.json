@@ -180,7 +180,7 @@
       "title": "Short Term Fences (STF) Menu",
       "helpBody": "The Short Term Fences (STF) Menu is used for visualizing sensor search boxes. <br><br> This is unlikely to be very helpful unless you own/operate a sensor with a search box functionality."
     },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "Reentry Prediction",
       "title": "Tracking and Impact Prediction Menu",
       "helpBody": "The Tracking and Impact Prediction (TIP) menu displays the latest tracking and impact prediction messages for satellites. The table shows the following columns:<br><br> <b>NORAD</b>: The NORAD catalog ID of the satellite.<br><br> <b>Decay Date</b>: The date of the predicted decay of the satellite.<br><br> <b>Latitude</b>: The latitude of the satellite at decay time.<br><br> <b>Longitude</b>: The longitude of the satellite at decay time.<br><br> <b>Window (min)</b>: The time window in minutes for the prediction.<br><br> <b>Next Report (hrs)</b>: The time in hours until the next report.<br><br> <b>Reentry Angle (deg)</b>: The reentry angle of the satellite in degrees.<br><br> <b>RCS (m²)</b>: The Radar Cross Section of the satellite in square meters.<br><br> <b>GP Age (hrs)</b>: The age of the latest element set in hours.<br><br> <b>Dry Mass (kg)</b>: The dry mass of the satellite in kilograms.<br><br> <b>Volume (m³)</b>: The estimated volume of the satellite in cubic meters.<br><br>"
@@ -266,11 +266,6 @@
       "bottomIconLabel": "Maneuver",
       "title": "Maneuver Menu",
       "helpBody": "The Maneuver Menu is used to create a maneuver for a satellite. <br><br> The menu allows you to select the type of maneuver, the time of the maneuver, and the magnitude of the maneuver. The maneuver can be applied to a satellite by selecting it from the list of satellites."
-    },
-    "AnalysisMenu": {
-      "bottomIconLabel": "Analysis",
-      "title": "Analysis Menu",
-      "helpBody": "The Analysis Menu provides a number of tools to help you analyze the data in the current view. The tools are: <ul style=\"margin-left: 40px;\"> <li>Export Official TLEs - Export real two line element sets.</li> <li>Export 3LES - Export three line element sets.</li> <li>Export KeepTrack TLEs - Export All KeepTrack two line element sets including analysts.</li> <li>Export KeepTrack 3LES - Export All KeepTrack three line element sets including analysts.</li> <li>Find Close Objects - Find objects that are close to each other.</li> <li>Find Reentries - Find objects that are likely to reenter the atmosphere.</li> <li>Best Passes - Find the best passes for a satellite based on the currently selected sensor.</li> </ul>"
     },
     "SettingsMenuPlugin": {
       "bottomIconLabel": "Settings",
