@@ -92,6 +92,30 @@ export function updateSideMenuTabIndicator(tabsId: string): void {
 }
 
 /**
+ * Programmatically switch to a specific tab using the Materialize Tabs API.
+ *
+ * @param tabsId - The DOM id of the `<ul class="tabs">` element
+ * @param tabPanelId - The DOM id of the tab panel to activate (e.g. 'createSat-advanced-tab')
+ */
+export function selectSideMenuTab(tabsId: string, tabPanelId: string): void {
+  const tabsEl = document.querySelector(`#${tabsId}`);
+
+  if (!tabsEl) {
+    return;
+  }
+
+  const tabsInstance = (window.M as unknown as {
+    Tabs: {
+      getInstance: (el: Element) => { select: (id: string) => void } | null;
+    };
+  }).Tabs.getInstance(tabsEl);
+
+  if (tabsInstance) {
+    tabsInstance.select(tabPanelId);
+  }
+}
+
+/**
  * Get the currently active tab panel ID.
  *
  * @param tabsId - The DOM id of the `<ul class="tabs">` element
