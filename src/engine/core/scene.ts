@@ -8,6 +8,8 @@ import { Engine } from '../engine';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { CelestialBody } from '../rendering/draw-manager/celestial-bodies/celestial-body';
+import { DeepSpaceSatellite } from '../rendering/draw-manager/celestial-bodies/deep-space-satellite';
+import { createDeepSpaceSatellites, loadDeepSpaceSatelliteData } from '../rendering/draw-manager/celestial-bodies/deep-space-satellite-catalog';
 import { DwarfPlanet } from '../rendering/draw-manager/celestial-bodies/dwarf-planet';
 import { Jupiter } from '../rendering/draw-manager/celestial-bodies/jupiter';
 import { Ceres } from '../rendering/draw-manager/celestial-bodies/ceres';
@@ -87,6 +89,7 @@ export class Scene {
     [SolarBody.Gonggong]?: DwarfPlanet;
     [SolarBody.Charon]?: DwarfPlanet;
   };
+  deepSpaceSatellites: Record<string, DeepSpaceSatellite>;
   sun: Sun;
   godrays: Godrays;
   sensorFovFactory: SensorFovMeshFactory;
@@ -144,6 +147,7 @@ export class Scene {
     this.moons = {
       [SolarBody.Moon]: new Moon(),
     };
+    this.deepSpaceSatellites = createDeepSpaceSatellites();
     this.sun = new Sun();
     this.godrays = new Godrays();
     this.searchBox = new Box();
@@ -169,6 +173,9 @@ export class Scene {
     }
     for (const dwarfPlanet of Object.values(this.dwarfPlanets)) {
       dwarfPlanet.update(simulationTime);
+    }
+    for (const deepSpaceSat of Object.values(this.deepSpaceSatellites)) {
+      deepSpaceSat.update(simulationTime);
     }
     this.skybox.update();
 
@@ -206,8 +213,16 @@ export class Scene {
         this.worldShift = [this.sun.eci.x, this.sun.eci.y, this.sun.eci.z].map((coord: number) => -coord) as [number, number, number];
         break;
       case SolarBody.Earth:
-      default:
         this.worldShift = [0, 0, 0];
+        break;
+      default:
+        if (this.deepSpaceSatellites?.[settingsManager.centerBody]) {
+          const sat = this.deepSpaceSatellites[settingsManager.centerBody];
+
+          this.worldShift = (sat.position as [number, number, number]).map((coord: number) => -coord) as [number, number, number];
+        } else {
+          this.worldShift = [0, 0, 0];
+        }
     }
 
     // Satellite position is ALWAYS relative to Earth center and selecting a
@@ -392,9 +407,14 @@ export class Scene {
 
     ServiceLocator.getLineManager().draw(renderer.projectionCameraMatrix, renderer.postProcessingManager.curBuffer);
 
-    // Draw Satellite Model if a satellite is selected and meshManager is loaded
-    if (Number(PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) > -1) {
-      if (!settingsManager.modelsOnSatelliteViewOverride && camera.state.camDistBuffer <= settingsManager.nearZoomLevel) {
+    // Draw Satellite Model if a satellite is selected (or deep-space satellite is centered) and meshManager is loaded
+    const hasSatSelected = Number(PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) > -1;
+    const hasDeepSpaceSatCentered = !!this.deepSpaceSatellites?.[settingsManager.centerBody];
+
+    if (hasSatSelected || hasDeepSpaceSatCentered) {
+      const isCloseEnough = camera.state.camDistBuffer <= settingsManager.nearZoomLevel;
+
+      if (!settingsManager.modelsOnSatelliteViewOverride && (isCloseEnough || hasDeepSpaceSatCentered)) {
         renderer.meshManager.draw(camera.projectionMatrix, camera.matrixWorldInverse, renderer.postProcessingManager.curBuffer);
       }
     }
@@ -473,7 +493,7 @@ export class Scene {
       case SolarBody.Sun:
         return this.sun as unknown as CelestialBody;
       default:
-        return null;
+        return this.deepSpaceSatellites?.[solarBody] ?? null;
     }
   }
 
@@ -496,6 +516,10 @@ export class Scene {
         }
         for (const dwarfPlanet of Object.values(this.dwarfPlanets)) {
           dwarfPlanet.init(this.gl_);
+        }
+        await loadDeepSpaceSatelliteData(this.deepSpaceSatellites);
+        for (const deepSpaceSat of Object.values(this.deepSpaceSatellites)) {
+          deepSpaceSat.init(this.gl_);
         }
       }
 

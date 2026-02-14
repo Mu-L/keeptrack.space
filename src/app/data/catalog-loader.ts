@@ -457,6 +457,26 @@ export class CatalogLoader {
       });
     }
 
+    const deepSpaceSatellites = ServiceLocator.getScene().deepSpaceSatellites;
+
+    if (deepSpaceSatellites) {
+      Object.keys(deepSpaceSatellites).forEach((satKey) => {
+        const sat = deepSpaceSatellites[satKey];
+        const satDot = new Planet({
+          id: tempObjData.length,
+          name: satKey,
+          type: sat?.type ?? SpaceObjectType.NOTIONAL,
+        });
+
+        satDot.color = sat?.color ?? [1.0, 1.0, 1.0, 1.0] as rgbaArray;
+        if (sat) {
+          sat.planetObject = satDot;
+        }
+
+        tempObjData.push(satDot);
+      });
+    }
+
     dotsManagerInstance.planetDot2 = tempObjData.length;
 
     for (const missileObj of catalogManagerInstance.missileSet) {

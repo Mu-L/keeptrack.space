@@ -44,6 +44,8 @@ export const PlanetColors = {
   ORCUS: [0.55, 0.55, 0.58, 0.7] as rgbaArray,
   GONGGONG: [0.7, 0.3, 0.2, 0.7] as rgbaArray,
   CHARON: [0.6, 0.6, 0.65, 0.7] as rgbaArray,
+  // Deep-space satellites
+  VOYAGER1: [0.7, 0.85, 1.0, 0.9] as rgbaArray,
 } as const;
 
 export abstract class CelestialBody {
