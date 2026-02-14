@@ -9,8 +9,8 @@ import { LagrangeInterpolator } from '@app/engine/ootk/src/interpolator/Lagrange
 import { LineColors } from '@app/engine/rendering/line-manager/line';
 import { OrbitPathLine } from '@app/engine/rendering/line-manager/orbit-path';
 import {
-  SpaceObject, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType,
-  type TEME, Degrees, EcefVec3, LlaVec3, PosVel, calcGmst, eci2ecef, eci2lla, TemeVec3,
+  SpaceObject, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, EpochUTC,
+  Degrees, EcefVec3, LlaVec3, PosVel, calcGmst, eci2ecef, eci2lla, TemeVec3,
 } from '@ootk/src/main';
 import { Tle } from '@app/engine/ootk/src/coordinate/Tle';
 import { vec4 } from 'gl-matrix';
@@ -285,16 +285,18 @@ export class OemSatellite extends SpaceObject {
       }
     }
 
-    const posAndVel = [0, 0, 0, 0, 0, 0] as [number, number, number, number, number, number];
-    let dt = 0;
-
+    // Update indices for orbit history drawing and segment caching
     this.findStateVectorTime_(simTime);
 
-    dt = (simTime - this.OemDataBlocks[this.dataBlockIdx].ephemeris[this.stateVectorIdx].epoch.posix) as Seconds;
+    // Use Lagrange polynomial interpolation for position and velocity
+    const epoch = new EpochUTC(simTime);
+    const interpolated = this.lagrangeInterpolator?.interpolate(epoch);
 
-    // Always use TEME for the satellite's rendered position in the scene
-    const ephemeris = this.OemDataBlocks[this.dataBlockIdx].ephemeris;
-    const currentSv = ephemeris[this.stateVectorIdx].toTEME();
+    if (!interpolated) {
+      return null;
+    }
+
+    const teme = interpolated.toTEME();
 
     let offsetOrigin = { position: { x: 0, y: 0, z: 0 } };
 
@@ -312,30 +314,16 @@ export class OemSatellite extends SpaceObject {
       };
     }
 
-    const nextSv: TEME =
-      ephemeris[this.stateVectorIdx + 1]?.toTEME() ??
-      this.OemDataBlocks[this.dataBlockIdx + 1]?.ephemeris[0]?.toTEME() ??
-      currentSv;
-
-    // interpolate position linearly between current and next state vector
-    const totalDt = (nextSv.epoch.posix - currentSv.epoch.posix) as Seconds;
-
-    if (totalDt > 0) {
-      posAndVel[0] = (currentSv.position.x + offsetOrigin.position.x) + ((nextSv.position.x - currentSv.position.x) * dt) / totalDt;
-      posAndVel[1] = (currentSv.position.y + offsetOrigin.position.y) + ((nextSv.position.y - currentSv.position.y) * dt) / totalDt;
-      posAndVel[2] = (currentSv.position.z + offsetOrigin.position.z) + ((nextSv.position.z - currentSv.position.z) * dt) / totalDt;
-    } else {
-      posAndVel[0] = currentSv.position.x + offsetOrigin.position.x;
-      posAndVel[1] = currentSv.position.y + offsetOrigin.position.y;
-      posAndVel[2] = currentSv.position.z + offsetOrigin.position.z;
-    }
+    const posAndVel = [
+      teme.position.x + offsetOrigin.position.x,
+      teme.position.y + offsetOrigin.position.y,
+      teme.position.z + offsetOrigin.position.z,
+      teme.velocity.x,
+      teme.velocity.y,
+      teme.velocity.z,
+    ] as [number, number, number, number, number, number];
 
     this.position = { x: posAndVel[0] as Kilometers, y: posAndVel[1] as Kilometers, z: posAndVel[2] as Kilometers };
-
-    // set velocity to current state vector velocity
-    posAndVel[3] = currentSv.velocity.x;
-    posAndVel[4] = currentSv.velocity.y;
-    posAndVel[5] = currentSv.velocity.z;
 
     return posAndVel;
   }
