@@ -143,7 +143,7 @@ export class CreateSat extends KeepTrackPlugin {
   /**
    * HTML template for the side menu
    */
-  private buildSideMenuHtml_(): string {
+  protected buildSideMenuHtml_(): string {
     const p = CreateSat.elementPrefix;
 
     const basicTabContent = html`
@@ -319,7 +319,7 @@ export class CreateSat extends KeepTrackPlugin {
   /**
    * Initialize all event listeners for the UI
    */
-  private uiManagerFinal_(): void {
+  protected uiManagerFinal_(): void {
     initSideMenuTabs('createSat-tabs');
 
     // Period and mean motion converter
@@ -546,7 +546,7 @@ export class CreateSat extends KeepTrackPlugin {
   /**
    * Populate the form with default values
    */
-  private populateSideMenu_(): void {
+  protected populateSideMenu_(): void {
     // Set default inclination
     const defaultInc = 0;
     const inc = defaultInc.toFixed(4).padStart(8, '0');
@@ -789,7 +789,7 @@ export class CreateSat extends KeepTrackPlugin {
   /**
    * Create and submit a new satellite
    */
-  private static createSatSubmit_(): void {
+  protected static createSatSubmit_(): void {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
