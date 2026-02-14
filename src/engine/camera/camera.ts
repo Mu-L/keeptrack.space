@@ -224,8 +224,11 @@ export class Camera {
     const isCameraCloseToCovarianceBubble = settingsManager.isDrawCovarianceEllipsoid &&
       this.state.camDistBuffer < maxCovarianceDistance;
 
+    // Scale zoom sensitivity by current zoom level so zooming naturally decelerates when close to a body
+    const zoomSensitivity = Math.max(this.state.zoomLevel, 0.001);
+
     if (settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? '-1') === '-1') {
-      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier; // delta is +/- 100
+      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity; // delta is +/- 100
     } else if ((isCameraCloseToSatellite || isCameraCloseToCovarianceBubble) ||
       this.state.zoomLevel === -1) {
       // Inside camDistBuffer
@@ -239,7 +242,7 @@ export class Camera {
       this.state.camDistBuffer = <Kilometers>(this.state.camDistBuffer + (delta / 5) * scale); // delta is +/- 100
     } else if (this.state.camDistBuffer >= settingsManager.nearZoomLevel) {
       // Outside camDistBuffer
-      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier; // delta is +/- 100
+      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity; // delta is +/- 100
     }
 
     this.zoomWheelFov_(delta);
@@ -1513,9 +1516,12 @@ export class Camera {
     this.state.zoomLevel = this.state.zoomLevel > 1 ? 1 : this.state.zoomLevel;
     this.state.zoomLevel = this.state.zoomLevel < 0.0001 ? 0.0001 : this.state.zoomLevel;
 
-    // Try to stay out of the earth
+    // Try to stay out of the center body
     if (this.cameraType === CameraType.FIXED_TO_EARTH || this.cameraType === CameraType.OFFSET || this.cameraType === CameraType.FIXED_TO_SAT) {
-      if (this.getDistFromEarth() < RADIUS_OF_EARTH + 30) {
+      const centerBody = ServiceLocator.getScene().getBodyById(settingsManager.centerBody);
+      const centerBodyRadius = centerBody?.RADIUS ?? RADIUS_OF_EARTH;
+
+      if (this.getDistFromEarth() < centerBodyRadius + 30) {
         this.state.zoomTarget = this.state.zoomLevel + 0.001;
       }
     }
