@@ -9,6 +9,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { Kilometers, RADIUS_OF_EARTH } from '@ootk/src/main';
 import planetPng from '@public/img/icons/planet.png';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './planets-menu.css';
@@ -19,6 +20,25 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   bottomIconImg = planetPng;
 
   menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'Home',
+        shift: true,
+        callback: () => this.changePlanet(SolarBody.Earth),
+      },
+      {
+        key: 'Home',
+        shift: false,
+        callback: () => {
+          settingsManager.centerBody = SolarBody.Earth;
+          settingsManager.minZoomDistance = RADIUS_OF_EARTH + 50 as Kilometers;
+          settingsManager.maxZoomDistance = 1.2e6 as Kilometers; // 1.2 million km
+        },
+      },
+    ];
+  }
 
   init(): void {
     super.init();
@@ -254,20 +274,6 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
 
   addJs(): void {
     super.addJs();
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean, isShift: boolean) => {
-      if (key === 'Home' && isShift && !isRepeat) {
-        this.changePlanet(SolarBody.Earth);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean, isShift: boolean) => {
-      if (key === 'Home' && !isShift && !isRepeat) {
-        settingsManager.centerBody = SolarBody.Earth;
-        settingsManager.minZoomDistance = RADIUS_OF_EARTH + 50 as Kilometers;
-        settingsManager.maxZoomDistance = 1.2e6 as Kilometers; // 1.2 million km
-      }
-    });
   }
 
   setAllPlanetsDotSize(size = 1): void {

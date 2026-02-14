@@ -32,6 +32,7 @@ import { getEl } from '@app/engine/utils/get-el';
 import { BaseObject, Degrees } from '@ootk/src/main';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import satelliteFovPng from '@public/img/icons/satellite-fov.png';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './satellite-fov.css';
@@ -52,6 +53,20 @@ export class SatelliteFov extends KeepTrackPlugin {
 
   sideMenuElementName: string = 'satellite-fov-menu';
   sideMenuElementHtml: string = SatelliteFov.buildSideMenuHtml_();
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'C',
+        callback: () => this.toggleFovCone_(),
+      },
+      {
+        key: 'V',
+        callback: () => this.toggleSatToSatCone_(),
+      },
+    ];
+  }
+
   sideMenuSecondaryHtml = html`
   <form id="sat-fov-settings-form">
     <div class="row">
@@ -282,31 +297,6 @@ export class SatelliteFov extends KeepTrackPlugin {
   addJs(): void {
     super.addJs();
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'C' && !isRepeat) {
-        const currentSat = PluginRegistry.getPlugin(SelectSatManager)?.getSelectedSat();
-
-        if (currentSat) {
-          const coneFactory = ServiceLocator.getScene().coneFactory;
-
-          // See if it is already in the scene (earth-center only)
-          const cone = coneFactory.checkCacheForMesh_(currentSat);
-
-          if (cone) {
-            ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
-            coneFactory.remove(cone.id);
-          } else {
-            ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
-            coneFactory.generateMesh(currentSat);
-          }
-        }
-      }
-
-      if (key === 'V' && !isRepeat) {
-        this.toggleSatToSatCone_();
-      }
-    });
-
     EventBus.getInstance().on(
       EventBusEvent.ConeMeshUpdate, this.updateListOfFovMeshes_.bind(this));
 
@@ -324,6 +314,23 @@ export class SatelliteFov extends KeepTrackPlugin {
         }
       },
     );
+  }
+
+  private toggleFovCone_() {
+    const currentSat = PluginRegistry.getPlugin(SelectSatManager)?.getSelectedSat();
+
+    if (currentSat) {
+      const coneFactory = ServiceLocator.getScene().coneFactory;
+      const cone = coneFactory.checkCacheForMesh_(currentSat);
+
+      if (cone) {
+        ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
+        coneFactory.remove(cone.id);
+      } else {
+        ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+        coneFactory.generateMesh(currentSat);
+      }
+    }
   }
 
   private toggleSatToSatCone_() {

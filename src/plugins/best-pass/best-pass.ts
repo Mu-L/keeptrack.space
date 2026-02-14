@@ -93,7 +93,7 @@ export class BestPassPlugin extends KeepTrackPlugin {
       {
         key: 'B',
         callback: () => {
-          this.bottomIconCallback();
+          this.bottomMenuClicked();
         },
       },
     ];

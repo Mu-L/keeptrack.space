@@ -17,6 +17,7 @@ import { DateTimeManager } from '../date-time-manager/date-time-manager';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { SoundNames } from '@app/engine/audio/sounds';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { keepTrackApi } from './../../keepTrackApi';
 import './sensor-list.css';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -71,6 +72,24 @@ export class SensorListPlugin extends KeepTrackPlugin {
     </div>`;
 
   isSensorLinksAdded = false;
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'Home',
+        ctrl: true,
+        callback: () => {
+          if ((ServiceLocator.getSensorManager().currentSensors.length > 0) &&
+            (ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_EARTH)) {
+            const sensor = ServiceLocator.getSensorManager().currentSensors[0];
+
+            ServiceLocator.getMainCamera().lookAtLatLon(sensor.lat, sensor.lon, sensor.zoom ?? ZoomValue.GEO, ServiceLocator.getTimeManager().selectedDate);
+            ServiceLocator.getSoundManager()?.play(SoundNames.WHOOSH);
+          }
+        },
+      },
+    ];
+  }
 
   addHtml(): void {
     super.addHtml();
@@ -209,18 +228,6 @@ export class SensorListPlugin extends KeepTrackPlugin {
       },
     );
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean, isShift: boolean) => {
-      if (key === 'Home' && !isShift && !isRepeat) {
-        // If a sensor is selected rotate the camera to it
-        if ((ServiceLocator.getSensorManager().currentSensors.length > 0) &&
-          (ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_EARTH)) {
-          const sensor = ServiceLocator.getSensorManager().currentSensors[0];
-
-          ServiceLocator.getMainCamera().lookAtLatLon(sensor.lat, sensor.lon, sensor.zoom ?? ZoomValue.GEO, ServiceLocator.getTimeManager().selectedDate);
-          ServiceLocator.getSoundManager()?.play(SoundNames.WHOOSH);
-        }
-      }
-    });
   }
 
   sensorListContentClick(sensorClick: string) {

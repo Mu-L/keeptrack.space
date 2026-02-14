@@ -320,8 +320,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'F',
-        ctrl: false,
+        key: 'f',
         callback: () => this.bottomMenuClicked(),
       },
     ];

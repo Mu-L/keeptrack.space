@@ -7,6 +7,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { BaseObject, Degrees, Satellite, MILLISECONDS_PER_SECOND, secondsPerDay } from '@ootk/src/main';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { SoundNames } from '@app/engine/audio/sounds';
@@ -48,6 +49,15 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
   };
   isIconDisabledOnLoad = true;
   isIconDisabled = true;
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'P',
+        callback: () => this.togglePolarPlot_(),
+      },
+    ];
+  }
   sideMenuElementName: string = 'polar-plot-menu';
   sideMenuElementHtml: string = html`
   <div id="polar-plot-menu" class="side-menu-parent start-hidden text-select">
@@ -113,28 +123,27 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
       },
     );
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'P' && !isRepeat) {
-        if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
-          return;
-        }
+  }
 
-        if (!ServiceLocator.getSensorManager().isSensorSelected()) {
-          return;
-        }
+  private togglePolarPlot_(): void {
+    if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
+      return;
+    }
 
-        if (!this.isMenuButtonActive) {
-          this.openSideMenu();
-          this.setBottomIconToSelected();
-          this.updatePlot_();
-          ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
-        } else {
-          this.closeSideMenu();
-          this.setBottomIconToUnselected();
-          ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
-        }
-      }
-    });
+    if (!ServiceLocator.getSensorManager().isSensorSelected()) {
+      return;
+    }
+
+    if (!this.isMenuButtonActive) {
+      this.openSideMenu();
+      this.setBottomIconToSelected();
+      this.updatePlot_();
+      ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+    } else {
+      this.closeSideMenu();
+      this.setBottomIconToUnselected();
+      ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
+    }
   }
 
   private updatePlot_(): void {

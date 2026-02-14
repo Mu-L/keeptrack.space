@@ -15,6 +15,7 @@ import { KeepTrack } from '@app/keeptrack';
 import { BaseObject, CatalogSource, Satellite } from '@ootk/src/main';
 import bookmarkAddPng from '@public/img/icons/bookmark-add.png';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { CONTAINER_ID, EL, SECTIONS } from './sat-info-box-html';
@@ -37,6 +38,15 @@ export class SatInfoBox extends KeepTrackPlugin {
   }[] = [];
   private isVisible_ = false;
   private isHtmlReady_ = false;
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'i',
+        callback: () => this.toggle(),
+      },
+    ];
+  }
 
   addHtml(): void {
     super.addHtml();
@@ -66,7 +76,6 @@ export class SatInfoBox extends KeepTrackPlugin {
 
     EventBus.getInstance().on(EventBusEvent.selectSatData, this.updateHeaderData_.bind(this));
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, this.onKeyDownLowerI_.bind(this));
     EventBus.getInstance().on(EventBusEvent.selectSatData, (obj?: BaseObject) => this.selectSat_(this, obj));
   }
 
@@ -447,14 +456,6 @@ export class SatInfoBox extends KeepTrackPlugin {
     if (satIdentifierData) {
       satIdentifierData.style.display = 'block';
     }
-  }
-
-  private onKeyDownLowerI_(key: string): void {
-    if (key !== 'i') {
-      return;
-    }
-
-    this.toggle();
   }
 
   hide(): void {
