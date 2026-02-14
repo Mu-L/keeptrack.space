@@ -25,7 +25,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   }
 
   PLANETS = [SolarBody.Mercury, SolarBody.Venus, SolarBody.Earth, SolarBody.Mars, SolarBody.Jupiter, SolarBody.Saturn, SolarBody.Uranus, SolarBody.Neptune];
-  DWARF_PLANETS = [SolarBody.Pluto, SolarBody.Makemake, SolarBody.Eris, SolarBody.Haumea, SolarBody.Ceres];
+  DWARF_PLANETS = [SolarBody.Pluto, SolarBody.Makemake, SolarBody.Eris, SolarBody.Haumea, SolarBody.Ceres, SolarBody.Sedna, SolarBody.Quaoar, SolarBody.Orcus, SolarBody.Gonggong, SolarBody.Charon];
   OTHER_CELESTIAL_BODIES = [
     SolarBody.Moon, SolarBody.Sun, SolarBody.Io, SolarBody.Europa, SolarBody.Ganymede,
     SolarBody.Callisto, SolarBody.Titan, SolarBody.Rhea, SolarBody.Iapetus, SolarBody.Dione, SolarBody.Tethys, SolarBody.Enceladus,
@@ -74,13 +74,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
     `;
 
     for (const object of this.DWARF_PLANETS) {
-      const isDisabled = ['Eris', 'Haumea', 'Ceres'].includes(object) ? ' disabled' : '';
-
-      if (isDisabled) {
-        html_ += `<li class="disabled" kt-tooltip="Planned for future update." aria-disabled="true" disabled>${object}</li>`;
-      } else {
-        html_ += `<li class="menu-selectable" kt-tooltip="Center the camera on ${object}." data-planet="${object}">${object}</li>`;
-      }
+      html_ += `<li class="menu-selectable" kt-tooltip="Center the camera on ${object}." data-planet="${object}">${object}</li>`;
     }
 
     html_ += html`
