@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "DataExportPlugin": {
+      "bottomIconLabel": "Exportar datos",
+      "title": "Exportar datos",
+      "helpBody": "El men\u00fa de Exportar datos proporciona herramientas para exportar datos del cat\u00e1logo de sat\u00e9lites en varios formatos: <ul style=\"margin-left: 40px;\"> <li>Exportar TLEs oficiales \u2013 Exportar conjuntos de elementos de dos l\u00edneas reales.</li> <li>Exportar 3LEs \u2013 Exportar conjuntos de elementos de tres l\u00edneas.</li> <li>Exportar TLEs de KeepTrack \u2013 Exportar todos los conjuntos de elementos de dos l\u00edneas de KeepTrack incluyendo analistas.</li> <li>Exportar 3LEs de KeepTrack \u2013 Exportar todos los conjuntos de elementos de tres l\u00edneas de KeepTrack incluyendo analistas.</li> <li>Exportar cat\u00e1logo CSV \u2013 Exportar datos del cat\u00e1logo como CSV.</li> <li>Exportar STK .tce \u2013 Exportar datos TLE en formato de base de datos de sat\u00e9lites STK.</li> <li>Exportar sat\u00e9lites en FOV \u2013 Exportar sat\u00e9lites actualmente en el campo de visi\u00f3n.</li> <li>Exportar efem\u00e9rides .e \u2013 Exportar efem\u00e9rides propagadas del sat\u00e9lite seleccionado en formato STK.</li> </ul>"
+    }
+  }
+}

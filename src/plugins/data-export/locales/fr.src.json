@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "DataExportPlugin": {
+      "bottomIconLabel": "Export de donn\u00e9es",
+      "title": "Export de donn\u00e9es",
+      "helpBody": "Le menu d'export de donn\u00e9es fournit des outils pour exporter les donn\u00e9es du catalogue de satellites dans divers formats : <ul style=\"margin-left: 40px;\"> <li>Exporter les TLEs officiels \u2013 Exporter les vrais ensembles d'\u00e9l\u00e9ments \u00e0 deux lignes.</li> <li>Exporter les 3LEs \u2013 Exporter les ensembles d'\u00e9l\u00e9ments \u00e0 trois lignes.</li> <li>Exporter les TLEs KeepTrack \u2013 Exporter tous les ensembles d'\u00e9l\u00e9ments \u00e0 deux lignes KeepTrack y compris les analystes.</li> <li>Exporter les 3LEs KeepTrack \u2013 Exporter tous les ensembles d'\u00e9l\u00e9ments \u00e0 trois lignes KeepTrack y compris les analystes.</li> <li>Exporter le catalogue CSV \u2013 Exporter les donn\u00e9es du catalogue en CSV.</li> <li>Exporter STK .tce \u2013 Exporter les donn\u00e9es TLE au format de base de donn\u00e9es de satellites STK.</li> <li>Exporter les satellites dans le FOV \u2013 Exporter les satellites actuellement dans le champ de vision.</li> <li>Exporter les \u00e9ph\u00e9m\u00e9rides .e \u2013 Exporter les \u00e9ph\u00e9m\u00e9rides propag\u00e9es du satellite s\u00e9lectionn\u00e9 au format STK.</li> </ul>"
+    }
+  }
+}
