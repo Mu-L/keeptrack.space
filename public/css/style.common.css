@@ -2266,11 +2266,6 @@ button.ui-button::-moz-focus-inner {
 
 /* ========== Navigation and Menus ========== */
 
-#analysis-menu ul li {
-  text-align: center;
-  padding: 2px !important;
-}
-
 #colors-menu ul li {
   text-align: center;
   padding: 2px !important;
@@ -2661,7 +2656,7 @@ button.ui-button::-moz-focus-inner {
   bottom: 0px;
   overflow: auto;
   z-index: 10;
-  padding: 0px 5px;
+  padding: 0px 2rem;
 }
 
 .side-menu .input-field {
@@ -2715,23 +2710,23 @@ button.ui-button::-moz-focus-inner {
 }
 
 /* Override Materialize teal with the app's theme color for all secondary menu controls */
-.side-menu-settings [type="checkbox"]:checked + span:not(.lever)::before {
+.side-menu-settings [type="checkbox"]:checked+span:not(.lever)::before {
   border-right-color: var(--color-primary) !important;
   border-bottom-color: var(--color-primary) !important;
 }
 
-.side-menu-settings [type="checkbox"].filled-in:checked + span:not(.lever)::after {
+.side-menu-settings [type="checkbox"].filled-in:checked+span:not(.lever)::after {
   border-color: var(--color-primary) !important;
   background-color: var(--color-primary) !important;
 }
 
-.side-menu-settings [type="radio"]:checked + span::after,
-.side-menu-settings [type="radio"].with-gap:checked + span::after {
+.side-menu-settings [type="radio"]:checked+span::after,
+.side-menu-settings [type="radio"].with-gap:checked+span::after {
   background-color: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
 }
 
-.side-menu-settings [type="radio"].with-gap:checked + span::before {
+.side-menu-settings [type="radio"].with-gap:checked+span::before {
   border-color: var(--color-primary) !important;
 }
 
