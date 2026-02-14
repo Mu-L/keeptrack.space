@@ -31,6 +31,10 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
     SolarBody.Callisto, SolarBody.Titan, SolarBody.Rhea, SolarBody.Iapetus, SolarBody.Dione, SolarBody.Tethys, SolarBody.Enceladus,
   ];
 
+  get DEEP_SPACE_PROBES(): string[] {
+    return Object.keys(ServiceLocator.getScene()?.deepSpaceSatellites ?? {});
+  }
+
   bottomIconElementName: string = 'menu-planets';
   sideMenuElementName: string = 'planets-menu';
   sideMenuElementHtml: string = html`
@@ -92,21 +96,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
       }
     }
 
-    // html_ += html`
-    //   <div class="row"></div>
-    //   <div class="row"></div>
-    //   <div class="row center">
-    //     <button id="${this.sideMenuElementName}-drawPlanetsOrbitPath-btn"
-    //       class="btn btn-ui waves-effect waves-light" type="button" name="action">
-    //         Draw Planets Orbit Path &#9658;
-    //     </button>
-    //   </div>
-    //   <div class="row">
-    //   <div class="flow1in" style="max-width:100%">
-    //     <sub class="center-align">*Experimental feature. Draws planet orbit paths relative to Earth for the next two years.</sub>
-    //   </div>
-    //   </div>
-    // `;
+    // Deep-space probes are added dynamically after data loads (see addDeepSpaceProbesMenu_)
 
     return html_;
   }
@@ -133,7 +123,12 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   };
 
   changePlanet(planetName: SolarBody) {
-    if (!this.PLANETS.includes(planetName) && !this.DWARF_PLANETS.includes(planetName) && !this.OTHER_CELESTIAL_BODIES.includes(planetName)) {
+    if (
+      !this.PLANETS.includes(planetName) &&
+      !this.DWARF_PLANETS.includes(planetName) &&
+      !this.OTHER_CELESTIAL_BODIES.includes(planetName) &&
+      !this.DEEP_SPACE_PROBES.includes(planetName)
+    ) {
       return;
     }
 
@@ -241,6 +236,16 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
       dwarfPlanet.isDrawOrbitPath = true;
       dwarfPlanet.drawFullOrbitPath();
     }
+    for (const probeName of this.DEEP_SPACE_PROBES) {
+      const probe = ServiceLocator.getScene().getBodyById(probeName as SolarBody) as CelestialBody;
+
+      if (!probe) {
+        continue;
+      }
+
+      probe.isDrawOrbitPath = true;
+      probe.drawFullOrbitPath();
+    }
 
     this.setAllPlanetsDotSize(1);
 
@@ -290,10 +295,66 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
 
       otherCelestialBody?.planetObject?.setHoverDotSize(gl, size);
     }
+
+    for (const probeName of this.DEEP_SPACE_PROBES) {
+      const probe = ServiceLocator.getScene().getBodyById(probeName as SolarBody) as CelestialBody;
+
+      probe?.planetObject?.setHoverDotSize(gl, size);
+    }
   }
 
   planetsMenuClick = (planetName: string) => {
     this.rmbCallback(planetName);
+  };
+
+  private hasAddedDeepSpaceProbes_ = false;
+
+  /** Dynamically adds deep-space probe entries to the menu after ephemeris data has loaded. */
+  private addDeepSpaceProbesMenu_(): void {
+    if (this.hasAddedDeepSpaceProbes_) {
+      return;
+    }
+    this.hasAddedDeepSpaceProbes_ = true;
+
+    const probes = this.DEEP_SPACE_PROBES;
+
+    if (probes.length === 0) {
+      return;
+    }
+
+    const ul = getEl('planets-menu')?.querySelector('ul');
+
+    if (!ul) {
+      return;
+    }
+
+    const divider = document.createElement('div');
+
+    divider.className = 'divider flow5out';
+    ul.appendChild(divider);
+
+    const header = document.createElement('h5');
+
+    header.className = 'center-align side-menu-row-header';
+    header.textContent = 'Deep Space Probes';
+    ul.appendChild(header);
+
+    for (const probe of probes) {
+      const li = document.createElement('li');
+
+      li.className = 'menu-selectable';
+      li.setAttribute('kt-tooltip', `Center the camera on ${probe}.`);
+      li.dataset.planet = probe;
+      li.textContent = probe;
+      li.addEventListener('click', () => {
+        this.planetsMenuClick(probe);
+      });
+      ul.appendChild(li);
+    }
+  }
+
+  bottomIconCallback = (): void => {
+    this.addDeepSpaceProbesMenu_();
   };
 }
 
