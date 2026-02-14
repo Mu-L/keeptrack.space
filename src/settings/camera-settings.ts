@@ -35,14 +35,14 @@ export class CameraSettings {
    *
    * TODO: Implement this for FPS, Planetarium, Astronomy, and Satellite View
    */
-  fieldOfViewMax = 1.2 as Radians;
+  fieldOfViewMax = 1.75 as Radians;
   /**
    * @deprecated
    * The minimum value for the field of view setting.
    *
    * * TODO: Implement this for FPS, Planetarium, Astronomy, and Satellite View
    */
-  fieldOfViewMin = 0.005;
+  fieldOfViewMin = 0.04 as Radians;
 
   // Camera Movement
   /**
