@@ -572,7 +572,7 @@ export abstract class KeepTrackPlugin {
     }
 
     if (this.sideMenuElementName && this.sideMenuElementHtml) {
-      if (this.sideMenuSecondaryHtml) {
+      if (this.sideMenuSecondaryHtml || this.downloadIconCb) {
         const sideMenuHtmlWrapped = this.generateSideMenuHtml_();
 
         this.addSideMenu(sideMenuHtmlWrapped);
@@ -628,15 +628,21 @@ export abstract class KeepTrackPlugin {
             }
           });
 
-          if (this.downloadIconCb) {
-            getEl(`${this.sideMenuElementName}-download-btn`)?.addEventListener('click', () => {
-              ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
+        },
+      );
+    }
 
-              if (this.downloadIconCb) {
-                this.downloadIconCb();
-              }
-            });
-          }
+    if (this.downloadIconCb) {
+      EventBus.getInstance().on(
+        EventBusEvent.uiManagerFinal,
+        () => {
+          getEl(`${this.sideMenuElementName}-download-btn`)?.addEventListener('click', () => {
+            ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
+
+            if (this.downloadIconCb) {
+              this.downloadIconCb();
+            }
+          });
         },
       );
     }
@@ -704,7 +710,7 @@ export abstract class KeepTrackPlugin {
         </i>
       </button>
     ` : '';
-    const settingsIconHtml = html`
+    const settingsIconHtml = this.sideMenuSecondaryHtml ? html`
       <button id="${this.sideMenuElementName}-secondary-btn"
         class="center-align btn btn-ui waves-effect waves-light"
         style="padding: 2px; margin: 0px 0px 0px 5px; color: var(--color-dark-text-accent); background-color: rgba(0, 0, 0, 0);box-shadow: none;"
@@ -712,7 +718,7 @@ export abstract class KeepTrackPlugin {
         <i class="material-icons" style="font-size: 2em;height: 30px;width: 30px;display: flex;justify-content: center;align-items: center;">
           ${this.secondaryMenuIcon}
         </i>
-      </button>`;
+      </button>` : '';
     const spacerDiv = html`<div style="width: 30px; height: 30px; display: block; margin: 0px 5px 0px 0px;"></div>`;
 
     const sideMenuHtmlWrapped = html`
@@ -722,7 +728,7 @@ export abstract class KeepTrackPlugin {
               <div class="row"
                 style="margin-left: 1rem;margin-right: 1rem;margin-top: 5px;margin-bottom: 0px;display: flex;
                 justify-content: space-evenly;align-items: center;flex-direction: row;flex-wrap: nowrap;">
-                ${spacerDiv}
+                ${this.sideMenuSecondaryHtml ? spacerDiv : ''}
                 ${this.downloadIconCb ? spacerDiv : ''}
                 <h5 class="center-align" style="margin: 0px auto">${this.sideMenuTitle}</h5>
                 ${downloadIconHtml}
