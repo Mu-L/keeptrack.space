@@ -37,7 +37,7 @@ Modern plugins should use config methods rather than direct properties. Check wh
 | Help | `helpTitle`, `helpBody` | `getHelpConfig(): IHelpConfig` | — |
 | Keyboard shortcuts | — | `getKeyboardShortcuts(): IKeyboardShortcut[]` | callbacks in config |
 | Form submit | `submitCallback` | — | `onFormSubmit()` |
-| Download/export | `downloadIconCb` | — | `onDownload()` |
+| Download/export | `downloadIconCb` | — | `onDownload()` — title bar icon auto-generated when `downloadIconCb` is set (works with or without secondary menu) |
 | Context menu | `rmbL1Html`, `rmbL2Html`, `rmbCallback` | `getContextMenuConfig(): IContextMenuConfig` | `onContextMenuAction(targetId, clickedSatId?)` |
 
 - [ ] Plugin uses composition config methods (`getBottomIconConfig`, `getSideMenuConfig`, etc.) instead of setting legacy properties directly.
@@ -84,8 +84,13 @@ This is one of the most common bugs. The plugin's `id` property is used as a pre
 
 ### 2.7 Side Menu HTML Structure
 
-- [ ] Wrapper div has correct ID and classes: `class="side-menu-parent start-hidden text-select"`.
-- [ ] Inner content div has `class="side-menu"`.
+The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` with the side-menu-parent container and title bar whenever `sideMenuSecondaryHtml` OR `downloadIconCb` is set. This means:
+
+- **With secondary menu or downloadIconCb**: `sideMenuElementHtml` must contain **only inner content** (no wrapper divs). The base plugin generates the `<div id="..." class="side-menu-parent">` wrapper, title bar, and download/settings icons.
+- **Without either**: `sideMenuElementHtml` must include the **full wrapper** (`<div id="..." class="side-menu-parent start-hidden text-select"><div class="side-menu">...</div></div>`).
+
+- [ ] Wrapper convention is followed correctly based on the above rules.
+- [ ] No private `buildSideMenuHtml_()` method — use `sideMenuElementHtml` property directly so base plugin functionality (download icon, title bar) works.
 - [ ] If the plugin has a form, form ID follows `${sideMenuElementName}-form` pattern (required for auto-wired `onFormSubmit()`).
 - [ ] Form element IDs follow `<prefix>-<field>` convention (e.g., `ds-scc`, `ds-time`).
 
