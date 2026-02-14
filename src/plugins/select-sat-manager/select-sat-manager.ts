@@ -4,6 +4,7 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { Planet } from '@app/app/objects/planet';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -142,6 +143,13 @@ export class SelectSatManager extends KeepTrackPlugin {
       // Check if object is at position (0,0,0) which is inside Earth - only for objects with position property
       if (objWithPos.position && objWithPos.position.x === 0 && objWithPos.position.y === 0 && objWithPos.position.z === 0 && objWithPos.name !== SolarBody.Earth) {
         ServiceLocator.getUiManager().toast(t7e('SelectSatManager.objectInsideEarth'), ToastMsgType.caution);
+
+        return;
+      }
+
+      // Planet dots (celestial bodies, deep-space satellites) route to changePlanet
+      if (obj instanceof Planet) {
+        PluginRegistry.getPlugin(PlanetsMenuPlugin)?.changePlanet(obj.name as SolarBody);
 
         return;
       }
