@@ -63,6 +63,7 @@ export type KeepTrackPluginsConfiguration = {
   Breakup?: PluginConfiguration;
   DebrisScreening?: PluginConfiguration;
   transponderChannelData?: PluginConfiguration;
+  StkFileHandler?: PluginConfiguration;
   CreateSat?: PluginConfiguration;
   OemReaderPlugin?: PluginConfiguration;
   NeighborhoodHistoryPlugin?: PluginConfiguration;

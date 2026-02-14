@@ -350,9 +350,18 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true },
   },
   {
+    configKey: 'StkFileHandler',
+    ossImport: () => import('./stk-file-handler/stk-file-handler'),
+    ossClassName: 'StkFileHandler',
+    proImport: () => import('../plugins-pro/stk-file-handler/stk-file-handler'),
+    defaultConfig: { enabled: true },
+  },
+  {
     configKey: 'CreateSat',
     ossImport: () => import('./create-sat/create-sat'),
     ossClassName: 'CreateSat',
+    proImport: () => import('../plugins-pro/create-sat/create-sat'),
+    proClassName: 'CreateSatPro',
     defaultConfig: { enabled: true, order: 70 },
   },
   {
