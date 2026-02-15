@@ -124,6 +124,7 @@ let dynamicOffsetEpoch = Date.now();
 let staticOffset = 0;
 let propRate = 1; // vars us run time faster (or slower) than normal
 // let propChangeTime = Date.now(); // vars us run time faster (or slower) than normal
+let lastGmst = 0; // GMST used for the last position computation
 
 /** Settings */
 let isSensor = false;
@@ -377,6 +378,8 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
   objCache = mockSatCache || objCache;
 
   const { now, j, gmst, gmstNext, isSunExclusion } = setupTimeVariables(dynamicOffsetEpoch, staticOffset, propRate, isSunlightView, sensors);
+
+  lastGmst = gmst;
 
   len = isCanSkipMarkers() ? objCache.length - 1 - fieldOfViewSetLength : objCache.length - 1;
 
@@ -743,6 +746,7 @@ export const sendDataToSatSet = () => {
 
   const postMessageArray = <PositionCruncherOutgoingMsg>{
     satPos,
+    gmst: lastGmst,
   };
   // Add In View Data if Sensor Selected
 

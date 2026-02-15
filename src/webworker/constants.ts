@@ -37,6 +37,7 @@ export type PositionCruncherOutgoingMsg = {
   sensorMarkerArray?: number[];
   satPos?: Float32Array;
   satVel?: Float32Array;
+  gmst?: number;
 };
 export type oneOrZero = 0 | 1;
 
