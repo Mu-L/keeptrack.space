@@ -88,6 +88,9 @@ export enum StorageKey {
   // Favorites Menu
   FAVORITES_LIST = 'v2-keepTrack-favoritesList',
 
+  // IOD Reader
+  IOD_STATIONS = 'v2-keepTrack-iodStations',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
