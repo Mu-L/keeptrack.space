@@ -19,6 +19,7 @@ export class BottomMenu {
   static readonly experimentalMenuId = 'menu-filter-experimental';
   static readonly settingsMenuId = 'menu-filter-settings';
   static readonly allMenuId = 'menu-filter-all';
+  static readonly utilityPanelId = 'bottom-icons-utility';
 
   static init() {
     if (!settingsManager.isDisableBottomMenu) {
@@ -73,6 +74,7 @@ export class BottomMenu {
           </div>
         </div>
         <div id="bottom-icons"></div>
+        <div id="${BottomMenu.utilityPanelId}"></div>
       </div>
     `;
     getEl('nav-footer')!.appendChild(bottomMenuNode);
@@ -153,7 +155,7 @@ export class BottomMenu {
       domEl.scrollTop = nextPos;
     };
 
-    ['bottom-icons', 'bottom-icons-filter'].forEach((divIdWithScroll) => {
+    ['bottom-icons', 'bottom-icons-filter', BottomMenu.utilityPanelId].forEach((divIdWithScroll) => {
 
       getEl(divIdWithScroll)!.addEventListener(
         'wheel',

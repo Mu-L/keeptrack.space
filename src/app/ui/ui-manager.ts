@@ -265,6 +265,7 @@ export class UiManager {
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
     this.sortBottomIcons();
+    this.sortUtilityIcons_();
 
     UiManager.initBottomMenuResizing_();
 
@@ -303,6 +304,24 @@ export class UiManager {
       bottomIconsContainer.innerHTML = '';
       sortedIcons.forEach((icon) => {
         bottomIconsContainer.appendChild(icon);
+      });
+    }
+  }
+
+  private sortUtilityIcons_() {
+    const utilityIcons = document.querySelectorAll('#bottom-icons-utility > div');
+    const sortedIcons = Array.from(utilityIcons).sort((a, b) => {
+      const aOrder = parseInt(a.getAttribute('data-order') ?? '100', 10);
+      const bOrder = parseInt(b.getAttribute('data-order') ?? '100', 10);
+
+      return aOrder - bOrder;
+    });
+    const utilityContainer = getEl('bottom-icons-utility');
+
+    if (utilityContainer) {
+      utilityContainer.innerHTML = '';
+      sortedIcons.forEach((icon) => {
+        utilityContainer.appendChild(icon);
       });
     }
   }
