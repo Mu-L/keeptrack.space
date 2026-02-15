@@ -22,16 +22,16 @@
 import { SoundNames } from '@app/engine/audio/sounds';
 import { CameraType } from '@app/engine/camera/camera';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { t7e } from '@app/locales/keys';
 import { Satellite } from '@ootk/src/main';
 import viewInAirPng from '@public/img/icons/view-in-air.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { IconPlacement } from '../../engine/plugins/core/plugin-capabilities';
+import { IconPlacement, IKeyboardShortcut } from '../../engine/plugins/core/plugin-capabilities';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class SatelliteViewPlugin extends KeepTrackPlugin {
   readonly id = 'SatelliteViewPlugin';
@@ -49,6 +49,15 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
   bottomIconImg = viewInAirPng;
   isIconDisabledOnLoad = true;
   iconPlacement = IconPlacement.UTILITY_ONLY;
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: '4',
+        callback: () => this.bottomIconCallback(),
+      },
+    ];
+  }
 
   addJs(): void {
     super.addJs();

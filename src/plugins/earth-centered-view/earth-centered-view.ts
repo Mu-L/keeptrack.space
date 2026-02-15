@@ -1,11 +1,13 @@
-import { CameraType } from '@app/engine/camera/camera';
 import { SoundNames } from '@app/engine/audio/sounds';
+import { CameraType } from '@app/engine/camera/camera';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import globePng from '@public/img/icons/globe.png';
+import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 export class EarthCenteredView extends KeepTrackPlugin {
   readonly id = 'EarthCenteredView';
@@ -18,6 +20,15 @@ export class EarthCenteredView extends KeepTrackPlugin {
       image: globePng,
       placement: IconPlacement.UTILITY_ONLY,
     };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: '1',
+        callback: () => this.bottomIconCallback(),
+      },
+    ];
   }
 
   getCommandPaletteCommands(): ICommandPaletteCommand[] {
@@ -47,6 +58,7 @@ export class EarthCenteredView extends KeepTrackPlugin {
   }
 
   bottomIconCallback = (): void => {
+    PluginRegistry.getPlugin(SelectSatManager)?.selectSat(-1);
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
     ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_EARTH;
     this.setBottomIconToSelected();
