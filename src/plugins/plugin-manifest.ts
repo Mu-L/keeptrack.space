@@ -399,10 +399,28 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 74 },
   },
   {
+    configKey: 'EarthCenteredView',
+    ossImport: () => import('./earth-centered-view/earth-centered-view'),
+    ossClassName: 'EarthCenteredView',
+    defaultConfig: { enabled: true, order: 149 },
+  },
+  {
     configKey: 'SatelliteViewPlugin',
     ossImport: () => import('./satellite-view/satellite-view'),
     ossClassName: 'SatelliteViewPlugin',
     defaultConfig: { enabled: true, order: 151 },
+  },
+  {
+    configKey: 'SatelliteFixedView',
+    ossImport: () => import('./satellite-fixed-view/satellite-fixed-view'),
+    ossClassName: 'SatelliteFixedView',
+    defaultConfig: { enabled: true, order: 150 },
+  },
+  {
+    configKey: 'FpsView',
+    ossImport: () => import('./fps-view/fps-view'),
+    ossClassName: 'FpsView',
+    defaultConfig: { enabled: true, order: 152 },
   },
   {
     configKey: 'SatelliteFov',

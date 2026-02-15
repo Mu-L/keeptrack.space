@@ -70,7 +70,10 @@ export type KeepTrackPluginsConfiguration = {
   EditSat?: PluginConfiguration;
   NewLaunch?: PluginConfiguration;
   MissilePlugin?: PluginConfiguration;
+  EarthCenteredView?: PluginConfiguration;
   SatelliteViewPlugin?: PluginConfiguration;
+  SatelliteFixedView?: PluginConfiguration;
+  FpsView?: PluginConfiguration;
   SatelliteFov?: PluginConfiguration;
   StereoMap?: PluginConfiguration;
   Planetarium?: PluginConfiguration;

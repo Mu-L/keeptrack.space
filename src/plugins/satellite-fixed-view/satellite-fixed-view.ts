@@ -1,0 +1,88 @@
+import { SoundNames } from '@app/engine/audio/sounds';
+import { CameraType } from '@app/engine/camera/camera';
+import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement } from '@app/engine/plugins/core/plugin-capabilities';
+import { t7e } from '@app/locales/keys';
+import { Satellite } from '@ootk/src/main';
+import satelliteAltPng from '@public/img/icons/satellite-alt.png';
+import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
+
+export class SatelliteFixedView extends KeepTrackPlugin {
+  readonly id = 'SatelliteFixedView';
+  dependencies_ = [SelectSatManager.name];
+  private readonly selectSatManager_: SelectSatManager;
+
+  constructor() {
+    super();
+    this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager;
+  }
+
+  menuMode: MenuMode[] = [MenuMode.ALL];
+
+  isRequireSatelliteSelected = true;
+  isIconDisabledOnLoad = true;
+
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'satellite-fixed-bottom-icon',
+      label: 'Satellite Fixed View',
+      image: satelliteAltPng,
+      placement: IconPlacement.UTILITY_ONLY,
+    };
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    return [
+      {
+        id: 'SatelliteFixedView.activate',
+        label: 'Switch to Satellite-Fixed View',
+        category: 'View',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
+  addJs(): void {
+    super.addJs();
+
+    EventBus.getInstance().on(
+      EventBusEvent.selectSatData,
+      (obj) => {
+        if (obj instanceof Satellite) {
+          this.setBottomIconToEnabled();
+        } else {
+          this.setBottomIconToDisabled();
+        }
+      },
+    );
+
+    // Keep icon state in sync with camera type
+    EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
+      const isFixedToSat = ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT;
+
+      if (isFixedToSat && !this.isMenuButtonActive) {
+        this.setBottomIconToSelected();
+      } else if (!isFixedToSat && this.isMenuButtonActive) {
+        this.setBottomIconToUnselected();
+      }
+    });
+  }
+
+  bottomIconCallback = (): void => {
+    if (this.selectSatManager_.selectedSat === -1) {
+      ServiceLocator.getUiManager().toast(t7e('errorMsgs.SelectSatelliteFirst'), ToastMsgType.serious, true);
+      this.shakeBottomIcon();
+
+      return;
+    }
+
+    ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+    ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT;
+    this.setBottomIconToSelected();
+  };
+}
