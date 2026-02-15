@@ -192,6 +192,9 @@ export class CameraInputHandler {
       case CameraType.ASTRONOMY:
         uiManagerInstance.toast('Astronomy Camera Mode', ToastMsgType.standby);
         break;
+      case CameraType.FLAT_MAP:
+        uiManagerInstance.toast('Flat Map Camera Mode', ToastMsgType.standby);
+        break;
       default:
         errorManagerInstance.log(`Invalid Camera Type: ${this.camera.cameraType}`);
         break;

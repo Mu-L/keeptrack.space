@@ -63,9 +63,30 @@ export enum CameraType {
   PLANETARIUM = 4,
   SATELLITE = 5,
   ASTRONOMY = 6,
-  MAX_CAMERA_TYPES = 7,
+  FLAT_MAP = 7,
+  MAX_CAMERA_TYPES = 8,
   /** @deprecated */
-  OFFSET = 8,
+  OFFSET = 9,
+}
+
+/**
+ * Interface for external camera mode implementations (e.g., Flat Map).
+ * Allows plugins to define custom draw behavior, zoom, and drag handling
+ * without embedding all logic in the Camera class.
+ */
+export interface ICameraModeDelegate {
+  /** Called from Camera.draw() to set projectionMatrix and matrixWorldInverse. */
+  draw(camera: Camera): void;
+  /** Called from Camera.update() each frame for momentum/animation. */
+  update(camera: Camera, dt: Milliseconds): void;
+  /** Called from Camera.zoomWheel() to handle zoom. Return true if handled. */
+  zoomWheel(camera: Camera, delta: number): boolean;
+  /** Called from Camera.updatePitchYawSpeeds_() during drag. Return true if handled. */
+  handleDrag(camera: Camera): boolean;
+  /** Called when entering this camera mode. */
+  onEnter(camera: Camera): void;
+  /** Called when leaving this camera mode. */
+  onExit(camera: Camera): void;
 }
 
 export class Camera {
@@ -77,6 +98,28 @@ export class Camera {
   private isRayCastingEarth_ = false;
   private panMovementSpeed_ = 0.5;
   private localRotateMovementSpeed_ = 0.00005;
+
+  // Flat map state (public: read by renderers for shader uniforms)
+  flatMapPanX = 0; // km, longitude direction
+  flatMapPanY = 0; // km, latitude direction
+  flatMapZoom = 1; // 1 = full earth visible
+
+  // Camera mode delegate (plugin-provided camera modes like flat map)
+  private cameraModeDelegate_: ICameraModeDelegate | null = null;
+  private cameraModeType_: CameraType | null = null;
+  private lastCameraType_: CameraType = CameraType.FIXED_TO_EARTH;
+
+  registerCameraModeDelegate(type: CameraType, delegate: ICameraModeDelegate): void {
+    this.cameraModeDelegate_ = delegate;
+    this.cameraModeType_ = type;
+  }
+
+  unregisterCameraModeDelegate(type: CameraType): void {
+    if (this.cameraModeType_ === type) {
+      this.cameraModeDelegate_ = null;
+      this.cameraModeType_ = null;
+    }
+  }
 
   private normForward_ = vec3.create();
   private normLeft_ = vec3.create();
@@ -168,7 +211,16 @@ export class Camera {
       case CameraType.FPS:
         this.cameraType = CameraType.SATELLITE;
         break;
+      case CameraType.PLANETARIUM:
+        this.cameraType = CameraType.SATELLITE;
+        break;
       case CameraType.SATELLITE:
+        this.cameraType = CameraType.FLAT_MAP;
+        break;
+      case CameraType.ASTRONOMY:
+        this.cameraType = CameraType.FLAT_MAP;
+        break;
+      case CameraType.FLAT_MAP:
         this.cameraType = CameraType.FIXED_TO_EARTH;
         break;
       default:
@@ -194,6 +246,11 @@ export class Camera {
       this.cameraType++;
     }
 
+    // Skip FLAT_MAP if no delegate registered (pro plugin not loaded)
+    if (this.cameraType === CameraType.FLAT_MAP && !this.cameraModeDelegate_) {
+      this.cameraType++;
+    }
+
     if (this.cameraType >= CameraType.MAX_CAMERA_TYPES) {
       const renderer = ServiceLocator.getRenderer();
 
@@ -214,6 +271,11 @@ export class Camera {
 
     if (settingsManager.isZoomStopsRotation) {
       this.autoRotate(false);
+    }
+
+    // Delegate to plugin camera mode (e.g. flat map) if registered
+    if (this.cameraModeDelegate_?.zoomWheel(this, delta)) {
+      return;
     }
 
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
@@ -287,6 +349,15 @@ export class Camera {
       static: false,
     });
 
+    // Detect camera mode transitions for delegate enter/exit (handles direct cameraType assignment)
+    if (this.lastCameraType_ === this.cameraModeType_ && this.cameraType !== this.cameraModeType_) {
+      this.cameraModeDelegate_?.onExit(this);
+    }
+    if (this.lastCameraType_ !== this.cameraModeType_ && this.cameraType === this.cameraModeType_) {
+      this.cameraModeDelegate_?.onEnter(this);
+    }
+    this.lastCameraType_ = this.cameraType;
+
     this.drawPreValidate_(sensorPos);
     mat4.identity(this.matrixWorldInverse);
 
@@ -352,6 +423,9 @@ export class Camera {
         break;
       }
       default:
+        if (this.cameraModeDelegate_ && this.cameraType === this.cameraModeType_) {
+          this.cameraModeDelegate_.draw(this);
+        }
         break;
     }
   }
@@ -689,6 +763,8 @@ export class Camera {
       this.updateAstronomyLookAround_(dt);
     } else if (this.cameraType === CameraType.FPS || this.cameraType === CameraType.SATELLITE) {
       this.updateFpsMovement_(dt);
+    } else if (this.cameraModeDelegate_ && this.cameraType === this.cameraModeType_) {
+      this.cameraModeDelegate_.update(this, dt);
     } else {
       if (this.state.camPitchSpeed !== 0) {
         this.state.camPitch = <Radians>(this.state.camPitch + this.state.camPitchSpeed * dt);
@@ -1392,6 +1468,12 @@ export class Camera {
   private updatePitchYawSpeeds_(dt: Milliseconds) {
     if ((this.state.isDragging && !settingsManager.isMobileModeEnabled) ||
       (this.state.isDragging && settingsManager.isMobileModeEnabled && (this.state.mouseX !== 0 || this.state.mouseY !== 0))) {
+
+      // Delegate to plugin camera mode (e.g. flat map) if registered
+      if (this.cameraModeDelegate_?.handleDrag(this)) {
+        return;
+      }
+
       /*
        * Disable Raycasting for Performance
        * dragTarget = getEarthScreenPoint(mouseX, mouseY)
