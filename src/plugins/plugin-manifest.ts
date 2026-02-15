@@ -430,22 +430,28 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 149 },
   },
   {
+    configKey: 'FlatMapView',
+    proImport: () => import('../plugins-pro/flat-map-view/flat-map-view'),
+    proClassName: 'FlatMapView',
+    defaultConfig: { enabled: true, order: 150 },
+  },
+  {
     configKey: 'SatelliteViewPlugin',
     ossImport: () => import('./satellite-view/satellite-view'),
     ossClassName: 'SatelliteViewPlugin',
-    defaultConfig: { enabled: true, order: 151 },
+    defaultConfig: { enabled: true, order: 152 },
   },
   {
     configKey: 'SatelliteFixedView',
     ossImport: () => import('./satellite-fixed-view/satellite-fixed-view'),
     ossClassName: 'SatelliteFixedView',
-    defaultConfig: { enabled: true, order: 150 },
+    defaultConfig: { enabled: true, order: 151 },
   },
   {
     configKey: 'FpsView',
     ossImport: () => import('./fps-view/fps-view'),
     ossClassName: 'FpsView',
-    defaultConfig: { enabled: true, order: 152 },
+    defaultConfig: { enabled: true, order: 153 },
   },
   {
     configKey: 'SatelliteFov',
