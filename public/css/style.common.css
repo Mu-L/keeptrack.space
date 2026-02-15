@@ -9,6 +9,7 @@
   --bottom-icon-width: 115px;
   --bottom-icon-img-size: 40px;
   --bottom-filter-width: 185px;
+  --bottom-utility-width: 185px;
   --search-box-bottom: 0px;
   --nav-bar-height: 35px;
 
@@ -3516,21 +3517,29 @@ nav a.sidenav-trigger i {
 }
 
 #bottom-icons {
-  width: calc(100% - var(--bottom-filter-width));
+  width: 100%;
   float: right;
   display: grid;
   grid-template-columns: minmax(var(--bottom-icon-width), max-content) repeat(auto-fill, var(--bottom-icon-width));
+  /* fill parent so scrollbar spans full height */
+  height: 100%;
+  min-height: calc(1.5 * var(--bottom-icon-width));
+  /* pack items at top — prevents stretching */
+  align-content: start;
   justify-content: center;
   row-gap: 5px;
   background: var(--color-dark-background);
   padding-top: 10px;
   padding-bottom: 10px;
   z-index: 11;
-  overflow-y: auto;
+  overflow-y: scroll;
   max-height: var(--bottom-menu-height);
 }
 
 #bottom-icons-container {
+  display: flex;
+  flex-direction: row;
+
   width: 100% !important;
   height: var(--bottom-menu-height);
   overflow: hidden;
@@ -3553,6 +3562,43 @@ nav a.sidenav-trigger i {
   align-items: flex-start;
   justify-content: flex-start;
   overflow-y: scroll;
+}
+
+#bottom-icons-utility {
+  width: var(--bottom-utility-width);
+  height: var(--bottom-menu-height);
+  position: absolute;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 25px);
+  grid-template-rows: repeat(auto-fill, 25px);
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  background: var(--color-dark-background);
+  z-index: 11;
+  overflow-y: auto;
+}
+
+.utility-icon {
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.utility-icon:hover {
+  opacity: 1;
+}
+
+.utility-icon.bmenu-item-selected {
+  opacity: 1;
+}
+
+.utility-icon.bmenu-item-disabled {
+  opacity: 0.2;
+  cursor: default;
 }
 
 #calendar-time-prop-rate {
