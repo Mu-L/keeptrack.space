@@ -1,5 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { CameraType } from '../camera/camera';
+import { RADIUS_OF_EARTH } from '../utils/constants';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { glsl } from '../utils/development/formatter';
@@ -59,6 +60,10 @@ export class SatLabelManager {
     u_glyphSize: <WebGLUniformLocation><unknown>null,
     u_glyphAtlas: <WebGLUniformLocation><unknown>null,
     worldOffset: <WebGLUniformLocation><unknown>null,
+    u_flatMapMode: <WebGLUniformLocation><unknown>null,
+    u_gmst: <WebGLUniformLocation><unknown>null,
+    u_earthRadius: <WebGLUniformLocation><unknown>null,
+    u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
   };
 
   init(gl: WebGL2RenderingContext, maxLabels: number): void {
@@ -173,6 +178,16 @@ export class SatLabelManager {
     // Set uniforms
     gl.uniformMatrix4fv(this.uniforms_.u_pMvCamMatrix, false, projectionCameraMatrix);
     gl.uniform3fv(this.uniforms_.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const isFlatMapLabel = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+
+    gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMapLabel ? 1 : 0);
+    if (isFlatMapLabel) {
+      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.uniforms_.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
+    }
+
     gl.uniform2f(this.uniforms_.u_screenSize, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.uniform1f(this.uniforms_.u_glyphSize, gl.drawingBufferWidth * 0.013);
 
@@ -275,13 +290,40 @@ export class SatLabelManager {
       uniform vec3 worldOffset;
       uniform vec2 u_screenSize;
       uniform float u_glyphSize;
+      uniform bool u_flatMapMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_flatMapCenterX;
 
       out vec2 vTexCoord;
       out float vClipW;
 
       void main() {
         // Project satellite 3D position to clip space
-        vec4 clipPos = u_pMvCamMatrix * vec4(a_satPosition + worldOffset, 1.0);
+        vec3 eciPos = a_satPosition + worldOffset;
+        vec4 clipPos;
+
+        if (u_flatMapMode) {
+            float PI = 3.14159265359;
+            float eciDist = length(eciPos);
+            if (eciDist > 1.0e7) {
+                gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                return;
+            }
+            float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+            lon = mod(lon + PI, 2.0 * PI) - PI;
+            float lat = atan(eciPos.z, length(eciPos.xy));
+            float alt = eciDist - u_earthRadius;
+            vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+
+            // Wrap X to nearest copy of camera center for seamless scrolling
+            float mapW = 2.0 * PI * u_earthRadius;
+            flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+
+            clipPos = u_pMvCamMatrix * vec4(flatPos, 1.0);
+        } else {
+            clipPos = u_pMvCamMatrix * vec4(eciPos, 1.0);
+        }
 
         // Discard labels behind the camera
         if (clipPos.w <= 0.0) {

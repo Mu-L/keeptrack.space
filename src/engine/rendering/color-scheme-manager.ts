@@ -748,6 +748,9 @@ export class ColorSchemeManager {
     }
   }
 
+  /** Plugin-provided override for selected satellite dot color (e.g. flat map uses red since mesh is hidden). */
+  static selectedColorOverride: rgbaArray | null = null;
+
   private setSelectedAndHoverBuffer_() {
     const selSat = PluginRegistry.getPlugin(SelectSatManager)?.selectedSat;
 
@@ -755,10 +758,12 @@ export class ColorSchemeManager {
       // Selected satellites are always one color so forget whatever we just did
       const selSatNum = selSat;
 
-      this.colorData[selSatNum * 4] = settingsManager.selectedColor[0]; // R
-      this.colorData[selSatNum * 4 + 1] = settingsManager.selectedColor[1]; // G
-      this.colorData[selSatNum * 4 + 2] = settingsManager.selectedColor[2]; // B
-      this.colorData[selSatNum * 4 + 3] = settingsManager.selectedColor[3]; // A
+      const color = ColorSchemeManager.selectedColorOverride ?? settingsManager.selectedColor;
+
+      this.colorData[selSatNum * 4] = color[0]; // R
+      this.colorData[selSatNum * 4 + 1] = color[1]; // G
+      this.colorData[selSatNum * 4 + 2] = color[2]; // B
+      this.colorData[selSatNum * 4 + 3] = color[3]; // A
     }
 
     const hovSat = ServiceLocator.getHoverManager().hoveringSat;

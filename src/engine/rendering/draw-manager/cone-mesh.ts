@@ -1,11 +1,12 @@
 /* eslint-disable camelcase */
+import { CameraType } from '@app/engine/camera/camera';
 import { Scene } from '@app/engine/core/scene';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { glsl } from '@app/engine/utils/development/formatter';
 import { BaseObject, Degrees, Kilometers, RADIUS_OF_EARTH } from '@ootk/src/main';
 import { mat4, vec3 } from 'gl-matrix';
 import { DepthManager } from '../depth-manager';
 import { CustomMesh } from './custom-mesh';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export interface ConeSettings {
   /** The field of view of the cone in degrees, default is 3 */
@@ -31,6 +32,10 @@ export class ConeMesh extends CustomMesh {
     u_mvMatrix: null as unknown as WebGLUniformLocation,
     u_color: null as unknown as WebGLUniformLocation,
     logDepthBufFC: null as unknown as WebGLUniformLocation,
+    u_flatMapMode: null as unknown as WebGLUniformLocation,
+    u_gmst: null as unknown as WebGLUniformLocation,
+    u_earthRadius: null as unknown as WebGLUniformLocation,
+    u_meshRefFlatX: null as unknown as WebGLUniformLocation,
   };
   private static readonly IDENTITY_MATRIX_ = mat4.create();
   /** The angle of the cone mesh. Tied to the object's FOV */
@@ -97,6 +102,7 @@ export class ConeMesh extends CustomMesh {
 
   private updateEarthCenter_() {
     const worldShift = Scene.getInstance().worldShift;
+    const isFlatMap = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
 
     // All intermediate math uses float64 (regular JS numbers)
     const px = this.pos[0];
@@ -104,7 +110,6 @@ export class ConeMesh extends CustomMesh {
     const pz = this.pos[2];
 
     const satDistance = Math.sqrt(px * px + py * py + pz * pz);
-    const coneHeight = satDistance - this.offsetDistance;
 
     // Normalized satellite direction
     const dx = px / satDistance;
@@ -116,15 +121,32 @@ export class ConeMesh extends CustomMesh {
     this.vertices_[1] = py + worldShift[1];
     this.vertices_[2] = pz + worldShift[2];
 
-    // Base center = offsetDistance along direction + worldShift
-    const baseCX = dx * this.offsetDistance + worldShift[0];
-    const baseCY = dy * this.offsetDistance + worldShift[1];
-    const baseCZ = dz * this.offsetDistance + worldShift[2];
+    if (isFlatMap) {
+      // Place base vertices on a spherical cap on the Earth's surface.
+      // The angular radius rho is set directly so the footprint scales
+      // linearly with satDistance * tan(FOV), avoiding arctan compression
+      // that makes GEO cones appear too small for larger FOV angles.
+      const fovRad = this.fieldOfView * Math.PI / 180;
+      const maxAngle = 80 * Math.PI / 180;
+      const rho = Math.min(satDistance * Math.tan(fovRad) / RADIUS_OF_EARTH, maxAngle);
 
-    // Base circle radius from FOV angle
-    const baseRadius = coneHeight * Math.tan((this.fieldOfView * Math.PI) / 180);
+      const cosRho = Math.cos(rho);
+      const sinRho = Math.sin(rho);
+      const baseCX = dx * RADIUS_OF_EARTH * cosRho + worldShift[0];
+      const baseCY = dy * RADIUS_OF_EARTH * cosRho + worldShift[1];
+      const baseCZ = dz * RADIUS_OF_EARTH * cosRho + worldShift[2];
+      const baseRadius = RADIUS_OF_EARTH * sinRho;
 
-    this.computeBaseCircle_(dx, dy, dz, baseCX, baseCY, baseCZ, baseRadius);
+      this.computeBaseCircle_(dx, dy, dz, baseCX, baseCY, baseCZ, baseRadius);
+    } else {
+      const coneHeight = satDistance - this.offsetDistance;
+      const baseCX = dx * this.offsetDistance + worldShift[0];
+      const baseCY = dy * this.offsetDistance + worldShift[1];
+      const baseCZ = dz * this.offsetDistance + worldShift[2];
+      const baseRadius = coneHeight * Math.tan((this.fieldOfView * Math.PI) / 180);
+
+      this.computeBaseCircle_(dx, dy, dz, baseCX, baseCY, baseCZ, baseRadius);
+    }
   }
 
   private updateSatToSat_() {
@@ -227,13 +249,31 @@ export class ConeMesh extends CustomMesh {
       gl.bindFramebuffer(gl.FRAMEBUFFER, tgtBuffer);
     }
 
+    const isFlatMap = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+
     // Set the uniforms — u_mvMatrix is identity because vertex positions are
     // pre-computed in world-shifted coordinates on the CPU (see update())
     gl.uniformMatrix4fv(this.uniforms_.u_mvMatrix, false, ConeMesh.IDENTITY_MATRIX_);
     gl.uniformMatrix4fv(this.uniforms_.u_pMatrix, false, pMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_camMatrix, false, camMatrix);
-    gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform4fv(this.uniforms_.u_color, this.color);
+
+    gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMap ? 1 : 0);
+    if (isFlatMap) {
+      const gmst = ServiceLocator.getTimeManager().gmst;
+      const meshLon = Math.atan2(this.pos[1], this.pos[0]) - gmst;
+      const mapW = 2 * Math.PI * RADIUS_OF_EARTH;
+      const camCenterX = ServiceLocator.getMainCamera().flatMapPanX;
+      const d = meshLon * RADIUS_OF_EARTH - camCenterX + mapW / 2;
+      const meshRefFlatX = camCenterX + ((d % mapW) + mapW) % mapW - mapW / 2;
+
+      gl.uniform1f(this.uniforms_.u_meshRefFlatX, meshRefFlatX);
+      gl.uniform1f(this.uniforms_.u_gmst, gmst);
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -305,11 +345,34 @@ export class ConeMesh extends CustomMesh {
       uniform mat4 u_camMatrix;
       uniform mat4 u_mvMatrix;
       uniform float logDepthBufFC;
+      uniform bool u_flatMapMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_meshRefFlatX;
 
       in vec3 a_position;
 
       void main(void) {
-        gl_Position = u_pMatrix * u_camMatrix * u_mvMatrix * vec4(a_position, 1.0);
+        vec4 worldPosition = u_mvMatrix * vec4(a_position, 1.0);
+
+        if (u_flatMapMode) {
+          float PI = 3.14159265359;
+          vec3 eciPos = worldPosition.xyz;
+          float eciDist = length(eciPos);
+          float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+          float lat = atan(eciPos.z, length(eciPos.xy));
+          float alt = eciDist - u_earthRadius;
+
+          // Wrap X relative to mesh center to keep all mesh vertices contiguous
+          float mapW = 2.0 * PI * u_earthRadius;
+          float flatX = lon * u_earthRadius;
+          flatX = u_meshRefFlatX + mod(flatX - u_meshRefFlatX + mapW * 0.5, mapW) - mapW * 0.5;
+
+          vec3 flatPos = vec3(flatX, lat * u_earthRadius, alt * 0.001);
+          gl_Position = u_pMatrix * u_camMatrix * vec4(flatPos, 1.0);
+        } else {
+          gl_Position = u_pMatrix * u_camMatrix * worldPosition;
+        }
 
         ${DepthManager.getLogDepthVertCode()}
       }

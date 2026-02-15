@@ -15,6 +15,7 @@ import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
+import { RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { BufferAttribute } from './buffer-attribute';
 import { DepthManager } from './depth-manager';
@@ -32,6 +33,7 @@ declare module '@app/engine/core/interfaces' {
     satInView: Int8Array;
     satPos: Float32Array;
     satVel: Float32Array;
+    gmst: number;
   }
 }
 
@@ -78,6 +80,7 @@ export class DotsManager {
 
   pickingRenderBuffer: WebGLRenderbuffer;
   pickingTexture: WebGLTexture;
+  cruncherGmst = 0;
   positionData: Float32Array;
   programs = {
     dots: {
@@ -125,6 +128,11 @@ export class DotsManager {
         u_symbologyAtlas: <WebGLUniformLocation><unknown>null,
         u_iconMinSize: <WebGLUniformLocation><unknown>null,
         u_iconFadeRange: <WebGLUniformLocation><unknown>null,
+        u_flatMapMode: <WebGLUniformLocation><unknown>null,
+        u_gmst: <WebGLUniformLocation><unknown>null,
+        u_earthRadius: <WebGLUniformLocation><unknown>null,
+        u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
+        u_flatMapZoom: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -153,6 +161,11 @@ export class DotsManager {
         u_maxSize: <WebGLUniformLocation><unknown>null,
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
+        u_flatMapMode: <WebGLUniformLocation><unknown>null,
+        u_gmst: <WebGLUniformLocation><unknown>null,
+        u_earthRadius: <WebGLUniformLocation><unknown>null,
+        u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
+        u_flatMapZoom: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -203,10 +216,23 @@ export class DotsManager {
     gl.bindFramebuffer(gl.FRAMEBUFFER, tgtBuffer);
 
     gl.uniformMatrix4fv(this.programs.dots.uniforms.u_pMvCamMatrix, false, projectionCameraMatrix);
-    gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform3fv(this.programs.dots.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
 
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
+    const mainCamera = ServiceLocator.getMainCamera();
+    const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
+
+    gl.uniform1i(this.programs.dots.uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    if (isFlatMap) {
+      gl.uniform1f(this.programs.dots.uniforms.u_gmst, ServiceLocator.getTimeManager().gmst);
+      gl.uniform1f(this.programs.dots.uniforms.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.dots.uniforms.u_flatMapCenterX, mainCamera.flatMapPanX);
+      gl.uniform1f(this.programs.dots.uniforms.u_flatMapZoom, mainCamera.flatMapZoom);
+      gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, 0.0); // disable log depth in ortho
+    } else {
+      gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
+
+    if (mainCamera.cameraType === CameraType.PLANETARIUM) {
       gl.uniform1f(this.programs.dots.uniforms.u_minSize, this.settings_.satShader.minSizePlanetarium);
       gl.uniform1f(this.programs.dots.uniforms.u_maxSize, this.settings_.satShader.maxSizePlanetarium);
       gl.uniform1f(this.programs.dots.uniforms.u_starMinSize, this.settings_.satShader.minSizePlanetarium);
@@ -320,6 +346,19 @@ export class DotsManager {
 
     gl.uniformMatrix4fv(this.programs.picking.uniforms.u_pMvCamMatrix, false, pMvCamMatrix);
     gl.uniform3fv(this.programs.picking.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const isFlatMapPick = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+
+    gl.uniform1i(this.programs.picking.uniforms.u_flatMapMode, isFlatMapPick ? 1 : 0);
+    if (isFlatMapPick) {
+      gl.uniform1f(this.programs.picking.uniforms.u_gmst, ServiceLocator.getTimeManager().gmst);
+      gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, ServiceLocator.getMainCamera().flatMapZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
 
     // no reason to render 100000s of pixels when we're only going to read one
     if (!settingsManager.isMobileModeEnabled) {
@@ -525,7 +564,7 @@ export class DotsManager {
     this.programs.picking.program = new WebGlProgramHelper(gl, this.shaders_.picking.vert, this.shaders_.picking.frag).program;
 
     GlUtils.assignAttributes(this.programs.picking.attribs, gl, this.programs.picking.program, ['a_position', 'a_color', 'a_pickable']);
-    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset']);
+    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
 
     ServiceLocator.getScene().frameBuffers.gpuPicking = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
@@ -652,6 +691,10 @@ export class DotsManager {
    * @param mData The data received from the SatCruncher worker.
    */
   updateCruncherBuffers(mData: SatCruncherMessageData) {
+    if (typeof mData.gmst === 'number') {
+      this.cruncherGmst = mData.gmst;
+    }
+
     if (mData.satPos) {
       if (typeof this.positionData === 'undefined') {
         this.positionData = new Float32Array(mData.satPos);
@@ -865,6 +908,7 @@ export class DotsManager {
   /**
    * Initializes the shaders used by the dots manager.
    */
+  // eslint-disable-next-line max-lines-per-function
   private initShaders_() {
     this.shaders_ = {
       dots: {
@@ -1036,6 +1080,11 @@ export class DotsManager {
           uniform mat4 u_pMvCamMatrix;
           uniform float logDepthBufFC;
           uniform bool u_symbologyEnabled;
+          uniform bool u_flatMapMode;
+          uniform float u_gmst;
+          uniform float u_earthRadius;
+          uniform float u_flatMapCenterX;
+          uniform float u_flatMapZoom;
 
           out vec4 vColor;
           out float vSize;
@@ -1052,13 +1101,63 @@ export class DotsManager {
           }
 
           void main(void) {
-              vec4 position = u_pMvCamMatrix * vec4(a_position + worldOffset, 1.0);
+              vec3 eciPos = a_position + worldOffset;
+              vec4 position;
+
+              if (u_flatMapMode) {
+                  float PI = 3.14159265359;
+                  float eciDist = length(eciPos);
+
+                  // Filter out stars and distant objects
+                  if (eciDist > 1.0e7) {
+                      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                      gl_PointSize = 0.0;
+                      vColor = vec4(0.0);
+                      vSize = 0.0;
+                      vDist = eciDist;
+                      vAffiliation = a_affiliation;
+                      vObjectType = a_objectType;
+                      vPointSize = 0.0;
+                      return;
+                  }
+
+                  float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+                  lon = mod(lon + PI, 2.0 * PI) - PI;
+                  float lat = atan(eciPos.z, length(eciPos.xy));
+                  float alt = eciDist - u_earthRadius;
+                  vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+
+                  // Wrap X to nearest copy of camera center for seamless scrolling
+                  float mapW = 2.0 * PI * u_earthRadius;
+                  flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+
+                  position = u_pMvCamMatrix * vec4(flatPos, 1.0);
+              } else {
+                  position = u_pMvCamMatrix * vec4(eciPos, 1.0);
+              }
+
               gl_Position = position;
 
               ${DepthManager.getLogDepthVertCode()}
 
-              float drawSize = 0.0;
               float dist = distance(vec3(0.0, 0.0, 0.0), a_position.xyz);
+
+              if (u_flatMapMode) {
+                // Scale dot size with zoom so dots remain visible when zoomed in
+                float zoomScale = sqrt(u_flatMapZoom);
+                float flatSize = mix(u_minSize, float(${settingsManager.satShader.starSize}), step(0.5, a_size));
+                float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
+                gl_PointSize = flatSize * zoomScale * symbologyScale;
+                vPointSize = gl_PointSize;
+                vColor = a_color;
+                vSize = a_size * 1.0;
+                vDist = dist;
+                vAffiliation = a_affiliation;
+                vObjectType = a_objectType;
+                return;
+              }
+
+              float drawSize = 0.0;
               float baseSize = pow(${settingsManager.satShader.distanceBeforeGrow} \/ position.z, 2.1);
 
               // Use star min size for objects beyond 1e8 km (stars), regular min size for satellites
@@ -1099,14 +1198,46 @@ export class DotsManager {
                 uniform mat4 u_pMvCamMatrix;
                 uniform vec3 worldOffset;
                 uniform float logDepthBufFC;
+                uniform bool u_flatMapMode;
+                uniform float u_gmst;
+                uniform float u_earthRadius;
+                uniform float u_flatMapCenterX;
+                uniform float u_flatMapZoom;
 
                 out vec3 vColor;
 
                 void main(void) {
-                vec4 position = u_pMvCamMatrix * vec4(a_position + worldOffset, 1.0);
+                vec3 eciPos = a_position + worldOffset;
+                vec4 position;
+
+                if (u_flatMapMode) {
+                    float PI = 3.14159265359;
+                    float eciDist = length(eciPos);
+                    if (eciDist > 1.0e7) {
+                        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                        gl_PointSize = 0.0;
+                        vColor = vec3(0.0);
+                        return;
+                    }
+                    float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+                    lon = mod(lon + PI, 2.0 * PI) - PI;
+                    float lat = atan(eciPos.z, length(eciPos.xy));
+                    float alt = eciDist - u_earthRadius;
+                    vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+
+                    // Wrap X to nearest copy of camera center for seamless scrolling
+                    float mapW = 2.0 * PI * u_earthRadius;
+                    flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+
+                    position = u_pMvCamMatrix * vec4(flatPos, 1.0);
+                } else {
+                    position = u_pMvCamMatrix * vec4(eciPos, 1.0);
+                }
+
                 gl_Position = position;
                 ${DepthManager.getLogDepthVertCode()}
-                gl_PointSize = ${settingsManager.pickingDotSize} * a_pickable;
+                float pickZoomScale = u_flatMapMode ? sqrt(u_flatMapZoom) : 1.0;
+                gl_PointSize = ${settingsManager.pickingDotSize} * a_pickable * pickZoomScale;
                 vColor = a_color * a_pickable;
                 }
             `,

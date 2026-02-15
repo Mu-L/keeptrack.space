@@ -1,11 +1,12 @@
 /* eslint-disable camelcase */
+import { CameraType } from '@app/engine/camera/camera';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { Scene } from '@app/engine/core/scene';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { glsl } from '@app/engine/utils/development/formatter';
 import { SensorFov } from '@app/plugins/sensor-fov/sensor-fov';
 import { SensorSurvFence } from '@app/plugins/sensor-surv/sensor-surv-fence';
-import { Degrees, GreenwichMeanSiderealTime, Kilometers, rae2eci } from '@ootk/src/main';
+import { Degrees, GreenwichMeanSiderealTime, Kilometers, RADIUS_OF_EARTH, rae2eci } from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { mat4, vec3 } from 'gl-matrix';
 import { DepthManager } from '../depth-manager';
@@ -36,6 +37,10 @@ export class SensorFovMesh extends CustomMesh {
     u_color: null as unknown as WebGLUniformLocation,
     u_worldOffset: null as unknown as WebGLUniformLocation,
     logDepthBufFC: null as unknown as WebGLUniformLocation,
+    u_flatMapMode: null as unknown as WebGLUniformLocation,
+    u_gmst: null as unknown as WebGLUniformLocation,
+    u_earthRadius: null as unknown as WebGLUniformLocation,
+    u_meshRefFlatX: null as unknown as WebGLUniformLocation,
   };
   /**
    * A typed array that stores the indices for the bottom part of the sensor field of view mesh.
@@ -81,12 +86,29 @@ export class SensorFovMesh extends CustomMesh {
       gl.bindFramebuffer(gl.FRAMEBUFFER, tgtBuffer);
     }
 
+    const isFlatMap = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+
     gl.uniformMatrix4fv(this.uniforms_.u_mvMatrix, false, this.mvMatrix_);
     gl.uniformMatrix4fv(this.uniforms_.u_pMatrix, false, pMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_camMatrix, false, camMatrix);
     gl.uniform3fv(this.uniforms_.u_worldOffset, Scene.getInstance().worldShift);
-    gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform4fv(this.uniforms_.u_color, color);
+
+    gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMap ? 1 : 0);
+    if (isFlatMap) {
+      const sensorLonRad = this.sensor.lon * (Math.PI / 180);
+      const mapW = 2 * Math.PI * RADIUS_OF_EARTH;
+      const camCenterX = ServiceLocator.getMainCamera().flatMapPanX;
+      const d = sensorLonRad * RADIUS_OF_EARTH - camCenterX + mapW / 2;
+      const meshRefFlatX = camCenterX + ((d % mapW) + mapW) % mapW - mapW / 2;
+
+      gl.uniform1f(this.uniforms_.u_meshRefFlatX, meshRefFlatX);
+      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -407,13 +429,35 @@ export class SensorFovMesh extends CustomMesh {
       uniform mat4 u_mvMatrix;
       uniform vec3 u_worldOffset;
       uniform float logDepthBufFC;
+      uniform bool u_flatMapMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_meshRefFlatX;
 
       in vec3 a_position;
 
       void main(void) {
         vec4 worldPosition = u_mvMatrix * vec4(a_position, 1.0);
-        worldPosition.xyz += u_worldOffset;
-        gl_Position = u_pMatrix * u_camMatrix * worldPosition;
+
+        if (u_flatMapMode) {
+          float PI = 3.14159265359;
+          vec3 eciPos = worldPosition.xyz;
+          float eciDist = length(eciPos);
+          float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+          float lat = atan(eciPos.z, length(eciPos.xy));
+          float alt = eciDist - u_earthRadius;
+
+          // Wrap X relative to mesh center to keep all mesh vertices contiguous
+          float mapW = 2.0 * PI * u_earthRadius;
+          float flatX = lon * u_earthRadius;
+          flatX = u_meshRefFlatX + mod(flatX - u_meshRefFlatX + mapW * 0.5, mapW) - mapW * 0.5;
+
+          vec3 flatPos = vec3(flatX, lat * u_earthRadius, alt * 0.001);
+          gl_Position = u_pMatrix * u_camMatrix * vec4(flatPos, 1.0);
+        } else {
+          worldPosition.xyz += u_worldOffset;
+          gl_Position = u_pMatrix * u_camMatrix * worldPosition;
+        }
 
         ${DepthManager.getLogDepthVertCode()}
       }

@@ -15,7 +15,8 @@ import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { getTemeToJ2000Matrix, ReferenceFrame } from '../math/reference-frames';
-import { EARTH_OBLIQUITY_RADIANS } from '../utils/constants';
+import { CameraType } from '../camera/camera';
+import { EARTH_OBLIQUITY_RADIANS, RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { DepthManager } from './depth-manager';
 import { Line, LineColor, LineColors } from './line-manager/line';
@@ -48,6 +49,10 @@ export class LineManager {
     u_pCamMatrix: null as unknown as WebGLUniformLocation,
     worldOffset: null as unknown as WebGLUniformLocation,
     logDepthBufFC: null as unknown as WebGLUniformLocation,
+    u_flatMapMode: null as unknown as WebGLUniformLocation,
+    u_gmst: null as unknown as WebGLUniformLocation,
+    u_earthRadius: null as unknown as WebGLUniformLocation,
+    u_flatMapCenterX: null as unknown as WebGLUniformLocation,
   };
   program: WebGLProgram;
 
@@ -541,8 +546,19 @@ export class LineManager {
 
     gl.uniformMatrix4fv(this.uniforms_.u_pCamMatrix, false, projectionCameraMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_mVMatrix, false, modelViewMatrix);
-    gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform3fv(this.uniforms_.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const isFlatMap = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+
+    gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMap ? 1 : 0);
+    if (isFlatMap) {
+      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.uniforms_.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
+      gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
   }
 
   private readonly shaders_ = {
@@ -551,12 +567,32 @@ export class LineManager {
 
       in vec4 vColor;
       in float vAlpha;
+      in vec3 v_eciPos;
+      in float v_flatX;
 
       uniform float logDepthBufFC;
+      uniform bool u_flatMapMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_flatMapCenterX;
 
       out vec4 fragColor;
 
       void main(void) {
+        // Discard line fragments that cross the antimeridian.
+        // The interpolated ECI position stays near the actual satellite path,
+        // but the interpolated flat X diverges across the map for crossing segments.
+        if (u_flatMapMode) {
+          float PI = 3.14159265359;
+          float mapW = 2.0 * PI * u_earthRadius;
+          float recomputedLon = atan(v_eciPos.y, v_eciPos.x) - u_gmst;
+          recomputedLon = mod(recomputedLon + PI, 2.0 * PI) - PI;
+          float recomputedFlatX = recomputedLon * u_earthRadius;
+          // Wrap to camera center to match vertex shader wrapping
+          recomputedFlatX = u_flatMapCenterX + mod(recomputedFlatX - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+          if (abs(v_flatX - recomputedFlatX) > 50.0) discard;
+        }
+
         fragColor = vec4(vColor[0],vColor[1],vColor[2], vColor[3] * vAlpha);
 
         ${DepthManager.getLogDepthFragCode()}
@@ -572,14 +608,56 @@ export class LineManager {
       uniform mat4 u_pCamMatrix;
       uniform vec3 worldOffset;
       uniform float logDepthBufFC;
+      uniform bool u_flatMapMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_flatMapCenterX;
 
       out vec4 vColor;
       out float vAlpha;
+      out vec3 v_eciPos;
+      out float v_flatX;
 
       void main(void) {
           // Apply offset in world space, then transform
           vec4 worldPosition = u_mVMatrix * vec4(a_position.xyz, 1.0);
-          vec4 position = u_pCamMatrix * vec4(worldPosition.xyz + worldOffset, 1.0);
+          vec3 eciPos = worldPosition.xyz + worldOffset;
+          vec4 position;
+
+          v_eciPos = vec3(0.0);
+          v_flatX = 0.0;
+
+          if (u_flatMapMode) {
+              float PI = 3.14159265359;
+              float eciDist = length(eciPos);
+
+              // Filter out distant objects
+              if (eciDist > 1.0e7) {
+                  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                  vColor = u_color;
+                  vAlpha = 0.0;
+                  return;
+              }
+
+              float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+              lon = mod(lon + PI, 2.0 * PI) - PI;
+              float lat = atan(eciPos.z, length(eciPos.xy));
+              float alt = eciDist - u_earthRadius;
+              vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+
+              // Wrap X to nearest copy of camera center for seamless scrolling
+              float mapW = 2.0 * PI * u_earthRadius;
+              flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+
+              position = u_pCamMatrix * vec4(flatPos, 1.0);
+
+              // Pass ECI position and flat X for antimeridian detection in fragment shader
+              v_eciPos = eciPos;
+              v_flatX = flatPos.x;
+          } else {
+              position = u_pCamMatrix * vec4(eciPos, 1.0);
+          }
+
           gl_Position = position;
 
           ${DepthManager.getLogDepthVertCode()}
