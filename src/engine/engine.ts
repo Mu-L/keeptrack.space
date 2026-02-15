@@ -115,7 +115,7 @@ export class Engine {
 
   private update_(dt = <Milliseconds>0) {
     this.renderer.dt = dt;
-    this.renderer.dtAdjusted = <Milliseconds>(Math.min(this.renderer.dt / 1000.0, 1.0 / Math.max(this.timeManager.propRate, 0.001)) * this.timeManager.propRate);
+    this.renderer.dtAdjusted = <Milliseconds>(Math.min(this.renderer.dt / 1000.0, 0.1) * this.timeManager.propRate);
 
     this.timeManager.update();
     // Update official time for everyone else
