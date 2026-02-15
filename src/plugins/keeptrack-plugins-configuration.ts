@@ -52,6 +52,7 @@ export type KeepTrackPluginsConfiguration = {
   ReportsPlugin?: PluginConfiguration;
   PolarPlotPlugin?: PluginConfiguration;
   NextLaunchesPlugin?: PluginConfiguration;
+  EarthquakePlugin?: PluginConfiguration;
   FindSatPlugin?: PluginConfiguration;
   ProximityOps?: PluginConfiguration;
   OrbitReferences?: PluginConfiguration;

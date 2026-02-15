@@ -280,6 +280,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 350 },
   },
   {
+    configKey: 'EarthquakePlugin',
+    ossImport: () => import('../plugins-pro/earthquake/earthquake'),
+    ossClassName: 'EarthquakePlugin',
+    defaultConfig: { enabled: true, order: 355 },
+  },
+  {
     configKey: 'FindSatPlugin',
     ossImport: () => import('./find-sat/find-sat'),
     ossClassName: 'FindSatPlugin',
