@@ -22,6 +22,22 @@
 import { MenuMode } from '@app/engine/core/interfaces';
 
 // ============================================================================
+// Icon Placement
+// ============================================================================
+
+/**
+ * Where a plugin's icon should appear.
+ */
+export enum IconPlacement {
+  /** Icon appears only in the bottom menu (default). */
+  BOTTOM_ONLY = 'bottom',
+  /** Icon appears only in the utility panel on the right. */
+  UTILITY_ONLY = 'utility',
+  /** Icon appears in both the bottom menu and the utility panel. */
+  BOTH = 'both',
+}
+
+// ============================================================================
 // Bottom Icon Capability
 // ============================================================================
 
@@ -64,6 +80,12 @@ export interface IBottomIconConfig {
    * @default false
    */
   isDisabledOnLoad?: boolean;
+
+  /**
+   * Where this icon should appear.
+   * @default IconPlacement.BOTTOM_ONLY
+   */
+  placement?: IconPlacement;
 }
 
 /**

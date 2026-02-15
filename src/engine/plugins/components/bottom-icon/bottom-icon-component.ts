@@ -24,7 +24,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { getEl } from '@app/engine/utils/get-el';
 import { shake } from '@app/engine/utils/shake';
-import { IBottomIconConfig } from '../../core/plugin-capabilities';
+import { IBottomIconConfig, IconPlacement } from '../../core/plugin-capabilities';
 
 /**
  * CSS class constants for bottom icon states.
@@ -112,6 +112,7 @@ export class BottomIconComponent {
       menuMode: config.menuMode ?? [MenuMode.ALL],
       order: config.order ?? DEFAULTS.MAX_ORDER,
       isDisabledOnLoad: config.isDisabledOnLoad ?? false,
+      placement: config.placement ?? IconPlacement.BOTTOM_ONLY,
     };
   }
 

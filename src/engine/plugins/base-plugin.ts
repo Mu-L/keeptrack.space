@@ -37,6 +37,7 @@ import {
   hasKeyboardShortcuts,
   hasSecondaryMenu,
   hasSideMenu,
+  IconPlacement,
 } from './core/plugin-capabilities';
 
 export interface ClickDragOptions {
@@ -252,6 +253,13 @@ export abstract class KeepTrackPlugin {
    */
   secondaryMenuIcon = 'settings';
   bottomIconOrder: number | null = null;
+
+  /**
+   * Where this plugin's icon should appear.
+   * @default IconPlacement.BOTTOM_ONLY
+   */
+  iconPlacement: IconPlacement = IconPlacement.BOTTOM_ONLY;
+
   /**
    * The maximum order for the bottom icon.
    * This is used to ensure that the bottom icons are sorted correctly.
@@ -401,6 +409,9 @@ export abstract class KeepTrackPlugin {
       }
       if (config.order !== undefined) {
         this.bottomIconOrder = config.order;
+      }
+      if (config.placement) {
+        this.iconPlacement = config.placement;
       }
 
       this.bottomIconComponent_ = new BottomIconComponent(
@@ -568,7 +579,12 @@ export abstract class KeepTrackPlugin {
     }
 
     if (this.bottomIconImg && this.bottomIconElementName) {
-      this.addBottomIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
+      if (this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
+        this.addBottomIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
+      }
+      if (this.iconPlacement === IconPlacement.UTILITY_ONLY || this.iconPlacement === IconPlacement.BOTH) {
+        this.addUtilityIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
+      }
     }
 
     if (this.sideMenuElementName && this.sideMenuElementHtml) {
@@ -773,7 +789,7 @@ export abstract class KeepTrackPlugin {
       this.registerRmbCallback(this.rmbCallback);
     }
 
-    if (this.bottomIconElementName) {
+    if (this.bottomIconElementName && this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
       this.registerMenuMode();
       this.menuMode.forEach((menuMode) => {
         KeepTrackPlugin.registeredMenus[menuMode].push(this.bottomIconElementName);
@@ -930,8 +946,54 @@ export abstract class KeepTrackPlugin {
     );
   }
 
+  static readonly utilityPanelContainerId = 'bottom-icons-utility';
+
+  /**
+   * Adds a utility panel icon for this plugin.
+   * The icon uses the same click flow as the bottom icon (emits bottomMenuClick).
+   */
+  addUtilityIcon(icon: Module, isDisabled = false): void {
+    EventBus.getInstance().on(
+      EventBusEvent.uiManagerInit,
+      () => {
+        const item = document.createElement('div');
+
+        item.id = `${this.id}-utility-icon`;
+        item.setAttribute('data-order', this.bottomIconOrder?.toString() ?? '100');
+        item.classList.add('bmenu-filter-item');
+        if (isDisabled) {
+          item.classList.add('bmenu-item-disabled');
+        }
+        item.innerHTML = `
+          <div class="bmenu-filter-item-inner">
+            <img
+              alt="${this.id}"
+              src=""
+              delayedsrc="${icon}"
+              kt-tooltip="${this.bottomIconLabel}"
+            />
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          if (item.classList.contains(KeepTrackPlugin.iconDisabledClassString)) {
+            shake(item);
+
+            return;
+          }
+          ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+          EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, this.bottomIconElementName);
+        });
+        getEl(KeepTrackPlugin.utilityPanelContainerId)?.appendChild(item);
+      },
+    );
+  }
+
   shakeBottomIcon(): void {
-    shake(getEl(this.bottomIconElementName));
+    if (this.iconPlacement === IconPlacement.UTILITY_ONLY) {
+      shake(getEl(`${this.id}-utility-icon`, true));
+    } else {
+      shake(getEl(this.bottomIconElementName));
+    }
   }
 
   setBottomIconToSelected(): void {
@@ -940,6 +1002,7 @@ export abstract class KeepTrackPlugin {
     }
     this.isMenuButtonActive = true;
     getEl(this.bottomIconElementName)?.classList.add('bmenu-item-selected');
+    getEl(`${this.id}-utility-icon`)?.classList.add('bmenu-item-selected');
   }
 
   setBottomIconToUnselected(isHideSideMenus = true): void {
@@ -954,6 +1017,7 @@ export abstract class KeepTrackPlugin {
       EventBus.getInstance().emit(EventBusEvent.hideSideMenus);
     }
     getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-selected');
+    getEl(`${this.id}-utility-icon`)?.classList.remove('bmenu-item-selected');
   }
 
   setBottomIconToDisabled(isHideSideMenus = true): void {
@@ -963,6 +1027,7 @@ export abstract class KeepTrackPlugin {
     this.setBottomIconToUnselected(isHideSideMenus);
     this.isIconDisabled = true;
     getEl(this.bottomIconElementName)?.classList.add('bmenu-item-disabled');
+    getEl(`${this.id}-utility-icon`)?.classList.add('bmenu-item-disabled');
   }
 
   setBottomIconToEnabled(): void {
@@ -971,6 +1036,7 @@ export abstract class KeepTrackPlugin {
     }
     this.isIconDisabled = false;
     getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-disabled');
+    getEl(`${this.id}-utility-icon`)?.classList.remove('bmenu-item-disabled');
   }
 
   /**
@@ -982,7 +1048,7 @@ export abstract class KeepTrackPlugin {
     if (!ServiceLocator.getSensorManager().isSensorSelected()) {
       if (isMakeToast) {
         errorManagerInstance.warn(t7e('errorMsgs.SelectSensorFirst'), true);
-        shake(getEl(this.bottomIconElementName));
+        this.shakeBottomIcon();
       }
 
       return false;
@@ -1003,7 +1069,7 @@ export abstract class KeepTrackPlugin {
      */
     if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
       errorManagerInstance.warn(t7e('errorMsgs.SelectSatelliteFirst'), true);
-      shake(getEl(this.bottomIconElementName));
+      this.shakeBottomIcon();
 
       return false;
     }
@@ -1075,7 +1141,8 @@ export abstract class KeepTrackPlugin {
               this.hideSideMenus();
             }
             this.isMenuButtonActive = false;
-            getEl(this.bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
+            getEl(this.bottomIconElementName, true)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
+            getEl(`${this.id}-utility-icon`, true)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
           } else {
             // Verifiy that the user has selected a sensor and/or satellite if required
             if (this.isRequireSensorSelected) {
@@ -1099,7 +1166,8 @@ export abstract class KeepTrackPlugin {
 
               // Show the bottom icon as selected
               this.isMenuButtonActive = true;
-              getEl(this.bottomIconElementName)?.classList.add(KeepTrackPlugin.iconSelectedClassString);
+              getEl(this.bottomIconElementName, true)?.classList.add(KeepTrackPlugin.iconSelectedClassString);
+              getEl(`${this.id}-utility-icon`, true)?.classList.add(KeepTrackPlugin.iconSelectedClassString);
             }
           }
 
