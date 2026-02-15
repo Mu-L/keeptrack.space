@@ -97,7 +97,7 @@ export class DataExportPlugin extends KeepTrackPlugin {
   // Side menu HTML
   // =========================================================================
 
-  private buildSideMenuHtml_(): string {
+  protected buildSideMenuHtml_(): string {
     return html`
       <div id="data-export-menu" class="side-menu-parent start-hidden text-select">
         <div class="side-menu">
@@ -196,7 +196,7 @@ export class DataExportPlugin extends KeepTrackPlugin {
     });
   }
 
-  private uiManagerFinal_() {
+  protected uiManagerFinal_() {
     const objData = ServiceLocator.getCatalogManager().objectCache;
 
     getEl('de-export-tle-2a')?.addEventListener('click', () => {
@@ -237,7 +237,7 @@ export class DataExportPlugin extends KeepTrackPlugin {
   // Ephemeris export (.e file)
   // =========================================================================
 
-  private updateEphemerisButton_(obj: BaseObject) {
+  protected updateEphemerisButton_(obj: BaseObject) {
     const btn = getEl('de-export-ephem') as HTMLButtonElement | null;
 
     if (!btn) {
