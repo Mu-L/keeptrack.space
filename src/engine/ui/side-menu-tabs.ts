@@ -41,7 +41,7 @@ export function buildSideMenuTabsHtml(tabsId: string, tabs: SideMenuTabDef[]): s
     .join('\n');
 
   return html`
-    <div class="row" style="margin-bottom: 0;">
+    <div class="row" style="margin-bottom: 1.5rem;">
       <div class="col s12">
         <ul id="${tabsId}" class="tabs">
           ${tabHeaders}
