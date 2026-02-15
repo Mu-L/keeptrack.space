@@ -19,16 +19,16 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { SoundNames } from '@app/engine/audio/sounds';
 import { CameraType } from '@app/engine/camera/camera';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { getEl } from '@app/engine/utils/get-el';
-import { shake } from '@app/engine/utils/shake';
 import { t7e } from '@app/locales/keys';
 import { Satellite } from '@ootk/src/main';
 import viewInAirPng from '@public/img/icons/view-in-air.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { IconPlacement } from '../../engine/plugins/core/plugin-capabilities';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -48,6 +48,7 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
   isRequireSatelliteSelected = true;
   bottomIconImg = viewInAirPng;
   isIconDisabledOnLoad = true;
+  iconPlacement = IconPlacement.UTILITY_ONLY;
 
   addJs(): void {
     super.addJs();
@@ -62,24 +63,29 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
         }
       },
     );
+
+    // Keep icon state in sync with camera type
+    EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
+      const isSatelliteView = ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE;
+
+      if (isSatelliteView && !this.isMenuButtonActive) {
+        this.setBottomIconToSelected();
+      } else if (!isSatelliteView && this.isMenuButtonActive) {
+        this.setBottomIconToUnselected();
+      }
+    });
   }
 
+  bottomIconCallback = (): void => {
+    if (this.selectSatManager_.selectedSat === -1) {
+      ServiceLocator.getUiManager().toast(t7e('errorMsgs.SelectSatelliteFirst'), ToastMsgType.serious, true);
+      this.shakeBottomIcon();
 
-  bottomIconCallback = () => {
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE) {
-      const uiManagerInstance = ServiceLocator.getUiManager();
-
-      uiManagerInstance.hideSideMenus();
-      ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT; // Back to normal Camera Mode
-      getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-selected');
-    } else if (this.selectSatManager_.selectedSat !== -1) {
-      ServiceLocator.getMainCamera().cameraType = CameraType.SATELLITE; // Activate Satellite Camera Mode
-      getEl(this.bottomIconElementName)?.classList.add('bmenu-item-selected');
-    } else {
-      const uiManagerInstance = ServiceLocator.getUiManager();
-
-      uiManagerInstance.toast(t7e('errorMsgs.SelectSatelliteFirst'), ToastMsgType.serious, true);
-      shake(getEl(this.bottomIconElementName));
+      return;
     }
+
+    ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+    ServiceLocator.getMainCamera().cameraType = CameraType.SATELLITE;
+    this.setBottomIconToSelected();
   };
 }
