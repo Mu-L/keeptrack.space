@@ -130,6 +130,7 @@ export class DotsManager {
         u_iconFadeRange: <WebGLUniformLocation><unknown>null,
         u_flatMapMode: <WebGLUniformLocation><unknown>null,
         u_gmst: <WebGLUniformLocation><unknown>null,
+        u_currentGmst: <WebGLUniformLocation><unknown>null,
         u_earthRadius: <WebGLUniformLocation><unknown>null,
         u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
         u_flatMapZoom: <WebGLUniformLocation><unknown>null,
@@ -163,6 +164,7 @@ export class DotsManager {
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
         u_flatMapMode: <WebGLUniformLocation><unknown>null,
         u_gmst: <WebGLUniformLocation><unknown>null,
+        u_currentGmst: <WebGLUniformLocation><unknown>null,
         u_earthRadius: <WebGLUniformLocation><unknown>null,
         u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
         u_flatMapZoom: <WebGLUniformLocation><unknown>null,
@@ -222,9 +224,10 @@ export class DotsManager {
     const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
 
     gl.uniform1i(this.programs.dots.uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1f(this.programs.dots.uniforms.u_gmst, this.cruncherGmst);
+    gl.uniform1f(this.programs.dots.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.programs.dots.uniforms.u_earthRadius, RADIUS_OF_EARTH);
     if (isFlatMap) {
-      gl.uniform1f(this.programs.dots.uniforms.u_gmst, ServiceLocator.getTimeManager().gmst);
-      gl.uniform1f(this.programs.dots.uniforms.u_earthRadius, RADIUS_OF_EARTH);
       gl.uniform1f(this.programs.dots.uniforms.u_flatMapCenterX, mainCamera.flatMapPanX);
       gl.uniform1f(this.programs.dots.uniforms.u_flatMapZoom, mainCamera.flatMapZoom);
       gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, 0.0); // disable log depth in ortho
@@ -350,9 +353,10 @@ export class DotsManager {
     const isFlatMapPick = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
 
     gl.uniform1i(this.programs.picking.uniforms.u_flatMapMode, isFlatMapPick ? 1 : 0);
+    gl.uniform1f(this.programs.picking.uniforms.u_gmst, this.cruncherGmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
     if (isFlatMapPick) {
-      gl.uniform1f(this.programs.picking.uniforms.u_gmst, ServiceLocator.getTimeManager().gmst);
-      gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
       gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
       gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, ServiceLocator.getMainCamera().flatMapZoom);
       gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
@@ -564,7 +568,7 @@ export class DotsManager {
     this.programs.picking.program = new WebGlProgramHelper(gl, this.shaders_.picking.vert, this.shaders_.picking.frag).program;
 
     GlUtils.assignAttributes(this.programs.picking.attribs, gl, this.programs.picking.program, ['a_position', 'a_color', 'a_pickable']);
-    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
+    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_currentGmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
 
     ServiceLocator.getScene().frameBuffers.gpuPicking = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
@@ -1082,6 +1086,7 @@ export class DotsManager {
           uniform bool u_symbologyEnabled;
           uniform bool u_flatMapMode;
           uniform float u_gmst;
+          uniform float u_currentGmst;
           uniform float u_earthRadius;
           uniform float u_flatMapCenterX;
           uniform float u_flatMapZoom;
@@ -1133,6 +1138,18 @@ export class DotsManager {
 
                   position = u_pMvCamMatrix * vec4(flatPos, 1.0);
               } else {
+                  // Rotate stale ground-object ECI positions to match current Earth rotation
+                  float groundDist = length(a_position.xyz);
+                  if (groundDist < 6421.0) {
+                      float deltaGmst = u_currentGmst - u_gmst;
+                      float cosD = cos(deltaGmst);
+                      float sinD = sin(deltaGmst);
+                      eciPos = vec3(
+                          eciPos.x * cosD - eciPos.y * sinD,
+                          eciPos.x * sinD + eciPos.y * cosD,
+                          eciPos.z
+                      );
+                  }
                   position = u_pMvCamMatrix * vec4(eciPos, 1.0);
               }
 
@@ -1200,6 +1217,7 @@ export class DotsManager {
                 uniform float logDepthBufFC;
                 uniform bool u_flatMapMode;
                 uniform float u_gmst;
+                uniform float u_currentGmst;
                 uniform float u_earthRadius;
                 uniform float u_flatMapCenterX;
                 uniform float u_flatMapZoom;
@@ -1231,6 +1249,18 @@ export class DotsManager {
 
                     position = u_pMvCamMatrix * vec4(flatPos, 1.0);
                 } else {
+                    // Rotate stale ground-object ECI positions to match current Earth rotation
+                    float groundDist = length(a_position.xyz);
+                    if (groundDist < 6421.0) {
+                        float deltaGmst = u_currentGmst - u_gmst;
+                        float cosD = cos(deltaGmst);
+                        float sinD = sin(deltaGmst);
+                        eciPos = vec3(
+                            eciPos.x * cosD - eciPos.y * sinD,
+                            eciPos.x * sinD + eciPos.y * cosD,
+                            eciPos.z
+                        );
+                    }
                     position = u_pMvCamMatrix * vec4(eciPos, 1.0);
                 }
 

@@ -1,12 +1,13 @@
 import { mat4 } from 'gl-matrix';
 import { CameraType } from '../camera/camera';
-import { RADIUS_OF_EARTH } from '../utils/constants';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
+import { RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { BufferAttribute } from './buffer-attribute';
 import { WebGlProgramHelper } from './webgl-program';
 
+/* eslint-disable camelcase */
 /**
  * Characters available in the glyph atlas.
  * Index 0-9 = digits '0'-'9', 10='J', 11='S', 12='C'
@@ -62,6 +63,7 @@ export class SatLabelManager {
     worldOffset: <WebGLUniformLocation><unknown>null,
     u_flatMapMode: <WebGLUniformLocation><unknown>null,
     u_gmst: <WebGLUniformLocation><unknown>null,
+    u_currentGmst: <WebGLUniformLocation><unknown>null,
     u_earthRadius: <WebGLUniformLocation><unknown>null,
     u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
   };
@@ -182,9 +184,10 @@ export class SatLabelManager {
     const isFlatMapLabel = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
 
     gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMapLabel ? 1 : 0);
+    gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getDotsManager().cruncherGmst);
+    gl.uniform1f(this.uniforms_.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
     if (isFlatMapLabel) {
-      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
-      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
       gl.uniform1f(this.uniforms_.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
     }
 
@@ -292,6 +295,7 @@ export class SatLabelManager {
       uniform float u_glyphSize;
       uniform bool u_flatMapMode;
       uniform float u_gmst;
+      uniform float u_currentGmst;
       uniform float u_earthRadius;
       uniform float u_flatMapCenterX;
 
@@ -322,6 +326,18 @@ export class SatLabelManager {
 
             clipPos = u_pMvCamMatrix * vec4(flatPos, 1.0);
         } else {
+            // Rotate stale ground-object ECI positions to match current Earth rotation
+            float groundDist = length(a_satPosition);
+            if (groundDist < 6421.0) {
+                float deltaGmst = u_currentGmst - u_gmst;
+                float cosD = cos(deltaGmst);
+                float sinD = sin(deltaGmst);
+                eciPos = vec3(
+                    eciPos.x * cosD - eciPos.y * sinD,
+                    eciPos.x * sinD + eciPos.y * cosD,
+                    eciPos.z
+                );
+            }
             clipPos = u_pMvCamMatrix * vec4(eciPos, 1.0);
         }
 
@@ -403,8 +419,8 @@ export class SatLabelManager {
     // Unit quad: two triangles forming a [0,0]-[1,1] square
     // prettier-ignore
     const quadVertices = new Float32Array([
-      0, 0,  1, 0,  0, 1,
-      0, 1,  1, 0,  1, 1,
+      0, 0, 1, 0, 0, 1,
+      0, 1, 1, 0, 1, 1,
     ]);
 
     this.quadBuffer_ = gl.createBuffer()!;
