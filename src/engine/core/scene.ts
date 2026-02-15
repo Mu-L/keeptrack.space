@@ -105,6 +105,9 @@ export class Scene {
   secondaryCovBubble: Ellipsoid;
   worldShift = [0, 0, 0];
 
+  /** Override for worldShift, set by plugin camera modes (e.g. flat map sets [0,0,0]). */
+  worldShiftOverride: [number, number, number] | null = null;
+
   static getInstance(): Scene {
     if (!Scene.instance_) {
       Scene.instance_ = new Scene();
@@ -186,6 +189,13 @@ export class Scene {
   }
 
   updateWorldShift() {
+    // Plugin camera modes (e.g. flat map) can override worldShift
+    if (this.worldShiftOverride) {
+      this.worldShift = [...this.worldShiftOverride];
+
+      return;
+    }
+
     switch (settingsManager.centerBody) {
       case SolarBody.Mercury:
       case SolarBody.Venus:
@@ -261,6 +271,11 @@ export class Scene {
     this.averageDrawTime = this.drawTimeArray.reduce((a, b) => a + b, 0) / this.drawTimeArray.length;
 
     this.updateVisualsBasedOnPerformance_();
+
+    // Plugin-provided background renderer (e.g. flat map mode)
+    if (EventBus.getInstance().methods.renderCustomBackground()) {
+      return; // Plugin handled background rendering
+    }
 
     if (!settingsManager.isDrawLess) {
       if (settingsManager.isDrawSun) {
@@ -390,8 +405,10 @@ export class Scene {
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
     const hoverManagerInstance = ServiceLocator.getHoverManager();
 
-    // Draw Earth (atmosphere-only in ground view modes; full draw otherwise)
-    if (settingsManager.isDrawEarth !== false) {
+    // Draw Earth (skip if plugin handles it; atmosphere-only in ground view modes; full draw otherwise)
+    if (EventBus.getInstance().methods.shouldSkipEarthDraw()) {
+      // Earth is drawn by plugin (e.g. 2D quad in renderBackground)
+    } else if (settingsManager.isDrawEarth !== false) {
       if (camera.cameraType === CameraType.PLANETARIUM || camera.cameraType === CameraType.ASTRONOMY) {
         this.earth.drawAtmosphereOnly(renderer.postProcessingManager.curBuffer);
       } else {
@@ -416,7 +433,7 @@ export class Scene {
     const hasSatSelected = Number(PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) > -1;
     const hasDeepSpaceSatCentered = !!this.deepSpaceSatellites?.[settingsManager.centerBody];
 
-    if (hasSatSelected || hasDeepSpaceSatCentered) {
+    if ((hasSatSelected || hasDeepSpaceSatCentered) && !EventBus.getInstance().methods.shouldSkipSatelliteModels()) {
       const isCloseEnough = camera.state.camDistBuffer <= settingsManager.nearZoomLevel;
 
       if (!settingsManager.modelsOnSatelliteViewOverride && (isCloseEnough || hasDeepSpaceSatCentered)) {
@@ -426,6 +443,11 @@ export class Scene {
   }
 
   renderTransparent(renderer: WebGLRenderer, camera: Camera): void {
+    // Skip 3D transparent objects when plugin requests it (e.g. flat map mode)
+    if (EventBus.getInstance().methods.shouldSkipTransparentObjects()) {
+      return;
+    }
+
     const selectedSatelliteManager = PluginRegistry.getPlugin(SelectSatManager);
 
     if (!selectedSatelliteManager) {
