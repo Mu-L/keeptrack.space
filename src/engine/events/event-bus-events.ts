@@ -92,4 +92,21 @@ export enum EventBusEvent {
   selectedDateChange = 'selectedDateChange',
   calculateSimulationTime = 'calculateSimulationTime',
   soundMuteChanged = 'audio:muteChanged',
+  /**
+   * Emitted before default 3D background rendering. Subscribers render custom backgrounds
+   * (e.g. 2D flat map). Return true from the handler to skip default 3D background.
+   */
+  renderCustomBackground = 'renderCustomBackground',
+  /**
+   * Methods-pattern event. Return true to skip Earth mesh rendering in renderOpaque.
+   */
+  shouldSkipEarthDraw = 'shouldSkipEarthDraw',
+  /**
+   * Methods-pattern event. Return true to skip 3D satellite model rendering.
+   */
+  shouldSkipSatelliteModels = 'shouldSkipSatelliteModels',
+  /**
+   * Methods-pattern event. Return true to skip transparent object rendering (search box, covariance ellipsoids).
+   */
+  shouldSkipTransparentObjects = 'shouldSkipTransparentObjects',
 }

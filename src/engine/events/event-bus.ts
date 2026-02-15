@@ -68,6 +68,10 @@ export interface EngineEventMap {
   [EventBusEvent.SceneReady]: []; // no arguments
   [EventBusEvent.highPerformanceRender]: [Milliseconds]; // delta time
   [EventBusEvent.soundMuteChanged]: [boolean]; // isMuted
+  [EventBusEvent.renderCustomBackground]: [];
+  [EventBusEvent.shouldSkipEarthDraw]: [];
+  [EventBusEvent.shouldSkipSatelliteModels]: [];
+  [EventBusEvent.shouldSkipTransparentObjects]: [];
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {
@@ -94,6 +98,10 @@ export class EventBus {
 
   methods = {
     altCanvasResize: (): boolean => this.events.altCanvasResize.some((cb) => cb.cb()),
+    renderCustomBackground: (): boolean => (this.events[EventBusEvent.renderCustomBackground] || []).some((cb: any) => cb.cb()),
+    shouldSkipEarthDraw: (): boolean => (this.events[EventBusEvent.shouldSkipEarthDraw] || []).some((cb: any) => cb.cb()),
+    shouldSkipSatelliteModels: (): boolean => (this.events[EventBusEvent.shouldSkipSatelliteModels] || []).some((cb: any) => cb.cb()),
+    shouldSkipTransparentObjects: (): boolean => (this.events[EventBusEvent.shouldSkipTransparentObjects] || []).some((cb: any) => cb.cb()),
   };
 
   emit<T extends EventBusEvent>(event: T, ...args: EngineEventMap[T]) {
