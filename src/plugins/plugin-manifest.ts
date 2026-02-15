@@ -530,6 +530,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'DataExportPlugin',
     ossImport: () => import('./data-export/data-export'),
     ossClassName: 'DataExportPlugin',
+    proImport: () => import('../plugins-pro/data-export/data-export'),
+    proClassName: 'DataExportPro',
     defaultConfig: { enabled: true, order: 420 },
   },
   {
