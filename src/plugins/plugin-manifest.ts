@@ -286,6 +286,18 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 355 },
   },
   {
+    configKey: 'AuroraPlugin',
+    ossImport: () => import('../plugins-pro/aurora/aurora'),
+    ossClassName: 'AuroraPlugin',
+    defaultConfig: { enabled: true, order: 356 },
+  },
+  {
+    configKey: 'NaturalEventsPlugin',
+    ossImport: () => import('../plugins-pro/natural-events/natural-events'),
+    ossClassName: 'NaturalEventsPlugin',
+    defaultConfig: { enabled: true, order: 357 },
+  },
+  {
     configKey: 'FindSatPlugin',
     ossImport: () => import('./find-sat/find-sat'),
     ossClassName: 'FindSatPlugin',
@@ -376,6 +388,13 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'OemReaderPlugin',
     proImport: () => import('../plugins-pro/oem-reader/oem-reader'),
     defaultConfig: { enabled: true, order: 71.5 },
+  },
+  {
+    configKey: 'IodReaderPlugin',
+    ossImport: () => import('./iod-reader/iod-reader'),
+    ossClassName: 'IodReaderPlugin',
+    proImport: () => import('../plugins-pro/iod-reader/iod-reader'),
+    defaultConfig: { enabled: true, order: 71.7 },
   },
   {
     configKey: 'NeighborhoodHistoryPlugin',

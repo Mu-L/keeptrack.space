@@ -53,6 +53,8 @@ export type KeepTrackPluginsConfiguration = {
   PolarPlotPlugin?: PluginConfiguration;
   NextLaunchesPlugin?: PluginConfiguration;
   EarthquakePlugin?: PluginConfiguration;
+  AuroraPlugin?: PluginConfiguration;
+  NaturalEventsPlugin?: PluginConfiguration;
   FindSatPlugin?: PluginConfiguration;
   ProximityOps?: PluginConfiguration;
   OrbitReferences?: PluginConfiguration;
@@ -67,6 +69,7 @@ export type KeepTrackPluginsConfiguration = {
   StkFileHandler?: PluginConfiguration;
   CreateSat?: PluginConfiguration;
   OemReaderPlugin?: PluginConfiguration;
+  IodReaderPlugin?: PluginConfiguration;
   NeighborhoodHistoryPlugin?: PluginConfiguration;
   EditSat?: PluginConfiguration;
   NewLaunch?: PluginConfiguration;
