@@ -2,7 +2,7 @@ import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import dayNightPng from '@public/img/icons/day-night.png';
 
 export class NightToggle extends KeepTrackPlugin {
@@ -20,6 +20,7 @@ export class NightToggle extends KeepTrackPlugin {
       label: 'Night Toggle',
       image: dayNightPng,
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      placement: IconPlacement.UTILITY_ONLY,
     };
   }
 
