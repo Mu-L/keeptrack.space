@@ -64,7 +64,7 @@ describe('SatelliteViewPlugin_class', () => {
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
     expect(registerSpy).toHaveBeenCalled();
-    expect(getEl('bottom-icons')?.innerHTML).toContain('satellite-view-bottom-icon');
+    expect(getEl('bottom-icons-utility')?.innerHTML).toContain('SatelliteViewPlugin-utility-icon');
   });
 
   // Tests that a toast message is displayed when no satellite is selected and trying to activate Satellite Camera Mode
