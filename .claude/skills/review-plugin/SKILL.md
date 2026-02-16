@@ -82,7 +82,7 @@ This is one of the most common bugs. The plugin's `id` property is used as a pre
 ### 2.6 Keyboard Shortcuts
 
 - [ ] If the plugin has a natural shortcut key, `getKeyboardShortcuts()` is implemented (per CLAUDE.md: "Add `getKeyboardShortcuts()` to plugins when logical shortcuts exist").
-- [ ] Shortcut keys don't conflict with existing shortcuts in other plugins.
+- [ ] Shortcut keys don't conflict with existing shortcuts in other plugins. **To check**: search for `getKeyboardShortcuts` across `src/plugins/` and list all claimed keys. Known taken keys include: `1-5`, `B`, `C`, `F`, `G`, `I`, `M`, `N`, `P`, `S`, `i`, `m`, `Home`, `Space`, `[`, `]`, `<`, `>`, `-`, `=`, `/`.
 
 ### 2.7 Side Menu HTML Structure
 
@@ -94,7 +94,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 **Important for pro plugins**: If a base plugin has NO download/secondary menu (full wrapper HTML) but the pro version ADDS `onDownload()`, the pro's `buildSideMenuHtml_()` override must switch to inner-only content since `downloadIconCb` gets auto-wired by `detectAndInitializeComponents_()` when `onDownload()` exists (via `IDownloadCapable` / `hasDownload()` type guard).
 
 - [ ] Wrapper convention is followed correctly based on the above rules.
-- [ ] No private `buildSideMenuHtml_()` method — use `sideMenuElementHtml` property directly so base plugin functionality (download icon, title bar) works.
+- [ ] A private `buildSideMenuHtml_()` is acceptable **only** when called from inside `getSideMenuConfig()` to produce the `html` value. It's a problem when it bypasses the config system entirely (setting HTML only in a standalone method without going through `getSideMenuConfig()`).
 - [ ] If the plugin has a form, form ID follows `${sideMenuElementName}-form` pattern (required for auto-wired `onFormSubmit()`).
 - [ ] Form element IDs follow `<prefix>-<field>` convention (e.g., `ds-scc`, `ds-time`).
 
@@ -119,6 +119,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] No commented-out dead code.
 - [ ] HTML uses `html` tagged template literal from `@app/engine/utils/development/formatter`.
 - [ ] LF line endings (not CRLF).
+- [ ] `settingsManager` has an explicit import (`import { settingsManager } from '@app/settings/settings'`), not relied on as an implicit global. Note: `settingsManager` is assigned to `global` at runtime in `settings.ts:499`, so code works without import — but explicit imports are preferred for clarity and type safety.
 
 ### 2.11 Null Safety
 
