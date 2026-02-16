@@ -34,10 +34,15 @@
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "ペイロード",
+    "operationalPayloads": {
+      "name": "運用中のペイロード",
       "category": "オブジェクトタイプ",
-      "tooltip": "主にペイロードを運ぶために使用されるオブジェクト（通信衛星や気象衛星など）。運用中および廃止された衛星を含みます。"
+      "tooltip": "現在運用中の衛星（待機中、予備、延長ミッション状態のものを含む）。"
+    },
+    "nonOperationalPayloads": {
+      "name": "運用停止中のペイロード",
+      "category": "オブジェクトタイプ",
+      "tooltip": "運用を停止した衛星、または状態不明の衛星。"
     },
     "rocketBodies": {
       "name": "ロケット本体",
@@ -65,6 +70,16 @@
       "tooltip": "予定されている機能 - 地球儀上に機関を表示します。",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "地上センサー",
+      "category": "オブジェクトタイプ",
+      "tooltip": "宇宙物体を追跡するために使用される地上のレーダーおよび光学センサー。"
+    },
+    "launchFacilities": {
+      "name": "発射施設",
+      "category": "オブジェクトタイプ",
+      "tooltip": "ロケットが打ち上げられる宇宙基地および発射台。"
     },
     "vleoSatellites": {
       "name": "超低軌道衛星 (vLEO)",

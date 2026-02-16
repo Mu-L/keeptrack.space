@@ -34,10 +34,15 @@
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "载荷",
+    "operationalPayloads": {
+      "name": "在轨运行载荷",
       "category": "对象类型",
-      "tooltip": "主要用于携带载荷的物体，如通信或气象卫星，包括在轨运行和失效的卫星。"
+      "tooltip": "当前正在运行的卫星，包括待命、备用或延期任务状态的卫星。"
+    },
+    "nonOperationalPayloads": {
+      "name": "停止运行载荷",
+      "category": "对象类型",
+      "tooltip": "已停止运行或状态未知的卫星。"
     },
     "rocketBodies": {
       "name": "火箭体",
@@ -65,6 +70,16 @@
       "tooltip": "计划功能 - 这将在地球仪上显示机构。",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "地面传感器",
+      "category": "对象类型",
+      "tooltip": "用于追踪太空物体的地面雷达和光学传感器。"
+    },
+    "launchFacilities": {
+      "name": "发射设施",
+      "category": "对象类型",
+      "tooltip": "发射火箭的航天发射场和发射台。"
     },
     "vleoSatellites": {
       "name": "超低轨卫星",

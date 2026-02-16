@@ -34,10 +34,15 @@
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "Charges utiles",
+    "operationalPayloads": {
+      "name": "Charges utiles opérationnelles",
       "category": "Types d'objets",
-      "tooltip": "Objets principalement utilisés pour transporter une charge utile, tels que les satellites de communication ou météorologiques. Cela inclut les satellites opérationnels et hors service."
+      "tooltip": "Satellites actuellement opérationnels, y compris ceux en attente, en réserve ou en mission prolongée."
+    },
+    "nonOperationalPayloads": {
+      "name": "Charges utiles non opérationnelles",
+      "category": "Types d'objets",
+      "tooltip": "Satellites non opérationnels ou dont le statut est inconnu."
     },
     "rocketBodies": {
       "name": "Étages de fusée",
@@ -65,6 +70,16 @@
       "tooltip": "Fonctionnalité prévue - Cela affichera les agences sur le globe.",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "Capteurs au sol",
+      "category": "Types d'objets",
+      "tooltip": "Capteurs radar et optiques au sol utilisés pour suivre les objets dans l'espace."
+    },
+    "launchFacilities": {
+      "name": "Installations de lancement",
+      "category": "Types d'objets",
+      "tooltip": "Bases spatiales et aires de lancement d'où les fusées sont lancées."
     },
     "vleoSatellites": {
       "name": "Satellites vLEO",

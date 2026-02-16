@@ -34,10 +34,15 @@
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "Nutzlasten",
+    "operationalPayloads": {
+      "name": "Betriebsfähige Nutzlasten",
       "category": "Objekttypen",
-      "tooltip": "Objekte, die hauptsächlich zum Transport einer Nutzlast verwendet werden, wie Kommunikations- oder Wettersatelliten. Dies umfasst sowohl betriebsfähige als auch außer Betrieb gesetzte Satelliten."
+      "tooltip": "Satelliten, die derzeit in Betrieb sind, einschließlich solcher im Standby-, Reserve- oder erweiterten Missionsstatus."
+    },
+    "nonOperationalPayloads": {
+      "name": "Außer Betrieb gesetzte Nutzlasten",
+      "category": "Objekttypen",
+      "tooltip": "Satelliten, die nicht mehr in Betrieb sind oder deren Status unbekannt ist."
     },
     "rocketBodies": {
       "name": "Raketenstufen",
@@ -65,6 +70,16 @@
       "tooltip": "Geplante Funktion – Dies wird Agenturen auf dem Globus anzeigen.",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "Bodensensoren",
+      "category": "Objekttypen",
+      "tooltip": "Bodengestützte Radar- und optische Sensoren zur Verfolgung von Weltraumobjekten."
+    },
+    "launchFacilities": {
+      "name": "Startanlagen",
+      "category": "Objekttypen",
+      "tooltip": "Weltraumbahnhöfe und Startrampen, von denen Raketen gestartet werden."
     },
     "vleoSatellites": {
       "name": "vLEO-Satelliten",

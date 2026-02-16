@@ -34,10 +34,15 @@
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "Cargas útiles",
+    "operationalPayloads": {
+      "name": "Cargas útiles operativas",
       "category": "Tipos de objetos",
-      "tooltip": "Objetos que se utilizan principalmente para transportar una carga útil, como satélites de comunicación o meteorológicos. Esto incluye satélites operativos y fuera de servicio."
+      "tooltip": "Satélites que están actualmente operativos, incluyendo los que están en espera, reserva o misión extendida."
+    },
+    "nonOperationalPayloads": {
+      "name": "Cargas útiles no operativas",
+      "category": "Tipos de objetos",
+      "tooltip": "Satélites que no están operativos o cuyo estado es desconocido."
     },
     "rocketBodies": {
       "name": "Cuerpos de cohetes",
@@ -65,6 +70,16 @@
       "tooltip": "Función planificada - Esto mostrará agencias en el globo.",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "Sensores terrestres",
+      "category": "Tipos de objetos",
+      "tooltip": "Sensores de radar y ópticos terrestres utilizados para rastrear objetos en el espacio."
+    },
+    "launchFacilities": {
+      "name": "Instalaciones de lanzamiento",
+      "category": "Tipos de objetos",
+      "tooltip": "Puertos espaciales y plataformas de lanzamiento desde donde se lanzan cohetes."
     },
     "vleoSatellites": {
       "name": "Satélites vLEO",

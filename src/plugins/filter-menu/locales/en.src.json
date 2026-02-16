@@ -34,10 +34,15 @@
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "Payloads",
+    "operationalPayloads": {
+      "name": "Operational Payloads",
       "category": "Object Types",
-      "tooltip": "Objects that are primarily used to carry a payload, such as communication or weather satellites. This includes operational and defunct satellites."
+      "tooltip": "Satellites that are currently operational, including those in standby, spare, or extended mission status."
+    },
+    "nonOperationalPayloads": {
+      "name": "Non-Operational Payloads",
+      "category": "Object Types",
+      "tooltip": "Satellites that are non-operational or whose status is unknown."
     },
     "rocketBodies": {
       "name": "Rocket Bodies",
@@ -65,6 +70,16 @@
       "tooltip": "Planned feature - This will show agencies on the globe.",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "Ground Sensors",
+      "category": "Object Types",
+      "tooltip": "Ground-based radar and optical sensors used to track objects in space."
+    },
+    "launchFacilities": {
+      "name": "Launch Facilities",
+      "category": "Object Types",
+      "tooltip": "Spaceports and launch pads from which rockets are launched."
     },
     "vleoSatellites": {
       "name": "vLEO Satellites",
