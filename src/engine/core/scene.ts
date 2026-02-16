@@ -107,6 +107,8 @@ export class Scene {
 
   /** Override for worldShift, set by plugin camera modes (e.g. flat map sets [0,0,0]). */
   worldShiftOverride: [number, number, number] | null = null;
+  /** Override for gl.clearColor, set by plugin camera modes (e.g. polar view uses dark gray). */
+  clearColorOverride: [number, number, number, number] | null = null;
 
   static getInstance(): Scene {
     if (!Scene.instance_) {
@@ -483,7 +485,13 @@ export class Scene {
 
     // Switch back to the canvas
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (this.clearColorOverride) {
+      gl.clearColor(...this.clearColorOverride);
+    }
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (this.clearColorOverride) {
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    }
 
     /*
      * Only needed when doing post processing - otherwise just stay where we are
