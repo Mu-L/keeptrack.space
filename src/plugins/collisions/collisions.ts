@@ -42,7 +42,7 @@ export class Collisions extends KeepTrackPlugin {
   dependencies_ = [];
   private readonly collisionDataSrc_ = 'https://api.keeptrack.space/v2/socrates/latest';
   private selectSatIdOnCruncher_: number | null = null;
-  private collisionList_: CollisionEvent[] = [];
+  protected collisionList_: CollisionEvent[] = [];
 
   // =========================================================================
   // Composition-based configuration methods
@@ -80,7 +80,7 @@ export class Collisions extends KeepTrackPlugin {
     };
   }
 
-  private getDragOptions_(): IDragOptions {
+  protected getDragOptions_(): IDragOptions {
     return {
       isDraggable: true,
       minWidth: 650,
@@ -88,7 +88,7 @@ export class Collisions extends KeepTrackPlugin {
     };
   }
 
-  private buildSideMenuHtml_(): string {
+  protected buildSideMenuHtml_(): string {
     return html`
       <div id="Collisions-menu" class="side-menu-parent start-hidden text-select">
         <div id="Collisions-content" class="side-menu">
@@ -138,7 +138,7 @@ export class Collisions extends KeepTrackPlugin {
       // Might be better code for this.
       const hiddenRow = el!.dataset?.row;
 
-      if (hiddenRow !== null) {
+      if (hiddenRow !== undefined) {
         showLoading(() => {
           this.eventClicked_(parseInt(hiddenRow!));
         });
@@ -177,7 +177,7 @@ export class Collisions extends KeepTrackPlugin {
     this.selectSatIdOnCruncher_ = catalogManagerInstance.sccNum2Id(parseInt(sat1));
   }
 
-  private createTable_(): void {
+  protected createTable_(): void {
     try {
       const tbl = <HTMLTableElement>getEl('Collisions-table');
 
@@ -197,7 +197,7 @@ export class Collisions extends KeepTrackPlugin {
     }
   }
 
-  private static createHeaders_(tbl: HTMLTableElement) {
+  protected static createHeaders_(tbl: HTMLTableElement) {
     const tr = tbl.insertRow();
     const names = ['TOCA', '#1', '#2', 'Max Prob', 'Min Range (km)', 'Rel Speed (km/s)'];
 
@@ -209,7 +209,7 @@ export class Collisions extends KeepTrackPlugin {
     }
   }
 
-  private createRow_(tbl: HTMLTableElement, i: number): HTMLTableRowElement {
+  protected createRow_(tbl: HTMLTableElement, i: number): HTMLTableRowElement {
     // Create a new row
     const tr = tbl.insertRow();
 
@@ -227,7 +227,7 @@ export class Collisions extends KeepTrackPlugin {
     return tr;
   }
 
-  private static createCell_(tr: HTMLTableRowElement, text: string): void {
+  protected static createCell_(tr: HTMLTableRowElement, text: string): void {
     const cell = tr.insertCell();
 
     cell.appendChild(document.createTextNode(text));

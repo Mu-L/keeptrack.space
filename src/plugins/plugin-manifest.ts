@@ -321,6 +321,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'Collisions',
     ossImport: () => import('./collisions/collisions'),
     ossClassName: 'Collisions',
+    proImport: () => import('../plugins-pro/collisions-pro/collisions-pro'),
+    proClassName: 'CollisionsPro',
     defaultConfig: { enabled: true, order: 90 },
   },
   {
