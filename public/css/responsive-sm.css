@@ -1,7 +1,7 @@
 @media (min-width: 640px) {
   .side-menu-parent {
-    width: 280px;
-    min-width: 265px;
+    min-width: 400px;
+    width: 400px;
   }
 
   #lookanglesmultisite-menu {
