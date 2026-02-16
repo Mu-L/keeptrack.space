@@ -118,9 +118,6 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
 
   private buildSideMenuHtml_(): string {
     let html_ = html`
-    <div id="planets-menu" class="side-menu-parent start-hidden text-select">
-      <div id="planets-menu-content" class="side-menu">
-        <div class="row"></div>
         <ul>`;
 
     html_ += html`
@@ -158,9 +155,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
     // Deep-space probes are added dynamically after data loads (see addDeepSpaceProbesMenu_)
 
     html_ += html`
-        </ul>
-      </div>
-    </div>`;
+        </ul>`;
 
     return html_;
   }
