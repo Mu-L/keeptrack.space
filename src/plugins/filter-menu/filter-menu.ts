@@ -15,6 +15,7 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
 import { t7e } from '@app/locales/keys';
 import filterPng from '@public/img/icons/filter.png';
+import restorePng from '@public/img/icons/restore.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { TopMenu } from '../top-menu/top-menu';
 import './filter-menu.css';
@@ -50,11 +51,14 @@ declare module '@app/engine/core/interfaces' {
 export interface FilterPluginSettings {
   xGEOSatellites?: boolean;
   vLEOSatellites?: boolean;
-  payloads?: boolean;
+  operationalPayloads?: boolean;
+  nonOperationalPayloads?: boolean;
   rocketBodies?: boolean;
   debris?: boolean;
   unknownType?: boolean;
   agencies?: boolean;
+  groundSensors?: boolean;
+  launchFacilities?: boolean;
   starlinkSatellites?: boolean;
   hEOSatellites?: boolean;
   mEOSatellites?: boolean;
@@ -93,10 +97,16 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
   static get filters(): Filters[] {
     return [
       {
-        id: 'payloads',
-        name: t7e('filterMenu.payloads.name'),
-        category: t7e('filterMenu.payloads.category'),
-        tooltip: t7e('filterMenu.payloads.tooltip'),
+        id: 'operationalPayloads',
+        name: t7e('filterMenu.operationalPayloads.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.operationalPayloads.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.operationalPayloads.tooltip' as Parameters<typeof t7e>[0]),
+      },
+      {
+        id: 'nonOperationalPayloads',
+        name: t7e('filterMenu.nonOperationalPayloads.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.nonOperationalPayloads.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.nonOperationalPayloads.tooltip' as Parameters<typeof t7e>[0]),
       },
       {
         id: 'rocketBodies',
@@ -129,6 +139,20 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
         tooltip: t7e('filterMenu.agencies.tooltip'),
         checked: false,
         disabled: true,
+      },
+      {
+        id: 'groundSensors',
+        name: t7e('filterMenu.groundSensors.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.groundSensors.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.groundSensors.tooltip' as Parameters<typeof t7e>[0]),
+        checked: !settingsManager.isDisableSensors,
+      },
+      {
+        id: 'launchFacilities',
+        name: t7e('filterMenu.launchFacilities.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.launchFacilities.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.launchFacilities.tooltip' as Parameters<typeof t7e>[0]),
+        checked: !settingsManager.isDisableLaunchSites,
       },
       {
         id: 'vLEOSatellites',
@@ -260,7 +284,8 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
   }
 
   private static readonly FILTER_STORAGE_MAP: Record<string, StorageKey> = {
-    payloads: StorageKey.FILTER_SETTINGS_PAYLOADS,
+    operationalPayloads: StorageKey.FILTER_SETTINGS_OPERATIONAL_PAYLOADS,
+    nonOperationalPayloads: StorageKey.FILTER_SETTINGS_NON_OPERATIONAL_PAYLOADS,
     rocketBodies: StorageKey.FILTER_SETTINGS_ROCKET_BODIES,
     debris: StorageKey.FILTER_SETTINGS_DEBRIS,
     unknownType: StorageKey.FILTER_SETTINGS_UNKNOWN_TYPE,
@@ -274,6 +299,8 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     vimpelSatellites: StorageKey.FILTER_SETTINGS_VIMPEL,
     celestrakSatellites: StorageKey.FILTER_SETTINGS_CELESTRAK,
     notionalSatellites: StorageKey.FILTER_SETTINGS_NOTIONAL,
+    groundSensors: StorageKey.FILTER_SETTINGS_GROUND_SENSORS,
+    launchFacilities: StorageKey.FILTER_SETTINGS_LAUNCH_FACILITIES,
     unitedStates: StorageKey.FILTER_SETTINGS_UNITED_STATES,
     unitedKingdom: StorageKey.FILTER_SETTINGS_UNITED_KINGDOM,
     france: StorageKey.FILTER_SETTINGS_FRANCE,
@@ -480,23 +507,18 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
 
   private buildSideMenuHtml_(): string {
     return html`
-    <div id="filter-menu" class="side-menu-parent start-hidden text-select">
-      <div id="filter-content" class="side-menu">
-        <div class="row">
-          <form id="filter-form">
-            <div id="filter-general">
-              <div class="row center"></div>
-              </br>
-              <div class="row center">
-                <button id="filter-reset" class="btn btn-ui waves-effect waves-light" type="button" name="action">
-                  ${t7e('plugins.FilterMenuPlugin.resetToDefaults')} &#9658;
-                </button>
-              </div>
-              ${this.generateFilterHtml()}
-            </div>
-          </form>
+    <div class="row">
+      <form id="filter-form">
+        <div id="filter-general">
+          <div class="row filter-reset-row">
+            <button id="filter-reset" class="btn btn-ui waves-effect waves-light icon-btn"
+              type="button" kt-tooltip="${t7e('plugins.FilterMenuPlugin.resetToDefaults')}">
+              <img src="${restorePng}" class="icon-btn-img" alt="" />
+            </button>
+          </div>
+          ${this.generateFilterHtml()}
         </div>
-      </div>
+      </form>
     </div>`;
   }
 
@@ -601,6 +623,13 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       if (checkbox) {
         checkbox.checked = typeof settingsManager.filter[id] !== 'undefined' ? settingsManager.filter[id] : checked ?? !disabled;
         settingsManager.filter[id] = checkbox.checked;
+
+        // Bridge ground-site toggles to existing settings flags
+        if (id === 'groundSensors') {
+          settingsManager.isDisableSensors = !checkbox.checked;
+        } else if (id === 'launchFacilities') {
+          settingsManager.isDisableLaunchSites = !checkbox.checked;
+        }
       }
     });
 
@@ -630,6 +659,14 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     const filterId = checkbox.id.replace('filter-', '');
 
     settingsManager.filter[filterId] = checkbox.checked;
+
+    // Bridge ground-site toggles to existing settings flags
+    if (filterId === 'groundSensors') {
+      settingsManager.isDisableSensors = !checkbox.checked;
+    } else if (filterId === 'launchFacilities') {
+      settingsManager.isDisableLaunchSites = !checkbox.checked;
+    }
+
     ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
     this.saveSettings_();
     this.updateFilterUI_();
@@ -658,7 +695,10 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     return allDefault;
   }
 
-  private static readonly OBJECT_TYPE_FILTERS_ = ['payloads', 'rocketBodies', 'debris', 'unknownType', 'notionalSatellites'];
+  private static readonly OBJECT_TYPE_FILTERS_ = [
+    'operationalPayloads', 'nonOperationalPayloads', 'rocketBodies', 'debris',
+    'unknownType', 'notionalSatellites', 'groundSensors', 'launchFacilities',
+  ];
   private static readonly ORBITAL_REGIME_FILTERS_ = ['vLEOSatellites', 'lEOSatellites', 'mEOSatellites', 'gEOSatellites', 'hEOSatellites', 'xGEOSatellites'];
   private static readonly COUNTRY_FILTERS_ = [
     'unitedStates', 'unitedKingdom', 'france', 'germany', 'japan',
@@ -713,7 +753,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     const settings: Record<string, boolean> = {};
 
     for (const id of FilterMenuPlugin.OBJECT_TYPE_FILTERS_) {
-      settings[id] = id === 'payloads';
+      settings[id] = id === 'operationalPayloads' || id === 'nonOperationalPayloads';
     }
     this.setFilters_(settings);
   }
@@ -731,9 +771,15 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       if (filter) {
         checkbox.checked = filter.checked ?? !filter.disabled;
         settingsManager.filter[filterId] = checkbox.checked;
+
+        // Bridge ground-site toggles to existing settings flags
+        if (filterId === 'groundSensors') {
+          settingsManager.isDisableSensors = !checkbox.checked;
+        } else if (filterId === 'launchFacilities') {
+          settingsManager.isDisableLaunchSites = !checkbox.checked;
+        }
       }
     });
-
 
     this.saveSettings_();
     this.syncOnLoad_();
