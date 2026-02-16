@@ -130,10 +130,6 @@ export class CountriesMenu extends KeepTrackPlugin {
   }
 
   private generateCountryList_(): string {
-    const header = html`
-    <h5 class="center-align">${t7e('plugins.CountriesMenu.bottomIconLabel')}</h5>
-    <li class="divider"></li>`;
-
     const countryCodeList = [] as string[];
     const catalogManager = ServiceLocator.getCatalogManager();
 
@@ -167,7 +163,7 @@ export class CountriesMenu extends KeepTrackPlugin {
       const dataGroup = codes.join('|');
 
       return `${acc}<li class="menu-selectable country-option" data-group="${dataGroup}">${country}</li>`;
-    }, header);
+    }, '');
 
     return `${mergedList}<br/>`;
   }
