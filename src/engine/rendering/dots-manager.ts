@@ -134,6 +134,11 @@ export class DotsManager {
         u_earthRadius: <WebGLUniformLocation><unknown>null,
         u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
         u_flatMapZoom: <WebGLUniformLocation><unknown>null,
+        u_polarViewMode: <WebGLUniformLocation><unknown>null,
+        u_sensorEcef: <WebGLUniformLocation><unknown>null,
+        u_ecefToEnu: <WebGLUniformLocation><unknown>null,
+        u_polarRadius: <WebGLUniformLocation><unknown>null,
+        u_polarZoom: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -168,6 +173,11 @@ export class DotsManager {
         u_earthRadius: <WebGLUniformLocation><unknown>null,
         u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
         u_flatMapZoom: <WebGLUniformLocation><unknown>null,
+        u_polarViewMode: <WebGLUniformLocation><unknown>null,
+        u_sensorEcef: <WebGLUniformLocation><unknown>null,
+        u_ecefToEnu: <WebGLUniformLocation><unknown>null,
+        u_polarRadius: <WebGLUniformLocation><unknown>null,
+        u_polarZoom: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -183,6 +193,10 @@ export class DotsManager {
       frag: <string><unknown>null,
     },
   };
+
+  // Polar view sensor uniforms (precomputed on CPU, pushed by plugin)
+  sensorEcef: Float32Array = new Float32Array(3);
+  ecefToEnu: Float32Array = new Float32Array(9);
 
   sizeData: Int8Array;
   starIndex1: number;
@@ -223,7 +237,10 @@ export class DotsManager {
     const mainCamera = ServiceLocator.getMainCamera();
     const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
 
+    const isPolarView = mainCamera.cameraType === CameraType.POLAR_VIEW;
+
     gl.uniform1i(this.programs.dots.uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1i(this.programs.dots.uniforms.u_polarViewMode, isPolarView ? 1 : 0);
     gl.uniform1f(this.programs.dots.uniforms.u_gmst, this.cruncherGmst);
     gl.uniform1f(this.programs.dots.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
     gl.uniform1f(this.programs.dots.uniforms.u_earthRadius, RADIUS_OF_EARTH);
@@ -231,6 +248,12 @@ export class DotsManager {
       gl.uniform1f(this.programs.dots.uniforms.u_flatMapCenterX, mainCamera.flatMapPanX);
       gl.uniform1f(this.programs.dots.uniforms.u_flatMapZoom, mainCamera.flatMapZoom);
       gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, 0.0); // disable log depth in ortho
+    } else if (isPolarView) {
+      gl.uniform3fv(this.programs.dots.uniforms.u_sensorEcef, this.sensorEcef);
+      gl.uniformMatrix3fv(this.programs.dots.uniforms.u_ecefToEnu, false, this.ecefToEnu);
+      gl.uniform1f(this.programs.dots.uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.dots.uniforms.u_polarZoom, mainCamera.polarViewZoom);
+      gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, 0.0);
     } else {
       gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     }
@@ -350,15 +373,24 @@ export class DotsManager {
     gl.uniformMatrix4fv(this.programs.picking.uniforms.u_pMvCamMatrix, false, pMvCamMatrix);
     gl.uniform3fv(this.programs.picking.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
 
-    const isFlatMapPick = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+    const mainCam = ServiceLocator.getMainCamera();
+    const isFlatMapPick = mainCam.cameraType === CameraType.FLAT_MAP;
+    const isPolarViewPick = mainCam.cameraType === CameraType.POLAR_VIEW;
 
     gl.uniform1i(this.programs.picking.uniforms.u_flatMapMode, isFlatMapPick ? 1 : 0);
+    gl.uniform1i(this.programs.picking.uniforms.u_polarViewMode, isPolarViewPick ? 1 : 0);
     gl.uniform1f(this.programs.picking.uniforms.u_gmst, this.cruncherGmst);
     gl.uniform1f(this.programs.picking.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
     gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
     if (isFlatMapPick) {
-      gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
-      gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, ServiceLocator.getMainCamera().flatMapZoom);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, mainCam.flatMapPanX);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, mainCam.flatMapZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else if (isPolarViewPick) {
+      gl.uniform3fv(this.programs.picking.uniforms.u_sensorEcef, this.sensorEcef);
+      gl.uniformMatrix3fv(this.programs.picking.uniforms.u_ecefToEnu, false, this.ecefToEnu);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarZoom, mainCam.polarViewZoom);
       gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
     } else {
       gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
@@ -569,6 +601,13 @@ export class DotsManager {
 
     GlUtils.assignAttributes(this.programs.picking.attribs, gl, this.programs.picking.program, ['a_position', 'a_color', 'a_pickable']);
     GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_currentGmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
+
+    // Assign polar view uniforms separately — some ANGLE backends strip these from conditional branches
+    const polarPickUniforms = ['u_polarViewMode', 'u_sensorEcef', 'u_ecefToEnu', 'u_polarRadius', 'u_polarZoom'] as const;
+
+    for (const name of polarPickUniforms) {
+      this.programs.picking.uniforms[name] = gl.getUniformLocation(this.programs.picking.program, name) as WebGLUniformLocation;
+    }
 
     ServiceLocator.getScene().frameBuffers.gpuPicking = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
@@ -1090,6 +1129,11 @@ export class DotsManager {
           uniform float u_earthRadius;
           uniform float u_flatMapCenterX;
           uniform float u_flatMapZoom;
+          uniform bool u_polarViewMode;
+          uniform vec3 u_sensorEcef;
+          uniform mat3 u_ecefToEnu;
+          uniform float u_polarRadius;
+          uniform float u_polarZoom;
 
           out vec4 vColor;
           out float vSize;
@@ -1137,6 +1181,62 @@ export class DotsManager {
                   flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
 
                   position = u_pMvCamMatrix * vec4(flatPos, 1.0);
+              } else if (u_polarViewMode) {
+                  float PI = 3.14159265359;
+                  float eciDist = length(eciPos);
+
+                  if (eciDist > 1.0e7) {
+                      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                      gl_PointSize = 0.0;
+                      vColor = vec4(0.0);
+                      vSize = 0.0;
+                      vDist = eciDist;
+                      vAffiliation = a_affiliation;
+                      vObjectType = a_objectType;
+                      vPointSize = 0.0;
+                      return;
+                  }
+
+                  // ECI to ECEF — use u_currentGmst (main-thread, frame-accurate)
+                  // instead of u_gmst (from cruncher worker, may lag during rapid time changes)
+                  float cg = cos(u_currentGmst);
+                  float sg = sin(u_currentGmst);
+                  vec3 ecef = vec3(
+                      eciPos.x * cg + eciPos.y * sg,
+                     -eciPos.x * sg + eciPos.y * cg,
+                      eciPos.z
+                  );
+
+                  // ECEF to ENU (sensor-relative)
+                  vec3 d = ecef - u_sensorEcef;
+                  vec3 enu = u_ecefToEnu * d;
+
+                  // ENU to azimuth/elevation
+                  float az = atan(enu.x, enu.y);
+                  float el = atan(enu.z, length(enu.xy));
+
+                  // Cull below-horizon satellites
+                  if (el < 0.0) {
+                      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                      gl_PointSize = 0.0;
+                      vColor = vec4(0.0);
+                      vSize = 0.0;
+                      vDist = eciDist;
+                      vAffiliation = a_affiliation;
+                      vObjectType = a_objectType;
+                      vPointSize = 0.0;
+                      return;
+                  }
+
+                  // Polar projection: zenith at center, horizon at edge
+                  float r = (PI / 2.0 - el) / (PI / 2.0);
+                  vec3 polarPos = vec3(
+                      r * sin(az) * u_polarRadius,
+                      r * cos(az) * u_polarRadius,
+                      0.0
+                  );
+
+                  position = u_pMvCamMatrix * vec4(polarPos, 1.0);
               } else {
                   // Rotate stale ground-object ECI positions to match current Earth rotation
                   float groundDist = length(a_position.xyz);
@@ -1165,6 +1265,20 @@ export class DotsManager {
                 float flatSize = mix(u_minSize, float(${settingsManager.satShader.starSize}), step(0.5, a_size));
                 float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
                 gl_PointSize = flatSize * zoomScale * symbologyScale;
+                vPointSize = gl_PointSize;
+                vColor = a_color;
+                vSize = a_size * 1.0;
+                vDist = dist;
+                vAffiliation = a_affiliation;
+                vObjectType = a_objectType;
+                return;
+              }
+
+              if (u_polarViewMode) {
+                float zoomScale = sqrt(u_polarZoom);
+                float polarSize = mix(u_minSize, float(${settingsManager.satShader.starSize}), step(0.5, a_size));
+                float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
+                gl_PointSize = polarSize * zoomScale * symbologyScale;
                 vPointSize = gl_PointSize;
                 vColor = a_color;
                 vSize = a_size * 1.0;
@@ -1221,6 +1335,11 @@ export class DotsManager {
                 uniform float u_earthRadius;
                 uniform float u_flatMapCenterX;
                 uniform float u_flatMapZoom;
+                uniform bool u_polarViewMode;
+                uniform vec3 u_sensorEcef;
+                uniform mat3 u_ecefToEnu;
+                uniform float u_polarRadius;
+                uniform float u_polarZoom;
 
                 out vec3 vColor;
 
@@ -1248,6 +1367,39 @@ export class DotsManager {
                     flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
 
                     position = u_pMvCamMatrix * vec4(flatPos, 1.0);
+                } else if (u_polarViewMode) {
+                    float PI = 3.14159265359;
+                    float eciDist = length(eciPos);
+                    if (eciDist > 1.0e7) {
+                        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                        gl_PointSize = 0.0;
+                        vColor = vec3(0.0);
+                        return;
+                    }
+                    float cg = cos(u_currentGmst);
+                    float sg = sin(u_currentGmst);
+                    vec3 ecef = vec3(
+                        eciPos.x * cg + eciPos.y * sg,
+                       -eciPos.x * sg + eciPos.y * cg,
+                        eciPos.z
+                    );
+                    vec3 d = ecef - u_sensorEcef;
+                    vec3 enu = u_ecefToEnu * d;
+                    float az = atan(enu.x, enu.y);
+                    float el = atan(enu.z, length(enu.xy));
+                    if (el < 0.0) {
+                        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                        gl_PointSize = 0.0;
+                        vColor = vec3(0.0);
+                        return;
+                    }
+                    float r = (PI / 2.0 - el) / (PI / 2.0);
+                    vec3 polarPos = vec3(
+                        r * sin(az) * u_polarRadius,
+                        r * cos(az) * u_polarRadius,
+                        0.0
+                    );
+                    position = u_pMvCamMatrix * vec4(polarPos, 1.0);
                 } else {
                     // Rotate stale ground-object ECI positions to match current Earth rotation
                     float groundDist = length(a_position.xyz);
@@ -1266,7 +1418,7 @@ export class DotsManager {
 
                 gl_Position = position;
                 ${DepthManager.getLogDepthVertCode()}
-                float pickZoomScale = u_flatMapMode ? sqrt(u_flatMapZoom) : 1.0;
+                float pickZoomScale = u_polarViewMode ? sqrt(u_polarZoom) : (u_flatMapMode ? sqrt(u_flatMapZoom) : 1.0);
                 gl_PointSize = ${settingsManager.pickingDotSize} * a_pickable * pickZoomScale;
                 vColor = a_color * a_pickable;
                 }
