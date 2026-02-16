@@ -65,10 +65,6 @@
       "disablingMilkyWay": "您的计算机运行困难！正在禁用银河系。",
       "disablingSun": "您的计算机运行困难！正在禁用太阳。"
     },
-    "EditSat": {
-      "errorReadingFile": "读取文件时出错！",
-      "satelliteNotFound": "未找到卫星！"
-    },
     "Reports": {
       "popupBlocker": "请允许此网站的弹出窗口以查看报告。"
     },
@@ -225,11 +221,6 @@
       "bottomIconLabel": "转发器与频道信息",
       "title": "卫星转发器与频道信息",
       "helpBody": "<p>本表包含卫星频道的技术细节，包括电视、广播及其他通信服务：</p><ul><li><strong>卫星：</strong> 播出频道的卫星名称</li><li><strong>频道：</strong> 电视/广播频道或通信服务名称</li><li><strong>波束：</strong> 卫星波束方向（如西半球）</li><li><strong>频率：</strong> 转发器频率及极化（如3840 V）</li><li><strong>系统：</strong> 播出系统（如DVB-S2 8PSK）</li><li><strong>符号率/FEC：</strong> 符号率及FEC比（如30000 3/4）</li><li><strong>视频：</strong> 视频/数据压缩格式（如MPEG-4/HD）</li><li><strong>语言：</strong> 可用音频/通信语言（如英语、中文）</li><li><strong>加密：</strong> 使用的加密系统（如PowerVu）</li></ul><p>这些信息适用于卫星通信专业人士、技术人员、爱好者及任何需要设置或排查卫星接收设备的人。</p>"
-    },
-    "EditSat": {
-      "bottomIconLabel": "编辑卫星",
-      "title": "编辑卫星菜单",
-      "helpBody": "编辑卫星菜单用于编辑卫星数据。<br><br><ul><li>卫星SCC# - 美国太空军分配的唯一编号</li><li>历元年份 - 卫星最后一次轨道更新的年份</li><li>历元日 - 卫星最后一次轨道更新的儒略日</li><li>倾角 - 卫星轨道面与赤道面的夹角</li><li>升交点赤经 - 升交点与卫星最后一次轨道更新位置的夹角</li><li>偏心率 - 卫星轨道偏离圆形的程度</li><li>近地点幅角 - 升交点与卫星近地点的夹角</li><li>平近点角 - 卫星当前位置与近地点的夹角</li><li>平均运动 - 卫星平近点角变化速率</li></ul>"
     },
     "NewLaunch": {
       "bottomIconLabel": "新发射",

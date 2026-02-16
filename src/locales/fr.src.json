@@ -65,10 +65,6 @@
       "disablingMilkyWay": "Votre ordinateur a des difficultés ! Désactivation de la Voie lactée.",
       "disablingSun": "Votre ordinateur a des difficultés ! Désactivation du Soleil."
     },
-    "EditSat": {
-      "errorReadingFile": "Erreur lors de la lecture du fichier !",
-      "satelliteNotFound": "Satellite {{sccNum}} introuvable !"
-    },
     "Reports": {
       "popupBlocker": "Veuillez autoriser les pop-ups pour ce site afin de voir les rapports."
     },
@@ -194,11 +190,6 @@
       "bottomIconLabel": "Infos transpondeur et canaux",
       "title": "Infos transpondeur et canaux satellites",
       "helpBody": "<p>Ce tableau contient des détails techniques sur les canaux satellites, y compris TV, radio et autres services de communication :</p><ul><li><strong>satellite :</strong> Nom du satellite diffusant le canal</li><li><strong>tvchannel :</strong> Nom du canal TV/radio ou service de communication</li><li><strong>beam :</strong> Direction du faisceau satellite (ex : hémisphère ouest)</li><li><strong>freq :</strong> Fréquence et polarité du transpondeur (ex : 3840 V)</li><li><strong>system :</strong> Système de diffusion (ex : DVB-S2 8PSK)</li><li><strong>SRFEC :</strong> Débit symbole et FEC (ex : 30000 3/4)</li><li><strong>video :</strong> Format de compression vidéo/données (ex : MPEG-4/HD)</li><li><strong>lang :</strong> Langues audio/communication disponibles (ex : Ang, Chi)</li><li><strong>encryption :</strong> Système de chiffrement utilisé (ex : PowerVu)</li></ul><p>Ces informations sont utiles pour les professionnels, techniciens, passionnés et toute personne installant ou dépannant des équipements de réception satellite.</p>"
-    },
-    "EditSat": {
-      "bottomIconLabel": "Modifier le satellite",
-      "title": "Menu Modifier le satellite",
-      "helpBody": "Le menu Modifier le satellite permet de modifier les données du satellite. <br><br> <ul> <li> SCC# du satellite - Numéro unique attribué à chaque satellite par l’US Space Force. </li> <li> Année de l’époque - Année de la dernière mise à jour orbitale du satellite. </li> <li> Jour de l’époque - Jour de l’année de la dernière mise à jour orbitale. </li> <li> Inclinaison - Angle entre le plan orbital du satellite et le plan équatorial. </li> <li> Ascension droite - Angle entre le nœud ascendant et la position du satellite à la dernière mise à jour. </li> <li> Excentricité - Degré d’écart de l’orbite par rapport à un cercle parfait. </li> <li> Argument du périgée - Angle entre le nœud ascendant et le point le plus proche de la Terre. </li> <li> Anomalie moyenne - Angle entre la position du satellite à la dernière mise à jour et son point le plus proche de la Terre. </li> <li> Mouvement moyen - Taux de variation de l’anomalie moyenne du satellite. </li> </ul>"
     },
     "NewLaunch": {
       "bottomIconLabel": "Nouveau lancement",

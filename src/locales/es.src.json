@@ -65,10 +65,6 @@
       "disablingMilkyWay": "¡Tu computadora está teniendo problemas! Desactivando la Vía Láctea.",
       "disablingSun": "¡Tu computadora está teniendo problemas! Desactivando el sol."
     },
-    "EditSat": {
-      "errorReadingFile": "¡Error al leer el archivo!",
-      "satelliteNotFound": "¡Satélite no encontrado!"
-    },
     "Reports": {
       "popupBlocker": "Por favor, permita las ventanas emergentes en este sitio para ver los informes."
     },
@@ -194,11 +190,6 @@
       "bottomIconLabel": "Información de Transpondedor y Canal",
       "title": "Información de Transpondedor y Canal de Satélite",
       "helpBody": "<p>Esta tabla contiene detalles técnicos de canales satelitales, incluyendo servicios de TV, radio y otras comunicaciones:</p><ul><li><strong>satélite:</strong> Nombre del satélite que transmite el canal</li><li><strong>tvcanal:</strong> Nombre del canal de TV/radio o servicio de comunicación</li><li><strong>haz:</strong> Dirección del haz del satélite (ej., Hemi oeste)</li><li><strong>freq:</strong> Frecuencia y polaridad del transpondedor (ej., 3840 V)</li><li><strong>sistema:</strong> Sistema de transmisión (ej., DVB-S2 8PSK)</li><li><strong>SRFEC:</strong> Tasa de símbolo y relación FEC (ej., 30000 3/4)</li><li><strong>video:</strong> Formato de compresión de video/datos (ej., MPEG-4/HD)</li><li><strong>idioma:</strong> Idiomas de audio/comunicación disponibles (ej., Ing, Chi)</li><li><strong>encriptación:</strong> Sistema de encriptación utilizado (ej., PowerVu)</li></ul><p>Esta información es útil para profesionales de comunicación satelital, técnicos, entusiastas y cualquier persona que configure o solucione problemas de equipos de recepción satelital.</p>"
-    },
-    "EditSat": {
-      "bottomIconLabel": "Editar Satélite",
-      "title": "Menú de Edición de Satélite",
-      "helpBody": "El Menú de Edición de Satélite se usa para editar los datos del satélite. <br><br> <ul> <li> Número SCC del Satélite - Un número único asignado a cada satélite por la Fuerza Espacial de EE. UU. </li> <li> Año de Época - El año de la última actualización orbital del satélite. </li> <li> Día de Época - El día del año de la última actualización orbital del satélite. </li> <li> Inclinación - El ángulo entre el plano orbital del satélite y el plano ecuatorial. </li> <li> Ascensión Recta - El ángulo entre el nodo ascendente y la posición del satélite en el momento de la última actualización orbital. </li> <li> Excentricidad - La cantidad en que la órbita del satélite se desvía de un círculo perfecto. </li> <li> Argumento del Perigeo - El ángulo entre el nodo ascendente y el punto más cercano del satélite a la tierra. </li> <li> Anomalía Media - El ángulo entre la posición del satélite en el momento de la última actualización orbital y el punto más cercano del satélite a la tierra. </li> <li> Movimiento Medio - La tasa a la que cambia la anomalía media del satélite. </li> </ul>"
     },
     "NewLaunch": {
       "bottomIconLabel": "Nuevo Lanzamiento",

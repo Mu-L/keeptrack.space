@@ -65,10 +65,6 @@
       "disablingMilkyWay": "Your computer is struggling! Disabling Milky Way.",
       "disablingSun": "Your computer is struggling! Disabling Sun."
     },
-    "EditSat": {
-      "errorReadingFile": "Error while reading file!",
-      "satelliteNotFound": "Satellite {{sccNum}} not found!"
-    },
     "Reports": {
       "popupBlocker": "Please allow popups for this site to view reports."
     },
@@ -194,11 +190,6 @@
       "bottomIconLabel": "Transponder and Channel Info",
       "title": "Satellite Transponder and Channel Info",
       "helpBody": "<p>This table contains technical details for satellite channels, including TV, radio, and other communication services:</p><ul><li><strong>satellite:</strong> Name of the satellite broadcasting the channel</li><li><strong>tvchannel:</strong> Name of the TV/radio channel or communication service</li><li><strong>beam:</strong> Satellite beam direction (e.g., West hemi)</li><li><strong>freq:</strong> Transponder frequency and polarity (e.g., 3840 V)</li><li><strong>system:</strong> Broadcasting system (e.g., DVB-S2 8PSK)</li><li><strong>SRFEC:</strong> Symbol rate and FEC ratio (e.g., 30000 3/4)</li><li><strong>video:</strong> Video/data compression format (e.g., MPEG-4/HD)</li><li><strong>lang:</strong> Available audio/communication languages (e.g., Eng, Chi)</li><li><strong>encryption:</strong> Encryption system used (e.g., PowerVu)</li></ul><p>This information is useful for satellite communication professionals, technicians, enthusiasts, and anyone setting up or troubleshooting satellite reception equipment.</p>"
-    },
-    "EditSat": {
-      "bottomIconLabel": "Edit Satellite",
-      "title": "Edit Satellite Menu",
-      "helpBody": "The Edit Satellite Menu is used to edit the satellite data. <br><br> <ul> <li> Satellite SCC# - A unique number assigned to each satellite by the US Space Force. </li> <li> Epoch Year - The year of the satellite's last orbital update. </li> <li> Epoch Day - The day of the year of the satellite's last orbital update. </li> <li> Inclination - The angle between the satellite's orbital plane and the equatorial plane. </li> <li> Right Ascension - The angle between the ascending node and the satellite's position at the time of the last orbital update. </li> <li> Eccentricity - The amount by which the satellite's orbit deviates from a perfect circle. </li> <li> Argument of Perigee - The angle between the ascending node and the satellite's closest point to the earth. </li> <li> Mean Anomaly - The angle between the satellite's position at the time of the last orbital update and the satellite's closest point to the earth. </li> <li> Mean Motion - The rate at which the satellite's mean anomaly changes. </li> </ul>"
     },
     "NewLaunch": {
       "bottomIconLabel": "New Launch",

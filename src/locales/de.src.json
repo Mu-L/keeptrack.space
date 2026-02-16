@@ -65,10 +65,6 @@
       "disablingMilkyWay": "Ihr Computer hat Schwierigkeiten! Milchstraße wird deaktiviert.",
       "disablingSun": "Ihr Computer hat Schwierigkeiten! Sonne wird deaktiviert."
     },
-    "EditSat": {
-      "errorReadingFile": "Fehler beim Lesen der Datei!",
-      "satelliteNotFound": "Satellit nicht gefunden!"
-    },
     "Reports": {
       "popupBlocker": "Bitte erlauben Sie Popups für diese Seite, um Berichte anzuzeigen."
     },
@@ -194,11 +190,6 @@
       "bottomIconLabel": "Transponder- und Kanalinformationen",
       "title": "Satelliten-Transponder- und Kanalinformationen",
       "helpBody": "<p>Diese Tabelle enthält technische Details zu Satellitenkanälen, einschließlich TV-, Radio- und anderen Kommunikationsdiensten:</p><ul><li><strong>Satellit:</strong> Name des Satelliten, der den Kanal überträgt</li><li><strong>TV-Kanal:</strong> Name des TV-/Radiokanals oder Kommunikationsdienstes</li><li><strong>Ausleuchtzone:</strong> Richtung des Satellitenbeams (z.B. Westhemisphäre)</li><li><strong>Freq:</strong> Transponderfrequenz und Polarisation (z.B. 3840 V)</li><li><strong>System:</strong> Übertragungssystem (z.B. DVB-S2 8PSK)</li><li><strong>SRFEC:</strong> Symbolrate und FEC-Verhältnis (z.B. 30000 3/4)</li><li><strong>Video:</strong> Video-/Datenkompressionsformat (z.B. MPEG-4/HD)</li><li><strong>Sprache:</strong> Verfügbare Audio-/Kommunikationssprachen (z.B. Eng, Chi)</li><li><strong>Verschlüsselung:</strong> Verwendetes Verschlüsselungssystem (z.B. PowerVu)</li></ul><p>Diese Informationen sind nützlich für Satellitenkommunikationsfachleute, Techniker, Enthusiasten und jeden, der Satellitenempfangsgeräte einrichtet oder Probleme damit behebt.</p>"
-    },
-    "EditSat": {
-      "bottomIconLabel": "Satellit bearbeiten",
-      "title": "Satellit bearbeiten Menü",
-      "helpBody": "Das Menü 'Satellit bearbeiten' wird verwendet, um die Satellitendaten zu bearbeiten. <br><br> <ul> <li> Satellit SCC# - Eine eindeutige Nummer, die jedem Satelliten von der US Space Force zugewiesen wird. </li> <li> Epochenjahr - Das Jahr der letzten Bahnaktualisierung des Satelliten. </li> <li> Epochentag - Der Tag des Jahres der letzten Bahnaktualisierung des Satelliten. </li> <li> Inklination - Der Winkel zwischen der Bahnebene des Satelliten und der Äquatorebene. </li> <li> Rektaszension - Der Winkel zwischen dem aufsteigenden Knoten und der Position des Satelliten zum Zeitpunkt der letzten Bahnaktualisierung. </li> <li> Exzentrizität - Das Maß, um das die Umlaufbahn des Satelliten von einem perfekten Kreis abweicht. </li> <li> Argument des Perigäums - Der Winkel zwischen dem aufsteigenden Knoten und dem erdnächsten Punkt des Satelliten. </li> <li> Mittlere Anomalie - Der Winkel zwischen der Position des Satelliten zum Zeitpunkt der letzten Bahnaktualisierung und dem erdnächsten Punkt des Satelliten. </li> <li> Mittlere Bewegung - Die Geschwindigkeit, mit der sich die mittlere Anomalie des Satelliten ändert. </li> </ul>"
     },
     "NewLaunch": {
       "bottomIconLabel": "Neuer Start",
