@@ -93,7 +93,6 @@ export class Collisions extends KeepTrackPlugin {
       <div id="Collisions-menu" class="side-menu-parent start-hidden text-select">
         <div id="Collisions-content" class="side-menu">
           <div class="row">
-            <h5 class="center-align">${t7e('plugins.Collisions.title')}</h5>
             <table id="Collisions-table" class="center-align"></table>
             <sub class="center-align">*Collision data provided by CelesTrak via <a href="https://celestrak.org/SOCRATES/" target="_blank" rel="noreferrer">SOCRATES</a>.</sub>
           </div>
