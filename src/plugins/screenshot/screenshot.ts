@@ -27,12 +27,12 @@ import { MenuMode } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
+import { KeepTrack } from '@app/keeptrack';
 import cameraPng from '@public/img/icons/camera.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { KeepTrack } from '@app/keeptrack';
 
 export class Screenshot extends KeepTrackPlugin {
   readonly id = 'Screenshot';
@@ -186,59 +186,83 @@ export class Screenshot extends KeepTrackPlugin {
   private watermarkedDataUrl_() {
     const canvas = ServiceLocator.getRenderer().domElement;
 
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
+    // Stage 1: Composite WebGL + plugin overlays onto a source canvas
+    const srcCanvas = document.createElement('canvas');
 
-    if (!tempCtx) {
+    srcCanvas.width = canvas.width;
+    srcCanvas.height = canvas.height;
+    const srcCtx = srcCanvas.getContext('2d');
+
+    if (!srcCtx) {
       errorManagerInstance.warn('Failed to get 2D context for temporary canvas. Unable to create screenshot.');
 
       return '';
     }
 
+    srcCtx.drawImage(canvas, 0, 0);
 
-    const cw = tempCanvas.width;
-    const ch = tempCanvas.height;
+    // Allow plugins to draw overlays (e.g. polar view labels) onto the screenshot
+    EventBus.getInstance().emit(EventBusEvent.screenshotComposite, srcCtx, srcCanvas.width, srcCanvas.height);
 
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+    // Stage 2: Optionally crop to 1:1 square
+    const shouldCrop = EventBus.getInstance().methods.screenshotShouldCropSquare();
+    let outCanvas: HTMLCanvasElement;
+    let outCtx: CanvasRenderingContext2D;
 
+    if (shouldCrop && srcCanvas.width !== srcCanvas.height) {
+      const size = Math.min(srcCanvas.width, srcCanvas.height);
+      const sx = Math.round((srcCanvas.width - size) / 2);
+      const sy = Math.round((srcCanvas.height - size) / 2);
+
+      outCanvas = document.createElement('canvas');
+      outCanvas.width = size;
+      outCanvas.height = size;
+      outCtx = outCanvas.getContext('2d')!;
+      outCtx.drawImage(srcCanvas, sx, sy, size, size, 0, 0, size, size);
+    } else {
+      outCanvas = srcCanvas;
+      outCtx = srcCtx;
+    }
+
+    const ow = outCanvas.width;
+    const oh = outCanvas.height;
+
+    // Stage 3: Draw logos onto the final output canvas
     const logoHeight = 200 * (settingsManager.hiResWidth ?? 3840) / 3840;
-    let logoWidth: number; // with will be calculated based on height
-    const padding = 50;
-
-    tempCtx.drawImage(canvas, 0, 0);
+    let logoWidth: number;
+    const padding = shouldCrop ? 100 : 50;
 
     if (settingsManager.isShowSecondaryLogo && this.secondaryLogo) {
       // Draw secondary logo on the left
       logoWidth = this.secondaryLogo.width * (logoHeight / this.secondaryLogo.height);
-      tempCtx.drawImage(this.secondaryLogo, padding, canvas.height - logoHeight - padding, logoWidth, logoHeight);
+      outCtx.drawImage(this.secondaryLogo, padding, oh - logoHeight - padding, logoWidth, logoHeight);
       // Draw primary logo to the right of secondary logo
       logoWidth = this.logo.width * (logoHeight / this.logo.height);
-      tempCtx.drawImage(this.logo, padding + logoWidth + padding, canvas.height - logoHeight - padding, logoWidth, logoHeight);
+      outCtx.drawImage(this.logo, padding + logoWidth + padding, oh - logoHeight - padding, logoWidth, logoHeight);
     } else {
       // Draw only primary logo on the right
       logoWidth = this.logo.width * (logoHeight / this.logo.height);
-      tempCtx.drawImage(this.logo, canvas.width - logoWidth - padding, canvas.height - logoHeight - padding, logoWidth, logoHeight);
+      outCtx.drawImage(this.logo, ow - logoWidth - padding, oh - logoHeight - padding, logoWidth, logoHeight);
     }
 
+    // Stage 4: Draw classification text
     const { classificationstr, classificationColor } = Screenshot.calculateClassificationText_();
 
     if (classificationstr !== '') {
-      tempCtx.font = '24px nasalization';
-      tempCtx.globalAlpha = 1.0;
+      outCtx.font = '24px nasalization';
+      outCtx.globalAlpha = 1.0;
+      outCtx.fillStyle = classificationColor;
 
-      tempCtx.fillStyle = classificationColor;
+      const textWidth = outCtx.measureText(classificationstr).width;
 
-      const textWidth = tempCtx.measureText(classificationstr).width;
-
-      tempCtx.fillText(classificationstr, cw / 2 - textWidth, ch - 20);
-      tempCtx.fillText(classificationstr, cw / 2 - textWidth, 34);
+      outCtx.fillText(classificationstr, ow / 2 - textWidth, oh - 20);
+      outCtx.fillText(classificationstr, ow / 2 - textWidth, 34);
     }
 
-    KeepTrack.getInstance().containerRoot.appendChild(tempCanvas);
-    const image = tempCanvas.toDataURL();
+    KeepTrack.getInstance().containerRoot.appendChild(outCanvas);
+    const image = outCanvas.toDataURL();
 
-    tempCanvas.parentNode!.removeChild(tempCanvas);
+    outCanvas.parentNode!.removeChild(outCanvas);
 
     return image;
   }
