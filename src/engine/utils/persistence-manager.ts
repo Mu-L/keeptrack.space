@@ -91,6 +91,9 @@ export enum StorageKey {
   // Observation Reader
   OBSERVATION_STATIONS = 'v2-keepTrack-observationStations',
 
+  // Sat Constellations
+  LAST_CONSTELLATION = 'v2-keepTrack-lastConstellation',
+
   VERSION = 'v2-version',
 }
 export class PersistenceManager {
