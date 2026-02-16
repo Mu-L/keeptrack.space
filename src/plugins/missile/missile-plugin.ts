@@ -51,7 +51,6 @@ export class MissilePlugin extends KeepTrackPlugin {
     <div id="${this.id}-menu" class="side-menu-parent start-hidden text-select">
       <div id="${this.id}-content" class="side-menu">
         <div class="row">
-          <h5 class="center-align">Create Missile Attack</h5>
           <form id="${this.id}-menu-form" class="col s12">
             <div class="input-field col s12">
               <select id="ms-type">
