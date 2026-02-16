@@ -1,19 +1,48 @@
-import { SplashScreen } from '@app/app/ui/splash-screen';
 import { t7e, TranslationKey } from '@app/locales/keys';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { fadeIn, fadeOut } from './fade';
-import { getEl } from './get-el';
 import { ServiceLocator } from '../core/service-locator';
 
-const messages = ['cunningPlan', 'satIntel', 'science', 'math'];
+const messages_ = [
+  'cunningPlan', 'satIntel', 'science', 'science2', 'math',
+  'dots', 'painting', 'coloring', 'elsets', 'models',
+];
 
-const getRandomMessage = () => {
-  const randomIndex = Math.floor(Math.random() * messages.length);
+let overlayEl_: HTMLElement | null = null;
+let textEl_: HTMLElement | null = null;
 
-
-  const msg = messages[randomIndex];
+const getRandomMessage_ = () => {
+  const randomIndex = Math.floor(Math.random() * messages_.length);
+  const msg = messages_[randomIndex];
 
   return t7e(`loadingScreenMsgs.${msg}` as TranslationKey);
+};
+
+const ensureOverlayExists_ = (): HTMLElement => {
+  if (overlayEl_ && overlayEl_.isConnected) {
+    return overlayEl_;
+  }
+
+  overlayEl_ = document.createElement('div');
+  overlayEl_.id = 'loading-overlay';
+
+  const inner = document.createElement('div');
+
+  inner.id = 'loading-overlay-inner';
+
+  const spinner = document.createElement('div');
+
+  spinner.id = 'loading-overlay-spinner';
+
+  textEl_ = document.createElement('span');
+  textEl_.id = 'loading-overlay-text';
+
+  inner.appendChild(spinner);
+  inner.appendChild(textEl_);
+  overlayEl_.appendChild(inner);
+  document.body.appendChild(overlayEl_);
+
+  return overlayEl_;
 };
 
 /**
@@ -22,18 +51,15 @@ const getRandomMessage = () => {
  * Use -1 to show loading screen indefinitely and remove it manually
  */
 export const showLoading = (callback?: () => void, delay?: number): void => {
-  const loading = getEl('loading-screen', true);
+  const overlay = ensureOverlayExists_();
 
-  // Pick a random loading screen message
-
-  if (!loading) {
-    return;
+  if (textEl_) {
+    textEl_.textContent = getRandomMessage_();
   }
-  SplashScreen.loadStr(getRandomMessage());
 
   ServiceLocator.getSoundManager()?.play(SoundNames.LOADING);
 
-  fadeIn(loading, 'flex', 500);
+  fadeIn(overlay, 'flex', 500);
 
   setTimeout(() => {
     if (callback) {
@@ -49,22 +75,20 @@ export const showLoading = (callback?: () => void, delay?: number): void => {
 };
 
 export const showLoadingSticky = (): void => {
-  const loading = getEl('loading-screen');
+  const overlay = ensureOverlayExists_();
 
-  if (!loading) {
-    return;
+  if (textEl_) {
+    textEl_.textContent = getRandomMessage_();
   }
 
-  fadeIn(loading, 'flex', 500);
+  fadeIn(overlay, 'flex', 500);
 };
 
 export const hideLoading = () => {
-  const loading = getEl('loading-screen');
-
-  if (!loading) {
+  if (!overlayEl_) {
     return;
   }
 
-  fadeOut(loading, 1000);
+  fadeOut(overlayEl_, 1000);
   ServiceLocator.getSoundManager()?.stop(SoundNames.LOADING);
 };

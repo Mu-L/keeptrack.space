@@ -106,6 +106,7 @@ export class KeepTrack {
 
     if (!this.settingsOverride_.isPreventDefaultHtml) {
       import(/* webpackMode: "eager" */ '@css/loading-screen.css');
+      import(/* webpackMode: "eager" */ '@css/loading-overlay.css');
       KeepTrack.getDefaultBodyHtml();
       BottomMenu.init();
 
