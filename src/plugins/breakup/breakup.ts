@@ -99,7 +99,6 @@ export class Breakup extends KeepTrackPlugin {
       <div id="breakup-menu" class="side-menu-parent start-hidden text-select">
         <div id="breakup-content" class="side-menu">
           <div class="row">
-            <h5 class="center-align">Breakup Simulator</h5>
             <form id="breakup" class="col s12">
               <div class="input-field col s12">
                 <input disabled value="00005" id="hc-scc" type="text" />
