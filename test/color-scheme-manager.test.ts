@@ -402,9 +402,16 @@ describe('ColorSchemeManager', () => {
     testMultipleSats(colorSchemeManager, listOfSatsToTest, test);
   });
 
-  // Test isPayloadOff color scheme
-  it('should be able to get isPayloadOff color scheme', () => {
-    const test = (sat: BaseObject) => colorSchemeManager.isPayloadOff(sat);
+  // Test isOperationalPayloadOff color scheme
+  it('should be able to get isOperationalPayloadOff color scheme', () => {
+    const test = (sat: BaseObject) => colorSchemeManager.isOperationalPayloadOff(sat);
+
+    testMultipleSats(colorSchemeManager, listOfSatsToTest, test);
+  });
+
+  // Test isNonOperationalPayloadOff color scheme
+  it('should be able to get isNonOperationalPayloadOff color scheme', () => {
+    const test = (sat: BaseObject) => colorSchemeManager.isNonOperationalPayloadOff(sat);
 
     testMultipleSats(colorSchemeManager, listOfSatsToTest, test);
   });
