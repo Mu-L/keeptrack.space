@@ -2,6 +2,7 @@ import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { keepTrackApi } from '@app/keepTrackApi';
 import { t7e } from '@app/locales/keys';
+import { settingsManager } from '@app/settings/settings';
 import gpsPng from '@public/img/icons/gps.png';
 
 import { CatalogManager } from '@app/app/data/catalog-manager';
@@ -12,70 +13,124 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { DopMath, ElevationMaskFn } from '@app/engine/math/dop-math';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import {
+  IBottomIconConfig,
+  IDragOptions,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { Degrees, Kilometers, Satellite, TemeVec3, eci2lla } from '@ootk/src/main';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import './dops.css';
 
 export class DopsPlugin extends KeepTrackPlugin {
   readonly id = 'DopsPlugin';
   dependencies_ = [];
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  // =========================================================================
+  // Composition-based configuration methods
+  // =========================================================================
 
-  bottomIconImg = gpsPng;
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'menu-dops',
+      label: t7e('plugins.DopsPlugin.bottomIconLabel' as Parameters<typeof t7e>[0]),
+      image: gpsPng,
+      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+    };
+  }
+
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'dops-menu',
+      title: t7e('plugins.DopsPlugin.title'),
+      html: this.buildSideMenuHtml_(),
+      dragOptions: this.getDragOptions_(),
+    };
+  }
+
+  protected getDragOptions_(): IDragOptions {
+    return {
+      isDraggable: true,
+      minWidth: 550,
+      maxWidth: 800,
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.DopsPlugin.helpTitle'),
+      body: t7e('plugins.DopsPlugin.helpBody'),
+    };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'D',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
+  // =========================================================================
+  // Side menu HTML
+  // =========================================================================
+
+  protected buildSideMenuHtml_(): string {
+    return html`
+    <div id="dops-menu" class="side-menu-parent start-hidden text-select">
+      <div id="dops-content" class="side-menu">
+        <div class="row">
+          <h5 class="center-align">${t7e('plugins.DopsPlugin.title')}</h5>
+        </div>
+        <form id="dops-form">
+          <div class="switch row">
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.latitude')}">
+              <input value="41" id="dops-lat" type="text">
+              <label for="dops-lat" class="active">${t7e('plugins.DopsPlugin.labels.latitude')}</label>
+            </div>
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.longitude')}">
+              <input value="-71" id="dops-lon" type="text">
+              <label for="dops-lon" class="active">${t7e('plugins.DopsPlugin.labels.longitude')}</label>
+            </div>
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.altitude')}">
+              <input value="0" id="dops-alt" type="text">
+              <label for="dops-alt" class="active">${t7e('plugins.DopsPlugin.labels.altitude')}</label>
+            </div>
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.mask')}">
+              <input value="15" id="dops-el" type="text">
+              <label for="dops-el" class="active">${t7e('plugins.DopsPlugin.labels.mask')}</label>
+            </div>
+          </div>
+          <div class="row center">
+            <button id="dops-submit" class="btn btn-ui waves-effect waves-light" type="submit"
+              name="action">${t7e('plugins.DopsPlugin.labels.updateDopData')} &#9658;
+            </button>
+          </div>
+        </form>
+      <div class="row">
+        <table id="dops" class="center-align striped-light centered"></table>
+      </div>
+    </div>`;
+  }
+
+  // =========================================================================
+  // Legacy bridges
+  // =========================================================================
+
   bottomIconCallback = (): void => {
     if (this.isMenuButtonActive) {
       showLoading(() => this.updateSideMenu());
     }
   };
 
-  dragOptions: ClickDragOptions = {
-    isDraggable: true,
-    minWidth: 550,
-    maxWidth: 800,
-  };
-
-  helpTitle = t7e('plugins.DopsPlugin.helpTitle');
-  helpBody = t7e('plugins.DopsPlugin.helpBody');
-
-  sideMenuElementName = 'dops-menu';
-  sideMenuElementHtml = html`
-  <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden text-select">
-    <div id="dops-content" class="side-menu">
-      <div class="row">
-        <h5 class="center-align">${t7e('plugins.DopsPlugin.title')}</h5>
-      </div>
-      <form id="dops-form">
-        <div class="switch row">
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.latitude')}">
-            <input value="41" id="dops-lat" type="text">
-            <label for="dops-lat" class="active">${t7e('plugins.DopsPlugin.labels.latitude')}</label>
-          </div>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.longitude')}">
-            <input value="-71" id="dops-lon" type="text">
-            <label for="dops-lon" class="active">${t7e('plugins.DopsPlugin.labels.longitude')}</label>
-          </div>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.altitude')}">
-            <input value="0" id="dops-alt" type="text">
-            <label for="dops-alt" class="active">${t7e('plugins.DopsPlugin.labels.altitude')}</label>
-          </div>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.mask')}">
-            <input value="15" id="dops-el" type="text">
-            <label for="dops-el" class="active">${t7e('plugins.DopsPlugin.labels.mask')}</label>
-          </div>
-        </div>
-        <div class="row center">
-          <button id="dops-submit" class="btn btn-ui waves-effect waves-light" type="submit"
-            name="action">${t7e('plugins.DopsPlugin.labels.updateDopData')} &#9658;
-          </button>
-        </div>
-      </form>
-    <div class="row">
-      <table id="dops" class="center-align striped-light centered"></table>
-    </div>
-  </div>`;
+  // =========================================================================
+  // Context menu
+  // =========================================================================
 
   rmbL1ElementName = 'dops-rmb';
   rmbL1Html = html`
@@ -98,8 +153,9 @@ export class DopsPlugin extends KeepTrackPlugin {
     switch (targetId) {
       case 'dops-curdops-rmb': {
         {
-          let latLon = ServiceLocator.getInputManager().mouse.latLon;
-          const dragPosition = ServiceLocator.getInputManager().mouse.dragPosition;
+          const inputManager = ServiceLocator.getInputManager();
+          let latLon = inputManager.mouse.latLon;
+          const dragPosition = inputManager.mouse.dragPosition;
 
           if (typeof latLon === 'undefined' || isNaN(latLon.lat) || isNaN(latLon.lon)) {
             errorManagerInstance.debug('latLon undefined!');
@@ -158,6 +214,10 @@ export class DopsPlugin extends KeepTrackPlugin {
         break;
     }
   };
+
+  // =========================================================================
+  // Lifecycle
+  // =========================================================================
 
   addJs(): void {
     super.addJs();
