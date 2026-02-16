@@ -18,6 +18,7 @@ import { Planet as PlanetDot } from '../objects/planet';
 import { SensorMath } from '../sensors/sensor-math';
 import { StringExtractor } from './string-extractor';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { CameraType } from '@app/engine/camera/camera';
 
 export class HoverManager {
   /** The id of the object currently being hovered */
@@ -148,23 +149,32 @@ export class HoverManager {
         return;
       }
 
-      const satScreenPositionArray = renderer.getScreenCoords(obj);
+      // In polar view, getScreenCoords projects ECI positions which don't match
+      // the shader-transformed polar positions — use the mouse position directly.
+      const isPolarView = ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW;
 
-      if (
-        satScreenPositionArray.error ||
-        typeof satScreenPositionArray.x === 'undefined' ||
-        typeof satScreenPositionArray.y === 'undefined' ||
-        satScreenPositionArray.x > window.innerWidth ||
-        satScreenPositionArray.y > window.innerHeight
-      ) {
-        // If the mouse moves off the screen there is an intermittent error finding the screen position
-        this.satHoverBoxDOM.style.display = 'none';
+      if (!isPolarView || typeof screenX === 'undefined' || typeof screenY === 'undefined') {
+        const satScreenPositionArray = renderer.getScreenCoords(obj);
 
-        /*
-         * This happens when we are zoomed in and can't see the object being hovered over in the search bar.
-         * errorManagerInstance.debug('Issue drawing hover box, skipping');
-         */
-        return;
+        if (
+          satScreenPositionArray.error ||
+          typeof satScreenPositionArray.x === 'undefined' ||
+          typeof satScreenPositionArray.y === 'undefined' ||
+          satScreenPositionArray.x > window.innerWidth ||
+          satScreenPositionArray.y > window.innerHeight
+        ) {
+          // If the mouse moves off the screen there is an intermittent error finding the screen position
+          this.satHoverBoxDOM.style.display = 'none';
+
+          /*
+           * This happens when we are zoomed in and can't see the object being hovered over in the search bar.
+           * errorManagerInstance.debug('Issue drawing hover box, skipping');
+           */
+          return;
+        }
+
+        screenX ??= satScreenPositionArray.x;
+        screenY ??= satScreenPositionArray.y;
       }
 
       this.init();
@@ -176,9 +186,6 @@ export class HoverManager {
       } else {
         this.staticObj_(obj as LandObject);
       }
-
-      screenX ??= satScreenPositionArray.x;
-      screenY ??= satScreenPositionArray.y;
 
       const style = {
         display: 'flex',
@@ -399,6 +406,7 @@ export class HoverManager {
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
     this.currentHoverId = id;
+
     if (id !== -1 && catalogManagerInstance.objectCache[id]?.type !== SpaceObjectType.STAR) {
       orbitManagerInstance.setHoverOrbit(id);
     } else {
