@@ -72,6 +72,7 @@ This is one of the most common bugs. The plugin's `id` property is used as a pre
 - [ ] If a Pro extension exists in `src/plugins-pro/`, it has its **own** `locales/` directory with keys for any additional UI it adds (new tabs, toasts, labels).
 - [ ] Locale files are named `*.src.json` (not `*.json`).
 - [ ] Locale JSON is wrapped in a `"plugins"` object: `{ "plugins": { "PluginName": { ... } } }`.
+- [ ] **Translations are written in the target language** — not as Unicode escape sequences (`\u00e9`). Locale files must be human-readable: `"Périgée"` not `"\u0050\u00e9\u0072\u0069\u0067\u00e9\u0065"`. Unicode escapes make translations unverifiable without decoding. If you generate locale files, write the actual characters (UTF-8).
 - [ ] Static arrays/options with translated text use `static get` (lazy getter) not `static` property (evaluated at parse time before localization loads).
 
 ### 2.5 Help Content
@@ -104,6 +105,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] DOM event listeners are registered in a `uiManagerFinal` handler (not in `addJs()` directly), since DOM elements aren't created until after `uiManagerInit`.
 - [ ] Event subscriptions use `.bind(this)` or arrow functions to preserve context.
 - [ ] `EventBus.getInstance()` calls are not repeated excessively — cache if used more than twice in the same method.
+- [ ] **Persistence restore in `uiManagerFinal`**: Code that restores persisted state (e.g., auto-selecting last constellation, re-opening a panel) must NOT call UI methods like `uiManager.hideSideMenus()` or `searchManager.closeSearch()` that may not be fully wired yet. Use a `skipCloseMenus` parameter or guard with optional chaining (`uiManagerInstance?.hideSideMenus?.()`). This is a common source of startup crashes.
 
 ### 2.9 Satellite/Sensor Requirements
 
@@ -126,6 +128,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] Non-null assertions (the ! operator) are justified — the element genuinely must exist at that point.
 - [ ] `dataset` property reads check for `undefined` (not just `null`) since `HTMLElement.dataset[key]` returns `undefined` when missing. Common bug: `if (dataset.row !== null)` should be `!== undefined`.
 - [ ] Null checks guard against missing satellites, DOM elements, etc. before accessing properties.
+- [ ] **`getEl()` in table/UI population methods**: `getEl(id)` throws when the element doesn't exist and `isExpectedMissing` is `false` (default). Methods like `populateTable_()` that may run during startup restore (before DOM is fully built) should guard with `if (!getEl('element-id', true)) { return; }`. This also prevents test failures in Node/vitest where JSDOM elements aren't created.
 
 ### 2.12 Tests
 
@@ -137,6 +140,8 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] `onBottomIconClick` / `bottomIconCallback` bridge is tested.
 - [ ] Core business logic has dedicated tests.
 - [ ] Tests that assert on toast/error message strings use the `t7e()` key (not hardcoded English), since `t7e()` returns the key string when locales aren't loaded in the test environment.
+- [ ] **Persistence restore paths are tested**: If the plugin restores state from `PersistenceManager` on startup, tests should verify that this code path doesn't crash when UI services are incomplete (mock `ServiceLocator` methods returning partial objects).
+- [ ] **Static→instance method migration**: When a `static` public method is converted to `private` instance, old tests using `Class.method = vi.fn()` must be updated to use bracket notation `(plugin as any).method_(args)` or `vi.spyOn` on the instance.
 
 ### 2.13 MenuMode
 
@@ -181,3 +186,19 @@ Present findings as a structured report with these sections:
 5. **Summary** — Overall health score (Critical/Warn/Good) and prioritized list of recommended fixes
 
 For each issue, reference the specific file and line number using markdown link format: `[file.ts:42](path/to/file.ts#L42)`.
+
+## Appendix: Common Pitfalls Found in Reviews
+
+These patterns have caused real bugs in past reviews. Pay special attention to them:
+
+1. **Persistence restore crashes at startup**: Code in `uiManagerFinal` that calls `constellationMenuClick_()` or similar with persisted state will crash if that method internally calls `uiManager.hideSideMenus()` — the UI manager may not be fully wired at that point. Fix: add a `skipCloseMenus` parameter or guard UI calls.
+
+2. **`getEl()` throws in tests**: `getEl(id)` throws when `isExpectedMissing` defaults to `false` and the element doesn't exist. In Node/vitest tests, DOM elements from `getSideMenuConfig().html` aren't created unless the full init lifecycle runs. Methods called during tests or startup restore should use `getEl(id, true)` with an early return.
+
+3. **Typos in data slugs are breaking changes**: Renaming a data slug like `AmatuerRadio` → `AmateurRadio` fixes the typo but breaks persisted state and any external code referencing the old slug. Flag these as breaking changes in the report.
+
+4. **Locale migration must touch all 9 global files**: When moving locale keys from `src/locales/*.src.json` to `src/plugins/<name>/locales/`, entries must be removed from ALL 9 global files. Missing one causes duplicate keys and build warnings.
+
+5. **`addConstellation()` as a public API**: Plugins that let external code register items (constellations, filters, etc.) should include those dynamic items in `getCommandPaletteCommands()`. Test that dynamically added items appear in the command list.
+
+6. **Stats calculation edge cases**: When computing orbital stats (avg altitude, plane count), guard against empty satellite arrays (division by zero) and handle satellites with missing orbital elements (`apogee`, `perigee`, `inclination` may be 0 or undefined for debris/unknown objects).
