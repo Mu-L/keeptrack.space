@@ -33,7 +33,7 @@ import { UrlManager } from '@app/engine/input/url-manager';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
-import { CatalogSource, Satellite, SpaceObjectType } from '@ootk/src/main';
+import { CatalogSource, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import { TimeMachine } from '../../plugins/time-machine/time-machine';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
@@ -292,8 +292,13 @@ export class ColorSchemeManager {
   isInViewOff(obj: BaseObject) {
     return ServiceLocator.getDotsManager().inViewData?.[Number(obj.id)] === 1 && !this.currentColorScheme?.objectTypeFlags.inFOV;
   }
-  isPayloadOff(obj: BaseObject) {
-    return settingsManager.filter?.payloads === false && obj.type === SpaceObjectType.PAYLOAD;
+  isOperationalPayloadOff(obj: BaseObject) {
+    return settingsManager.filter?.operationalPayloads === false && obj.type === SpaceObjectType.PAYLOAD &&
+      (obj as Satellite).status !== PayloadStatus.NONOPERATIONAL && (obj as Satellite).status !== PayloadStatus.UNKNOWN;
+  }
+  isNonOperationalPayloadOff(obj: BaseObject) {
+    return settingsManager.filter?.nonOperationalPayloads === false && obj.type === SpaceObjectType.PAYLOAD &&
+      ((obj as Satellite).status === PayloadStatus.NONOPERATIONAL || (obj as Satellite).status === PayloadStatus.UNKNOWN);
   }
   isRocketBodyOff(obj: BaseObject) {
     return settingsManager.filter?.rocketBodies === false && obj.type === SpaceObjectType.ROCKET_BODY;
@@ -547,7 +552,13 @@ export class ColorSchemeManager {
         pickable: Pickable.No,
       };
     }
-    if (this.isPayloadOff(sat)) {
+    if (this.isOperationalPayloadOff(sat)) {
+      return {
+        color: [0, 0, 0, 0],
+        pickable: Pickable.No,
+      };
+    }
+    if (this.isNonOperationalPayloadOff(sat)) {
       return {
         color: [0, 0, 0, 0],
         pickable: Pickable.No,

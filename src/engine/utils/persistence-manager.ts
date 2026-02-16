@@ -40,7 +40,8 @@ export enum StorageKey {
   GRAPHICS_SETTINGS_GODRAYS_ILLUMINATION_DECAY = 'v2-keepTrack-graphicsSettings-godraysIlluminationDecay',
   GRAPHICS_SETTINGS_EARTH_DAY_RESOLUTION = 'v2-keepTrack-graphicsSettings-earthDayResolution',
   GRAPHICS_SETTINGS_EARTH_NIGHT_RESOLUTION = 'v2-keepTrack-graphicsSettings-earthNightResolution',
-  FILTER_SETTINGS_PAYLOADS = 'v2-filter-settings-payload',
+  FILTER_SETTINGS_OPERATIONAL_PAYLOADS = 'v2-filter-settings-operational-payloads',
+  FILTER_SETTINGS_NON_OPERATIONAL_PAYLOADS = 'v2-filter-settings-non-operational-payloads',
   FILTER_SETTINGS_ROCKET_BODIES = 'v2-filter-settings-rocket-bodies',
   FILTER_SETTINGS_DEBRIS = 'v2-filter-settings-debris',
   FILTER_SETTINGS_UNKNOWN_TYPE = 'v2-filter-settings-unknown-type',
@@ -67,6 +68,8 @@ export enum StorageKey {
   FILTER_SETTINGS_AUSTRALIA = 'v2-filter-settings-australia',
   FILTER_SETTINGS_OTHER_COUNTRIES = 'v2-filter-settings-other-countries',
   FILTER_SETTINGS_STARLINK = 'v2-filter-settings-starlink',
+  FILTER_SETTINGS_GROUND_SENSORS = 'v2-filter-settings-ground-sensors',
+  FILTER_SETTINGS_LAUNCH_FACILITIES = 'v2-filter-settings-launch-facilities',
   SENSOR_TIMELINE_ENABLED_SENSORS = 'v2-sensor-timeline-enabled-sensors',
 
   // Symbology
