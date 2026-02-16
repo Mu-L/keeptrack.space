@@ -9,6 +9,7 @@ import {
   IContextMenuConfig,
   IDragOptions,
   IHelpConfig,
+  IKeyboardShortcut,
   ISideMenuConfig,
 } from '@app/engine/plugins/core/plugin-capabilities';
 import { ColorScheme } from '@app/engine/rendering/color-schemes/color-scheme';
@@ -16,6 +17,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
+import { settingsManager } from '@app/settings/settings';
 import palettePng from '@public/img/icons/palette.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
@@ -131,6 +133,15 @@ export class ColorMenu extends KeepTrackPlugin {
       this.onContextMenuAction(targetId);
     }
   };
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'A',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
 
   getHelpConfig(): IHelpConfig {
     return {

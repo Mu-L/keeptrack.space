@@ -224,8 +224,8 @@ describe('ColorMenu_class', () => {
           vi.advanceTimersByTime(1000);
         }).not.toThrow();
       });
-      // Restore fake timers to avoid leaking real timers to other test files
-      vi.useFakeTimers();
+      // Restore real timers to avoid leaking fake timers to other test files
+      vi.useRealTimers();
     }, 20000);
   });
 
