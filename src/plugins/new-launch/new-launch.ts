@@ -9,6 +9,8 @@ import { SatMath } from '@app/app/analysis/sat-math';
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import { LaunchSite } from '@app/app/data/catalog-manager/LaunchFacility';
 import { launchSites } from '@app/app/data/catalogs/launch-sites';
+import { SoundNames } from '@app/engine/audio/sounds';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { TimeManager } from '@app/engine/core/time-manager';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -19,13 +21,16 @@ import { t7e } from '@app/locales/keys';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
 import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import {
-  BaseObject, Degrees, Satellite, SatelliteParams, TemeVec3, FormatTle, KilometersPerSecond,
-  SatelliteRecord, Sgp4, SpaceObjectType, TleLine1, TleLine2, OrbitFinder,
+  BaseObject, Degrees,
+  FormatTle, KilometersPerSecond,
+  OrbitFinder,
+  Satellite, SatelliteParams,
+  SatelliteRecord, Sgp4, SpaceObjectType,
+  TemeVec3,
+  TleLine1, TleLine2,
 } from '@ootk/src/main';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 export class NewLaunch extends KeepTrackPlugin {
   readonly id = 'NewLaunch';
@@ -63,7 +68,7 @@ export class NewLaunch extends KeepTrackPlugin {
     (<HTMLInputElement>getEl('nl-inc')).value = sat.inclination.toFixed(4).padStart(8, '0');
   };
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
 
   bottomIconImg = rocketLaunchPng;
   isRequireSatelliteSelected = true;
