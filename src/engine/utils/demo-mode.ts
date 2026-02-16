@@ -55,7 +55,8 @@ export class DemoManager {
 
       if (
         !sat.isSatellite() ||
-        colorSchemeManagerInstance.isPayloadOff(sat) ||
+        colorSchemeManagerInstance.isOperationalPayloadOff(sat) ||
+        colorSchemeManagerInstance.isNonOperationalPayloadOff(sat) ||
         colorSchemeManagerInstance.isRocketBodyOff(sat) ||
         colorSchemeManagerInstance.isDebrisOff(sat) ||
         colorSchemeManagerInstance.isInViewOff(sat)
