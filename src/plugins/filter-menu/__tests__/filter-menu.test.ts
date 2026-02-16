@@ -66,11 +66,10 @@ describe('FilterMenuPlugin_class', () => {
       expect(shortcuts[0].callback).toBeDefined();
     });
 
-    it('should build side menu HTML with filter-menu element', () => {
+    it('should build side menu HTML with filter-form element', () => {
       const plugin = new FilterMenuPlugin();
       const html = plugin['buildSideMenuHtml_']();
 
-      expect(html).toContain('filter-menu');
       expect(html).toContain('filter-form');
       expect(html).toContain('filter-reset');
     });
@@ -194,7 +193,7 @@ describe('FilterMenuPlugin_class', () => {
 
     it('should have all expected filter keys in FILTER_STORAGE_MAP', () => {
       const storageMap = FilterMenuPlugin['FILTER_STORAGE_MAP'];
-      const expectedKeys = ['payloads', 'rocketBodies', 'debris', 'unknownType', 'agencies'];
+      const expectedKeys = ['operationalPayloads', 'nonOperationalPayloads', 'rocketBodies', 'debris', 'unknownType', 'agencies', 'groundSensors', 'launchFacilities'];
 
       expectedKeys.forEach((key) => {
         expect(storageMap[key]).toBeDefined();
@@ -502,11 +501,14 @@ describe('FilterMenuPlugin_class', () => {
     const VALID_FILTER_SETTINGS_KEYS: (keyof FilterPluginSettings)[] = [
       'xGEOSatellites',
       'vLEOSatellites',
-      'payloads',
+      'operationalPayloads',
+      'nonOperationalPayloads',
       'rocketBodies',
       'debris',
       'unknownType',
       'agencies',
+      'groundSensors',
+      'launchFacilities',
       'starlinkSatellites',
       'hEOSatellites',
       'mEOSatellites',
@@ -659,10 +661,13 @@ describe('FilterMenuPlugin_class', () => {
       const filters = FilterMenuPlugin['filters'];
       const filterIds = filters.map((f) => f.id);
 
-      expect(filterIds).toContain('payloads');
+      expect(filterIds).toContain('operationalPayloads');
+      expect(filterIds).toContain('nonOperationalPayloads');
       expect(filterIds).toContain('rocketBodies');
       expect(filterIds).toContain('debris');
       expect(filterIds).toContain('unknownType');
+      expect(filterIds).toContain('groundSensors');
+      expect(filterIds).toContain('launchFacilities');
     });
 
     it('should include all country filters', () => {
@@ -725,7 +730,8 @@ describe('FilterMenuPlugin_class', () => {
 
     it('should have filters without explicit checked property default to undefined', () => {
       const filters = FilterMenuPlugin['filters'];
-      const filtersWithoutChecked = filters.filter((f) => f.id !== 'agencies');
+      const filtersWithExplicitChecked = new Set(['agencies', 'groundSensors', 'launchFacilities']);
+      const filtersWithoutChecked = filters.filter((f) => !filtersWithExplicitChecked.has(f.id!));
 
       filtersWithoutChecked.forEach((filter) => {
         expect(filter.checked).toBeUndefined();
@@ -915,7 +921,8 @@ describe('FilterMenuPlugin_class', () => {
 
       plugin['showOnlyPayloads_']();
 
-      expect((getEl('filter-payloads') as HTMLInputElement)?.checked).toBe(true);
+      expect((getEl('filter-operationalPayloads') as HTMLInputElement)?.checked).toBe(true);
+      expect((getEl('filter-nonOperationalPayloads') as HTMLInputElement)?.checked).toBe(true);
       expect((getEl('filter-debris') as HTMLInputElement)?.checked).toBe(false);
       expect((getEl('filter-rocketBodies') as HTMLInputElement)?.checked).toBe(false);
       expect((getEl('filter-unknownType') as HTMLInputElement)?.checked).toBe(false);
