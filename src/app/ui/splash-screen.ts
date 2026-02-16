@@ -8,16 +8,15 @@ import { html } from '@app/engine/utils/development/formatter';
 import blueMarbleJpg from '@public/img/wallpaper/blue-marble.jpg';
 import cspocJpg from '@public/img/wallpaper/cspoc.jpg';
 import cspoc2Jpg from '@public/img/wallpaper/cspoc2.jpg';
-import earthJpg from '@public/img/wallpaper/Earth.jpg';
 import epfl1Jpg from '@public/img/wallpaper/epfl-1.jpg';
 import epfl2Jpg from '@public/img/wallpaper/epfl-2.jpg';
-import marsSurfaceJpg from '@public/img/wallpaper/mars-surface.jpg';
 import marsJpg from '@public/img/wallpaper/mars.jpg';
 import moonJpg from '@public/img/wallpaper/moon.jpg';
 import observatoryJpg from '@public/img/wallpaper/observatory.jpg';
 import opsJpg from '@public/img/wallpaper/ops.jpg';
 import ops2Jpg from '@public/img/wallpaper/ops2.jpg';
 import ops3Jpg from '@public/img/wallpaper/ops3.jpg';
+import ops4Jpg from '@public/img/wallpaper/ops4.jpg';
 import rocketJpg from '@public/img/wallpaper/rocket.jpg';
 import rocket2Jpg from '@public/img/wallpaper/rocket2.jpg';
 import rocket3Jpg from '@public/img/wallpaper/rocket3.jpg';
@@ -30,9 +29,9 @@ export abstract class SplashScreen {
   private static splashScreenImgList_ =
     [
       cspocJpg, cspoc2Jpg,
-      blueMarbleJpg, moonJpg, observatoryJpg, thuleJpg, rocketJpg, rocket2Jpg, telescopeJpg, rocket3Jpg, rocket4Jpg, earthJpg,
-      epfl1Jpg, epfl2Jpg, opsJpg, ops2Jpg, ops3Jpg,
-      marsJpg, marsSurfaceJpg,
+      blueMarbleJpg, moonJpg, observatoryJpg, thuleJpg, rocketJpg, rocket2Jpg, telescopeJpg, rocket3Jpg, rocket4Jpg,
+      epfl1Jpg, epfl2Jpg, opsJpg, ops2Jpg, ops3Jpg, ops4Jpg,
+      marsJpg,
     ];
 
   static readonly msg = {
