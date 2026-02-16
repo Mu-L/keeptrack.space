@@ -6,7 +6,7 @@ import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-man
 import { SettingsMenuPlugin } from '@app/plugins/settings-menu/settings-menu';
 import { SettingsManager } from '@app/settings/settings';
 import { OrbitCruncherMsgType, OrbitDrawTypes } from '@app/webworker/orbit-cruncher-interfaces';
-import { BaseObject, Degrees, Satellite, Kilometers } from '@ootk/src/main';
+import { BaseObject, Degrees, Kilometers, Satellite } from '@ootk/src/main';
 import { mat4 } from 'gl-matrix';
 import { Camera, CameraType } from '../../engine/camera/camera';
 import { GetSatType } from '../../engine/core/interfaces';
@@ -204,7 +204,7 @@ export class OrbitManager {
         },
       },
       {
-        key: 'E',
+        key: 'e',
         callback: () => {
           this.toggleEciToEcf_();
           SettingsMenuPlugin.syncOnLoad();
@@ -295,6 +295,7 @@ export class OrbitManager {
       tle1,
       tle2,
       isEcfOutput: settingsManager.isOrbitCruncherInEcf,
+      isPolarViewEcf: ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW,
     });
   }
 
@@ -319,6 +320,8 @@ export class OrbitManager {
     }
 
     if (!this.inProgress_[id] && !obj.isStatic()) {
+      const isPolarView = ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW;
+
       if (obj.isMissile()) {
         this.orbitThreadMgr.postMessage({
           type: OrbitCruncherMsgType.MISSILE_UPDATE,
@@ -330,6 +333,7 @@ export class OrbitManager {
           lonList: missileParams?.lonList,
           altList: missileParams?.altList,
           isEcfOutput: settingsManager.isOrbitCruncherInEcf,
+          isPolarViewEcf: isPolarView,
         });
       } else if (obj instanceof OemSatellite) {
         this.setOemSatelliteOrbitBuffer_(id, obj.getOrbitPath(settingsManager.oemOrbitSegments));
@@ -342,6 +346,7 @@ export class OrbitManager {
           staticOffset: timeManagerInstance.staticOffset,
           propRate: timeManagerInstance.propRate,
           isEcfOutput: settingsManager.isOrbitCruncherInEcf,
+          isPolarViewEcf: isPolarView,
         });
         this.inProgress_[id] = true;
       }

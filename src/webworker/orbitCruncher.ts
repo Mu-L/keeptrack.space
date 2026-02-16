@@ -1,4 +1,4 @@
-import { DEG2RAD, eci2ecef, TemeVec3, Sgp4, TAU } from '@ootk/src/main';
+import { DEG2RAD, eci2ecef, Sgp4, TAU, TemeVec3 } from '@ootk/src/main';
 import { RADIUS_OF_EARTH } from '../engine/utils/constants';
 import { jday } from '../engine/utils/transforms';
 import {
@@ -75,6 +75,7 @@ const updateOrbitData_ = (data: OrbitCruncherInMsgSatelliteUpdate | OrbitCrunche
 
   const id = data.id;
   let isEcfOutput = data.isEcfOutput || false;
+  const isPolarViewEcf = data.isPolarViewEcf || false;
   const pointsOut = new Float32Array((numberOfSegments + 1) * 4);
 
   const len = numberOfSegments + 1;
@@ -128,14 +129,17 @@ const updateOrbitData_ = (data: OrbitCruncherInMsgSatelliteUpdate | OrbitCrunche
       isEcfOutput = false;
     }
 
+    // For polar view, center the orbit on the current position (±half period)
+    const orbitStart = isPolarViewEcf ? now - period / 2 : now;
+
     if (orbitType === OrbitDrawTypes.ORBIT) {
       while (i < len) {
-        drawTleOrbitSegment_(now, i, timeslice, id, isEcfOutput, period, pointsOut, len);
+        drawTleOrbitSegment_(orbitStart, i, timeslice, id, isEcfOutput, period, pointsOut, len, isPolarViewEcf, satrec.jdsatepoch);
         i++;
       }
     } else if (orbitType === OrbitDrawTypes.TRAIL) {
       while (i < len) {
-        drawTleOrbitSegmentTrail_(now, i, timeslice, id, isEcfOutput, period, pointsOut, len);
+        drawTleOrbitSegmentTrail_(orbitStart, i, timeslice, id, isEcfOutput, period, pointsOut, len, isPolarViewEcf, satrec.jdsatepoch);
         i++;
       }
     }
@@ -178,7 +182,11 @@ const drawMissileSegment_ = (missile: OrbitCruncherMissileObject, i: number, poi
   pointsOut[i * 4 + 3] = Math.min(orbitFadeFactor * (len / (i + 1)), 1.0);
 };
 
-const drawTleOrbitSegmentTrail_ = (now: number, i: number, timeslice: number, id: number, isEcfOutput: boolean, period: number, pointsOut: Float32Array, len: number) => {
+const drawTleOrbitSegmentTrail_ = (
+  now: number, i: number, timeslice: number, id: number, isEcfOutput: boolean,
+  period: number, pointsOut: Float32Array, len: number,
+  isPolarViewEcf: boolean, jdsatepoch: number,
+) => {
   const t = now + i * timeslice;
   const sv = Sgp4.propagate((objCache[id] as OrbitCruncherSatelliteObject).satrec, t);
 
@@ -193,7 +201,12 @@ const drawTleOrbitSegmentTrail_ = (now: number, i: number, timeslice: number, id
 
   let pos = sv.position as TemeVec3;
 
-  if (isEcfOutput) {
+  if (isPolarViewEcf) {
+    // Compute proper GMST at this specific time step for accurate sky track
+    const gmst = Sgp4.gstime(jdsatepoch + t / 1440.0);
+
+    pos = eci2ecef(pos, gmst);
+  } else if (isEcfOutput) {
     pos = eci2ecef(pos, (i * timeslice * TAU) / period);
   }
   pointsOut[i * 4] = pos.x;
@@ -202,7 +215,11 @@ const drawTleOrbitSegmentTrail_ = (now: number, i: number, timeslice: number, id
   pointsOut[i * 4 + 3] = i < len / 40 ? Math.min(orbitFadeFactor * (len / 40 / (2 * (i + 1))), 1.0) : 0.0;
 };
 
-const drawTleOrbitSegment_ = (now: number, i: number, timeslice: number, id: number, isEcfOutput: boolean, period: number, pointsOut: Float32Array, len: number) => {
+const drawTleOrbitSegment_ = (
+  now: number, i: number, timeslice: number, id: number, isEcfOutput: boolean,
+  period: number, pointsOut: Float32Array, len: number,
+  isPolarViewEcf: boolean, jdsatepoch: number,
+) => {
   const t = now + i * timeslice;
   const sv = Sgp4.propagate((objCache[id] as OrbitCruncherSatelliteObject).satrec, t);
 
@@ -217,7 +234,12 @@ const drawTleOrbitSegment_ = (now: number, i: number, timeslice: number, id: num
 
   let pos = sv.position as TemeVec3;
 
-  if (isEcfOutput) {
+  if (isPolarViewEcf) {
+    // Compute proper GMST at this specific time step for accurate sky track
+    const gmst = Sgp4.gstime(jdsatepoch + t / 1440.0);
+
+    pos = eci2ecef(pos, gmst);
+  } else if (isEcfOutput) {
     pos = eci2ecef(pos, (i * timeslice * TAU) / period);
   }
   pointsOut[i * 4] = pos.x;

@@ -47,6 +47,7 @@ export interface OrbitCruncherInMsgSatelliteUpdate {
   tle1?: string;
   tle2?: string;
   isEcfOutput: boolean;
+  isPolarViewEcf?: boolean;
 }
 export interface OrbitCruncherInMsgMissileUpdate {
   type: OrbitCruncherMsgType.MISSILE_UPDATE;
@@ -58,6 +59,7 @@ export interface OrbitCruncherInMsgMissileUpdate {
   lonList?: Degrees[];
   altList?: Kilometers[];
   isEcfOutput: boolean;
+  isPolarViewEcf?: boolean;
 }
 export interface OrbitCruncherInMsgChangeOrbitType {
   type: OrbitCruncherMsgType.CHANGE_ORBIT_TYPE;
