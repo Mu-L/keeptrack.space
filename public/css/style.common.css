@@ -2592,6 +2592,15 @@ button.ui-button::-moz-focus-inner {
   cursor: pointer;
 }
 
+.side-menu>ul>li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.side-menu>ul>li:first-child {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .menu-title {
   height: 30px;
 }
@@ -2645,19 +2654,12 @@ button.ui-button::-moz-focus-inner {
 }
 
 .side-menu {
-  position: relative;
-  height: 100%;
-  border-width: 0px 5px 0px 0px;
-  border-color: var(--color-dark-border);
-  border-style: solid;
-  background: var(--color-dark-background);
-  color: white;
-  width: 100%;
-  top: 0px;
-  bottom: 0px;
+  position: absolute;
+  inset: 0;
   overflow: auto;
   z-index: 10;
-  padding: 0px 2rem;
+  padding-bottom: 0.25rem;
+  padding: 0rem 1rem;
 }
 
 .side-menu .input-field {
@@ -2672,10 +2674,75 @@ button.ui-button::-moz-focus-inner {
   top: var(--top-menu-height);
   bottom: var(--bottom-menu-top);
   left: 0px;
+  overflow: hidden;
   transition: all 1s ease-in-out;
   transform: translateX(-100%);
   background: var(--color-dark-background);
   border-top: solid 5px var(--color-dark-border);
+
+  border-width: 0px 5px 0px 0px;
+  border-color: var(--color-dark-border);
+  border-style: solid;
+  background: var(--color-dark-background);
+  color: white;
+  padding: 0px;
+}
+
+/* Side menu title bar layout */
+.side-menu-title-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  padding: 0.5rem 0rem;
+  border-bottom: var(--color-dark-border) solid 5px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-dark-background);
+  margin-bottom: 1rem;
+}
+
+.side-menu-title-left,
+.side-menu-title-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.side-menu-title-right {
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.side-menu-title-text {
+  flex: 0 0 auto;
+  margin: 0 1rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+}
+
+.icon-btn[disabled] {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.icon-btn-img {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  filter: brightness(0) invert(1);
 }
 
 .side-menu-row-header {
@@ -3381,11 +3448,6 @@ nav a.sidenav-trigger i {
 .remove-icon img {
   width: 25px;
   filter: invert(52%) sepia(130%) saturate(7323%) hue-rotate(353deg) brightness(100%) contrast(86%);
-}
-
-.satPhotoRow {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  text-align: center;
 }
 
 .sensor-info-key {
