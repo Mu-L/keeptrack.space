@@ -155,8 +155,11 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 ### 2.14 UX Conventions
 
 - [ ] When jumping to a specific time (TCA, TOCA), use `timeManager.changeStaticOffset(targetTime - Date.now())` to preserve playback state.
+- [ ] **Camera after time jump**: When calling `lookAtLatLon` after `changeStaticOffset`, defer the camera call by one frame using `requestAnimationFrame(() => { camera.lookAtLatLon(...); })`. The GMST (Earth visual rotation) isn't recalculated until the next render frame — if the camera target is set before GMST updates, the Earth jumps visually and the camera ends up at the wrong longitude. Also always pass the explicit target date to `lookAtLatLon` (4th parameter) instead of relying on the default `simulationTimeObj`.
+- [ ] **ESLint: no explicit `undefined` arguments**: The linter rejects `fn(a, b, undefined, d)`. Use a falsy value instead (e.g., `lookAtLatLon(lat, lon, 0, date)` — the `0` is falsy so the zoom `if (zoom)` check skips it).
 - [ ] Secondary menus / results tables stay open after user interactions (clicking rows, etc.).
 - [ ] Table rows that trigger actions have `cursor: pointer` styling and `class="link"`.
+- [ ] `showLoading()` / `hideLoading()` are only used for genuinely heavy operations (bulk mesh creation, satellite propagation across full catalog). Individual row clicks, single mesh toggles, and other fast operations should NOT use the loading screen.
 
 ### 2.15 Resizable Width
 
@@ -202,3 +205,9 @@ These patterns have caused real bugs in past reviews. Pay special attention to t
 5. **`addConstellation()` as a public API**: Plugins that let external code register items (constellations, filters, etc.) should include those dynamic items in `getCommandPaletteCommands()`. Test that dynamically added items appear in the command list.
 
 6. **Stats calculation edge cases**: When computing orbital stats (avg altitude, plane count), guard against empty satellite arrays (division by zero) and handle satellites with missing orbital elements (`apogee`, `perigee`, `inclination` may be 0 or undefined for debris/unknown objects).
+
+7. **GMST desync after `changeStaticOffset`**: `changeStaticOffset` updates `simulationTimeObj` immediately, but `timeManager.gmst` (used by the camera's Earth-tracking) isn't recalculated until `timeManager.update()` runs in the next render frame. Calling `lookAtLatLon` synchronously after `changeStaticOffset` causes the camera to compute a yaw target against the old Earth rotation. When GMST catches up next frame, the Earth jumps and the camera points at the wrong longitude. Symptom: clicking twice fixes it (second click has no GMST jump). Fix: wrap `lookAtLatLon` in `requestAnimationFrame`.
+
+8. **Per-event mesh management**: When a plugin creates multiple independent meshes (one per table row), use a `Map<number, Mesh[]>` keyed by row index instead of a flat array. This enables per-item add/remove/toggle without affecting other items. Use lazy handler registration (`ensureHandlersRegistered_()`) to avoid double-registering draw/update handlers. Clear the map on data refresh (row indices become stale with new data).
+
+9. **Loading screen usage**: `showLoading()` / `hideLoading()` should only be used for operations that genuinely block the UI for a noticeable duration (bulk mesh creation for all events, heavy satellite propagation loops). Do NOT use them for lightweight operations like creating a single mesh, clicking a table row, or toggling visibility on one item — these complete fast enough that the loading overlay just flickers annoyingly. When the loading screen IS needed, it cannot be replaced with `requestAnimationFrame` batching or `setTimeout` chunking — WebGL mesh init is heavy enough per-item that the UI remains unresponsive regardless of yielding strategy, and `engine.pause()` stops the time manager along with rendering.
