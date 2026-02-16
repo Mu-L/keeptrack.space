@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { TipMsg, Reentries } from '@app/plugins/reentries/reentries';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from '@test/generic-tests';
+import { SpaceObjectType } from '@ootk/src/main';
 
 // Mock TIP data
 const mockTipData: TipMsg[] = [
@@ -268,6 +269,121 @@ describe('Reentries_class', () => {
       const headerRow = table.rows[0];
 
       expect(headerRow.cells.length).toBe(11);
+    });
+  });
+
+  describe('createReentryHeaders_', () => {
+    it('should create header row with correct columns', () => {
+      const plugin = new Reentries();
+
+      websiteInit(plugin);
+
+      const table = document.getElementById('reentries-analysis-table') as HTMLTableElement;
+
+      Reentries['createReentryHeaders_'](table);
+
+      const headerRow = table.rows[0];
+
+      expect(headerRow.cells.length).toBe(8);
+    });
+  });
+
+  describe('createReentryRow_', () => {
+    it('should show Reentered for satellites with perigee < 120 km', () => {
+      const plugin = new Reentries();
+
+      websiteInit(plugin);
+
+      const table = document.getElementById('reentries-analysis-table') as HTMLTableElement;
+      const mockSat = {
+        sccNum: '99999',
+        name: 'TEST SAT',
+        type: SpaceObjectType.DEBRIS,
+        perigee: 50,
+        apogee: 200,
+        inclination: 51.6,
+        rcs: 1.5,
+      } as any;
+
+      Reentries['createReentryRow_'](table, mockSat);
+
+      const row = table.rows[0];
+
+      // Mean Alt column is index 5 (NORAD, Name, Type, Perigee, Apogee, MeanAlt, Incl, RCS)
+      expect(row.cells[5].textContent).toBe('Reentered');
+    });
+
+    it('should show calculated mean altitude for satellites with perigee >= 120 km', () => {
+      const plugin = new Reentries();
+
+      websiteInit(plugin);
+
+      const table = document.getElementById('reentries-analysis-table') as HTMLTableElement;
+      const mockSat = {
+        sccNum: '99998',
+        name: 'TEST SAT 2',
+        type: SpaceObjectType.PAYLOAD,
+        perigee: 150,
+        apogee: 300,
+        inclination: 45.0,
+        rcs: 2.0,
+        toClassicalElements: () => ({ trueAnomaly: 0 }),
+      } as any;
+
+      Reentries['createReentryRow_'](table, mockSat);
+
+      const row = table.rows[0];
+
+      expect(row.cells[5].textContent).toBe('225.0');
+    });
+
+    it('should show Reentered when propagation fails for perigee >= 120 km', () => {
+      const plugin = new Reentries();
+
+      websiteInit(plugin);
+
+      const table = document.getElementById('reentries-analysis-table') as HTMLTableElement;
+      const mockSat = {
+        sccNum: '99996',
+        name: 'STALE TLE SAT',
+        type: SpaceObjectType.PAYLOAD,
+        perigee: 150,
+        apogee: 300,
+        inclination: 45.0,
+        rcs: 2.0,
+        toClassicalElements: () => { throw new Error('Propagation failed'); },
+      } as any;
+
+      Reentries['createReentryRow_'](table, mockSat);
+
+      const row = table.rows[0];
+
+      expect(row.cells[5].textContent).toBe('Reentered');
+      expect(row.classList.contains('reentry-critical')).toBe(true);
+    });
+
+    it('should mark critical rows with reentry-critical class', () => {
+      const plugin = new Reentries();
+
+      websiteInit(plugin);
+
+      const table = document.getElementById('reentries-analysis-table') as HTMLTableElement;
+      const mockSat = {
+        sccNum: '99997',
+        name: 'CRITICAL SAT',
+        type: SpaceObjectType.ROCKET_BODY,
+        perigee: 100,
+        apogee: 250,
+        inclination: 28.5,
+        rcs: null,
+      } as any;
+
+      Reentries['createReentryRow_'](table, mockSat);
+
+      const row = table.rows[0];
+
+      expect(row.classList.contains('reentry-critical')).toBe(true);
+      expect(row.cells[5].textContent).toBe('Reentered');
     });
   });
 

@@ -10,6 +10,7 @@ import {
   IBottomIconConfig,
   IDragOptions,
   IHelpConfig,
+  IKeyboardShortcut,
   ISideMenuConfig,
 } from '@app/engine/plugins/core/plugin-capabilities';
 import { buildSideMenuTabsHtml, initSideMenuTabs, updateSideMenuTabIndicator } from '@app/engine/ui/side-menu-tabs';
@@ -128,6 +129,15 @@ export class Reentries extends KeepTrackPlugin {
       title: t7e('plugins.Reentries.title' as Parameters<typeof t7e>[0]),
       body: t7e('plugins.Reentries.helpBody' as Parameters<typeof t7e>[0]),
     };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'R',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
   }
 
   // =========================================================================
@@ -415,6 +425,7 @@ export class Reentries extends KeepTrackPlugin {
       'Type',
       'Perigee (km)',
       'Apogee (km)',
+      'Mean Alt (km)',
       'Incl (\u00B0)',
       'RCS (m\u00B2)',
     ];
@@ -434,7 +445,17 @@ export class Reentries extends KeepTrackPlugin {
     tr.setAttribute('class', 'reentry-object link');
     tr.setAttribute('data-scc', sat.sccNum);
 
-    if (sat.perigee < 120) {
+    let hasReentered = sat.perigee < 120;
+
+    if (!hasReentered) {
+      try {
+        sat.toClassicalElements(new Date());
+      } catch {
+        hasReentered = true;
+      }
+    }
+
+    if (hasReentered) {
       tr.classList.add('reentry-critical');
     } else if (sat.perigee < 160) {
       tr.classList.add('reentry-warning');
@@ -460,11 +481,16 @@ export class Reentries extends KeepTrackPlugin {
       rcsStr = rcsEst ? `${rcsEst.toFixed(2)}` : 'Unknown';
     }
 
+    const meanAltStr = hasReentered
+      ? 'Reentered'
+      : ((sat.apogee + sat.perigee) / 2).toFixed(1);
+
     Reentries.createCell_(tr, sat.sccNum);
     Reentries.createCell_(tr, sat.name || 'Unknown');
     Reentries.createCell_(tr, typeStr);
     Reentries.createCell_(tr, sat.perigee.toFixed(1));
     Reentries.createCell_(tr, sat.apogee.toFixed(1));
+    Reentries.createCell_(tr, meanAltStr);
     Reentries.createCell_(tr, sat.inclination.toFixed(2));
     Reentries.createCell_(tr, rcsStr);
   }
