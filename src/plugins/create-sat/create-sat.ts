@@ -130,7 +130,7 @@ export class CreateSat extends KeepTrackPlugin {
       elementName: 'create-satellite-bottom-icon',
       label: t7e('plugins.CreateSat.bottomIconLabel'),
       image: addSatellitePnng,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
       isDisabledOnLoad: false,
     };
   }
@@ -297,7 +297,6 @@ export class CreateSat extends KeepTrackPlugin {
     <div id="createSat-menu" class="side-menu-parent start-hidden text-select">
       <div id="createSat-content" class="side-menu" style="scrollbar-gutter: stable;">
         <div class="row">
-          <h5 class="center-align">${t7e('plugins.CreateSat.title')}</h5>
           ${tabsHtml}
         </div>
       </div>
