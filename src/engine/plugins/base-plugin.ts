@@ -27,6 +27,10 @@ import { KeyboardComponent } from './components/keyboard/keyboard-component';
 import { SecondaryMenuComponent } from './components/secondary-menu/secondary-menu-component';
 import { SideMenuComponent } from './components/side-menu/side-menu-component';
 
+import downloadPng from '@public/img/icons/download.png';
+import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
+import settingsPng from '@public/img/icons/settings.png';
+
 // Type guard imports for capability detection
 import {
   hasBottomIcon,
@@ -135,7 +139,7 @@ export abstract class KeepTrackPlugin {
   sideMenuSecondaryHtml: string;
 
   sideMenuSecondaryOptions: SideMenuSettingsOptions = {
-    width: 300,
+    width: 400,
     leftOffset: null,
     zIndex: 3,
   };
@@ -588,13 +592,7 @@ export abstract class KeepTrackPlugin {
     }
 
     if (this.sideMenuElementName && this.sideMenuElementHtml) {
-      if (this.sideMenuSecondaryHtml || this.downloadIconCb) {
-        const sideMenuHtmlWrapped = this.generateSideMenuHtml_();
-
-        this.addSideMenu(sideMenuHtmlWrapped);
-      } else {
-        this.addSideMenu(this.sideMenuElementHtml);
-      }
+      this.addSideMenuWithCloseButton_();
     } else if (this.sideMenuElementName || this.sideMenuElementHtml) {
       throw new Error(`${this.id} side menu element name and html must both be defined.`);
     }
@@ -714,50 +712,93 @@ export abstract class KeepTrackPlugin {
    */
   isRmbOnSat = false;
 
-  private generateSideMenuHtml_() {
-    const menuWidthStr = `${this.sideMenuSecondaryOptions.width.toString()} px !important`;
+  private addSideMenuWithCloseButton_() {
+    if (this.sideMenuElementHtml.includes('side-menu-parent')) {
+      // Legacy: plugin provides full wrapper HTML — inject title bar, preserving existing IDs
+      const titleBarHtml = this.generateTitleBarHtml_();
+
+      // Extract title from existing h5 if sideMenuTitle isn't set
+      if (!this.sideMenuTitle) {
+        const titleMatch = this.sideMenuElementHtml.match(/<h5[^>]*class="[^"]*center-align[^"]*"[^>]*>(?<title>[^<]*)<\/h5>/u);
+
+        if (titleMatch?.groups?.title) {
+          this.sideMenuTitle = titleMatch.groups.title.trim();
+        }
+      }
+
+      // Remove the first center-aligned h5 to avoid duplication with title bar
+      let modified = this.sideMenuElementHtml.replace(/<h5[^>]*class="[^"]*center-align[^"]*"[^>]*>[^<]*<\/h5>/u, '');
+
+      // Inject title bar after the inner side-menu div opening tag
+      // Use (?![-\w]) to match class "side-menu" but NOT "side-menu-parent" etc.
+      modified = modified.replace(
+        /(?<openTag><div[^>]*class="[^"]*\bside-menu\b(?![-\w])[^"]*"[^>]*>)/u,
+        `$<openTag>${titleBarHtml}`,
+      );
+
+      this.addSideMenu(modified);
+    } else {
+      // Modern: plugin provides inner content only — wrap with standard wrapper
+      const sideMenuHtmlWrapped = this.generateSideMenuHtml_();
+
+      this.addSideMenu(sideMenuHtmlWrapped);
+    }
+
+    // Register close button click handler (same pattern as secondary-btn handler)
+    EventBus.getInstance().on(
+      EventBusEvent.uiManagerFinal,
+      () => {
+        getEl(`${this.sideMenuElementName}-close-btn`)?.addEventListener('click', () => {
+          this.hideSideMenus();
+        });
+      },
+    );
+  }
+
+  private generateTitleBarHtml_(): string {
     const downloadIconHtml = this.downloadIconCb ? html`
-      <button id="${this.sideMenuElementName}-download-btn";
-        class="center-align btn btn-ui waves-effect waves-light"
-        style="padding: 2px; margin: 0px 0px 0px 5px; color: var(--color-dark-text-accent); background-color: rgba(0, 0, 0, 0);box-shadow: none;"
+      <button id="${this.sideMenuElementName}-download-btn"
+        class="center-align btn btn-ui waves-effect waves-light icon-btn"
         type="button">
-        <i class="material-icons" style="font-size: 2em;height: 30px;width: 30px;display: flex;justify-content: center;align-items: center;">
-          file_download
-        </i>
+        <img src="${downloadPng}" alt="Download" class="icon-btn-img" />
       </button>
     ` : '';
     const settingsIconHtml = this.sideMenuSecondaryHtml ? html`
       <button id="${this.sideMenuElementName}-secondary-btn"
-        class="center-align btn btn-ui waves-effect waves-light"
-        style="padding: 2px; margin: 0px 0px 0px 5px; color: var(--color-dark-text-accent); background-color: rgba(0, 0, 0, 0);box-shadow: none;"
+        class="center-align btn btn-ui waves-effect waves-light icon-btn"
         type="button">
-        <i class="material-icons" style="font-size: 2em;height: 30px;width: 30px;display: flex;justify-content: center;align-items: center;">
-          ${this.secondaryMenuIcon}
-        </i>
+        <img src="${settingsPng}" alt="Settings" class="icon-btn-img" />
       </button>` : '';
-    const spacerDiv = html`<div style="width: 30px; height: 30px; display: block; margin: 0px 5px 0px 0px;"></div>`;
+    const closeIconHtml = html`
+      <button id="${this.sideMenuElementName}-close-btn"
+        class="center-align btn btn-ui waves-effect waves-light icon-btn"
+        type="button">
+        <img src="${leftPanelClosePng}" alt="Close" class="icon-btn-img" />
+      </button>`;
 
-    const sideMenuHtmlWrapped = html`
+    return html`
+      <div class="side-menu-title-bar">
+        <div class="side-menu-title-left"></div>
+        <h5 class="side-menu-title-text">${this.sideMenuTitle}</h5>
+        <div class="side-menu-title-right">
+          ${downloadIconHtml}
+          ${settingsIconHtml}
+          ${closeIconHtml}
+        </div>
+      </div>`;
+  }
+
+  private generateSideMenuHtml_() {
+    const menuWidthStr = `${this.sideMenuSecondaryOptions.width.toString()} px !important`;
+
+    return html`
           <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden text-select"
             style="z-index: 5; width: ${menuWidthStr};">
             <div id="${this.sideMenuElementName}-content" class="side-menu">
-              <div class="row"
-                style="margin-left: 1rem;margin-right: 1rem;margin-top: 5px;margin-bottom: 0px;display: flex;
-                justify-content: space-evenly;align-items: center;flex-direction: row;flex-wrap: nowrap;">
-                ${this.sideMenuSecondaryHtml ? spacerDiv : ''}
-                ${this.downloadIconCb ? spacerDiv : ''}
-                <h5 class="center-align" style="margin: 0px auto">${this.sideMenuTitle}</h5>
-                ${downloadIconHtml}
-                ${settingsIconHtml}
-              </div>
-              <li class="divider" style="padding: 2px !important;"></li>
-              <div class="row"></div>
+              ${this.generateTitleBarHtml_()}
               ${this.sideMenuElementHtml}
             </div>
           </div>`;
-
-
-    return sideMenuHtmlWrapped;
   }
 
   /**
@@ -1182,6 +1223,9 @@ export abstract class KeepTrackPlugin {
   }
 
   bottomMenuClicked() {
+    if (!this.isSettingsMenuEnabled_) {
+      return;
+    }
     ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, this.bottomIconElementName);
   }
