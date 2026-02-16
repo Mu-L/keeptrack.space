@@ -52,7 +52,7 @@ export type KeepTrackPluginsConfiguration = {
   ReportsPlugin?: PluginConfiguration;
   PolarPlotPlugin?: PluginConfiguration;
   NextLaunchesPlugin?: PluginConfiguration;
-  EarthquakePlugin?: PluginConfiguration;
+  SeismicActivityPlugin?: PluginConfiguration;
   AuroraPlugin?: PluginConfiguration;
   NaturalEventsPlugin?: PluginConfiguration;
   FindSatPlugin?: PluginConfiguration;
@@ -79,6 +79,7 @@ export type KeepTrackPluginsConfiguration = {
   SatelliteFixedView?: PluginConfiguration;
   FpsView?: PluginConfiguration;
   FlatMapView?: PluginConfiguration;
+  PolarView?: PluginConfiguration;
   SatelliteFov?: PluginConfiguration;
   StereoMap?: PluginConfiguration;
   Planetarium?: PluginConfiguration;

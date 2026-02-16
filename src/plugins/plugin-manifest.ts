@@ -280,9 +280,9 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 350 },
   },
   {
-    configKey: 'EarthquakePlugin',
-    ossImport: () => import('../plugins-pro/earthquake/earthquake'),
-    ossClassName: 'EarthquakePlugin',
+    configKey: 'SeismicActivityPlugin',
+    ossImport: () => import('../plugins-pro/seismic-activity/seismic-activity'),
+    ossClassName: 'SeismicActivityPlugin',
     defaultConfig: { enabled: true, order: 355 },
   },
   {
@@ -436,6 +436,12 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/flat-map-view/flat-map-view'),
     proClassName: 'FlatMapView',
     defaultConfig: { enabled: true, order: 150 },
+  },
+  {
+    configKey: 'PolarView',
+    proImport: () => import('../plugins-pro/polar-view/polar-view'),
+    proClassName: 'PolarView',
+    defaultConfig: { enabled: true, order: 150.5 },
   },
   {
     configKey: 'SatelliteViewPlugin',
