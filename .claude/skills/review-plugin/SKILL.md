@@ -66,8 +66,10 @@ This is one of the most common bugs. The plugin's `id` property is used as a pre
 - [ ] Side menu title uses `t7e()`.
 - [ ] Help content uses `t7e()`.
 - [ ] Error/info messages use `t7e()` where locale keys exist.
+- [ ] Toast messages (`uiManager.toast(...)`) use `t7e()` — these are commonly overlooked.
 - [ ] Button labels, table headers, and status text use `t7e()` where locale keys exist.
 - [ ] Locale files exist for **all 9 languages**: `en.src.json`, `de.src.json`, `es.src.json`, `fr.src.json`, `zh.src.json`, `ja.src.json`, `ko.src.json`, `ru.src.json`, `uk.src.json`.
+- [ ] If a Pro extension exists in `src/plugins-pro/`, it has its **own** `locales/` directory with keys for any additional UI it adds (new tabs, toasts, labels).
 - [ ] Locale files are named `*.src.json` (not `*.json`).
 - [ ] Locale JSON is wrapped in a `"plugins"` object: `{ "plugins": { "PluginName": { ... } } }`.
 - [ ] Static arrays/options with translated text use `static get` (lazy getter) not `static` property (evaluated at parse time before localization loads).
@@ -131,6 +133,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] Config methods are tested (correct element names, drag options, etc.).
 - [ ] `onBottomIconClick` / `bottomIconCallback` bridge is tested.
 - [ ] Core business logic has dedicated tests.
+- [ ] Tests that assert on toast/error message strings use the `t7e()` key (not hardcoded English), since `t7e()` returns the key string when locales aren't loaded in the test environment.
 
 ### 2.13 MenuMode
 
@@ -146,6 +149,14 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] When jumping to a specific time (TCA, TOCA), use `timeManager.changeStaticOffset(targetTime - Date.now())` to preserve playback state.
 - [ ] Secondary menus / results tables stay open after user interactions (clicking rows, etc.).
 - [ ] Table rows that trigger actions have `cursor: pointer` styling and `class="link"`.
+
+### 2.15 Resizable Width
+
+Side menu plugins should be resizable by default. Users benefit from being able to adjust panel width to fit their screen and content.
+
+- [ ] `dragOptions` includes `isDraggable: true` (either as a class property or in `getSideMenuConfig().dragOptions`). Only skip this for plugins where resize doesn't make sense (e.g., full-width plots, minimal-content panels).
+- [ ] `minWidth` and `maxWidth` are set to reasonable values that accommodate the plugin's content.
+- [ ] If the default 280px side menu width is too narrow for the plugin's content, an explicit `width` is set in `getSideMenuConfig()` (e.g., `width: 600` for form-heavy plugins).
 
 ## Step 3 — Report
 
