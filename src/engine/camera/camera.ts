@@ -64,7 +64,8 @@ export enum CameraType {
   SATELLITE = 5,
   ASTRONOMY = 6,
   FLAT_MAP = 7,
-  MAX_CAMERA_TYPES = 8,
+  POLAR_VIEW = 8,
+  MAX_CAMERA_TYPES = 9,
   /** @deprecated */
   OFFSET = 9,
 }
@@ -104,21 +105,21 @@ export class Camera {
   flatMapPanY = 0; // km, latitude direction
   flatMapZoom = 1; // 1 = full earth visible
 
-  // Camera mode delegate (plugin-provided camera modes like flat map)
-  private cameraModeDelegate_: ICameraModeDelegate | null = null;
-  private cameraModeType_: CameraType | null = null;
+  // Polar view state (public: read by renderers for shader uniforms)
+  polarViewPanX = 0; // km offset from center
+  polarViewPanY = 0; // km offset from center
+  polarViewZoom = 1; // 1 = full hemisphere visible
+
+  // Camera mode delegates (plugin-provided camera modes like flat map, polar view)
+  private cameraModeDelegates_ = new Map<CameraType, ICameraModeDelegate>();
   private lastCameraType_: CameraType = CameraType.FIXED_TO_EARTH;
 
   registerCameraModeDelegate(type: CameraType, delegate: ICameraModeDelegate): void {
-    this.cameraModeDelegate_ = delegate;
-    this.cameraModeType_ = type;
+    this.cameraModeDelegates_.set(type, delegate);
   }
 
   unregisterCameraModeDelegate(type: CameraType): void {
-    if (this.cameraModeType_ === type) {
-      this.cameraModeDelegate_ = null;
-      this.cameraModeType_ = null;
-    }
+    this.cameraModeDelegates_.delete(type);
   }
 
   private normForward_ = vec3.create();
@@ -246,8 +247,11 @@ export class Camera {
       this.cameraType++;
     }
 
-    // Skip FLAT_MAP if no delegate registered (pro plugin not loaded)
-    if (this.cameraType === CameraType.FLAT_MAP && !this.cameraModeDelegate_) {
+    // Skip delegate-backed camera modes if their delegate isn't registered (pro plugin not loaded)
+    if (this.cameraType === CameraType.FLAT_MAP && !this.cameraModeDelegates_.has(CameraType.FLAT_MAP)) {
+      this.cameraType++;
+    }
+    if (this.cameraType === CameraType.POLAR_VIEW && !this.cameraModeDelegates_.has(CameraType.POLAR_VIEW)) {
       this.cameraType++;
     }
 
@@ -273,8 +277,8 @@ export class Camera {
       this.autoRotate(false);
     }
 
-    // Delegate to plugin camera mode (e.g. flat map) if registered
-    if (this.cameraModeDelegate_?.zoomWheel(this, delta)) {
+    // Delegate to plugin camera mode (e.g. flat map, polar view) if registered
+    if (this.cameraModeDelegates_.get(this.cameraType)?.zoomWheel(this, delta)) {
       return;
     }
 
@@ -350,11 +354,9 @@ export class Camera {
     });
 
     // Detect camera mode transitions for delegate enter/exit (handles direct cameraType assignment)
-    if (this.lastCameraType_ === this.cameraModeType_ && this.cameraType !== this.cameraModeType_) {
-      this.cameraModeDelegate_?.onExit(this);
-    }
-    if (this.lastCameraType_ !== this.cameraModeType_ && this.cameraType === this.cameraModeType_) {
-      this.cameraModeDelegate_?.onEnter(this);
+    if (this.lastCameraType_ !== this.cameraType) {
+      this.cameraModeDelegates_.get(this.lastCameraType_)?.onExit(this);
+      this.cameraModeDelegates_.get(this.cameraType)?.onEnter(this);
     }
     this.lastCameraType_ = this.cameraType;
 
@@ -423,9 +425,7 @@ export class Camera {
         break;
       }
       default:
-        if (this.cameraModeDelegate_ && this.cameraType === this.cameraModeType_) {
-          this.cameraModeDelegate_.draw(this);
-        }
+        this.cameraModeDelegates_.get(this.cameraType)?.draw(this);
         break;
     }
   }
@@ -763,8 +763,8 @@ export class Camera {
       this.updateAstronomyLookAround_(dt);
     } else if (this.cameraType === CameraType.FPS || this.cameraType === CameraType.SATELLITE) {
       this.updateFpsMovement_(dt);
-    } else if (this.cameraModeDelegate_ && this.cameraType === this.cameraModeType_) {
-      this.cameraModeDelegate_.update(this, dt);
+    } else if (this.cameraModeDelegates_.has(this.cameraType)) {
+      this.cameraModeDelegates_.get(this.cameraType)!.update(this, dt);
     } else {
       if (this.state.camPitchSpeed !== 0) {
         this.state.camPitch = <Radians>(this.state.camPitch + this.state.camPitchSpeed * dt);
@@ -1469,8 +1469,8 @@ export class Camera {
     if ((this.state.isDragging && !settingsManager.isMobileModeEnabled) ||
       (this.state.isDragging && settingsManager.isMobileModeEnabled && (this.state.mouseX !== 0 || this.state.mouseY !== 0))) {
 
-      // Delegate to plugin camera mode (e.g. flat map) if registered
-      if (this.cameraModeDelegate_?.handleDrag(this)) {
+      // Delegate to plugin camera mode (e.g. flat map, polar view) if registered
+      if (this.cameraModeDelegates_.get(this.cameraType)?.handleDrag(this)) {
         return;
       }
 
