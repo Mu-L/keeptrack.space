@@ -74,6 +74,7 @@ This is one of the most common bugs. The plugin's `id` property is used as a pre
 - [ ] Locale JSON is wrapped in a `"plugins"` object: `{ "plugins": { "PluginName": { ... } } }`.
 - [ ] **Translations are written in the target language** — not as Unicode escape sequences (`\u00e9`). Locale files must be human-readable: `"Périgée"` not `"\u0050\u00e9\u0072\u0069\u0067\u00e9\u0065"`. Unicode escapes make translations unverifiable without decoding. If you generate locale files, write the actual characters (UTF-8).
 - [ ] Static arrays/options with translated text use `static get` (lazy getter) not `static` property (evaluated at parse time before localization loads).
+- [ ] **Toolbar action buttons prefer icons over text** for a cleaner, more compact UI. Use icon-only `<img>` inside `<button>` with `kt-tooltip` for the label. Tooltips still need `t7e()` translation — the benefit is visual clarity and space savings, not fewer translations. Icons from `public/img/icons/` include `refresh.png`, `visibility.png`, `visibility-off.png`, `download.png`, etc.
 
 ### 2.5 Help Content
 
@@ -106,6 +107,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] Event subscriptions use `.bind(this)` or arrow functions to preserve context.
 - [ ] `EventBus.getInstance()` calls are not repeated excessively — cache if used more than twice in the same method.
 - [ ] **Persistence restore in `uiManagerFinal`**: Code that restores persisted state (e.g., auto-selecting last constellation, re-opening a panel) must NOT call UI methods like `uiManager.hideSideMenus()` or `searchManager.closeSearch()` that may not be fully wired yet. Use a `skipCloseMenus` parameter or guard with optional chaining (`uiManagerInstance?.hideSideMenus?.()`). This is a common source of startup crashes.
+- [ ] **Login-state reactivity**: If the plugin's behavior depends on login state (e.g., auto-fetching external data), it subscribes to `EventBusEvent.userLogin` and `EventBusEvent.userLogout` in `addJs()` and updates toolbar/UI when the user logs in or out while the menu is already open.
 
 ### 2.9 Satellite/Sensor Requirements
 
@@ -160,6 +162,9 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] Secondary menus / results tables stay open after user interactions (clicking rows, etc.).
 - [ ] Table rows that trigger actions have `cursor: pointer` styling and `class="link"`.
 - [ ] `showLoading()` / `hideLoading()` are only used for genuinely heavy operations (bulk mesh creation, satellite propagation across full catalog). Individual row clicks, single mesh toggles, and other fast operations should NOT use the loading screen.
+- [ ] **Buttons gated on data availability**: Action buttons that require data (e.g., "Show All Zones", "Clear All Zones") start with the `disabled` HTML attribute and are enabled programmatically after data loads. Style disabled state with `opacity: 0.3; cursor: not-allowed;`.
+- [ ] **Minimize layout shifts**: When swapping between buttons (e.g., hiding a "Fetch" button and showing a "Refresh" button), perform both DOM changes in the same synchronous operation to avoid multiple layout shifts. For example, when the user clicks "Fetch", immediately show the "Refresh" button — don't wait for the async fetch to complete.
+- [ ] **Login-gated external data fetch**: Plugins that fetch external API data (NASA EONET, CelesTrak, etc.) should auto-fetch for logged-in users when the menu opens, but show a manual "Fetch Data" button for guest users. Check login state synchronously via `PluginRegistry.getPlugin(UserAccountPlugin)?.cachedUser`. After a successful fetch, show the refresh button for all users regardless of login state. Use "Fetch" (not "Download") to avoid confusion with CSV/data export features.
 
 ### 2.15 Resizable Width
 
@@ -211,3 +216,7 @@ These patterns have caused real bugs in past reviews. Pay special attention to t
 8. **Per-event mesh management**: When a plugin creates multiple independent meshes (one per table row), use a `Map<number, Mesh[]>` keyed by row index instead of a flat array. This enables per-item add/remove/toggle without affecting other items. Use lazy handler registration (`ensureHandlersRegistered_()`) to avoid double-registering draw/update handlers. Clear the map on data refresh (row indices become stale with new data).
 
 9. **Loading screen usage**: `showLoading()` / `hideLoading()` should only be used for operations that genuinely block the UI for a noticeable duration (bulk mesh creation for all events, heavy satellite propagation loops). Do NOT use them for lightweight operations like creating a single mesh, clicking a table row, or toggling visibility on one item — these complete fast enough that the loading overlay just flickers annoyingly. When the loading screen IS needed, it cannot be replaced with `requestAnimationFrame` batching or `setTimeout` chunking — WebGL mesh init is heavy enough per-item that the UI remains unresponsive regardless of yielding strategy, and `engine.pause()` stops the time manager along with rendering.
+
+10. **Icon-only toolbar buttons**: When plugins have action buttons (Refresh, Fetch, Show All, Clear All, etc.), prefer icon-only `<img>` inside `<button>` with `kt-tooltip` attributes instead of text labels. This produces a cleaner, more compact toolbar — but tooltips still need `t7e()` translation, so it doesn't reduce the number of locale keys. Pattern: wrap buttons in a flex container (e.g., `<div class="xx-toolbar">`), use `display: inline-flex; align-items: center; justify-content: center;` on each button, and `width: 20px; height: 20px; filter: brightness(0) invert(1);` on icon images to make them white. Icons available at `public/img/icons/`: `refresh.png`, `visibility.png`, `visibility-off.png`, `download.png`, `preview.png`, `preview-off.png`, plus category-specific icons.
+
+11. **Login-gated fetch with toolbar state machine**: Plugins that fetch external data should implement a toolbar state machine: (a) Guest + no data → show Fetch button, hide Refresh; (b) Guest + has data → hide Fetch, show Refresh; (c) Logged in → always hide Fetch, show Refresh, auto-fetch if empty; (d) User logs in while menu open → auto-fetch via `EventBusEvent.userLogin` handler. The `updateToolbarForLoginState_()` helper pattern centralizes this logic. Test with `vi.spyOn(PluginRegistry, 'getPlugin')` returning a mock `UserAccountPlugin` with `{ cachedUser: { id: 'test' } }` for logged-in or `{ cachedUser: null }` for guest.
