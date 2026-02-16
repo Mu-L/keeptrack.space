@@ -52,9 +52,9 @@ Modern plugins should use config methods rather than direct properties. Check wh
 
 ### 2.3 CSS / DOM ID Consistency
 
-This is one of the most common bugs. The plugin's `id` property is used as a prefix for all DOM element IDs via `${this.id}-xxx` in the HTML template. The CSS must target these exact IDs.
+This is one of the most common bugs. The plugin's `id` property is used as a prefix for all DOM element IDs via `${this.id}-xxx` in the HTML template. The CSS must target these exact IDs. **CSS selectors are case-sensitive** — `#collisions-table` does NOT match `id="Collisions-table"`.
 
-- [ ] Every CSS selector (`#id-xxx`, `.id-xxx`) matches an actual DOM ID/class produced by the plugin's HTML template or JS code.
+- [ ] Every CSS selector (`#id-xxx`, `.id-xxx`) matches an actual DOM ID/class produced by the plugin's HTML template or JS code. **Check case sensitivity** — this is the #1 CSS bug found in reviews.
 - [ ] No leftover selectors from a renamed plugin or copy-paste origin.
 - [ ] The `sideMenuElementName` (or `getSideMenuConfig().elementName`) matches the wrapper `<div id="...">` in the HTML.
 - [ ] Class names used in JS (e.g., `classList.contains('${this.id}-event')`) match those in CSS.
@@ -91,6 +91,8 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - **With secondary menu or downloadIconCb**: `sideMenuElementHtml` must contain **only inner content** (no wrapper divs). The base plugin generates the `<div id="..." class="side-menu-parent">` wrapper, title bar, and download/settings icons.
 - **Without either**: `sideMenuElementHtml` must include the **full wrapper** (`<div id="..." class="side-menu-parent start-hidden text-select"><div class="side-menu">...</div></div>`).
 
+**Important for pro plugins**: If a base plugin has NO download/secondary menu (full wrapper HTML) but the pro version ADDS `onDownload()`, the pro's `buildSideMenuHtml_()` override must switch to inner-only content since `downloadIconCb` gets auto-wired by `detectAndInitializeComponents_()` when `onDownload()` exists (via `IDownloadCapable` / `hasDownload()` type guard).
+
 - [ ] Wrapper convention is followed correctly based on the above rules.
 - [ ] No private `buildSideMenuHtml_()` method — use `sideMenuElementHtml` property directly so base plugin functionality (download icon, title bar) works.
 - [ ] If the plugin has a form, form ID follows `${sideMenuElementName}-form` pattern (required for auto-wired `onFormSubmit()`).
@@ -121,7 +123,7 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 ### 2.11 Null Safety
 
 - [ ] Non-null assertions (the ! operator) are justified — the element genuinely must exist at that point.
-- [ ] `dataset` property reads check for `undefined` (not just `null`) since `HTMLElement.dataset[key]` returns `undefined` when missing.
+- [ ] `dataset` property reads check for `undefined` (not just `null`) since `HTMLElement.dataset[key]` returns `undefined` when missing. Common bug: `if (dataset.row !== null)` should be `!== undefined`.
 - [ ] Null checks guard against missing satellites, DOM elements, etc. before accessing properties.
 
 ### 2.12 Tests
@@ -157,6 +159,15 @@ Side menu plugins should be resizable by default. Users benefit from being able 
 - [ ] `dragOptions` includes `isDraggable: true` (either as a class property or in `getSideMenuConfig().dragOptions`). Only skip this for plugins where resize doesn't make sense (e.g., full-width plots, minimal-content panels).
 - [ ] `minWidth` and `maxWidth` are set to reasonable values that accommodate the plugin's content.
 - [ ] If the default 280px side menu width is too narrow for the plugin's content, an explicit `width` is set in `getSideMenuConfig()` (e.g., `width: 600` for form-heavy plugins).
+
+### 2.16 Pro Plugin Extensibility
+
+If the plugin has (or should have) a pro variant in `src/plugins-pro/`, check that the base class is structured for extension:
+
+- [ ] Methods that a pro class would need to override are `protected` (not `private`). Common candidates: `buildSideMenuHtml_()`, `createTable_()`, `createRow_()`, `createHeaders_()`, `getDragOptions_()`, and data arrays like `collisionList_`.
+- [ ] If a pro variant exists in `plugin-manifest.ts`, the manifest entry includes `proImport` and `proClassName`.
+- [ ] The pro class inherits the same `id` as the base (same `configKey`, same DOM IDs).
+- [ ] Static utility methods used by both base and pro (e.g., `createCell_()`) are `protected static`, not `private static`.
 
 ## Step 3 — Report
 
