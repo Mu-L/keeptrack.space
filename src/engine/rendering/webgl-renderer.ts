@@ -87,9 +87,14 @@ export class WebGLRenderer {
     if (EventBus.getInstance().methods.altCanvasResize()) {
       this.resizeCanvas(true);
       this.isAltCanvasSize_ = true;
+      // Re-invoke camera draw so delegates (flat-map, polar-view) recompute projection for the new canvas size.
+      // resizeCanvas calls updatePMatrix which overwrites projectionMatrix with a perspective matrix,
+      // but delegates need their own orthographic projection.
+      camera.draw(this.sensorPos);
     } else if (this.isAltCanvasSize_) {
       this.resizeCanvas(false);
       this.isAltCanvasSize_ = false;
+      camera.draw(this.sensorPos);
     }
 
     const mainCamera = ServiceLocator.getMainCamera();
