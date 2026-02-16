@@ -54,6 +54,14 @@ export class LineManager {
     u_earthRadius: null as unknown as WebGLUniformLocation,
     u_flatMapCenterX: null as unknown as WebGLUniformLocation,
   };
+
+  /** Polar view uniforms assigned separately — some ANGLE backends strip them from conditional branches. */
+  private polarUniforms_ = {
+    u_polarViewMode: null as WebGLUniformLocation | null,
+    u_sensorEcef: null as WebGLUniformLocation | null,
+    u_ecefToEnu: null as WebGLUniformLocation | null,
+    u_polarRadius: null as WebGLUniformLocation | null,
+  };
   program: WebGLProgram;
 
   lines = <Line[]>[];
@@ -503,10 +511,17 @@ export class LineManager {
 
     this.program = new WebGlProgramHelper(gl, this.shaders_.vert, this.shaders_.frag, this.attribs, this.uniforms_).program;
 
+    // Assign polar view uniforms separately — some ANGLE backends strip these from conditional branches
+    for (const name of Object.keys(this.polarUniforms_) as (keyof typeof this.polarUniforms_)[]) {
+      this.polarUniforms_[name] = gl.getUniformLocation(this.program, name);
+    }
+
     EventBus.getInstance().on(
       EventBusEvent.selectSatData,
       (sat: BaseObject) => {
-        if (sat) {
+        const camType = ServiceLocator.getMainCamera().cameraType;
+
+        if (sat && camType !== CameraType.POLAR_VIEW && camType !== CameraType.PLANETARIUM && camType !== CameraType.ASTRONOMY) {
           const sensor = ServiceLocator.getSensorManager().getSensor();
 
           this.createSensorToSatFovAndSelectedOnly(sensor, sat as Satellite);
@@ -543,18 +558,38 @@ export class LineManager {
 
   setWorldUniforms(modelViewMatrix: mat4, projectionCameraMatrix: mat4) {
     const gl = ServiceLocator.getRenderer().gl;
+    const mainCamera = ServiceLocator.getMainCamera();
 
     gl.uniformMatrix4fv(this.uniforms_.u_pCamMatrix, false, projectionCameraMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_mVMatrix, false, modelViewMatrix);
     gl.uniform3fv(this.uniforms_.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
 
-    const isFlatMap = ServiceLocator.getMainCamera().cameraType === CameraType.FLAT_MAP;
+    const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
+    const isPolarView = mainCamera.cameraType === CameraType.POLAR_VIEW;
 
     gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMap ? 1 : 0);
+    if (this.polarUniforms_.u_polarViewMode) {
+      gl.uniform1i(this.polarUniforms_.u_polarViewMode, isPolarView ? 1 : 0);
+    }
     if (isFlatMap) {
       gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
       gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
-      gl.uniform1f(this.uniforms_.u_flatMapCenterX, ServiceLocator.getMainCamera().flatMapPanX);
+      gl.uniform1f(this.uniforms_.u_flatMapCenterX, mainCamera.flatMapPanX);
+      gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
+    } else if (isPolarView) {
+      const dotsManager = ServiceLocator.getDotsManager();
+
+      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      if (this.polarUniforms_.u_sensorEcef) {
+        gl.uniform3fv(this.polarUniforms_.u_sensorEcef, dotsManager.sensorEcef);
+      }
+      if (this.polarUniforms_.u_ecefToEnu) {
+        gl.uniformMatrix3fv(this.polarUniforms_.u_ecefToEnu, false, dotsManager.ecefToEnu);
+      }
+      if (this.polarUniforms_.u_polarRadius) {
+        gl.uniform1f(this.polarUniforms_.u_polarRadius, RADIUS_OF_EARTH);
+      }
       gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
     } else {
       gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
@@ -569,6 +604,7 @@ export class LineManager {
       in float vAlpha;
       in vec3 v_eciPos;
       in float v_flatX;
+      in float v_polarR;
 
       uniform float logDepthBufFC;
       uniform bool u_flatMapMode;
@@ -579,6 +615,9 @@ export class LineManager {
       out vec4 fragColor;
 
       void main(void) {
+        // Discard line fragments below the horizon in polar view
+        if (v_polarR > 1.0) discard;
+
         // Discard line fragments that cross the antimeridian.
         // The interpolated ECI position stays near the actual satellite path,
         // but the interpolated flat X diverges across the map for crossing segments.
@@ -612,11 +651,16 @@ export class LineManager {
       uniform float u_gmst;
       uniform float u_earthRadius;
       uniform float u_flatMapCenterX;
+      uniform bool u_polarViewMode;
+      uniform vec3 u_sensorEcef;
+      uniform mat3 u_ecefToEnu;
+      uniform float u_polarRadius;
 
       out vec4 vColor;
       out float vAlpha;
       out vec3 v_eciPos;
       out float v_flatX;
+      out float v_polarR;
 
       void main(void) {
           // Apply offset in world space, then transform
@@ -626,6 +670,7 @@ export class LineManager {
 
           v_eciPos = vec3(0.0);
           v_flatX = 0.0;
+          v_polarR = 0.0;
 
           if (u_flatMapMode) {
               float PI = 3.14159265359;
@@ -654,6 +699,40 @@ export class LineManager {
               // Pass ECI position and flat X for antimeridian detection in fragment shader
               v_eciPos = eciPos;
               v_flatX = flatPos.x;
+          } else if (u_polarViewMode) {
+              float PI = 3.14159265359;
+              float eciDist = length(eciPos);
+
+              if (eciDist > 1.0e8) {
+                  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                  vColor = u_color;
+                  vAlpha = 0.0;
+                  v_polarR = 2.0;
+                  return;
+              }
+
+              // Orbit data is already in ECEF (per-vertex GMST applied in orbit cruncher)
+              vec3 ecef = eciPos;
+
+              // ECEF to ENU
+              vec3 d = ecef - u_sensorEcef;
+              vec3 enu = u_ecefToEnu * d;
+
+              // ENU to azimuth/elevation
+              float az = atan(enu.x, enu.y);
+              float el = atan(enu.z, length(enu.xy));
+
+              // r=0 at zenith, r=1 at horizon, r>1 below horizon
+              float r = (PI / 2.0 - el) / (PI / 2.0);
+              v_polarR = r;
+
+              vec3 polarPos = vec3(
+                  r * sin(az) * u_polarRadius,
+                  r * cos(az) * u_polarRadius,
+                  0.1
+              );
+
+              position = u_pCamMatrix * vec4(polarPos, 1.0);
           } else {
               position = u_pCamMatrix * vec4(eciPos, 1.0);
           }
