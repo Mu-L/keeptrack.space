@@ -230,11 +230,6 @@
     "NightToggle": {
       "bottomIconLabel": "Alternar Noche"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "Constelaciones",
-      "title": "Menú de Constelaciones",
-      "helpBody": "El menú de Constelaciones te permite ver grupos de satélites. <br><br> Para algunas constelaciones, se dibujarán enlaces ascendentes/descendentes y/o enlaces cruzados nocionales entre los satélites de la constelación."
-    },
     "ColorMenu": {
       "bottomIconLabel": "Esquemas de Color",
       "title": "Menú de Esquema de Color",

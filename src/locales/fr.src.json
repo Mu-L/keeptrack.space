@@ -230,11 +230,6 @@
     "NightToggle": {
       "bottomIconLabel": "Mode nuit"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "Constellations",
-      "title": "Menu Constellations",
-      "helpBody": "Le menu Constellations permet de visualiser des groupes de satellites. <br><br> Pour certaines constellations, des liaisons montantes/descendantes ou inter-satellites notionnelles seront affichées."
-    },
     "ColorMenu": {
       "bottomIconLabel": "Schémas de couleurs",
       "title": "Menu Schéma de couleurs",

@@ -233,11 +233,6 @@
     "NightToggle": {
       "bottomIconLabel": "Nachtumschaltung"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "Konstellationen",
-      "title": "Konstellationen-Menü",
-      "helpBody": "Das Konstellationen-Menü ermöglicht es Ihnen, Gruppen von Satelliten anzuzeigen. <br><br> Für einige Konstellationen werden fiktive Uplinks/Downlinks und/oder Crosslinks zwischen Satelliten in der Konstellation gezeichnet."
-    },
     "ColorMenu": {
       "bottomIconLabel": "Farbschemata",
       "title": "Farbschema-Menü",

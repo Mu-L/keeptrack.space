@@ -230,11 +230,6 @@
     "NightToggle": {
       "bottomIconLabel": "Night Toggle"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "Constellations",
-      "title": "Constellations Menu",
-      "helpBody": "The Constellations menu allows you to view groups of satellites. <br><br> For some constellations, notional uplink/downlinks and/or crosslinks will be drawn between satellites in the constellation."
-    },
     "ColorMenu": {
       "bottomIconLabel": "Color Schemes",
       "title": "Color Scheme Menu",

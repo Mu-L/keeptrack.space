@@ -261,11 +261,6 @@
     "NightToggle": {
       "bottomIconLabel": "夜間表示切替"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "コンステレーション",
-      "title": "コンステレーションメニュー",
-      "helpBody": "コンステレーションメニューでは、衛星のグループを表示できます。<br><br>一部のコンステレーションでは、コンステレーション内の衛星間の概念的なアップリンク/ダウンリンクやクロスリンクが描画されます。"
-    },
     "ColorMenu": {
       "bottomIconLabel": "カラースキーム",
       "title": "カラースキームメニュー",

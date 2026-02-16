@@ -261,11 +261,6 @@
     "NightToggle": {
       "bottomIconLabel": "夜间切换"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "星座",
-      "title": "星座菜单",
-      "helpBody": "星座菜单允许您查看卫星群。<br><br>对于某些星座，将在星座内的卫星之间绘制假想的上/下行链路和/或星间链路。"
-    },
     "ColorMenu": {
       "bottomIconLabel": "配色方案",
       "title": "配色方案菜单",
