@@ -109,4 +109,13 @@ export enum EventBusEvent {
    * Methods-pattern event. Return true to skip transparent object rendering (search box, covariance ellipsoids).
    */
   shouldSkipTransparentObjects = 'shouldSkipTransparentObjects',
+  /**
+   * Emitted during screenshot compositing. Subscribers draw overlays onto the 2D canvas context.
+   * Parameters: (ctx: CanvasRenderingContext2D, width: number, height: number)
+   */
+  screenshotComposite = 'screenshotComposite',
+  /**
+   * Methods-pattern event. Return true to crop screenshot to a 1:1 square.
+   */
+  screenshotShouldCropSquare = 'screenshotShouldCropSquare',
 }

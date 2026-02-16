@@ -72,6 +72,8 @@ export interface EngineEventMap {
   [EventBusEvent.shouldSkipEarthDraw]: [];
   [EventBusEvent.shouldSkipSatelliteModels]: [];
   [EventBusEvent.shouldSkipTransparentObjects]: [];
+  [EventBusEvent.screenshotComposite]: [CanvasRenderingContext2D, number, number];
+  [EventBusEvent.screenshotShouldCropSquare]: [];
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {
@@ -102,6 +104,7 @@ export class EventBus {
     shouldSkipEarthDraw: (): boolean => (this.events[EventBusEvent.shouldSkipEarthDraw] || []).some((cb: any) => cb.cb()),
     shouldSkipSatelliteModels: (): boolean => (this.events[EventBusEvent.shouldSkipSatelliteModels] || []).some((cb: any) => cb.cb()),
     shouldSkipTransparentObjects: (): boolean => (this.events[EventBusEvent.shouldSkipTransparentObjects] || []).some((cb: any) => cb.cb()),
+    screenshotShouldCropSquare: (): boolean => (this.events[EventBusEvent.screenshotShouldCropSquare] || []).some((cb: any) => cb.cb()),
   };
 
   emit<T extends EventBusEvent>(event: T, ...args: EngineEventMap[T]) {
