@@ -16,6 +16,53 @@ A custom camera view in KeepTrack consists of **four parts**:
 3. **Dots-manager shader branch** — transforms satellite ECI positions to 2D screen positions
 4. **Plugin wrapper** — registers everything and handles UI toggle
 
+### Architecture Direction
+
+The long-term goal is for [camera.ts](src/engine/camera/camera.ts) to act as a **pure orchestrator** with no references to specific view types. The current code has several anti-patterns inherited from the monolithic design:
+
+**Anti-pattern 1: Hardcoded `CameraType` enum** (line 57, has a TODO to fix)
+```typescript
+export enum CameraType {
+  FLAT_MAP = 7,    // Pro-specific — shouldn't be in OSS core
+  POLAR_VIEW = 8,  // Pro-specific — shouldn't be in OSS core
+}
+```
+New views currently require adding an enum value here. Future: views should register dynamically, and the enum should only contain the built-in OSS modes.
+
+**Anti-pattern 2: `changeCameraType()` cycling logic** (lines 197-271)
+Hardcodes the tab-order of camera modes and skip conditions for FLAT_MAP/POLAR_VIEW:
+```typescript
+case CameraType.FLAT_MAP:
+  this.cameraType = CameraType.FIXED_TO_EARTH; break;
+// ...skip if delegate not registered:
+if (!this.cameraModeDelegates_.has(CameraType.FLAT_MAP)) this.cameraType++;
+```
+New views that add enum values also need entries here. Future: cycling should iterate over registered delegates.
+
+**Anti-pattern 3: Pan/zoom state on Camera** (lines 103-111)
+```typescript
+flatMapPanX = 0;  // Flat-map-specific state polluting core Camera class
+polarViewPanX = 0; // Polar-view-specific state polluting core Camera class
+```
+New views should **keep all pan/zoom state inside the delegate** and expose it to shaders through DotsManager properties rather than Camera properties. See "Part 2" for how to do this.
+
+**Anti-pattern 4: `setCameraType()` validation** (line 621)
+```typescript
+if (val > 6 || val < 0) { throw new RangeError(); }
+```
+This rejects any delegate-backed mode (FLAT_MAP=7, POLAR_VIEW=8). Don't use `setCameraType()` — assign `cameraType` directly instead.
+
+**What works well (follow these patterns):**
+- Delegate registration via `registerCameraModeDelegate()` (lines 117-123)
+- Automatic `onEnter`/`onExit` transition detection in `draw()` (lines 356-361) — just assign `cameraType` and the transitions fire
+- `update()` properly delegates to registered modes (lines 766-767)
+- `zoomWheel()` properly delegates (line 281)
+- `handleDrag()` properly delegates via `updatePitchYawSpeeds_()` (line 1473)
+
+### CameraState ([camera-state.ts](src/engine/camera/state/camera-state.ts))
+
+The `CameraState` class (~400 lines) holds all state for built-in 3D modes: FPS position, satellite snap, local rotation, panning, zoom, etc. **Delegate-backed views should NOT use CameraState** — this state is irrelevant to 2D orthographic views. Keep your view's state in the delegate itself or on dedicated DotsManager properties for shader access.
+
 ### Rendering Pipeline (execution order per frame)
 
 ```
@@ -53,12 +100,12 @@ export interface ICameraModeDelegate {
 
 The delegate's `draw()` must set `camera.projectionMatrix` to an orthographic matrix. `matrixWorldInverse` is already reset to identity by `Camera.draw()` before the delegate runs.
 
-**Standard orthographic setup pattern:**
+**Standard orthographic setup pattern** (uses delegate-internal state, not Camera properties):
 ```typescript
 draw(camera: Camera): void {
   const renderer = ServiceLocator.getRenderer();
   camera.projectionMatrix = MyDelegate.calculateOrthoPMatrix_(
-    renderer.gl, camera.myViewZoom, camera.myViewPanX, camera.myViewPanY,
+    renderer.gl, this.zoom_, this.panX_, this.panY_,
   );
 }
 
@@ -87,11 +134,13 @@ private static calculateOrthoPMatrix_(gl: WebGL2RenderingContext, zoom: number, 
 ### onEnter() — Mode Activation
 
 ```typescript
-onEnter(camera: Camera): void {
-  // 1. Reset view state
-  camera.myViewPanX = 0;
-  camera.myViewPanY = 0;
-  camera.myViewZoom = this.getDefaultZoom_();
+onEnter(_camera: Camera): void {
+  // 1. Reset delegate-internal view state
+  this.panX_ = 0;
+  this.panY_ = 0;
+  this.zoom_ = this.getDefaultZoom_();
+  this.panSpeedX_ = 0;
+  this.panSpeedY_ = 0;
 
   // 2. Disable Earth centering (REQUIRED for all 2D views)
   Scene.getInstance().worldShiftOverride = [0, 0, 0];
@@ -117,12 +166,12 @@ onExit(camera: Camera): void {
 
 ### update() — Momentum / Animation
 
-Called every frame. Apply pan momentum decay:
+Called every frame. Apply pan momentum decay using delegate-internal state:
 ```typescript
-update(camera: Camera, _dt: Milliseconds): void {
+update(_camera: Camera, _dt: Milliseconds): void {
   if (!settingsManager.isDragging) {
-    camera.myViewPanX += this.panSpeedX_;
-    camera.myViewPanY += this.panSpeedY_;
+    this.panX_ += this.panSpeedX_;
+    this.panY_ += this.panSpeedY_;
     this.panSpeedX_ *= 0.9;
     this.panSpeedY_ *= 0.9;
     // Clamp or wrap pan values
@@ -132,9 +181,9 @@ update(camera: Camera, _dt: Milliseconds): void {
 
 ### zoomWheel() — Cursor-Relative Zoom
 
-For best UX, zoom toward the cursor position:
+For best UX, zoom toward the cursor position. Uses delegate-internal state:
 ```typescript
-zoomWheel(camera: Camera, delta: number): boolean {
+zoomWheel(_camera: Camera, delta: number): boolean {
   const renderer = ServiceLocator.getRenderer();
   const gl = renderer.gl;
 
@@ -145,21 +194,21 @@ zoomWheel(camera: Camera, delta: number): boolean {
   const ndcY = 1 - (mouseY / gl.drawingBufferHeight) * 2;
 
   // 2. World position under cursor BEFORE zoom
-  const halfW = VIEW_HALF_WIDTH / camera.myViewZoom;
+  const halfW = VIEW_HALF_WIDTH / this.zoom_;
   const aspect = gl.drawingBufferWidth / gl.drawingBufferHeight;
   const halfH = halfW / aspect;
-  const worldX = camera.myViewPanX + ndcX * halfW;
-  const worldY = camera.myViewPanY + ndcY * halfH;
+  const worldX = this.panX_ + ndcX * halfW;
+  const worldY = this.panY_ + ndcY * halfH;
 
   // 3. Apply zoom
   const factor = delta > 0 ? 1.1 : 1 / 1.1;
-  camera.myViewZoom = Math.max(minZoom, Math.min(maxZoom, camera.myViewZoom * factor));
+  this.zoom_ = Math.max(minZoom, Math.min(maxZoom, this.zoom_ * factor));
 
   // 4. Adjust pan so world point stays under cursor
-  const newHalfW = VIEW_HALF_WIDTH / camera.myViewZoom;
+  const newHalfW = VIEW_HALF_WIDTH / this.zoom_;
   const newHalfH = newHalfW / aspect;
-  camera.myViewPanX = worldX - ndcX * newHalfW;
-  camera.myViewPanY = worldY - ndcY * newHalfH;
+  this.panX_ = worldX - ndcX * newHalfW;
+  this.panY_ = worldY - ndcY * newHalfH;
 
   return true; // Handled
 }
@@ -167,12 +216,13 @@ zoomWheel(camera: Camera, delta: number): boolean {
 
 ### handleDrag() — Pan
 
+Uses delegate-internal state. Note: `camera.mouseX`/`mouseY` are the drag origin and live on Camera (shared infrastructure, not view-specific):
 ```typescript
 handleDrag(camera: Camera): boolean {
   const renderer = ServiceLocator.getRenderer();
   const gl = renderer.gl;
   const aspect = gl.drawingBufferWidth / gl.drawingBufferHeight;
-  const halfW = VIEW_HALF_WIDTH / camera.myViewZoom;
+  const halfW = VIEW_HALF_WIDTH / this.zoom_;
   const halfH = halfW / aspect;
 
   // Convert pixel delta to world units
@@ -180,14 +230,14 @@ handleDrag(camera: Camera): boolean {
   const dx = (settingsManager.lastMouseX - camera.mouseX) * pixToWorld;
   const dy = -(settingsManager.lastMouseY - camera.mouseY) * pixToWorld; // Y inverted
 
-  camera.myViewPanX -= dx;
-  camera.myViewPanY -= dy;
+  this.panX_ -= dx;
+  this.panY_ -= dy;
 
-  // Store momentum
+  // Store momentum for update()
   this.panSpeedX_ = -dx * 0.75;
   this.panSpeedY_ = -dy * 0.75;
 
-  // Update drag origin
+  // Update drag origin (this is Camera shared infrastructure, ok to use)
   camera.mouseX = settingsManager.lastMouseX;
   camera.mouseY = settingsManager.lastMouseY;
 
@@ -197,18 +247,50 @@ handleDrag(camera: Camera): boolean {
 
 ---
 
-## Part 2: Camera State Properties
+## Part 2: View State (Pan/Zoom)
 
-Add pan/zoom state to `Camera` class in [camera.ts](src/engine/camera/camera.ts):
+**Preferred: Delegate-internal state** — keep all pan/zoom/momentum state as private fields inside your delegate class. This avoids polluting the core Camera class with view-specific properties:
 
 ```typescript
-// Add alongside existing flatMapPanX/Y/Zoom and polarViewPanX/Y/Zoom
-myViewPanX = 0;
-myViewPanY = 0;
-myViewZoom = 1;
+class MyViewCameraDelegate implements ICameraModeDelegate {
+  private panX_ = 0;
+  private panY_ = 0;
+  private zoom_ = 1;
+  private panSpeedX_ = 0;
+  private panSpeedY_ = 0;
+
+  draw(camera: Camera): void {
+    camera.projectionMatrix = this.calculateOrtho_(ServiceLocator.getRenderer().gl);
+  }
+
+  private calculateOrtho_(gl: WebGL2RenderingContext): mat4 {
+    const aspect = gl.drawingBufferWidth / gl.drawingBufferHeight;
+    const halfW = VIEW_HALF_WIDTH / this.zoom_;
+    const halfH = halfW / aspect;
+    const pMatrix = mat4.create();
+    mat4.ortho(pMatrix, -halfW + this.panX_, halfW + this.panX_,
+               -halfH + this.panY_, halfH + this.panY_, -100000, 100000);
+    return pMatrix;
+  }
+}
 ```
 
-These are public so the dots-manager shader can read them as uniforms.
+**Exposing state to dots-manager shaders:** The dots-manager shader needs zoom/pan values as uniforms. Set these via DotsManager properties in `draw()` or `update()`:
+```typescript
+draw(camera: Camera): void {
+  // Set projection from internal state
+  camera.projectionMatrix = this.calculateOrtho_(ServiceLocator.getRenderer().gl);
+  // Expose to shader via DotsManager (avoids putting state on Camera)
+  const dm = ServiceLocator.getDotsManager?.();
+  if (dm) {
+    dm.myViewZoom = this.zoom_;
+    dm.myViewPanX = this.panX_;
+    dm.myViewPanY = this.panY_;
+  }
+}
+```
+
+**Legacy pattern (existing views):** The flat-map and polar-view delegates currently store state as public properties on Camera (`camera.flatMapPanX`, `camera.polarViewPanX`, etc.). This works but pollutes the core class. New views should use the delegate-internal pattern above. Existing views may be migrated over time.
 
 ---
 
@@ -230,47 +312,256 @@ export enum CameraType {
 
 ## Part 4: Background Renderer
 
-A WebGL program that draws the 2D background (map image, grid lines, etc.).
+A WebGL program that draws the 2D background (map image, grid lines, etc.). Uses the project's standard helpers:
 
-### Structure
+- `WebGlProgramHelper` from [webgl-program.ts](src/engine/rendering/webgl-program.ts) — compiles shaders, links program, auto-wires uniforms and attributes
+- `BufferAttribute` from [buffer-attribute.ts](src/engine/rendering/buffer-attribute.ts) — attribute layout descriptors
+- `glsl` tagged template from [formatter.ts](src/engine/utils/development/formatter.ts) — shader source strings
+
+### Complete Skeleton
 
 ```typescript
+/* eslint-disable camelcase */
+import { BufferAttribute } from '@app/engine/rendering/buffer-attribute';
+import { WebGlProgramHelper } from '@app/engine/rendering/webgl-program';
+import { glsl } from '@app/engine/utils/development/formatter';
+import { mat4 } from 'gl-matrix';
+
 export class MyViewBackground {
+  private gl_: WebGL2RenderingContext;
   private program_: WebGLProgram;
   private vao_: WebGLVertexArrayObject;
-  private uniforms_: Record<string, WebGLUniformLocation>;
+  private vertPosBuf_: WebGLBuffer;
+  private vertUvBuf_: WebGLBuffer;
+  private vertIndexBuf_: WebGLBuffer;
+  private isLoaded_ = false;
+
+  // Uniform locations — keys must match shader uniform names exactly
+  // WebGlProgramHelper auto-fills these via gl.getUniformLocation()
+  private uniforms_ = {
+    u_pMatrix: null as unknown as WebGLUniformLocation,
+    u_camMatrix: null as unknown as WebGLUniformLocation,
+    // Add view-specific uniforms here (textures, time, etc.)
+  };
+
+  // Attribute layout — location must match shader `layout(location = N)`
+  private attribs_ = {
+    a_position: new BufferAttribute({ location: 0, vertices: 3, offset: 0 }),
+    a_uv: new BufferAttribute({ location: 1, vertices: 2, offset: 0 }),
+  };
 
   init(gl: WebGL2RenderingContext): void {
-    // Create shader program, VAO, upload geometry
+    this.gl_ = gl;
+
+    this.program_ = new WebGlProgramHelper(
+      gl,
+      this.shaders_.vert,
+      this.shaders_.frag,
+      this.attribs_,
+      this.uniforms_,
+    ).program;
+
+    this.initGeometry_();
+    this.isLoaded_ = true;
   }
 
-  draw(pMatrix: mat4, camMatrix: mat4, /* view-specific params */): void {
+  private initGeometry_(): void {
     const gl = this.gl_;
+    // See "Geometry Conventions" below for position/UV values
+    const positions = new Float32Array([/* ... */]);
+    const uvs = new Float32Array([/* ... */]);
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
+    // Position buffer
+    this.vertPosBuf_ = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertPosBuf_);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    // UV buffer
+    this.vertUvBuf_ = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertUvBuf_);
+    gl.bufferData(gl.ARRAY_BUFFER, uvs, gl.STATIC_DRAW);
+
+    // Index buffer
+    this.vertIndexBuf_ = gl.createBuffer()!;
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.vertIndexBuf_);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+
+    // VAO
+    this.vao_ = gl.createVertexArray()!;
+    gl.bindVertexArray(this.vao_);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertPosBuf_);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertUvBuf_);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.vertIndexBuf_);
+    gl.bindVertexArray(null);
+  }
+
+  draw(pMatrix: mat4, camMatrix: mat4 /* view-specific params */): void {
+    if (!this.isLoaded_) return;
+    const gl = this.gl_;
+
     gl.useProgram(this.program_);
     gl.uniformMatrix4fv(this.uniforms_.u_pMatrix, false, pMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_camMatrix, false, camMatrix);
-    // Set view-specific uniforms
+    // Set view-specific uniforms here
+
+    // REQUIRED: enable depth so background participates in depth ordering with satellite dots
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(true);
+
     gl.bindVertexArray(this.vao_);
-    gl.drawElements(gl.TRIANGLES, this.indexCount_, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    gl.bindVertexArray(null);
   }
+
+  dispose(): void {
+    if (!this.isLoaded_) return;
+    const gl = this.gl_;
+
+    gl.deleteBuffer(this.vertPosBuf_);
+    gl.deleteBuffer(this.vertUvBuf_);
+    gl.deleteBuffer(this.vertIndexBuf_);
+    gl.deleteVertexArray(this.vao_);
+    gl.deleteProgram(this.program_);
+    this.isLoaded_ = false;
+  }
+
+  private shaders_ = {
+    vert: glsl`#version 300 es
+      precision highp float;
+
+      in vec3 a_position;
+      in vec2 a_uv;
+
+      uniform mat4 u_pMatrix;
+      uniform mat4 u_camMatrix;
+
+      out vec2 vUv;
+
+      void main(void) {
+        vUv = a_uv;
+        gl_Position = u_pMatrix * u_camMatrix * vec4(a_position, 1.0);
+      }
+    `,
+    frag: glsl`#version 300 es
+      precision highp float;
+
+      in vec2 vUv;
+      out vec4 fragColor;
+
+      void main(void) {
+        // Your background rendering here
+        fragColor = vec4(0.02, 0.02, 0.05, 1.0);
+      }
+    `,
+  };
 }
 ```
 
+### Key Conventions
+
+- `/* eslint-disable camelcase */` at top — uniform names like `u_pMatrix` trigger the linter
+- Shaders use GLSL ES 3.0: `#version 300 es`, `in`/`out` (not `attribute`/`varying`), `fragColor` output (not `gl_FragColor`)
+- `isLoaded_` guard on `draw()` — prevents draw calls before `init()` completes
+- `dispose()` deletes all GPU resources — call when the view is permanently destroyed
+
 ### Geometry Conventions
 
-- **Flat map**: Quad spanning `[-3*halfW, -halfH, 0]` to `[3*halfW, halfH, 0]` (3x width for wrapping)
-- **Polar view**: Quad spanning `[-r*1.2, -r*1.2, -0.1]` to `[r*1.2, r*1.2, -0.1]`
-- **Z position**: Place background at Z = 0 or slightly negative (behind satellites at Z = 0+)
+Background is a simple quad. Geometry design depends on the view type:
 
-### Projection / Camera Matrix Usage
+**Horizontal wrapping (flat map pattern):**
+- Make the quad 3x wider than the map: positions span `[-3*hw, -hh, 0]` to `[3*hw, hh, 0]`
+- UVs range from `[-1, 1]` to `[2, 0]` (3 tiles)
+- Fragment shader uses `fract(vUv.x)` to wrap the texture seamlessly
+- Why 3x: ensures at least one full tile is always visible regardless of pan position
 
-The background renderer receives the same `pMatrix` and `camMatrix` from the camera delegate:
+**Circular view with fade (polar grid pattern):**
+- Quad extends 20% beyond the grid: positions span `[-r*1.2, -r*1.2, -0.1]` to `[r*1.2, r*1.2, -0.1]`
+- UVs match: `[-1.2, -1.2]` to `[1.2, 1.2]`, so UV `length(vUv) == 1.0` is the grid edge
+- Fragment shader uses `discard` for `r > 1.05` and `smoothstep` for outer fade
+- Z = -0.1 puts the grid slightly behind satellite dots at Z = 0
+
+**Z position rule:** Background at Z ≤ 0, satellite dots rendered at Z ≥ 0. Depth test ensures correct ordering.
+
+### Accessing Earth Textures
+
+For textured backgrounds (like the flat Earth map), get textures from the 3D Earth object:
+
 ```typescript
-this.myBackground_.draw(
-  camera.projectionMatrix,      // Orthographic projection set by delegate
-  camera.matrixWorldInverse,    // Identity for 2D views
-  /* other params */
-);
+const scene = Scene.getInstance();
+const sm = settingsManager;
+const dayTex = scene.earth.textureDay[sm.earthTextureStyle + sm.earthDayTextureQuality] ?? null;
+const nightTex = scene.earth.textureNight[sm.earthTextureStyle + sm.earthNightTextureQuality] ?? null;
+```
+
+Bind to separate texture units in `draw()`:
+```typescript
+gl.activeTexture(gl.TEXTURE0);
+gl.bindTexture(gl.TEXTURE_2D, dayTexture);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); // For horizontal wrapping
+gl.uniform1i(this.uniforms_.uDayMap, 0);
+
+gl.activeTexture(gl.TEXTURE1);
+gl.bindTexture(gl.TEXTURE_2D, nightTexture ?? dayTexture); // Fall back to day if unavailable
+gl.uniform1i(this.uniforms_.uNightMap, 1);
+```
+
+### Lazy Initialization
+
+Background renderers are created lazily in the `renderCustomBackground` handler:
+```typescript
+if (!this.background_) {
+  this.background_ = new MyViewBackground();
+  this.background_.init(ServiceLocator.getRenderer().gl);
+}
+```
+**Why lazy:** The WebGL context may not exist when `addJs()` runs. Deferring to first render guarantees the GL context is ready. This also avoids allocating GPU resources for views the user may never activate.
+
+### Fragment Shader Recipes
+
+**Day/night blending with GMST rotation** (from [flat-earth-map.ts](src/plugins-pro/flat-map-view/flat-earth-map.ts)):
+```glsl
+float u = fract(vUv.x);                         // Wrap UV horizontally
+float lon = (u - 0.5) * 2.0 * PI;               // UV → longitude [-π, π]
+float lat = (0.5 - vUv.y) * PI;                 // UV → latitude [-π/2, π/2]
+float eciLon = lon + u_gmst;                     // Earth-fixed → inertial
+vec3 surfaceNormal = vec3(cos(lat) * cos(eciLon), cos(lat) * sin(eciLon), sin(lat));
+float diffuse = max(dot(surfaceNormal, uLightDirection), 0.0);
+vec3 dayColor = texture(uDayMap, vUv).rgb * diffuse * 1.3;
+vec3 nightColor = texture(uNightMap, vUv).rgb * pow(1.0 - diffuse, 2.0);
+fragColor = vec4(dayColor + nightColor, 1.0);
+```
+Note: texture sampling uses raw `vUv` (not `fract(vUv)`) because `gl.TEXTURE_WRAP_S = gl.REPEAT` handles wrapping without the derivative discontinuity that `fract()` causes at seam boundaries.
+
+**Procedural grid lines with smoothstep** (from [polar-grid.ts](src/plugins-pro/polar-view/polar-grid.ts)):
+```glsl
+float r = length(vUv);                          // Polar radius (0=center, 1=edge)
+if (r > 1.05) discard;                          // Outside grid
+
+// Concentric rings every N steps
+float ringStep = 1.0 / 9.0;                     // 9 rings for 15° elevation steps
+float ringFrac = mod(r, ringStep);
+float ringDist = min(ringFrac, ringStep - ringFrac);
+float ringLine = 1.0 - smoothstep(0.0, 0.003, ringDist);
+
+// Radial lines every M degrees
+float angle = atan(vUv.y, vUv.x);
+float azStep = PI / 6.0;                        // 12 lines at 30° spacing
+float azFrac = mod(angle + PI, azStep);
+float azDist = min(azFrac, azStep - azFrac);
+float azLine = 1.0 - smoothstep(0.0, (0.003 + 0.01 * (1.0 - r)) * r + 0.001, azDist * r);
+azLine *= smoothstep(0.02, 0.08, r);            // Fade near center to avoid clutter
+
+// Combine with background
+vec3 gridColor = vec3(0.3);
+vec3 color = mix(bgColor, gridColor, max(ringLine * 0.35, azLine * 0.25));
 ```
 
 ---
@@ -296,12 +587,15 @@ myViewData: Float32Array = new Float32Array(N); // Precomputed on CPU
 ```
 
 **3. Set uniforms in draw() method** (around line 234):
+
+The delegate exposes its state via DotsManager properties (see Part 2), and DotsManager passes them to the shader:
 ```typescript
 const isMyView = mainCamera.cameraType === CameraType.MY_VIEW;
 gl.uniform1i(this.programs.dots.uniforms.u_myViewMode, isMyView ? 1 : 0);
 if (isMyView) {
-  gl.uniform1f(this.programs.dots.uniforms.u_myViewParam1, mainCamera.myViewZoom);
-  // ...
+  gl.uniform1f(this.programs.dots.uniforms.u_myViewZoom, this.myViewZoom);
+  gl.uniform1f(this.programs.dots.uniforms.u_myViewPanX, this.myViewPanX);
+  gl.uniform1f(this.programs.dots.uniforms.u_myViewPanY, this.myViewPanY);
 }
 ```
 
@@ -574,6 +868,8 @@ this.lastHash_ = hash;
 | Polar grid background | [polar-grid.ts](src/plugins-pro/polar-view/polar-grid.ts) | full |
 | Flat map plugin | [flat-map-view.ts](src/plugins-pro/flat-map-view/flat-map-view.ts) | full |
 | Polar view plugin | [polar-view.ts](src/plugins-pro/polar-view/polar-view.ts) | full |
+| WebGlProgramHelper | [webgl-program.ts](src/engine/rendering/webgl-program.ts) | 24-78 |
+| BufferAttribute | [buffer-attribute.ts](src/engine/rendering/buffer-attribute.ts) | 1-28 |
 | Dots shader (flat map) | [dots-manager.ts](src/engine/rendering/dots-manager.ts) | ~1156-1194 |
 | Dots shader (polar view) | [dots-manager.ts](src/engine/rendering/dots-manager.ts) | ~1195-1238 |
 | Scene render events | [scene.ts](src/engine/core/scene.ts) | 249-464 |
@@ -587,12 +883,16 @@ this.lastHash_ = hash;
 Before shipping a new camera view, verify all of these:
 
 - [ ] CameraType enum value added, MAX_CAMERA_TYPES bumped
-- [ ] Camera state properties added (panX, panY, zoom) — public for shader access
+- [ ] Pan/zoom state kept as private fields inside the delegate (not on Camera class)
+- [ ] Delegate exposes zoom/pan to DotsManager for shader uniform access
 - [ ] Delegate implements all 6 ICameraModeDelegate methods
 - [ ] `onEnter` sets `worldShiftOverride = [0, 0, 0]` and `selectedColorOverride`
 - [ ] `onExit` restores perspective via `Camera.calculatePMatrix()` and clears overrides
 - [ ] Orthographic projection uses `gl.drawingBufferWidth/Height` for aspect ratio
-- [ ] Background renderer draws behind satellites (Z ≤ 0)
+- [ ] Background renderer uses `WebGlProgramHelper` + `BufferAttribute` + `glsl` template
+- [ ] Background renderer has `isLoaded_` guard, lazy init, and `dispose()` cleanup
+- [ ] Background renderer calls `gl.enable(gl.DEPTH_TEST); gl.depthMask(true)` in draw
+- [ ] Background geometry Z ≤ 0 (behind satellite dots at Z ≥ 0)
 - [ ] `renderCustomBackground` handler returns `true` when active
 - [ ] `shouldSkipEarthDraw`, `shouldSkipSatelliteModels`, `shouldSkipTransparentObjects` registered
 - [ ] Dots-manager shader branch added with appropriate ECI transform

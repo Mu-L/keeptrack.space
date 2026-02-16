@@ -166,7 +166,39 @@ The base plugin's `generateSideMenuHtml_()` auto-wraps `sideMenuElementHtml` wit
 - [ ] **Minimize layout shifts**: When swapping between buttons (e.g., hiding a "Fetch" button and showing a "Refresh" button), perform both DOM changes in the same synchronous operation to avoid multiple layout shifts. For example, when the user clicks "Fetch", immediately show the "Refresh" button — don't wait for the async fetch to complete.
 - [ ] **Login-gated external data fetch**: Plugins that fetch external API data (NASA EONET, CelesTrak, etc.) should auto-fetch for logged-in users when the menu opens, but show a manual "Fetch Data" button for guest users. Check login state synchronously via `PluginRegistry.getPlugin(UserAccountPlugin)?.cachedUser`. After a successful fetch, show the refresh button for all users regardless of login state. Use "Fetch" (not "Download") to avoid confusion with CSV/data export features.
 
-### 2.15 Resizable Width
+### 2.15 Side Menu List Styling
+
+Plugins with simple list-style side menus (e.g., countries, color schemes, satellite photos, constellations) must follow the standard list pattern. Global CSS in `style.common.css` provides default border styling for all `<li>` items that are direct children of `<ul>` inside `.side-menu`:
+
+```css
+.side-menu > ul > li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+.side-menu > ul > li:first-child {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+```
+
+This gives every list a visible separator between items and a top border on the first item. Plugins get this for free when their HTML follows the standard structure:
+
+```html
+<div id="plugin-menu" class="side-menu-parent start-hidden text-select">
+  <div id="plugin-content" class="side-menu">
+    <ul id="plugin-list">
+      <li class="menu-selectable" data-id="foo">Item 1</li>
+      <li class="menu-selectable" data-id="bar">Item 2</li>
+    </ul>
+  </div>
+</div>
+```
+
+- [ ] List items use `class="menu-selectable"` (provides hover highlight + cursor). Do NOT use custom per-plugin classes like `satPhotoRow` or `link` for list items — `menu-selectable` is the standard.
+- [ ] List `<ul>` is a direct child of the `.side-menu` div (required for the `.side-menu > ul > li` selector to match).
+- [ ] Items that need extra data use `data-*` attributes (e.g., `data-color`, `data-group`, `data-sensor`).
+- [ ] Dynamically added items (e.g., DSCOVR images appended via `insertAdjacentHTML`) also use `menu-selectable`.
+
+### 2.16 Resizable Width
 
 Side menu plugins should be resizable by default. Users benefit from being able to adjust panel width to fit their screen and content.
 
@@ -174,7 +206,7 @@ Side menu plugins should be resizable by default. Users benefit from being able 
 - [ ] `minWidth` and `maxWidth` are set to reasonable values that accommodate the plugin's content.
 - [ ] If the default 280px side menu width is too narrow for the plugin's content, an explicit `width` is set in `getSideMenuConfig()` (e.g., `width: 600` for form-heavy plugins).
 
-### 2.16 Pro Plugin Extensibility
+### 2.17 Pro Plugin Extensibility
 
 If the plugin has (or should have) a pro variant in `src/plugins-pro/`, check that the base class is structured for extension:
 
