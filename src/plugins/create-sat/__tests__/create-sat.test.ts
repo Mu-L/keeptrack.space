@@ -178,9 +178,9 @@ describe('CreateSat', () => {
     );
     expect(SatMath.altitudeCheck).toHaveBeenCalledWith(mockSatrec, mockTimeManager.simulationTimeObj);
 
-    // Verify the toast was shown with the error message
+    // Verify the toast was shown with the error message (t7e key returned since locales not loaded in test)
     expect(mockUiManager.toast).toHaveBeenCalledWith(
-      'Failed to propagate satellite. Try different parameters or report this issue if parameters are correct.',
+      'plugins.CreateSat.errorMsgs.propagationFailed',
       ToastMsgType.caution,
       true,
     );
