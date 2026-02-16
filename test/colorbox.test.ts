@@ -46,9 +46,6 @@ describe('openColorbox_function', () => {
         <div id="colorbox-div" style="display:block;"></div>
         <div id="colorbox-iframe" style="display:none;"></div>
         <div id="colorbox-img" style="display:none;"></div>
-        <div id="loading-screen" style="display:none;">
-          <div id="loader-text"></div>
-        </div>
         `;
   });
 
@@ -68,13 +65,13 @@ describe('openColorbox_function', () => {
     expect(newColorboxDiv).not.toBeNull();
   });
 
-  // Tests that loading screen is shown before opening the colorbox
+  // Tests that loading overlay is shown before opening the colorbox
   it('test_show_loading', () => {
-    const loading = <HTMLElement>getEl('loading-screen');
-
-    expect(loading.style.display).toBe('none');
     openColorbox('https://www.example.com');
-    expect(loading.style.display).toBe('flex');
+    const overlay = document.getElementById('loading-overlay');
+
+    expect(overlay).not.toBeNull();
+    expect(overlay!.style.display).toBe('flex');
   });
 
   // Tests that colorbox is displayed after loading screen disappears
