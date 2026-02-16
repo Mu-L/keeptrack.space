@@ -137,14 +137,9 @@ export abstract class SplashScreen {
     hideEl('start-app-btn');
     hideEl('adsense-placeholder');
 
-    // Loading Screen Resized and Hidden
     setTimeout(() => {
-      getEl('loading-screen')?.classList.remove('full-loader');
-      getEl('loading-screen')?.classList.add('mini-loader-container');
-      getEl('logo-inner-container')?.classList.add('mini-loader');
       hideEl('loading-screen');
       showEl('keeptrack-header');
-      SplashScreen.loadStr(SplashScreen.msg.math);
     }, 100);
   }
 
