@@ -31,7 +31,6 @@ describe('SecondaryMenuComponent', () => {
   beforeEach(() => {
     // Reset DOM
     document.body.innerHTML = `
-      <div id="loading-screen"></div>
       <div id="left-menus"></div>
       <div id="test-side-menu" style="width: 300px;">
         <button id="test-side-menu-secondary-btn"></button>
