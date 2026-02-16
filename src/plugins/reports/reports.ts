@@ -223,8 +223,6 @@ export class ReportsPlugin extends KeepTrackPlugin {
       <div id="reports-menu" class="side-menu-parent start-hidden text-select">
         <div id="reports-content" class="side-menu">
           <div class="row">
-            <h5 class="center-align">${t7e('plugins.ReportsPlugin.title')}</h5>
-            <div class="divider"></div>
             <div id="reports-buttons" class="center-align" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; margin-left: 10px; margin-right: 10px;">
             </div>
           </div>
