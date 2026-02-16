@@ -12,11 +12,13 @@ import {
   IBottomIconConfig,
   IDragOptions,
   IHelpConfig,
+  IKeyboardShortcut,
   ISideMenuConfig,
 } from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
+import { settingsManager } from '@app/settings/settings';
 import flagPng from '@public/img/icons/flag.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { TopMenu } from '../top-menu/top-menu';
@@ -64,6 +66,8 @@ export class CountriesMenu extends KeepTrackPlugin {
   private getDragOptions_(): IDragOptions {
     return {
       isDraggable: true,
+      minWidth: 200,
+      maxWidth: 400,
     };
   }
 
@@ -76,6 +80,15 @@ export class CountriesMenu extends KeepTrackPlugin {
         </div>
       </div>
     `;
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'O',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
   }
 
   getHelpConfig(): IHelpConfig {

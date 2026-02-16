@@ -93,6 +93,17 @@ describe('CountriesMenu', () => {
       const dragOptions = plugin['getDragOptions_']();
 
       expect(dragOptions.isDraggable).toBe(true);
+      expect(dragOptions.minWidth).toBe(200);
+      expect(dragOptions.maxWidth).toBe(400);
+    });
+
+    it('should return keyboard shortcuts with key O', () => {
+      const plugin = new CountriesMenu();
+      const shortcuts = plugin.getKeyboardShortcuts();
+
+      expect(shortcuts).toHaveLength(1);
+      expect(shortcuts[0].key).toBe('O');
+      expect(shortcuts[0].callback).toBeInstanceOf(Function);
     });
 
     it('should build side menu HTML with country list element', () => {
