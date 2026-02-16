@@ -58,8 +58,6 @@ export class ColorMenu extends KeepTrackPlugin {
       <div id="color-scheme-menu" class="side-menu-parent start-hidden text-select">
         <div id="colors-menu" class="side-menu">
           <ul>
-            <h5 class="center-align">${t7e('plugins.ColorMenu.title')}</h5>
-            <li class="divider"></li>
             ${this.buildColorSchemeList_()}
           </ul>
         </div>
