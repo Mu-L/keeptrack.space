@@ -88,8 +88,8 @@ export enum StorageKey {
   // Favorites Menu
   FAVORITES_LIST = 'v2-keepTrack-favoritesList',
 
-  // IOD Reader
-  IOD_STATIONS = 'v2-keepTrack-iodStations',
+  // Observation Reader
+  OBSERVATION_STATIONS = 'v2-keepTrack-observationStations',
 
   VERSION = 'v2-version',
 }

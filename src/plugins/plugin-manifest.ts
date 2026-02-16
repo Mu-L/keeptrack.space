@@ -390,10 +390,10 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 71.5 },
   },
   {
-    configKey: 'IodReaderPlugin',
-    ossImport: () => import('./iod-reader/iod-reader'),
-    ossClassName: 'IodReaderPlugin',
-    proImport: () => import('../plugins-pro/iod-reader/iod-reader'),
+    configKey: 'ObservationReaderPlugin',
+    ossImport: () => import('./observation-reader/observation-reader'),
+    ossClassName: 'ObservationReaderPlugin',
+    proImport: () => import('../plugins-pro/observation-reader/observation-reader'),
     defaultConfig: { enabled: true, order: 71.7 },
   },
   {

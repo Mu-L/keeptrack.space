@@ -69,7 +69,7 @@ export type KeepTrackPluginsConfiguration = {
   StkFileHandler?: PluginConfiguration;
   CreateSat?: PluginConfiguration;
   OemReaderPlugin?: PluginConfiguration;
-  IodReaderPlugin?: PluginConfiguration;
+  ObservationReaderPlugin?: PluginConfiguration;
   NeighborhoodHistoryPlugin?: PluginConfiguration;
   EditSat?: PluginConfiguration;
   NewLaunch?: PluginConfiguration;
