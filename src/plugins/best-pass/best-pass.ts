@@ -107,13 +107,6 @@ export class BestPassPlugin extends KeepTrackPlugin {
     return html`
       <div id="best-pass-menu" class="side-menu-parent start-hidden text-select">
         <div class="side-menu">
-          <div class="row bp-title-row">
-            <h5 class="center-align">
-              ${t7e('plugins.BestPassPlugin.title' as Parameters<typeof t7e>[0])}
-            </h5>
-          </div>
-          <li class="divider" style="padding: 2px !important;"></li>
-          <div class="row"></div>
           ${this.buildFormHtml_()}
         </div>
       </div>
