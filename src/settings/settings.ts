@@ -277,6 +277,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   filter: 'core',
   installDirectory: 'core',
   offlineMode: 'core',
+  noCatalogOnLoad: 'core',
   isInIframe: 'core',
   isGlobalErrorTrapOn: 'core',
   isEnableConsole: 'core',

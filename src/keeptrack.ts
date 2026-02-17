@@ -372,7 +372,12 @@ theodore.kruczek at gmail dot com.
       colorSchemeManagerInstance.init(renderer);
       symbologyManagerInstance.init(renderer.gl);
 
-      await CatalogLoader.load(); // Needs Object Manager and gl first
+      if (settingsManager.noCatalogOnLoad) {
+        // Empty catalog — still adds stars, sensors, planets, etc.
+        await CatalogLoader.parse({});
+      } else {
+        await CatalogLoader.load(); // Needs Object Manager and gl first
+      }
 
       lineManagerInstance.init();
 

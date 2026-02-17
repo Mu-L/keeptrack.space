@@ -55,6 +55,8 @@ export class CoreSettings {
   installDirectory = '';
   /** Flag to determine if external data is available */
   offlineMode = false;
+  /** Skip loading the satellite catalog on startup. Use with CatalogDropPlugin to load catalogs via drag-and-drop. */
+  noCatalogOnLoad = false;
   /**
    * Flag if the user is running inside an iframe
    */
