@@ -107,6 +107,20 @@ export class ColorSchemeManager {
   pickableBuffer: WebGLBuffer | null = null;
   pickableBufferOneTime = false;
   pickableData = new Int8Array(0);
+  private hasRegisteredOffsetListener_ = false;
+
+  /**
+   * Resets buffer flags and color data so that the next onCruncherReady
+   * event re-creates everything for a new catalog.
+   */
+  resetForCatalogSwap(): void {
+    this.colorBufferOneTime = false;
+    this.pickableBufferOneTime = false;
+    this.colorData = new Float32Array(0);
+    this.pickableData = new Int8Array(0);
+    this.isReady = false;
+    this.lastDotColored = 0;
+  }
 
   calcColorBufsNextCruncher(): void {
     waitForCruncher({
@@ -243,11 +257,14 @@ export class ColorSchemeManager {
         this.isReady = true;
 
         // This helps keep the inview colors up to date
-        EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
-          setTimeout(() => {
-            this.calcColorBufsNextCruncher();
-          }, 1000);
-        });
+        if (!this.hasRegisteredOffsetListener_) {
+          this.hasRegisteredOffsetListener_ = true;
+          EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
+            setTimeout(() => {
+              this.calcColorBufsNextCruncher();
+            }, 1000);
+          });
+        }
 
       },
     );

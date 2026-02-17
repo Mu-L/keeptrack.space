@@ -65,6 +65,19 @@ export class SymbologyManager {
   }
 
   /**
+   * Resets buffer state so that the next onCruncherReady event
+   * re-initializes everything for a new catalog.
+   */
+  resetForCatalogSwap(): void {
+    this.affiliationCache_.clear();
+    this.affiliationBuffer_ = new Uint8Array(0);
+    this.objectTypeBuffer_ = new Uint8Array(0);
+    this.objectTypeBufferInitialized_ = false;
+    this.bufferInitialized_ = false;
+    this.isReady_ = false;
+  }
+
+  /**
    * Initialize with WebGL context
    */
   init(gl: WebGL2RenderingContext): void {

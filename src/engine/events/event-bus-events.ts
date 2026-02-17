@@ -118,4 +118,9 @@ export enum EventBusEvent {
    * Methods-pattern event. Return true to crop screenshot to a 1:1 square.
    */
   screenshotShouldCropSquare = 'screenshotShouldCropSquare',
+  /**
+   * Emitted after a catalog has been reloaded via drag-and-drop or programmatic swap.
+   * Plugins should use this to clear stale caches and refresh UI.
+   */
+  catalogReloaded = 'catalogReloaded',
 }

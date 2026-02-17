@@ -48,11 +48,14 @@ export class SatCruncherThreadManager extends WebWorkerThreadManager {
     EventBus.getInstance().emit(EventBusEvent.onCruncherMessage);
 
     // Only do this once after satData, positionData, and velocityData are all received/processed from the cruncher
+    const dotsManager = ServiceLocator.getDotsManager();
+
     if (
       !settingsManager.cruncherReady &&
       ServiceLocator.getCatalogManager().objectCache &&
-      ServiceLocator.getDotsManager().positionData &&
-      ServiceLocator.getDotsManager().velocityData
+      dotsManager.positionData &&
+      dotsManager.velocityData &&
+      !SatCruncherThreadManager.isPositionDataAllZeros_(dotsManager.positionData)
     ) {
       this.onCruncherReady_();
     }
@@ -69,6 +72,33 @@ export class SatCruncherThreadManager extends WebWorkerThreadManager {
     const highestMarkerNumber = catalogManager.sensorMarkerArray?.[catalogManager.sensorMarkerArray?.length - 1] || 0;
 
     settingsManager.dotsOnScreen = Math.max(catalogManager.numObjects - settingsManager.maxFieldOfViewMarkers, highestMarkerNumber);
+  }
+
+  /**
+   * Quick check that position data has at least some non-zero entries.
+   * After a catalog swap, the worker may send the newly-allocated (all-zero) position
+   * array before propagation has filled it with real positions.  Accepting such data
+   * would trigger onCruncherReady prematurely.  We sample a few entries to avoid the
+   * cost of scanning the entire array.
+   */
+  private static isPositionDataAllZeros_(positionData: Float32Array): boolean {
+    if (positionData.length === 0) {
+      return true;
+    }
+
+    // Sample up to 10 evenly-spaced positions (each position is 3 floats)
+    const posCount = Math.floor(positionData.length / 3);
+    const step = Math.max(1, Math.floor(posCount / 10));
+
+    for (let p = 0; p < posCount; p += step) {
+      const idx = p * 3;
+
+      if (positionData[idx] !== 0 || positionData[idx + 1] !== 0 || positionData[idx + 2] !== 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private onCruncherReady_() {

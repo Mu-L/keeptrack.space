@@ -38,6 +38,48 @@ export class OrbitManager {
   playNextSatellite = null;
   tempTransColor: [number, number, number, number] = [0, 0, 0, 0];
 
+  /**
+   * Resets the orbit manager for a catalog swap.
+   * Resizes GL buffers to match the new catalog, clears caches,
+   * and re-sends INIT to the orbit cruncher worker with updated TLE data.
+   */
+  resetForCatalogSwap(): void {
+    const catalogManager = ServiceLocator.getCatalogManager();
+    const gl = this.gl_;
+    const newSize = catalogManager.missileSats;
+
+    // Delete excess GL buffers if new catalog is smaller
+    while (this.glBuffers_.length > newSize) {
+      const buf = this.glBuffers_.pop();
+
+      if (buf) {
+        gl.deleteBuffer(buf);
+      }
+    }
+
+    // Allocate additional GL buffers if new catalog is larger
+    while (this.glBuffers_.length < newSize) {
+      (this.glBuffers_ as WebGLBuffer[]).push(this.allocateBuffer());
+    }
+
+    // Clear state
+    this.inProgress_ = [];
+    this.orbitCache.clear();
+    this.currentInView_ = [];
+    this.currentSelectId_ = -1;
+    this.secondarySelectId_ = -1;
+
+    // Re-send object data to the orbit cruncher worker
+    const objDataString = OrbitManager.getObjDataString(catalogManager.objectCache);
+
+    this.orbitThreadMgr.postMessage({
+      type: OrbitCruncherMsgType.INIT,
+      orbitFadeFactor: settingsManager.orbitFadeFactor,
+      objData: objDataString,
+      numSegs: settingsManager.orbitSegments,
+    });
+  }
+
   addInViewOrbit(satId: number): void {
     for (const inViewSatId of this.currentInView_) {
       if (satId === inViewSatId) {
@@ -451,6 +493,10 @@ export class OrbitManager {
     const hoverId = hoverManagerInstance.getHoverId();
 
     if (hoverId !== -1 && hoverId !== this.currentSelectId_ && !ServiceLocator.getCatalogManager().getObject(hoverId, GetSatType.EXTRA_ONLY)?.isStatic()) {
+      // Skip if hover ID is beyond current color data bounds (can happen during catalog swap)
+      if (hoverId * 4 + 3 >= colorSchemeManagerInstance.colorData.length) {
+        return;
+      }
       OrbitManager.checkColorBuffersValidity_(hoverId, colorSchemeManagerInstance.colorData);
       const sat = ServiceLocator.getCatalogManager().getObject(hoverId, GetSatType.EXTRA_ONLY);
 

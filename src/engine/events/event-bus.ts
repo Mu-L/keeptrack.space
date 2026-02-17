@@ -74,6 +74,7 @@ export interface EngineEventMap {
   [EventBusEvent.shouldSkipTransparentObjects]: [];
   [EventBusEvent.screenshotComposite]: [CanvasRenderingContext2D, number, number];
   [EventBusEvent.screenshotShouldCropSquare]: [];
+  [EventBusEvent.catalogReloaded]: [];
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {

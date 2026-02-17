@@ -337,8 +337,13 @@ export class DotsManager {
     gl.enable(gl.BLEND);
     gl.depthMask(false); // Disable depth writing
 
-    // Should not be relying on sizeData -- but temporary
-    gl.drawArrays(gl.POINTS, 0, settingsManager.dotsOnScreen);
+    // Cap draw count to position buffer capacity to prevent WebGL errors
+    // during catalog swap when dotsOnScreen may reference the new catalog size
+    // but vertex buffers still contain old catalog data
+    const maxDrawable = this.positionData ? Math.floor(this.positionData.length / 3) : 0;
+    const drawCount = Math.min(settingsManager.dotsOnScreen, maxDrawable);
+
+    gl.drawArrays(gl.POINTS, 0, drawCount);
     gl.bindVertexArray(null);
 
     gl.depthMask(true);
@@ -403,8 +408,9 @@ export class DotsManager {
     }
 
     gl.bindVertexArray(this.programs.picking.vao);
-    // Should not be relying on sizeData -- but temporary
-    gl.drawArrays(gl.POINTS, 0, settingsManager.dotsOnScreen);
+    const maxPickable = this.positionData ? Math.floor(this.positionData.length / 3) : 0;
+
+    gl.drawArrays(gl.POINTS, 0, Math.min(settingsManager.dotsOnScreen, maxPickable));
     gl.bindVertexArray(null);
 
     if (!settingsManager.isMobileModeEnabled) {
@@ -682,6 +688,28 @@ export class DotsManager {
   }
 
   /**
+   * Resets all OneTime flags and clears accumulated buffers so that
+   * initBuffers() can reallocate them for a new catalog.
+   */
+  resetForCatalogSwap(): void {
+    this.positionBufferOneTime_ = false;
+    this.isSizeBufferOneTime_ = false;
+    this.affiliationBufferOneTime_ = false;
+    this.objectTypeBufferOneTime_ = false;
+    this.pickingColorData = [];
+    this.isReady = false;
+    // Force updateCruncherBuffers to allocate new typed arrays
+    // eslint-disable-next-line no-void
+    this.positionData = void 0 as unknown as Float32Array;
+    // eslint-disable-next-line no-void
+    this.velocityData = void 0 as unknown as Float32Array;
+    // eslint-disable-next-line no-void
+    this.inViewData = void 0 as unknown as Int8Array;
+    // eslint-disable-next-line no-void
+    this.inSunData = void 0 as unknown as Int8Array;
+  }
+
+  /**
    * Resets the inSunData array to all zeros.
    */
   resetSatInSun(): void {
@@ -739,8 +767,10 @@ export class DotsManager {
     }
 
     if (mData.satPos) {
-      if (typeof this.positionData === 'undefined') {
+      if (typeof this.positionData === 'undefined' || this.positionData.length !== mData.satPos.length) {
         this.positionData = new Float32Array(mData.satPos);
+        // Force full GPU buffer reallocation on next draw since size changed
+        this.positionBufferOneTime_ = false;
         this.isReady = true;
       } else {
         this.positionData.set(mData.satPos, 0);
@@ -748,7 +778,7 @@ export class DotsManager {
     }
 
     if (mData.satVel) {
-      if (typeof this.velocityData === 'undefined') {
+      if (typeof this.velocityData === 'undefined' || this.velocityData.length !== mData.satVel.length) {
         this.velocityData = new Float32Array(mData.satVel);
       } else {
         this.velocityData.set(mData.satVel, 0);

@@ -209,6 +209,9 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
       satData = JSON.parse(m.data.dat);
       len = satData.length;
 
+      // Clear previous catalog data for catalog swap support
+      objCache = [];
+
       while (i < len) {
         const extraRec = {
           isLowAlt: false,
@@ -269,6 +272,17 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
 
       satPos = new Float32Array(len * 3);
       satVel = new Float32Array(len * 3);
+
+      // Reset stale state for catalog swap support
+      // fieldOfViewSetLength is sent in OBJ_DATA but was previously only read from UPDATE_MARKERS.
+      // A stale value from the old catalog can make len negative in propagationLoop, causing
+      // updateSatCache to process zero satellites and send all-zero position data.
+      fieldOfViewSetLength = m.data.fieldOfViewSetLength ?? 0;
+      // Clear isInterupted so the first propagation after OBJ_DATA isn't skipped
+      // (synchronize() sends OFFSET before OBJ_DATA, which sets isInterupted = true)
+      isInterupted = false;
+      // Reset response count so early-cycle sanity checks work for the new catalog
+      isResponseCount = 0;
 
       if (m.data.isLowPerf) {
         isLowPerf = true;

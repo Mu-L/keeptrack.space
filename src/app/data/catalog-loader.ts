@@ -40,7 +40,7 @@ interface ExtraSat {
   vmag?: number;
 }
 
-interface AsciiTleSat {
+export interface AsciiTleSat {
   ON?: string;
   OT?: SpaceObjectType;
   SCC: string;
@@ -337,6 +337,142 @@ export class CatalogLoader {
         isLowPerf: settingsManager.lowPerf,
       });
     });
+  }
+
+  /**
+   * Parses raw TLE text content (2-line or 3-line format) into AsciiTleSat objects.
+   * Supports .tce files (2-line TLE pairs) and 3LE files (name + TLE pair).
+   */
+  static parseTceContent(content: string): AsciiTleSat[] {
+    const lines = content.split('\n');
+
+    CatalogLoader.cleanAsciiCatalogFile_(lines);
+
+    const catalog: AsciiTleSat[] = [];
+
+    if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) {
+      return catalog;
+    }
+
+    if (lines[0].startsWith('1 ')) {
+      CatalogLoader.parseAsciiTLE_(lines, catalog);
+    } else if (lines.length > 1 && lines[1].startsWith('1 ')) {
+      CatalogLoader.parseAscii3LE_(lines, catalog);
+    } else {
+      throw new Error('Unrecognized TLE format: first data line must start with "1 "');
+    }
+
+    CatalogLoader.sortByScc_(catalog);
+
+    return catalog;
+  }
+
+  /**
+   * Reloads the entire satellite catalog from raw TLE text content.
+   * Resets all rendering subsystems and re-initializes the propagation worker.
+   * Supports .tce (2-line), .tle (3-line), and .txt TLE files.
+   */
+  static async reloadCatalog(tceContent: string): Promise<void> {
+    const { showLoadingSticky, hideLoading } = await import('../../engine/utils/showLoading');
+    const { SelectSatManager } = await import('../../plugins/select-sat-manager/select-sat-manager');
+    const { EventBus } = await import('../../engine/events/event-bus');
+    const { EventBusEvent } = await import('../../engine/events/event-bus-events');
+    const { PluginRegistry } = await import('../../engine/core/plugin-registry');
+
+    showLoadingSticky();
+
+    try {
+      // Deselect current satellite
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (selectSatManager) {
+        selectSatManager.selectSat(-1);
+      }
+
+      // Clear orbits and hover state
+      const orbitManager = ServiceLocator.getOrbitManager();
+
+      orbitManager.clearSelectOrbit(false);
+      orbitManager.clearSelectOrbit(true);
+      orbitManager.clearHoverOrbit();
+      orbitManager.clearInViewOrbit();
+      orbitManager.orbitCache.clear();
+
+      // Reset hover ID so stale IDs from the old catalog don't reference
+      // out-of-bounds indices in the new color data
+      ServiceLocator.getHoverManager().setHoverId(-1);
+
+      // Clear search results
+      settingsManager.lastSearchResults = [];
+
+      // Parse the TLE content
+      const asciiCatalog = CatalogLoader.parseTceContent(tceContent);
+
+      if (asciiCatalog.length === 0) {
+        throw new Error('No valid TLE data found in file');
+      }
+
+      // Reset rendering subsystems
+      const dotsManager = ServiceLocator.getDotsManager();
+      const colorSchemeManager = ServiceLocator.getColorSchemeManager();
+      const symbologyManager = ServiceLocator.getSymbologyManager();
+
+      dotsManager.resetForCatalogSwap();
+      colorSchemeManager.resetForCatalogSwap();
+      symbologyManager.resetForCatalogSwap();
+
+      // Remove stars from staticSet to prevent injectStarData_ from adding duplicates
+      // on repeated catalog swaps (injectStarData_ pushes into staticSet every time)
+      const catalogManager = ServiceLocator.getCatalogManager();
+
+      catalogManager.staticSet = catalogManager.staticSet.filter(
+        (obj: { type?: SpaceObjectType }) => obj.type !== SpaceObjectType.STAR,
+      );
+
+      // Re-parse the catalog via existing pipeline
+      // Must pass as externalCatalog because parse() uses `externalCatalog || asciiCatalog`
+      // and externalCatalog defaults to Promise.resolve([]) which is truthy, discarding keepTrackAscii
+      await CatalogLoader.parse({
+        keepTrackTle: [],
+        externalCatalog: Promise.resolve(asciiCatalog),
+      });
+
+      // Re-init GPU buffers with the new catalog size
+      // This must run after parse (which sets objectCache/numObjects) but before
+      // onCruncherReady — matching the startup flow in keeptrack.ts
+      dotsManager.initBuffers(colorSchemeManager.colorBuffer!);
+
+      // Re-init orbit cruncher with new catalog TLE data and resize GL buffers
+      orbitManager.resetForCatalogSwap();
+
+      // Clear position/velocity data AGAIN after parse returns.
+      // During the await inside parse(), stale worker messages from the old
+      // propagation loop can set positionData/velocityData. If these persist
+      // when cruncherReady is set to false below, the next stale worker message
+      // would satisfy the onCruncherReady check and trigger it prematurely
+      // with old catalog positions.
+      dotsManager.positionData = void 0 as unknown as Float32Array;
+      dotsManager.velocityData = void 0 as unknown as Float32Array;
+      dotsManager.isReady = false;
+
+      // Reset cruncherReady AFTER clearing stale data so that the NEXT worker
+      // message (from the new OBJ_DATA) is the first to satisfy onCruncherReady
+      settingsManager.cruncherReady = false;
+
+      // Keep loading screen up until the position cruncher finishes processing
+      // and onCruncherReady fires (which triggers ColorSchemeManager to rebuild colors)
+      const eventBus = EventBus.getInstance();
+      const onReady = () => {
+        eventBus.unregister(EventBusEvent.onCruncherReady, onReady);
+        eventBus.emit(EventBusEvent.catalogReloaded);
+        hideLoading();
+      };
+
+      eventBus.on(EventBusEvent.onCruncherReady, onReady);
+    } catch (error) {
+      hideLoading();
+      throw error;
+    }
   }
 
   /**
