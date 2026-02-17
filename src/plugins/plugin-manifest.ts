@@ -262,6 +262,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 41 },
   },
   {
+    configKey: 'WatchlistFilterPlugin',
+    ossImport: () => import('./watchlist-filter/watchlist-filter'),
+    ossClassName: 'WatchlistFilterPlugin',
+    defaultConfig: { enabled: true, order: 42 },
+  },
+  {
     configKey: 'ReportsPlugin',
     ossImport: () => import('./reports/reports'),
     ossClassName: 'ReportsPlugin',

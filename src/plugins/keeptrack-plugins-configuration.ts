@@ -49,6 +49,7 @@ export type KeepTrackPluginsConfiguration = {
   SatelliteTimeline?: PluginConfiguration;
   WatchlistPlugin?: PluginConfiguration;
   WatchlistOverlay?: PluginConfiguration;
+  WatchlistFilterPlugin?: PluginConfiguration;
   ReportsPlugin?: PluginConfiguration;
   PolarPlotPlugin?: PluginConfiguration;
   NextLaunchesPlugin?: PluginConfiguration;
