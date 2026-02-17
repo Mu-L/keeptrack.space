@@ -290,8 +290,16 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
     PluginRegistry.getPluginByName('Astronomy')?.setBottomIconToUnselected();
 
     (<HTMLInputElement>getEl('sensor-type')).value = (<HTMLInputElement>getEl('cs-type')).value.replace(/</gu, '&lt;').replace(/>/gu, '&gt;');
-    getEl('sensor-info-title')!.innerHTML = 'Custom Sensor';
-    getEl('sensor-country')!.innerHTML = 'Custom Sensor';
+    const sensorInfoTitleDom = getEl('sensor-info-title', true);
+
+    if (sensorInfoTitleDom) {
+      sensorInfoTitleDom.innerHTML = 'Custom Sensor';
+    }
+    const sensorCountryDom = getEl('sensor-country', true);
+
+    if (sensorCountryDom) {
+      sensorCountryDom.innerHTML = 'Custom Sensor';
+    }
 
     const uiName = (<HTMLInputElement>getEl('cs-uiName')).value;
     const lon = CustomSensorPlugin.str2Deg((<HTMLInputElement>getEl('cs-lon')).value);
