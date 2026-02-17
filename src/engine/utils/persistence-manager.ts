@@ -99,6 +99,9 @@ export enum StorageKey {
   LAST_CONSTELLATION = 'v2-keepTrack-lastConstellation',
 
   VERSION = 'v2-version',
+
+  // Doppler
+  DOPPLER_REF_FREQUENCY = 'v2-keepTrack-dopplerRefFrequency',
 }
 export class PersistenceManager {
   private readonly storage_: Storage;
