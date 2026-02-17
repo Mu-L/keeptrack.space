@@ -13,6 +13,7 @@ export type PluginConfiguration = {
 export type KeepTrackPluginsConfiguration = {
   Telemetry?: PluginConfiguration;
   SelectSatManager?: PluginConfiguration;
+  CatalogDropPlugin?: PluginConfiguration;
   StarsPlugin?: PluginConfiguration;
   ScenarioManagementPlugin?: PluginConfiguration;
   TopMenu?: PluginConfiguration;
@@ -29,6 +30,7 @@ export type KeepTrackPluginsConfiguration = {
   SatInfoBoxMission?: PluginConfiguration;
   SatInfoBoxSponsor?: PluginConfiguration;
   SatInfoBoxSensor?: PluginConfiguration;
+  SatInfoBoxDoppler?: PluginConfiguration;
   DateTimeManager?: PluginConfiguration;
   GithubLinkPlugin?: PluginConfiguration;
   LinkedInLinkPlugin?: PluginConfiguration;

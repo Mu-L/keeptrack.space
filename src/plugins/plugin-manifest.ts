@@ -27,6 +27,13 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true },
     alwaysEnabled: true,
   },
+  {
+    configKey: 'CatalogDropPlugin',
+    ossImport: () => import('./catalog-drop/catalog-drop'),
+    ossClassName: 'CatalogDropPlugin',
+    defaultConfig: { enabled: true },
+    alwaysEnabled: true,
+  },
 
   // ── Data plugins (must load before catalog) ──────────────────────────────
   {
@@ -135,6 +142,13 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'SatInfoBoxSensor',
     ossImport: () => import('./sat-info-box-sensor/sat-info-box-sensor'),
     ossClassName: 'SatInfoBoxSensor',
+    defaultConfig: { enabled: true },
+  },
+  {
+    configKey: 'SatInfoBoxDoppler',
+    ossImport: () => import('./sat-info-box-doppler/sat-info-box-doppler'),
+    ossClassName: 'SatInfoBoxDoppler',
+    proImport: () => import('../plugins-pro/sat-info-box-doppler/sat-info-box-doppler'),
     defaultConfig: { enabled: true },
   },
   {
