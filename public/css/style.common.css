@@ -25,6 +25,18 @@
 
 body {
   overflow: hidden;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 
@@ -2718,7 +2730,7 @@ button.ui-button::-moz-focus-inner {
   flex: 0 0 auto;
   margin: 0 1rem;
   text-align: center;
-  white-space: nowrap;
+  width: 300px;
 }
 
 
@@ -2751,12 +2763,14 @@ button.ui-button::-moz-focus-inner {
   padding: 5px;
 }
 
-/* Secondary menu panels (ID ends with "-secondary") must sit above their primary side menu.
+/* Secondary menu panels sit behind their primary side menu (z-index < 5).
    min-width: auto allows secondary panels to respect their inline width instead of
-   being forced to the responsive .side-menu-parent min-width (400px). */
+   being forced to the responsive .side-menu-parent min-width (400px).
+   left: 0px (without !important) is the default; inline styles from openSecondaryMenu()
+   override this to position the panel adjacent to the primary menu. */
 [id$="-secondary"].side-menu-parent {
-  z-index: 6 !important;
-  left: 0px !important;
+  z-index: 4 !important;
+  left: 0px;
   min-width: auto;
 }
 
@@ -2799,6 +2813,11 @@ button.ui-button::-moz-focus-inner {
 
 .side-menu-settings [type="radio"].with-gap:checked+span::before {
   border-color: var(--color-primary) !important;
+}
+
+.secondary-title-bar {
+  padding: 0.5rem 0;
+  margin-bottom: 0;
 }
 
 .submenu {

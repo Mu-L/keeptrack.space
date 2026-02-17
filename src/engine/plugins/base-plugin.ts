@@ -605,7 +605,16 @@ export abstract class KeepTrackPlugin {
           width: ${this.sideMenuSecondaryOptions.width.toString()}px;"
         >
           <div id="${this.sideMenuElementName}-secondary-content" class="side-menu-settings" style="padding: 0px 10px;">
-            <div class="row"></div>
+            <div class="side-menu-title-bar secondary-title-bar">
+              <div class="side-menu-title-left"></div>
+              <div class="side-menu-title-right">
+                <button id="${this.sideMenuElementName}-secondary-close-btn"
+                  class="center-align btn btn-ui waves-effect waves-light icon-btn"
+                  type="button">
+                  <img src="${leftPanelClosePng}" alt="Close" class="icon-btn-img" />
+                </button>
+              </div>
+            </div>
             ${this.sideMenuSecondaryHtml}
           </div>
         </div>
@@ -642,6 +651,15 @@ export abstract class KeepTrackPlugin {
             }
           });
 
+          getEl(`${this.sideMenuElementName}-secondary-close-btn`)?.addEventListener('click', () => {
+            this.closeSecondaryMenu();
+
+            const settingsButtonElement = getEl(`${this.sideMenuElementName}-secondary-btn`);
+
+            if (settingsButtonElement) {
+              settingsButtonElement.style.color = 'var(--color-dark-text-accent)';
+            }
+          });
         },
       );
     }
@@ -1273,11 +1291,16 @@ export abstract class KeepTrackPlugin {
 
     if (secondaryMenuElement) {
       this.isSideMenuSettingsOpen = true;
-      if (this.sideMenuSecondaryOptions.leftOffset !== null) {
-        secondaryMenuElement.style.left = `${this.sideMenuSecondaryOptions.leftOffset}px`;
+      let leftPos: number;
+
+      if (this.sideMenuSecondaryOptions.leftOffset !== null && typeof this.sideMenuSecondaryOptions.leftOffset === 'number') {
+        leftPos = this.sideMenuSecondaryOptions.leftOffset;
       } else {
-        secondaryMenuElement.style.left = `${sideMenuElement?.getBoundingClientRect().right ?? 0}px`;
+        leftPos = sideMenuElement?.getBoundingClientRect().right ?? 0;
       }
+      secondaryMenuElement.style.left = `${leftPos}px`;
+      // Constrain width so the right edge doesn't exceed the viewport
+      secondaryMenuElement.style.maxWidth = `${window.innerWidth - leftPos}px`;
       slideInRight(secondaryMenuElement, 1000);
     }
   }

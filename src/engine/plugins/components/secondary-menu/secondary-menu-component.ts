@@ -27,6 +27,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
 import { SoundNames } from '@app/engine/audio/sounds';
+import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
 import { ISecondaryMenuConfig } from '../../core/plugin-capabilities';
 import { SideMenuComponent } from '../side-menu/side-menu-component';
 
@@ -189,7 +190,16 @@ export class SecondaryMenuComponent {
         width: ${this.config.width.toString()}px;"
       >
         <div id="${this.elementName}-content" class="side-menu-settings" style="padding: 0px 10px;">
-          <div class="row"></div>
+          <div class="side-menu-title-bar secondary-title-bar">
+            <div class="side-menu-title-left"></div>
+            <div class="side-menu-title-right">
+              <button id="${this.elementName}-close-btn"
+                class="center-align btn btn-ui waves-effect waves-light icon-btn"
+                type="button">
+                <img src="${leftPanelClosePng}" alt="Close" class="icon-btn-img" />
+              </button>
+            </div>
+          </div>
           ${this.config.html}
         </div>
       </div>
@@ -237,6 +247,13 @@ export class SecondaryMenuComponent {
         } else {
           this.open(parentSideMenu);
         }
+      });
+
+      // Register close button handler
+      const closeBtn = getEl(`${this.elementName}-close-btn`);
+
+      closeBtn?.addEventListener('click', () => {
+        this.close();
       });
 
       // Register download button if callback provided
