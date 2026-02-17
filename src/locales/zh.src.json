@@ -148,25 +148,6 @@
       "title": "传感器时间线菜单",
       "helpBody": "传感器时间线菜单显示多个传感器对一颗卫星的可见性。时间线按颜色区分观测质量：红色为差，黄色为一般，绿色为好。点击某次观测可切换到对应传感器和时间。<br><br>可通过更改仿真的起止时间，以及长度和间隔选项来调整时间线。"
     },
-    "ProximityOps": {
-      "bottomIconLabel": "交会与近距离操作",
-      "title": "交会与近距离操作（RPO）",
-      "titleSecondary": "交会与近距离操作列表",
-      "helpBody": "查找卫星之间即将发生的接近事件",
-      "noradId": "NORAD编号",
-      "maxDistThreshold": "最大距离阈值（公里）",
-      "maxRelativeVelocity": "最大相对速度（公里/秒）",
-      "searchDuration": "搜索时长（小时）",
-      "geoText": "地球同步轨道",
-      "leoText": "近地轨道",
-      "orbitType": "轨道类型",
-      "geoAllVsAll": "地球同步轨道全部对全部",
-      "geoAllVsAllTooltip": "搜索所有地球同步轨道卫星之间的RPO",
-      "comparePayloadsOnly": "仅比较有效载荷",
-      "comparePayloadsOnlyTooltip": "仅搜索有效载荷之间的RPO",
-      "ignoreVimpelRso": "忽略Vimpel RSO",
-      "ignoreVimpelRsoTooltip": "忽略来自Vimpel目录的RSO"
-    },
     "SatelliteTimeline": {
       "bottomIconLabel": "卫星时间线",
       "title": "卫星时间线菜单",

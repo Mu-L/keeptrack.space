@@ -117,25 +117,6 @@
       "title": "Sensor-Zeitachsen-Menü",
       "helpBody": "Das Sensor-Zeitachsen-Menü zeigt, wann eine Liste von Sensoren Sichtbarkeit zu einem Satelliten hat. Die Zeitachse ist farbcodiert, um die Qualität des Durchgangs anzuzeigen. Rot ist ein schlechter Durchgang, Gelb ist ein durchschnittlicher Durchgang und Grün ist ein guter Durchgang. Klicken Sie auf einen Durchgang, um den Sensor und die Zeit für diesen Durchgang zu ändern. <br><br> Die Zeitachse kann durch Ändern der Start- und Endzeit der Simulation modifiziert werden. Zusätzlich kann die Zeitachse durch Ändern der Längen- und Intervalloptionen modifiziert werden."
     },
-    "ProximityOps": {
-      "bottomIconLabel": "Rendezvous- und Annäherungsoperationen",
-      "title": "Rendezvous- und Annäherungsoperationen (RPO)",
-      "titleSecondary": "RPO-Liste",
-      "helpBody": "Finde bevorstehende Annäherungen zwischen Satelliten",
-      "noradId": "NORAD-ID",
-      "maxDistThreshold": "Maximaler Abstandsschwellenwert (km)",
-      "maxRelativeVelocity": "Maximale Relativgeschwindigkeit (km/s)",
-      "searchDuration": "Suchdauer (Stunden)",
-      "geoText": "Geostationär",
-      "leoText": "Niedrige Erdumlaufbahn",
-      "orbitType": "Orbittyp",
-      "geoAllVsAll": "Geostationär Alle gegen Alle",
-      "geoAllVsAllTooltip": "Suche nach RPOs zwischen allen geostationären Satelliten",
-      "comparePayloadsOnly": "Nur Nutzlasten vergleichen",
-      "comparePayloadsOnlyTooltip": "Nur nach RPOs zwischen Nutzlasten suchen",
-      "ignoreVimpelRso": "Vimpel-RSO ignorieren",
-      "ignoreVimpelRsoTooltip": "RSOs aus dem Vimpel-Katalog ignorieren"
-    },
     "SatelliteTimeline": {
       "bottomIconLabel": "Satelliten-Zeitachse",
       "title": "Satelliten-Zeitachsen-Menü",
