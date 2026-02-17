@@ -11,6 +11,7 @@ import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-ma
 import { parseRgba } from '@app/engine/utils/rgba';
 import { rgbCss } from '@app/engine/utils/rgbCss';
 import { SettingsManager } from '@app/settings/settings';
+import { SatLabelMode } from '@app/settings/ui-settings';
 import settingsPng from '@public/img/icons/settings.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SoundNames } from '@app/engine/audio/sounds';
@@ -164,12 +165,13 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
                 Enable Demo Mode
               </label>
             </div>
-            <div class="switch row">
-              <label data-position="top" data-delay="50" data-tooltip="Small text labels will appear next to all satellites in FOV.">
-                <input id="settings-sat-label-mode" type="checkbox" checked />
-                <span class="lever"></span>
-                Enable Satellite Label Mode
-              </label>
+            <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="Controls satellite label rendering on watchlist satellites.">
+              <select id="settings-sat-label-mode">
+                <option value="0">Off</option>
+                <option value="1" selected>FOV Only</option>
+                <option value="2">All Watchlist</option>
+              </select>
+              <label>Satellite Label Mode</label>
             </div>
             <div class="switch row">
               <label data-position="top" data-delay="50" data-tooltip="Time will freeze as you rotate the camera.">
@@ -412,7 +414,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       { id: 'settings-hos', setting: 'colors.transparent[3] === 0' },
       { id: 'settings-confidence-levels', setting: 'isShowConfidenceLevels' },
       { id: 'settings-demo-mode', setting: 'isDemoModeOn' },
-      { id: 'settings-sat-label-mode', setting: 'isSatLabelModeOn' },
       { id: 'settings-snp', setting: 'isShowNextPassOnHover' },
       { id: 'settings-freeze-drag', setting: 'isFreezePropRateOnDrag' },
       { id: 'settings-time-machine-toasts', setting: 'isDisableTimeMachineToasts' },
@@ -429,6 +430,12 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
         }
       }
     });
+
+    const satLabelModeEl = <HTMLSelectElement>getEl('settings-sat-label-mode');
+
+    if (satLabelModeEl) {
+      satLabelModeEl.value = settingsManager.satLabelMode.toString();
+    }
 
     const maxSearchSatsEl = <HTMLInputElement>getEl('maxSearchSats');
 
@@ -457,7 +464,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
   }
 
   // eslint-disable-next-line complexity
-  private static onFormChange_(e: Event, isDMChecked?: boolean, isSLMChecked?: boolean) {
+  private static onFormChange_(e: Event, isDMChecked?: boolean) {
     if (typeof e === 'undefined' || e === null) {
       throw new Error('e is undefined');
     }
@@ -482,33 +489,27 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       case 'settings-hos':
       case 'settings-confidence-levels':
       case 'settings-demo-mode':
-      case 'settings-sat-label-mode':
       case 'settings-freeze-drag':
       case 'settings-time-machine-toasts':
       case 'settings-snp':
         if ((<HTMLInputElement>getEl((<HTMLInputElement>e.target)?.id ?? ''))?.checked) {
-          // Play sound for enabling option
           ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
         } else {
-          // Play sound for disabling option
           ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
         }
+        break;
+      case 'settings-sat-label-mode':
+        ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
         break;
       default:
         break;
     }
 
     isDMChecked ??= (<HTMLInputElement>getEl('settings-demo-mode')).checked;
-    isSLMChecked ??= (<HTMLInputElement>getEl('settings-sat-label-mode')).checked;
 
-    if (isSLMChecked && (<HTMLElement>e.target).id === 'settings-demo-mode') {
-      (<HTMLInputElement>getEl('settings-sat-label-mode')).checked = false;
-      getEl('settings-demo-mode')?.classList.remove('lever:after');
-    }
-
-    if (isDMChecked && (<HTMLElement>e.target).id === 'settings-sat-label-mode') {
-      (<HTMLInputElement>getEl('settings-demo-mode')).checked = false;
-      getEl('settings-sat-label-mode')?.classList.remove('lever:after');
+    // When demo mode is enabled, disable satellite labels
+    if (isDMChecked && (<HTMLElement>e.target).id === 'settings-demo-mode') {
+      (<HTMLSelectElement>getEl('settings-sat-label-mode')).value = '0';
     }
   }
 
@@ -523,7 +524,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     settingsManager.isFocusOnSatelliteWhenSelected = true;
     settingsManager.isEciOnHover = false;
     settingsManager.isDemoModeOn = false;
-    settingsManager.isSatLabelModeOn = true;
+    settingsManager.satLabelMode = SatLabelMode.FOV_ONLY;
     settingsManager.isFreezePropRateOnDrag = false;
     settingsManager.isDisableTimeMachineToasts = false;
     settingsManager.searchLimit = 600;
@@ -585,7 +586,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     settingsManager.colors.transparent = isHOSChecked ? [1.0, 1.0, 1.0, 0] : [1.0, 1.0, 1.0, 0.1];
     settingsManager.isShowConfidenceLevels = (<HTMLInputElement>getEl('settings-confidence-levels')).checked;
     settingsManager.isDemoModeOn = (<HTMLInputElement>getEl('settings-demo-mode')).checked;
-    settingsManager.isSatLabelModeOn = (<HTMLInputElement>getEl('settings-sat-label-mode')).checked;
+    settingsManager.satLabelMode = parseInt((<HTMLSelectElement>getEl('settings-sat-label-mode')).value) as SatLabelMode;
     settingsManager.isShowNextPass = (<HTMLInputElement>getEl('settings-snp')).checked;
     settingsManager.isFreezePropRateOnDrag = (<HTMLInputElement>getEl('settings-freeze-drag')).checked;
 
