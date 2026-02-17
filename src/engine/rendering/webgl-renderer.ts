@@ -9,6 +9,7 @@ import { BaseObject, CatalogSource, GreenwichMeanSiderealTime, Kilometers, Milli
 import { mat4, vec2, vec4 } from 'gl-matrix';
 import { GroupType } from '../../app/data/object-group';
 import { SettingsManager } from '../../settings/settings';
+import { SatLabelMode } from '../../settings/ui-settings';
 import { Camera, CameraType } from '../camera/camera';
 import { GetSatType } from '../core/interfaces';
 import { PluginRegistry } from '../core/plugin-registry';
@@ -234,12 +235,29 @@ export class WebGLRenderer {
     const timeManagerInstance = ServiceLocator.getTimeManager();
     const sensorManagerInstance = ServiceLocator.getSensorManager();
     const watchlistPluginInstance = PluginRegistry.getPlugin(WatchlistPlugin);
+    const cameraType = ServiceLocator.getMainCamera().cameraType;
+    const labelMode = settingsManager.satLabelMode;
+    const hasWatchlistSats = (watchlistPluginInstance?.watchlistList?.length ?? 0) > 0;
 
-    if (
-      ServiceLocator.getMainCamera().cameraType === CameraType.ASTRONOMY ||
-      ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM ||
-      watchlistPluginInstance?.hasAnyInView()
-    ) {
+    const shouldEnter =
+      cameraType === CameraType.ASTRONOMY ||
+      cameraType === CameraType.PLANETARIUM ||
+      cameraType === CameraType.FLAT_MAP ||
+      watchlistPluginInstance?.hasAnyInView() ||
+      (labelMode === SatLabelMode.ALL && hasWatchlistSats);
+
+    if (!shouldEnter) {
+      this.sensorPos = null;
+      this.isDrawOrbitsAbove = false;
+      ServiceLocator.getSatLabelManager()?.updateLabels([], []);
+
+      return;
+    }
+
+    // Calculate sensor position (not needed for FLAT_MAP or ALL label mode)
+    if (cameraType === CameraType.FLAT_MAP || labelMode === SatLabelMode.ALL) {
+      this.sensorPos = null;
+    } else {
       // Catch race condition where sensor has been reset but camera hasn't been updated
       try {
         this.sensorPos = sensorManagerInstance.calculateSensorPos(timeManagerInstance.simulationTimeObj, sensorManagerInstance.currentSensors);
@@ -250,103 +268,111 @@ export class WebGLRenderer {
 
         return;
       }
-      if (!this.isDrawOrbitsAbove) {
-        /*
-         * Don't do this until the scene is redrawn with a new camera or thousands of satellites will
-         * appear to be in the field of view
-         */
-        this.isDrawOrbitsAbove = true;
+    }
 
+    if (!this.isDrawOrbitsAbove) {
+      /*
+       * Don't do this until the scene is redrawn with a new camera or thousands of satellites will
+       * appear to be in the field of view
+       */
+      this.isDrawOrbitsAbove = true;
+
+      return;
+    }
+
+    // Check if labels should be cleared
+    const shouldClearLabels =
+      labelMode === SatLabelMode.OFF ||
+      (cameraType !== CameraType.PLANETARIUM &&
+       cameraType !== CameraType.FLAT_MAP &&
+       labelMode !== SatLabelMode.ALL &&
+       !watchlistPluginInstance?.hasAnyInView());
+
+    if (shouldClearLabels) {
+      ServiceLocator.getSatLabelManager()?.updateLabels([], []);
+
+      return;
+    }
+
+    // Sensor lat check — skip for FLAT_MAP and ALL label mode (no sensor needed)
+    if (cameraType !== CameraType.FLAT_MAP && labelMode !== SatLabelMode.ALL && sensorManagerInstance?.currentSensors[0]?.lat === null) {
+      return;
+    }
+
+    // Rate limiting
+    if (timeManagerInstance.realTime - this.satLabelModeLastTime_ < settingsManager.minTimeBetweenSatLabels) {
+      return;
+    }
+
+    const orbitManagerInstance = ServiceLocator.getOrbitManager();
+
+    orbitManagerInstance.clearInViewOrbit();
+
+    const visibleSatIds: number[] = [];
+    const labelTexts: string[] = [];
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+
+    // Skip FOV check for PLANETARIUM, FLAT_MAP, or ALL label mode
+    const skipFovCheck =
+      cameraType === CameraType.PLANETARIUM ||
+      cameraType === CameraType.FLAT_MAP ||
+      labelMode === SatLabelMode.ALL;
+
+    if (skipFovCheck) {
+      watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
+        if (visibleSatIds.length >= settingsManager.maxLabels) {
+          return;
+        }
+        const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY);
+
+        if (!obj?.isSatellite()) {
+          return;
+        }
+        const sat = <Satellite>obj;
+
+        visibleSatIds.push(id);
+        labelTexts.push(sat.source === CatalogSource.VIMPEL ? `JSC${sat.altId}` : sat.sccNum);
+      });
+    } else {
+      // FOV_ONLY: check inViewData
+      const dotsManagerInstance = ServiceLocator.getDotsManager();
+
+      if (!dotsManagerInstance.inViewData) {
         return;
       }
 
-      if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
-        ServiceLocator.getSatLabelManager()?.updateLabels([], []);
+      watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
+        const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY) as Satellite;
 
-        return;
-      }
+        if (dotsManagerInstance.inViewData[id] === 0) {
+          return;
+        }
+        const satScreenPositionArray = this.getScreenCoords(obj);
 
-      if (sensorManagerInstance?.currentSensors[0]?.lat === null) {
-        return;
-      }
-      if (timeManagerInstance.realTime - this.satLabelModeLastTime_ < settingsManager.minTimeBetweenSatLabels) {
-        return;
-      }
-
-      const orbitManagerInstance = ServiceLocator.getOrbitManager();
-
-      orbitManagerInstance.clearInViewOrbit();
-
-      const visibleSatIds: number[] = [];
-      const labelTexts: string[] = [];
-
-      if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
-        // Only label satellites on the current watchlist/satellite list
-        const catalogManagerInstance = ServiceLocator.getCatalogManager();
-
-        watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
-          if (visibleSatIds.length >= settingsManager.maxLabels) {
-            return;
-          }
-          const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY);
-
-          if (!obj?.isSatellite()) {
-            return;
-          }
-          const sat = <Satellite>obj;
-
-          visibleSatIds.push(id);
-          labelTexts.push(sat.source === CatalogSource.VIMPEL ? `JSC${sat.altId}` : sat.sccNum);
-        });
-      } else {
-        const catalogManagerInstance = ServiceLocator.getCatalogManager();
-        const dotsManagerInstance = ServiceLocator.getDotsManager();
-
-        if (!dotsManagerInstance.inViewData) {
+        if (satScreenPositionArray.error) {
+          return;
+        }
+        if (typeof satScreenPositionArray.x === 'undefined' || typeof satScreenPositionArray.y === 'undefined') {
+          return;
+        }
+        if (satScreenPositionArray.x > window.innerWidth || satScreenPositionArray.y > window.innerHeight) {
           return;
         }
 
-        watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
-          const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY) as Satellite;
+        // Draw Orbits
+        if (!settingsManager.isShowSatNameNotOrbit) {
+          orbitManagerInstance.addInViewOrbit(id);
+        }
 
-          if (dotsManagerInstance.inViewData[id] === 0) {
-            return;
-          }
-          const satScreenPositionArray = this.getScreenCoords(obj);
-
-          if (satScreenPositionArray.error) {
-            return;
-          }
-          if (typeof satScreenPositionArray.x === 'undefined' || typeof satScreenPositionArray.y === 'undefined') {
-            return;
-          }
-          if (satScreenPositionArray.x > window.innerWidth || satScreenPositionArray.y > window.innerHeight) {
-            return;
-          }
-
-          // Draw Orbits
-          if (!settingsManager.isShowSatNameNotOrbit) {
-            orbitManagerInstance.addInViewOrbit(id);
-          }
-
-          visibleSatIds.push(id);
-          labelTexts.push(obj.source === CatalogSource.VIMPEL ? `JSC${obj.altId}` : obj.sccNum);
-        });
-      }
-
-      // Update GPU label manager with visible satellite data
-      ServiceLocator.getSatLabelManager()?.updateLabels(visibleSatIds, labelTexts);
-
-      this.satLabelModeLastTime_ = timeManagerInstance.realTime;
-    } else {
-      this.sensorPos = null;
-      this.isDrawOrbitsAbove = false;
+        visibleSatIds.push(id);
+        labelTexts.push(obj.source === CatalogSource.VIMPEL ? `JSC${obj.altId}` : obj.sccNum);
+      });
     }
 
-    // Clear labels when not in label mode
-    if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
-      ServiceLocator.getSatLabelManager()?.updateLabels([], []);
-    }
+    // Update GPU label manager with visible satellite data
+    ServiceLocator.getSatLabelManager()?.updateLabels(visibleSatIds, labelTexts);
+
+    this.satLabelModeLastTime_ = timeManagerInstance.realTime;
   }
 
   setNearRenderer() {
