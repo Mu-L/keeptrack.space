@@ -109,11 +109,12 @@ describe('Collisions_class', () => {
   });
 
   describe('onBottomIconClick', () => {
-    it('should parse collision data when menu is active', async () => {
+    it('should parse collision data when menu is active and logged in', async () => {
       const plugin = new Collisions();
 
       websiteInit(plugin);
       plugin['isMenuButtonActive'] = true;
+      plugin['isLoggedIn_'] = true;
 
       plugin.onBottomIconClick();
 
@@ -147,13 +148,14 @@ describe('Collisions_class', () => {
     });
   });
 
-  describe('parseCollisionData_', () => {
+  describe('fetchCollisionData_', () => {
     it('should fetch and process collision data', async () => {
       vi.useFakeTimers();
       const plugin = new Collisions();
 
       websiteInit(plugin);
       plugin['isMenuButtonActive'] = true;
+      plugin['isLoggedIn_'] = true;
 
       // Ensure collision list is empty
       expect(plugin['collisionList_'].length).toBe(0);
@@ -161,11 +163,12 @@ describe('Collisions_class', () => {
       // Call onBottomIconClick which triggers parseCollisionData_
       plugin.onBottomIconClick();
 
-      // Wait for async operations - use jest timers and flush promises
-      vi.advanceTimersByTime(100);
-      await Promise.resolve();
-      vi.advanceTimersByTime(100);
-      await Promise.resolve();
+      // Wait for async operations - flush promise queue multiple times for chained .then()/.catch()/.finally()
+      await Promise.resolve(); // Resolve fetch()
+      await Promise.resolve(); // Resolve json()
+      await Promise.resolve(); // Resolve process
+      await Promise.resolve(); // Resolve .catch()/.finally()
+      await Promise.resolve(); // Extra safety flush
 
       expect(plugin['collisionList_'].length).toBe(2);
       // Restore fake timers to avoid leaking real timers to other test files
@@ -177,6 +180,7 @@ describe('Collisions_class', () => {
 
       websiteInit(plugin);
       plugin['isMenuButtonActive'] = true;
+      plugin['isLoggedIn_'] = true;
       plugin['collisionList_'] = mockCollisionData;
 
       plugin.onBottomIconClick();

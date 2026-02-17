@@ -12,10 +12,12 @@ import {
 } from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { getEl } from '@app/engine/utils/get-el';
+import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { t7e } from '@app/locales/keys';
 import CollisionsPng from '@public/img/icons/collisions.png';
+import fetchPng from '@public/img/icons/download.png';
+import refreshPng from '@public/img/icons/refresh.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './collisions.css';
 
@@ -43,6 +45,8 @@ export class Collisions extends KeepTrackPlugin {
   private readonly collisionDataSrc_ = 'https://api.keeptrack.space/v2/socrates/latest';
   private selectSatIdOnCruncher_: number | null = null;
   protected collisionList_: CollisionEvent[] = [];
+  private isLoggedIn_ = false;
+  private isFetching_ = false;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -61,8 +65,14 @@ export class Collisions extends KeepTrackPlugin {
    * Called when the bottom icon is clicked.
    */
   onBottomIconClick(): void {
-    if (this.isMenuButtonActive) {
-      this.parseCollisionData_();
+    if (!this.isMenuButtonActive) {
+      return;
+    }
+
+    this.updateToolbarForLoginState_();
+
+    if (this.isLoggedIn_ && this.collisionList_.length === 0) {
+      this.fetchCollisionData_();
     }
   }
 
@@ -93,6 +103,16 @@ export class Collisions extends KeepTrackPlugin {
       <div id="Collisions-menu" class="side-menu-parent start-hidden text-select">
         <div id="Collisions-content" class="side-menu">
           <div class="row">
+            <div class="col-toolbar">
+              <button id="Collisions-fetch-btn" class="btn btn-ui waves-effect waves-light icon-btn"
+                type="button" kt-tooltip="Fetch Data">
+                <img src="${fetchPng}" class="icon-btn-img" alt="" />
+              </button>
+              <button id="Collisions-refresh-btn" class="btn btn-ui waves-effect waves-light icon-btn"
+                type="button" kt-tooltip="Refresh" style="display:none;">
+                <img src="${refreshPng}" class="icon-btn-img" alt="" />
+              </button>
+            </div>
             <table id="Collisions-table" class="center-align"></table>
             <sub class="center-align">*Collision data provided by CelesTrak via <a href="https://celestrak.org/SOCRATES/" target="_blank" rel="noreferrer">SOCRATES</a>.</sub>
           </div>
@@ -116,6 +136,8 @@ export class Collisions extends KeepTrackPlugin {
     super.addJs();
 
     EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinal_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.userLogin, this.onUserLogin_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.userLogout, this.onUserLogout_.bind(this));
 
     EventBus.getInstance().on(EventBusEvent.onCruncherMessage, () => {
       if (this.selectSatIdOnCruncher_ !== null) {
@@ -128,6 +150,17 @@ export class Collisions extends KeepTrackPlugin {
   }
 
   private uiManagerFinal_() {
+    getEl('Collisions-fetch-btn', true)?.addEventListener('click', () => {
+      hideEl('Collisions-fetch-btn');
+      showEl('Collisions-refresh-btn', 'inline-flex');
+      this.fetchCollisionData_();
+    });
+
+    getEl('Collisions-refresh-btn', true)?.addEventListener('click', () => {
+      this.collisionList_ = [];
+      this.fetchCollisionData_();
+    });
+
     getEl('Collisions-menu', true)?.addEventListener('click', (evt: MouseEvent) => {
       const el = (<HTMLElement>evt.target).parentElement;
 
@@ -145,19 +178,78 @@ export class Collisions extends KeepTrackPlugin {
     });
   }
 
-  private parseCollisionData_() {
-    if (this.collisionList_.length === 0) {
-      // Only generate the table if receiving the -1 argument for the first time
-      fetch(this.collisionDataSrc_).then((response) => {
-        response.json().then((collisionList: CollisionEvent[]) => {
-          this.collisionList_ = collisionList;
-          this.createTable_();
+  private fetchCollisionData_(): void {
+    if (this.isFetching_) {
+      return;
+    }
+    this.isFetching_ = true;
 
-          if (this.collisionList_.length === 0) {
-            errorManagerInstance.warn(t7e('plugins.Collisions.errorMsgs.noCollisionsData'));
-          }
-        });
+    fetch(this.collisionDataSrc_)
+      .then((response) => response.json())
+      .then((collisionList: CollisionEvent[]) => {
+        this.collisionList_ = collisionList;
+        this.createTable_();
+
+        if (this.collisionList_.length === 0) {
+          errorManagerInstance.warn(t7e('plugins.Collisions.errorMsgs.noCollisionsData'));
+        }
+
+        hideEl('Collisions-fetch-btn');
+        showEl('Collisions-refresh-btn', 'inline-flex');
+      })
+      .catch(() => {
+        errorManagerInstance.warn(t7e('plugins.Collisions.errorMsgs.noCollisionsData'));
+      })
+      .finally(() => {
+        this.isFetching_ = false;
       });
+  }
+
+  private onUserLogin_(): void {
+    this.isLoggedIn_ = true;
+
+    if (this.isMenuButtonActive) {
+      this.updateToolbarForLoginState_();
+      if (this.collisionList_.length === 0) {
+        this.fetchCollisionData_();
+      }
+    }
+  }
+
+  private onUserLogout_(): void {
+    this.isLoggedIn_ = false;
+
+    if (this.isMenuButtonActive) {
+      this.updateToolbarForLoginState_();
+    }
+  }
+
+  private updateToolbarForLoginState_(): void {
+    const fetchBtn = getEl('Collisions-fetch-btn', true);
+    const refreshBtn = getEl('Collisions-refresh-btn', true);
+
+    if (this.isLoggedIn_) {
+      if (fetchBtn) {
+        hideEl(fetchBtn);
+      }
+      if (refreshBtn) {
+        showEl(refreshBtn, 'inline-flex');
+      }
+    } else {
+      if (fetchBtn) {
+        if (this.collisionList_.length === 0) {
+          showEl(fetchBtn, 'inline-flex');
+        } else {
+          hideEl(fetchBtn);
+        }
+      }
+      if (refreshBtn) {
+        if (this.collisionList_.length > 0) {
+          showEl(refreshBtn, 'inline-flex');
+        } else {
+          hideEl(refreshBtn);
+        }
+      }
     }
   }
 
