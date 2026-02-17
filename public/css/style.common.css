@@ -2751,10 +2751,13 @@ button.ui-button::-moz-focus-inner {
   padding: 5px;
 }
 
-/* Secondary menu panels (ID ends with "-secondary") must sit above their primary side menu */
+/* Secondary menu panels (ID ends with "-secondary") must sit above their primary side menu.
+   min-width: auto allows secondary panels to respect their inline width instead of
+   being forced to the responsive .side-menu-parent min-width (400px). */
 [id$="-secondary"].side-menu-parent {
   z-index: 6 !important;
   left: 0px !important;
+  min-width: auto;
 }
 
 .side-menu-settings {
