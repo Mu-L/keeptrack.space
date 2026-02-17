@@ -811,6 +811,29 @@ this.lastHash_ = hash;
 
 **Rule**: Always use `gl.drawingBufferWidth / gl.drawingBufferHeight` for projection matrix aspect ratio calculations.
 
+### Pitfall 8: GPU Text Label Spacing vs Aspect Ratio
+
+**Problem**: Instanced-glyph label managers (e.g., `ConstellationLabelManager`, `CardinalLabels`) render text as billboard quads sized by `u_glyphSize`. If `u_glyphSize` scales with `drawingBufferWidth` but character spacing (`a_charOffset`) is a fixed pixel value, wider aspect ratios make glyphs larger while spacing stays constant — causing letters to overlap.
+
+**Rules for instanced-glyph labels:**
+1. **Base `u_glyphSize` on `min(width, height)`** — height is stable across aspect ratios:
+   ```typescript
+   gl.uniform1f(uniforms.u_glyphSize, Math.min(gl.drawingBufferWidth, gl.drawingBufferHeight) * 0.012);
+   ```
+2. **Express character offsets in glyph-size units** (not pixels). Use a `charStep` fraction (~0.55) per character:
+   ```typescript
+   const charStep = 0.55;
+   const totalWidth = label.length * charStep;
+   const startOffset = -totalWidth / 2;
+   charOffsetData[idx] = startOffset + c * charStep;
+   ```
+3. **Multiply by `u_glyphSize` in the shader** so spacing scales with glyph size:
+   ```glsl
+   screenPos.x += a_charOffset * u_glyphSize;  // NOT just a_charOffset
+   ```
+
+**Reference implementations**: [constellation-labels.ts](src/plugins-pro/stars/constellation-labels.ts), [cardinal-labels.ts](src/plugins-pro/ground-view/cardinal-labels.ts)
+
 ---
 
 ## Coordinate System Reference
