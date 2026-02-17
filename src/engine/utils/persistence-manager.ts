@@ -24,6 +24,7 @@ export enum StorageKey {
   SETTINGS_HOS = 'v2-keepTrack-settings-hos',
   SETTINGS_DEMO_MODE = 'v2-keepTrack-settings-demoMode',
   SETTINGS_SAT_LABEL_MODE = 'v2-keepTrack-settings-satLabelMode',
+  SETTINGS_SAT_LABEL_MODE_V2 = 'v2-keepTrack-settings-satLabelModeV2',
   SETTINGS_FREEZE_PROP_RATE_ON_DRAG = 'v2-keepTrack-settings-freezePropRateOnDrag',
   SETTINGS_DISABLE_TIME_MACHINE_TOASTS = 'v2-keepTrack-settings-disableTimeMachineToasts',
   SETTINGS_SEARCH_LIMIT = 'v2-keepTrack-settings-searchLimit',

@@ -36,7 +36,7 @@ import { parseGetVariables } from './parse-get-variables';
 import { PerformanceSettings, defaultPerformanceSettings } from './performance-settings';
 import { darkClouds } from './presets/darkClouds';
 import { SettingsPresets } from './presets/presets';
-import { UiSettings, defaultUiSettings } from './ui-settings';
+import { SatLabelMode, UiSettings, defaultUiSettings } from './ui-settings';
 import { EventBus } from '@app/engine/events/event-bus';
 
 /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
@@ -133,6 +133,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isShowNextPass: 'ui',
   isEciOnHover: 'ui',
   isSatLabelModeOn: 'ui',
+  satLabelMode: 'ui',
   desktopMaxLabels: 'ui',
   mobileMaxLabels: 'ui',
   minTimeBetweenSatLabels: 'ui',
@@ -380,6 +381,16 @@ export class SettingsManager {
 
     // Create property accessors for backward compatibility
     this.createPropertyAccessors_();
+
+    // Override isSatLabelModeOn to be a computed accessor based on satLabelMode
+    Object.defineProperty(this, 'isSatLabelModeOn', {
+      get: () => this.ui.satLabelMode !== SatLabelMode.OFF,
+      set: (value: boolean) => {
+        this.ui.satLabelMode = value ? SatLabelMode.FOV_ONLY : SatLabelMode.OFF;
+      },
+      enumerable: true,
+      configurable: true,
+    });
   }
 
   /**
@@ -423,7 +434,7 @@ export class SettingsManager {
         PersistenceManager.getInstance().removeItem(StorageKey.SETTINGS_CONFIDENCE_LEVELS);
       }
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DEMO_MODE, settingsManager.isDemoModeOn.toString());
-      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SAT_LABEL_MODE, settingsManager.isSatLabelModeOn.toString());
+      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SAT_LABEL_MODE_V2, settingsManager.satLabelMode.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_FREEZE_PROP_RATE_ON_DRAG, settingsManager.isFreezePropRateOnDrag.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DISABLE_TIME_MACHINE_TOASTS, settingsManager.isDisableTimeMachineToasts.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SEARCH_LIMIT, settingsManager.searchLimit.toString());
@@ -465,7 +476,16 @@ export class SettingsManager {
       this.isShowConfidenceLevels = false;
     }
     this.isDemoModeOn = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DEMO_MODE, this.isDemoModeOn) as boolean;
-    this.isSatLabelModeOn = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_SAT_LABEL_MODE, this.isSatLabelModeOn) as boolean;
+    const satLabelModeV2String = PersistenceManager.getInstance().getItem(StorageKey.SETTINGS_SAT_LABEL_MODE_V2);
+
+    if (satLabelModeV2String !== null) {
+      this.satLabelMode = parseInt(satLabelModeV2String) as SatLabelMode;
+    } else {
+      // Migrate from old boolean key
+      const oldLabelMode = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_SAT_LABEL_MODE, true) as boolean;
+
+      this.satLabelMode = oldLabelMode ? SatLabelMode.FOV_ONLY : SatLabelMode.OFF;
+    }
     this.isFreezePropRateOnDrag = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_FREEZE_PROP_RATE_ON_DRAG, this.isFreezePropRateOnDrag) as boolean;
     this.isDisableTimeMachineToasts = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DISABLE_TIME_MACHINE_TOASTS, this.isDisableTimeMachineToasts) as boolean;
 

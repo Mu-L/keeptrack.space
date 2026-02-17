@@ -20,6 +20,12 @@
 import type { MenuMode } from '@app/engine/core/interfaces';
 import { Milliseconds } from '@app/engine/ootk/src/main';
 
+export enum SatLabelMode {
+  OFF = 0,
+  FOV_ONLY = 1,
+  ALL = 2,
+}
+
 /**
  * User Interface and display settings
  */
@@ -141,8 +147,14 @@ export class UiSettings {
   // Labels
   /**
    * Determines whether or not to show the satellite labels.
+   * @deprecated Use satLabelMode instead. Kept for backward compatibility.
    */
   isSatLabelModeOn = true;
+  /**
+   * Controls satellite label rendering mode.
+   * OFF = no labels, FOV_ONLY = labels for in-view watchlist sats, ALL = labels for all watchlist sats.
+   */
+  satLabelMode: SatLabelMode = SatLabelMode.FOV_ONLY;
   /**
    * The maximum number of satellite labels to display on desktop devices.
    */
