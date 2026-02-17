@@ -825,11 +825,12 @@ export class Earth {
       if (uisGrayScale > 0.5) {
         float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
         fragColor.rgb = vec3(gray);
+        fragColor.rgb *= 0.4;
       }
 
       // ...............................................
       // Aurora
-      if (uIsDrawAurora > 0.5) {
+      if (uIsDrawAurora > 0.5 && uisGrayScale < 0.5) {
         float latitude = vUv.y * 180.0 - 90.0; // Convert texture coordinate to latitude (-90 to 90)
         float noise = uGlow;
 
