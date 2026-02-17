@@ -47,32 +47,7 @@ const addEventsWidth_ = (edgeEl: HTMLDivElement, el: HTMLElement, width: number,
   let startX: number;
   let startWidth: number;
 
-  edgeEl.addEventListener('mousedown', (e: MouseEvent) => {
-    Object.assign(edgeEl.style, {
-      width: '100vw',
-      height: '100vh',
-      position: 'fixed',
-    } as CSSStyleDeclaration);
-    edgeEl.style.right = '';
-
-    startX = e.clientX;
-    startWidth = el.clientWidth;
-    settingsManager.isDragging = true;
-  });
-  edgeEl.addEventListener('mouseup', () => {
-    settingsManager.isDragging = false;
-    Object.assign(edgeEl.style, {
-      height: '100%',
-      width: '8px',
-      right: '0px',
-      position: 'absolute',
-    } as CSSStyleDeclaration);
-
-    if (options.callback) {
-      options.callback();
-    }
-  });
-  edgeEl.addEventListener('mousemove', (e: MouseEvent) => {
+  const onMouseMove = (e: MouseEvent) => {
     if (settingsManager.isDragging) {
       requestAnimationFrame(() => {
         width = startWidth + e.clientX - startX;
@@ -85,6 +60,24 @@ const addEventsWidth_ = (edgeEl: HTMLDivElement, el: HTMLElement, width: number,
         }
       });
     }
+  };
+
+  const onMouseUp = () => {
+    settingsManager.isDragging = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+
+    if (options.callback) {
+      options.callback();
+    }
+  };
+
+  edgeEl.addEventListener('mousedown', (e: MouseEvent) => {
+    startX = e.clientX;
+    startWidth = el.clientWidth;
+    settingsManager.isDragging = true;
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   });
 };
 
@@ -98,7 +91,6 @@ const createElWidth_ = (el: HTMLElement) => {
   edgeEl.style.cursor = 'w-resize';
   edgeEl.style.zIndex = '9999';
   edgeEl.style.marginLeft = 'auto';
-  edgeEl.style.cursor = 'w-resize';
 
   el.appendChild(edgeEl);
 
@@ -110,31 +102,7 @@ const addEventsHeight_ = (edgeEl: HTMLDivElement, el: HTMLElement, callback?: ()
   let startHeight: number;
   let height: number;
 
-  edgeEl.addEventListener('mousedown', (e: MouseEvent) => {
-    Object.assign(edgeEl.style, {
-      width: '100vw',
-      height: '100vh',
-      position: 'fixed',
-    } as CSSStyleDeclaration);
-
-    startY = e.clientY;
-    startHeight = el.clientHeight;
-    settingsManager.isDragging = true;
-  });
-  edgeEl.addEventListener('mouseup', () => {
-    settingsManager.isDragging = false;
-    Object.assign(edgeEl.style, {
-      width: '100%',
-      height: '8px',
-      position: 'absolute',
-    } as CSSStyleDeclaration);
-
-    if (callback) {
-      // eslint-disable-next-line callback-return
-      callback();
-    }
-  });
-  edgeEl.addEventListener('mousemove', (e: MouseEvent) => {
+  const onMouseMove = (e: MouseEvent) => {
     if (settingsManager.isDragging) {
       requestAnimationFrame(() => {
         height = startHeight - (e.clientY - startY);
@@ -143,6 +111,25 @@ const addEventsHeight_ = (edgeEl: HTMLDivElement, el: HTMLElement, callback?: ()
         el.style.height = `${height}px`;
       });
     }
+  };
+
+  const onMouseUp = () => {
+    settingsManager.isDragging = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+
+    if (callback) {
+      // eslint-disable-next-line callback-return
+      callback();
+    }
+  };
+
+  edgeEl.addEventListener('mousedown', (e: MouseEvent) => {
+    startY = e.clientY;
+    startHeight = el.clientHeight;
+    settingsManager.isDragging = true;
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   });
 };
 
