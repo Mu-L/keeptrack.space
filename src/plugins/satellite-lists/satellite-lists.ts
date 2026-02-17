@@ -35,6 +35,7 @@ import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
+import { SatLabelMode } from '@app/settings/ui-settings';
 import { BaseObject, CatalogSource, Satellite } from '@ootk/src/main';
 import bookmarkAddPng from '@public/img/icons/bookmark-add.png';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
@@ -110,7 +111,81 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     </div>`;
 
   sideMenuElementName: string = 'watchlist-menu';
+  sideMenuTitle = 'Satellite Watchlist';
+
+  sideMenuSecondaryHtml = html`
+    <div class="switch row">
+      <label>
+        <input id="watchlist-hide-others" type="checkbox" />
+        <span class="lever"></span>
+        Hide Non-Watchlist Objects
+      </label>
+    </div>
+    <div class="row" style="margin-bottom: 0;">
+      <label style="color: var(--color-dark-text-accent);">Labels</label>
+    </div>
+    <div class="row" style="margin-top: 5px;">
+      <label>
+        <input id="watchlist-label-always" name="watchlist-label-mode" type="radio" value="2" />
+        <span>Always</span>
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        <input id="watchlist-label-fov" name="watchlist-label-mode" type="radio" value="1" checked />
+        <span>FOV Only</span>
+      </label>
+    </div>
+    <div class="row">
+      <label>
+        <input id="watchlist-label-off" name="watchlist-label-mode" type="radio" value="0" />
+        <span>Off</span>
+      </label>
+    </div>
+  `;
+
+  sideMenuSecondaryOptions = {
+    width: 280,
+    leftOffset: null,
+    zIndex: 3,
+  };
+
+  isFilterActive = false;
   watchlistList: { id: number, inView: boolean }[] = [];
+
+  /**
+   * Centralized filter state management. Syncs the secondary menu checkbox,
+   * the utility panel button, and applies or clears the search filter.
+   */
+  setFilterActive(active: boolean): void {
+    this.isFilterActive = active;
+
+    // Sync secondary menu checkbox
+    const hideOthersEl = getEl('watchlist-hide-others') as HTMLInputElement | null;
+
+    if (hideOthersEl) {
+      hideOthersEl.checked = active;
+    }
+
+    // Sync utility panel button (by element ID to avoid circular imports)
+    const filterIconEl = getEl('watchlist-filter-icon');
+
+    if (filterIconEl) {
+      if (active) {
+        filterIconEl.classList.add('bmenu-item-selected');
+      } else {
+        filterIconEl.classList.remove('bmenu-item-selected');
+      }
+    }
+
+    // Apply or clear filter
+    if (active && this.watchlistList.length > 0) {
+      this.applyWatchlistFilter_();
+    } else if (!active) {
+      ServiceLocator.getUiManager().doSearch('');
+      ServiceLocator.getColorSchemeManager().calculateColorBuffers(true);
+    }
+  }
 
   addHtml(): void {
     super.addHtml();
@@ -308,6 +383,26 @@ export class WatchlistPlugin extends KeepTrackPlugin {
   private uiManagerFinal_(): void {
     clickAndDragWidth(getEl('watchlist-menu'));
 
+    // Secondary menu: Hide non-watchlist objects toggle
+    getEl('watchlist-hide-others')?.addEventListener('change', () => {
+      const isChecked = (<HTMLInputElement>getEl('watchlist-hide-others')).checked;
+
+      this.setFilterActive(isChecked);
+    });
+
+    // Secondary menu: Label mode radio buttons
+    this.syncLabelRadios_();
+
+    getEl('watchlist-label-always')?.addEventListener('change', () => {
+      settingsManager.satLabelMode = SatLabelMode.ALL;
+    });
+    getEl('watchlist-label-fov')?.addEventListener('change', () => {
+      settingsManager.satLabelMode = SatLabelMode.FOV_ONLY;
+    });
+    getEl('watchlist-label-off')?.addEventListener('change', () => {
+      settingsManager.satLabelMode = SatLabelMode.OFF;
+    });
+
     // Add button selected on watchlist menu
     getEl('watchlist-add')?.addEventListener('click', () => {
       this.onAddEvent_();
@@ -429,7 +524,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       hideEl('top-menu-watchlist-li');
     }
 
-    if (!isSkipSearch) {
+    if (!isSkipSearch || this.isFilterActive) {
       ServiceLocator.getUiManager().doSearch(watchlistString, true);
     }
     const colorSchemeManager = ServiceLocator.getColorSchemeManager();
@@ -473,8 +568,12 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
     if (this.watchlistList.length <= 0) {
-      uiManagerInstance.doSearch('');
-      colorSchemeManagerInstance.calculateColorBuffers(true);
+      if (this.isFilterActive) {
+        this.setFilterActive(false);
+      } else {
+        uiManagerInstance.doSearch('');
+        colorSchemeManagerInstance.calculateColorBuffers(true);
+      }
     }
   }
 
@@ -529,6 +628,44 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     return this.watchlistList.some(({ inView }) => inView);
   }
 
+  protected syncLabelRadios_(): void {
+    const mode = settingsManager.satLabelMode.toString();
+    const always = getEl('watchlist-label-always') as HTMLInputElement | null;
+    const fov = getEl('watchlist-label-fov') as HTMLInputElement | null;
+    const off = getEl('watchlist-label-off') as HTMLInputElement | null;
+
+    if (always) {
+      always.checked = mode === '2';
+    }
+    if (fov) {
+      fov.checked = mode === '1';
+    }
+    if (off) {
+      off.checked = mode === '0';
+    }
+  }
+
+  private applyWatchlistFilter_(): void {
+    if (this.watchlistList.length === 0) {
+      return;
+    }
+
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const uiManagerInstance = ServiceLocator.getUiManager();
+    const searchString = this.watchlistList
+      .map(({ id }) => catalogManagerInstance.getSat(id, GetSatType.EXTRA_ONLY)?.sccNum)
+      .filter(Boolean)
+      .join(',');
+
+    uiManagerInstance.doSearch(searchString, true);
+
+    // doSearch(str, true) skips fillResultBox which normally sets isResultsOpen.
+    // Without it, getCurrentSearch() returns '' and preValidateColorScheme_
+    // clears isUseGroupColorScheme on every calculateColorBuffers call.
+    uiManagerInstance.searchManager.isResultsOpen = true;
+    ServiceLocator.getColorSchemeManager().calculateColorBuffers(true);
+  }
+
   /**
    * Handles the event when a new satellite is added to the watchlist.
    */
@@ -571,6 +708,13 @@ export class WatchlistPlugin extends KeepTrackPlugin {
   }
 
   clear() {
+    const wasFilterActive = this.isFilterActive;
+
+    // Reset filter state and sync UI before clearing list
+    if (wasFilterActive) {
+      this.setFilterActive(false);
+    }
+
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
     for (const obj of this.watchlistList) {
