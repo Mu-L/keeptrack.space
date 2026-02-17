@@ -109,11 +109,12 @@ describe('Reentries_class', () => {
   });
 
   describe('onBottomIconClick', () => {
-    it('should parse TIP data when menu is active', async () => {
+    it('should parse TIP data when menu is active and logged in', async () => {
       const plugin = new Reentries();
 
       websiteInit(plugin);
       plugin['isMenuButtonActive'] = true;
+      plugin['isLoggedIn_'] = true;
 
       plugin.onBottomIconClick();
 
@@ -147,12 +148,13 @@ describe('Reentries_class', () => {
     });
   });
 
-  describe('parseTipData_', () => {
+  describe('fetchTipData_', () => {
     it('should fetch and process TIP data', async () => {
       const plugin = new Reentries();
 
       websiteInit(plugin);
       plugin['isMenuButtonActive'] = true;
+      plugin['isLoggedIn_'] = true;
 
       // Ensure TIP list is empty
       expect(plugin['tipList_'].length).toBe(0);
@@ -175,6 +177,7 @@ describe('Reentries_class', () => {
 
       websiteInit(plugin);
       plugin['isMenuButtonActive'] = true;
+      plugin['isLoggedIn_'] = true;
       plugin['tipList_'] = mockTipData;
 
       plugin.onBottomIconClick();

@@ -1,3 +1,11 @@
+.re-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
 #reentries-analysis-table .reentry-critical {
   background-color: rgba(211, 47, 47, 0.35);
 }

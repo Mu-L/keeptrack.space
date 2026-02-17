@@ -16,10 +16,12 @@ import {
 import { buildSideMenuTabsHtml, initSideMenuTabs, updateSideMenuTabIndicator } from '@app/engine/ui/side-menu-tabs';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { getEl } from '@app/engine/utils/get-el';
+import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { hideLoading, showLoading, showLoadingSticky } from '@app/engine/utils/showLoading';
 import { t7e } from '@app/locales/keys';
 import { RAD2DEG, Satellite, SpaceObjectType } from '@ootk/src/main';
+import fetchPng from '@public/img/icons/download.png';
+import refreshPng from '@public/img/icons/refresh.png';
 import sputnickPng from '@public/img/icons/sputnick.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './reentries.css';
@@ -50,6 +52,8 @@ export class Reentries extends KeepTrackPlugin {
   private selectSatIdOnCruncher_: number | null = null;
   private tipList_: TipMsg[] = [];
   private reentryList_: Satellite[] = [];
+  private isLoggedIn_ = false;
+  private isFetching_ = false;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -68,9 +72,15 @@ export class Reentries extends KeepTrackPlugin {
    * Called when the bottom icon is clicked.
    */
   onBottomIconClick(): void {
-    if (this.isMenuButtonActive) {
-      this.parseTipData_();
-      updateSideMenuTabIndicator(TABS_ID);
+    if (!this.isMenuButtonActive) {
+      return;
+    }
+
+    this.updateToolbarForLoginState_();
+    updateSideMenuTabIndicator(TABS_ID);
+
+    if (this.isLoggedIn_ && this.tipList_.length === 0) {
+      this.fetchTipData_();
     }
   }
 
@@ -99,6 +109,16 @@ export class Reentries extends KeepTrackPlugin {
   private buildSideMenuHtml_(): string {
     const tipMessagesContent = html`
       <div class="row">
+        <div class="re-toolbar">
+          <button id="reentries-fetch-btn" class="btn btn-ui waves-effect waves-light icon-btn"
+            type="button" kt-tooltip="Fetch Data">
+            <img src="${fetchPng}" class="icon-btn-img" alt="" />
+          </button>
+          <button id="reentries-refresh-btn" class="btn btn-ui waves-effect waves-light icon-btn"
+            type="button" kt-tooltip="Refresh" style="display:none;">
+            <img src="${refreshPng}" class="icon-btn-img" alt="" />
+          </button>
+        </div>
         <table id="reentries-tip-table" class="center-align"></table>
         <sub class="center-align">*${t7e('plugins.Reentries.dataSource' as Parameters<typeof t7e>[0])}</sub>
       </div>
@@ -147,10 +167,9 @@ export class Reentries extends KeepTrackPlugin {
   addJs(): void {
     super.addJs();
 
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      this.uiManagerFinal_.bind(this),
-    );
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinal_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.userLogin, this.onUserLogin_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.userLogout, this.onUserLogout_.bind(this));
 
     EventBus.getInstance().on(
       EventBusEvent.onCruncherMessage,
@@ -166,6 +185,17 @@ export class Reentries extends KeepTrackPlugin {
 
   private uiManagerFinal_() {
     initSideMenuTabs(TABS_ID);
+
+    getEl('reentries-fetch-btn', true)?.addEventListener('click', () => {
+      hideEl('reentries-fetch-btn');
+      showEl('reentries-refresh-btn', 'inline-flex');
+      this.fetchTipData_();
+    });
+
+    getEl('reentries-refresh-btn', true)?.addEventListener('click', () => {
+      this.tipList_ = [];
+      this.fetchTipData_();
+    });
 
     // TIP Messages row click handler
     getEl(this.sideMenuElementName)!.addEventListener('click', (evt: Event) => {
@@ -220,21 +250,78 @@ export class Reentries extends KeepTrackPlugin {
   // TIP Messages (Tab 1) — existing functionality
   // =========================================================================
 
-  private parseTipData_() {
-    if (this.tipList_.length === 0) {
-      fetch(this.tipDataSrc_)
-        .then((response) => response.json())
-        .then((tipList: TipMsg[]) => {
-          this.setTipList_(tipList);
-          this.createTipTable_();
+  private fetchTipData_(): void {
+    if (this.isFetching_) {
+      return;
+    }
+    this.isFetching_ = true;
 
-          if (this.tipList_.length === 0) {
-            errorManagerInstance.warn(t7e('plugins.Reentries.errorMsgs.noTipData' as Parameters<typeof t7e>[0]));
-          }
-        })
-        .catch(() => {
-          errorManagerInstance.warn(t7e('plugins.Reentries.errorMsgs.errorFetching' as Parameters<typeof t7e>[0]));
-        });
+    fetch(this.tipDataSrc_)
+      .then((response) => response.json())
+      .then((tipList: TipMsg[]) => {
+        this.setTipList_(tipList);
+        this.createTipTable_();
+
+        if (this.tipList_.length === 0) {
+          errorManagerInstance.warn(t7e('plugins.Reentries.errorMsgs.noTipData' as Parameters<typeof t7e>[0]));
+        }
+
+        hideEl('reentries-fetch-btn');
+        showEl('reentries-refresh-btn', 'inline-flex');
+      })
+      .catch(() => {
+        errorManagerInstance.warn(t7e('plugins.Reentries.errorMsgs.errorFetching' as Parameters<typeof t7e>[0]));
+      })
+      .finally(() => {
+        this.isFetching_ = false;
+      });
+  }
+
+  private onUserLogin_(): void {
+    this.isLoggedIn_ = true;
+
+    if (this.isMenuButtonActive) {
+      this.updateToolbarForLoginState_();
+      if (this.tipList_.length === 0) {
+        this.fetchTipData_();
+      }
+    }
+  }
+
+  private onUserLogout_(): void {
+    this.isLoggedIn_ = false;
+
+    if (this.isMenuButtonActive) {
+      this.updateToolbarForLoginState_();
+    }
+  }
+
+  private updateToolbarForLoginState_(): void {
+    const fetchBtn = getEl('reentries-fetch-btn', true);
+    const refreshBtn = getEl('reentries-refresh-btn', true);
+
+    if (this.isLoggedIn_) {
+      if (fetchBtn) {
+        hideEl(fetchBtn);
+      }
+      if (refreshBtn) {
+        showEl(refreshBtn, 'inline-flex');
+      }
+    } else {
+      if (fetchBtn) {
+        if (this.tipList_.length === 0) {
+          showEl(fetchBtn, 'inline-flex');
+        } else {
+          hideEl(fetchBtn);
+        }
+      }
+      if (refreshBtn) {
+        if (this.tipList_.length > 0) {
+          showEl(refreshBtn, 'inline-flex');
+        } else {
+          hideEl(refreshBtn);
+        }
+      }
     }
   }
 
