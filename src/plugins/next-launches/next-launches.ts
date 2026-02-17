@@ -1,17 +1,21 @@
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { openColorbox } from '@app/engine/utils/colorbox';
 import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { getEl } from '@app/engine/utils/get-el';
+import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { saveCsv } from '@app/engine/utils/saveVariable';
 import { truncateString } from '@app/engine/utils/truncate-string';
 import calendar2Png from '@public/img/icons/calendar2.png';
+import fetchPng from '@public/img/icons/download.png';
+import exportPng from '@public/img/icons/export.png';
+import refreshPng from '@public/img/icons/refresh.png';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '@app/engine/audio/sounds';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+import './next-launches.css';
 
 interface LaunchInfoData {
   window_start: string | number | Date;
@@ -69,12 +73,8 @@ export interface LaunchInfoObject {
 export class NextLaunchesPlugin extends KeepTrackPlugin {
   readonly id = 'NextLaunchesPlugin';
   dependencies_ = [];
-  bottomIconCallback: () => void = () => {
-    if (!this.isMenuButtonActive) {
-      return;
-    }
-    this.showTable();
-  };
+  private isLoggedIn_ = false;
+  private isFetching_ = false;
 
   bottomIconElementName: string = 'menu-nextLaunch';
   bottomIconImg = calendar2Png;
@@ -93,23 +93,68 @@ export class NextLaunchesPlugin extends KeepTrackPlugin {
     <div id="nextLaunch-content" class="side-menu">
       <div class="row">
         <h5 class="center-align">Next Launches</h5>
+        <div class="nl-toolbar">
+          <button id="nextLaunch-fetch-btn" class="btn btn-ui waves-effect waves-light icon-btn"
+            type="button" kt-tooltip="Fetch Data">
+            <img src="${fetchPng}" class="icon-btn-img" alt="" />
+          </button>
+          <button id="nextLaunch-refresh-btn" class="btn btn-ui waves-effect waves-light icon-btn"
+            type="button" kt-tooltip="Refresh" style="display:none;">
+            <img src="${refreshPng}" class="icon-btn-img" alt="" />
+          </button>
+          <button id="export-launch-info" class="btn btn-ui waves-effect waves-light icon-btn"
+            type="button" kt-tooltip="Export Launch Info">
+            <img src="" delayedsrc="${exportPng}" class="icon-btn-img" alt="" />
+          </button>
+        </div>
         <table id="nextLaunch-table" class="center-align striped-light centered"></table>
-      </div>
-      <div class="row">
-        <center>
-          <button id="export-launch-info" class="btn btn-ui waves-effect waves-light">Export Launch Info &#9658;</button>
-        </center>
       </div>
     </div>
   </div>`;
 
   launchList = [] as LaunchInfoObject[];
 
+  onBottomIconClick(): void {
+    if (!this.isMenuButtonActive) {
+      return;
+    }
+
+    this.updateToolbarForLoginState_();
+
+    if (this.isLoggedIn_ && this.launchList.length === 0) {
+      this.fetchLaunchData_();
+    }
+  }
+
+  bottomIconCallback = (): void => {
+    this.onBottomIconClick();
+  };
+
   addJs(): void {
     super.addJs();
+
+    EventBus.getInstance().on(EventBusEvent.userLogin, this.onUserLogin_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.userLogout, this.onUserLogout_.bind(this));
+
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
+        getEl('nextLaunch-fetch-btn', true)?.addEventListener('click', () => {
+          hideEl('nextLaunch-fetch-btn');
+          showEl('nextLaunch-refresh-btn', 'inline-flex');
+          this.fetchLaunchData_();
+        });
+
+        getEl('nextLaunch-refresh-btn', true)?.addEventListener('click', () => {
+          this.launchList = [];
+          const tbl = getEl('nextLaunch-table') as HTMLTableElement | null;
+
+          if (tbl) {
+            tbl.innerHTML = '';
+          }
+          this.fetchLaunchData_();
+        });
+
         getEl('export-launch-info')!.addEventListener('click', () => {
           ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
           saveCsv(this.launchList as unknown as Array<Record<string, unknown>>, 'launchList');
@@ -118,34 +163,89 @@ export class NextLaunchesPlugin extends KeepTrackPlugin {
     );
   }
 
-  showTable() {
-    if (this.launchList.length === 0) {
-      const apiUrl = window.location.hostname === 'localhost' ? 'lldev' : 'll';
+  private fetchLaunchData_(): void {
+    if (this.isFetching_) {
+      return;
+    }
+    this.isFetching_ = true;
 
-      fetch(`https://${apiUrl}.thespacedevs.com/2.0.0/launch/upcoming/?format=json&limit=20&mode=detailed`)
-        .then((resp) => resp.json())
-        .then((data) => this.processData(data))
-        .catch(() => errorManagerInstance.warn(`https://${apiUrl}.thespacedevs.com/2.0.0/ is Unavailable!`))
-        .finally(() => {
-          const tbl: HTMLTableElement = <HTMLTableElement>getEl('nextLaunch-table'); // Identify the table to update
+    const apiUrl = window.location.hostname === 'localhost' ? 'lldev' : 'll';
 
-          if (!tbl) {
-            return;
-          }
+    fetch(`https://${apiUrl}.thespacedevs.com/2.0.0/launch/upcoming/?format=json&limit=20&mode=detailed`)
+      .then((resp) => resp.json())
+      .then((data) => this.processData(data))
+      .catch(() => errorManagerInstance.warn(`https://${apiUrl}.thespacedevs.com/2.0.0/ is Unavailable!`))
+      .finally(() => {
+        this.isFetching_ = false;
 
-          // Only needs populated once
-          if (tbl.innerHTML === '') {
-            NextLaunchesPlugin.initTable(tbl, this.launchList);
-            const aElements = getEl('nextLaunch-table')!.querySelectorAll('a');
+        const tbl = getEl('nextLaunch-table') as HTMLTableElement | null;
 
-            aElements.forEach((element) => {
-              element.addEventListener('click', (e) => {
-                e.preventDefault();
-                openColorbox(element.href);
-              });
+        if (!tbl) {
+          return;
+        }
+
+        if (tbl.innerHTML === '') {
+          NextLaunchesPlugin.initTable(tbl, this.launchList);
+          const aElements = getEl('nextLaunch-table')!.querySelectorAll('a');
+
+          aElements.forEach((element) => {
+            element.addEventListener('click', (e) => {
+              e.preventDefault();
+              openColorbox(element.href);
             });
-          }
-        });
+          });
+        }
+
+        hideEl('nextLaunch-fetch-btn');
+        showEl('nextLaunch-refresh-btn', 'inline-flex');
+      });
+  }
+
+  private onUserLogin_(): void {
+    this.isLoggedIn_ = true;
+
+    if (this.isMenuButtonActive) {
+      this.updateToolbarForLoginState_();
+      if (this.launchList.length === 0) {
+        this.fetchLaunchData_();
+      }
+    }
+  }
+
+  private onUserLogout_(): void {
+    this.isLoggedIn_ = false;
+
+    if (this.isMenuButtonActive) {
+      this.updateToolbarForLoginState_();
+    }
+  }
+
+  private updateToolbarForLoginState_(): void {
+    const fetchBtn = getEl('nextLaunch-fetch-btn', true);
+    const refreshBtn = getEl('nextLaunch-refresh-btn', true);
+
+    if (this.isLoggedIn_) {
+      if (fetchBtn) {
+        hideEl(fetchBtn);
+      }
+      if (refreshBtn) {
+        showEl(refreshBtn, 'inline-flex');
+      }
+    } else {
+      if (fetchBtn) {
+        if (this.launchList.length === 0) {
+          showEl(fetchBtn, 'inline-flex');
+        } else {
+          hideEl(fetchBtn);
+        }
+      }
+      if (refreshBtn) {
+        if (this.launchList.length > 0) {
+          showEl(refreshBtn, 'inline-flex');
+        } else {
+          hideEl(refreshBtn);
+        }
+      }
     }
   }
 
