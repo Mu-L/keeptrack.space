@@ -65,6 +65,8 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
     EventBus.getInstance().on(EventBusEvent.satInfoBoxAddListeners, this.satInfoBoxAddListeners_.bind(this));
     EventBus.getInstance().on(EventBusEvent.selectSatData, this.updateSensorInfo_.bind(this));
     EventBus.getInstance().on(EventBusEvent.updateSelectBox, this.updateSelectBox_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.setSensor, this.updateSensorVisibility_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.resetSensor, this.updateSensorVisibility_.bind(this));
   }
 
   private satInfoBoxAddListeners_() {
@@ -110,23 +112,30 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
     `;
   }
 
+  private updateSensorVisibility_(): void {
+    if (settingsManager.isDisableSensors) {
+      return;
+    }
+
+    const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+    const hasSatSelected = selectSatManager && selectSatManager.selectedSat >= 0;
+    const sensorManagerInstance = ServiceLocator.getSensorManager();
+
+    if (hasSatSelected && sensorManagerInstance.isSensorSelected()) {
+      showEl(SECTIONS.SENSOR);
+    } else {
+      hideEl(SECTIONS.SENSOR);
+    }
+  }
+
   private updateSensorInfo_(obj: BaseObject) {
     if (obj === null || typeof obj === 'undefined' || settingsManager.isDisableSensors) {
       return;
     }
-    const sensorManagerInstance = ServiceLocator.getSensorManager();
 
-    /*
-     * If we are using the sensor manager plugin then we should hide the sensor to satellite
-     * info when there is no sensor selected
-     */
-    if (!settingsManager.isDisableSensors) {
-      if (sensorManagerInstance.isSensorSelected()) {
-        showEl(SECTIONS.SENSOR);
-      } else {
-        hideEl(SECTIONS.SENSOR);
-      }
-    }
+    this.updateSensorVisibility_();
+
+    const sensorManagerInstance = ServiceLocator.getSensorManager();
 
     if (!sensorManagerInstance.isSensorSelected()) {
       const satSunDom = getEl(EL.SUN);

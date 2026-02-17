@@ -38,6 +38,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxAddListeners, this.satInfoBoxAddListeners_.bind(this));
     EventBus.getInstance().on(EventBusEvent.selectSatData, this.updateObjectData_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.setSecondarySat, this.updateSecondaryVisibility_.bind(this));
   }
 
   private satInfoBoxAddListeners_() {
@@ -150,18 +151,22 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
       `;
   }
 
+  private updateSecondaryVisibility_(): void {
+    if (PluginRegistry.getPlugin(SelectSatManager)!.secondarySat !== -1) {
+      showEl('secondary-sat-info');
+      showEl('sec-angle-link');
+    } else {
+      hideEl('secondary-sat-info');
+      hideEl('sec-angle-link');
+    }
+  }
+
   private updateObjectData_(obj?: BaseObject) {
     if (!obj || (!obj.isSatellite() && !obj.isMissile())) {
       return;
     }
 
-    if (PluginRegistry.getPlugin(SelectSatManager)!.secondarySat !== -1 && getEl('secondary-sat-info')?.style?.display === 'none') {
-      showEl('secondary-sat-info');
-      showEl('sec-angle-link');
-    } else if (PluginRegistry.getPlugin(SelectSatManager)!.secondarySat === -1 && getEl('secondary-sat-info')?.style?.display !== 'none') {
-      hideEl('secondary-sat-info');
-      hideEl('sec-angle-link');
-    }
+    this.updateSecondaryVisibility_();
 
     const satMisl = obj as Satellite | MissileObject;
 
