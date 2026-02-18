@@ -220,6 +220,7 @@ export class Earth {
             uisGrayScale: <WebGLUniformLocation><unknown>null,
             uCloudPosition: <WebGLUniformLocation><unknown>null,
             uIsDrawAurora: <WebGLUniformLocation><unknown>null,
+            uShowGraticule: <WebGLUniformLocation><unknown>null,
             uLightDirection: <WebGLUniformLocation><unknown>null,
             uDayMap: <WebGLUniformLocation><unknown>null,
             uNightMap: <WebGLUniformLocation><unknown>null,
@@ -517,6 +518,7 @@ export class Earth {
     gl.uniform3fv(this.surfaceMesh.material.uniforms.uLightDirection, this.lightDirection);
     gl.uniform1f(this.surfaceMesh.material.uniforms.uisDrawNightAsDay, settingsManager.isDrawNightAsDay ? 1.0 : 0.0);
     gl.uniform1f(this.surfaceMesh.material.uniforms.uIsDrawAurora, settingsManager.isDrawAurora ? 1.0 : 0.0);
+    gl.uniform1f(this.surfaceMesh.material.uniforms.uShowGraticule, settingsManager.isDrawGraticule ? 1.0 : 0.0);
   }
 
   private setAtmosphereUniforms_(gl: WebGL2RenderingContext) {
@@ -736,6 +738,7 @@ export class Earth {
     uniform float uCloudPosition;
     uniform vec3 uLightDirection;
     uniform float uIsDrawAurora;
+    uniform float uShowGraticule;
     uniform float uZoomLevel;
     uniform float uisGrayScale;
     uniform float uisDrawNightAsDay;
@@ -844,6 +847,29 @@ export class Earth {
         vec3 auroraColor = vec3(0.0, 0.8, 0.55 + noise / 20.0); // Color of the Aurora Borealis
 
         fragColor.rgb += auroraColor * auroraIntensity * auroraStrength;
+      }
+
+      // ...............................................
+      // Graticule (lat/lon grid lines)
+      if (uShowGraticule > 0.5) {
+        float gLatDeg = (0.5 - vUv.y) * 180.0;
+        float gLonDeg = (vUv.x - 0.5) * 360.0;
+        float wLat = fwidth(vUv.y) * 180.0;
+        float wLon = min(fwidth(vUv.x) * 360.0, 20.0);
+
+        float gSpacing = 15.0;
+        float dLat = abs(mod(gLatDeg + gSpacing * 0.5, gSpacing) - gSpacing * 0.5);
+        float dLon = abs(mod(gLonDeg + gSpacing * 0.5, gSpacing) - gSpacing * 0.5);
+
+        float lineLat = 1.0 - smoothstep(0.0, wLat * 1.5, dLat);
+        float lineLon = 1.0 - smoothstep(0.0, wLon * 1.5, dLon);
+        float gLine = max(lineLat, lineLon);
+
+        // Emphasize equator and prime meridian
+        gLine = max(gLine, 1.0 - smoothstep(0.0, wLat * 2.5, abs(gLatDeg)));
+        gLine = max(gLine, 1.0 - smoothstep(0.0, wLon * 2.5, abs(gLonDeg)));
+
+        fragColor.rgb = mix(fragColor.rgb, vec3(1.0), gLine * 0.15);
       }
 
       ${DepthManager.getLogDepthFragCode()}
