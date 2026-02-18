@@ -88,6 +88,7 @@ export type KeepTrackPluginsConfiguration = {
   Planetarium?: PluginConfiguration;
   Astronomy?: PluginConfiguration;
   NightToggle?: PluginConfiguration;
+  GraticuleToggle?: PluginConfiguration;
   DopsPlugin?: PluginConfiguration;
   SatConstellations?: PluginConfiguration;
   CountriesMenu?: PluginConfiguration;

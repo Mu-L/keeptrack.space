@@ -518,6 +518,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 310 },
   },
   {
+    configKey: 'GraticuleToggle',
+    ossImport: () => import('./graticule-toggle/graticule-toggle'),
+    ossClassName: 'GraticuleToggle',
+    defaultConfig: { enabled: true, order: 311 },
+  },
+  {
     configKey: 'DopsPlugin',
     ossImport: () => import('./dops/dops'),
     ossClassName: 'DopsPlugin',
