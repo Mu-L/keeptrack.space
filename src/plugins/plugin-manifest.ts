@@ -524,6 +524,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 311 },
   },
   {
+    configKey: 'HideOtherSatellitesPlugin',
+    ossImport: () => import('./hide-other-sats/hide-other-sats'),
+    ossClassName: 'HideOtherSatellitesPlugin',
+    defaultConfig: { enabled: true, order: 312 },
+  },
+  {
     configKey: 'DopsPlugin',
     ossImport: () => import('./dops/dops'),
     ossClassName: 'DopsPlugin',

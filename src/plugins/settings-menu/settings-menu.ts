@@ -138,13 +138,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
               </label>
             </div>
             <div class="switch row">
-              <label data-position="top" data-delay="50" data-tooltip="Non-selectable satellites will be hidden instead of grayed out.">
-                <input id="settings-hos" type="checkbox" />
-                <span class="lever"></span>
-                Hide Other Satellites
-              </label>
-            </div>
-            <div class="switch row">
               <label data-position="top" data-delay="50" data-tooltip="Disable this to hide the camera widget">
                 <input id="settings-drawCameraWidget" type="checkbox" checked/>
                 <span class="lever"></span>
@@ -411,7 +404,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       { id: 'settings-focusOnSatelliteWhenSelected', setting: 'isFocusOnSatelliteWhenSelected' },
       { id: 'settings-isDrawCovarianceEllipsoid', setting: 'isDrawCovarianceEllipsoid' },
       { id: 'settings-eciOnHover', setting: 'isEciOnHover' },
-      { id: 'settings-hos', setting: 'colors.transparent[3] === 0' },
       { id: 'settings-confidence-levels', setting: 'isShowConfidenceLevels' },
       { id: 'settings-demo-mode', setting: 'isDemoModeOn' },
       { id: 'settings-snp', setting: 'isShowNextPassOnHover' },
@@ -423,11 +415,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       const element = <HTMLInputElement>getEl(id);
 
       if (element) {
-        if (setting.includes('colors.transparent')) {
-          element.checked = settingsManager.colors.transparent[3] === 0;
-        } else {
-          element.checked = settingsManager[setting];
-        }
+        element.checked = settingsManager[setting];
       }
     });
 
@@ -486,7 +474,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       case 'settings-drawMilkyWay':
       case 'settings-graySkybox':
       case 'settings-eciOnHover':
-      case 'settings-hos':
       case 'settings-confidence-levels':
       case 'settings-demo-mode':
       case 'settings-freeze-drag':
@@ -581,9 +568,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
 
     // Must come after the above checks
     settingsManager.isEciOnHover = (<HTMLInputElement>getEl('settings-eciOnHover')).checked;
-    const isHOSChecked = (<HTMLInputElement>getEl('settings-hos')).checked;
-
-    settingsManager.colors.transparent = isHOSChecked ? [1.0, 1.0, 1.0, 0] : [1.0, 1.0, 1.0, 0.1];
     settingsManager.isShowConfidenceLevels = (<HTMLInputElement>getEl('settings-confidence-levels')).checked;
     settingsManager.isDemoModeOn = (<HTMLInputElement>getEl('settings-demo-mode')).checked;
     settingsManager.satLabelMode = parseInt((<HTMLSelectElement>getEl('settings-sat-label-mode')).value) as SatLabelMode;

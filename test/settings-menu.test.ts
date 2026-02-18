@@ -28,7 +28,6 @@ describe('SettingsMenuPlugin_class', () => {
     expect(() => getEl('settings-drawEcf')?.click()).not.toThrow();
     expect(() => getEl('settings-isDrawInCoverageLines')?.click()).not.toThrow();
     expect(() => getEl('settings-eciOnHover')?.click()).not.toThrow();
-    expect(() => getEl('settings-hos')?.click()).not.toThrow();
     expect(() => getEl('settings-demo-mode')?.click()).not.toThrow();
     expect(() => getEl('settings-sat-label-mode')?.click()).not.toThrow();
     expect(() => getEl('settings-freeze-drag')?.click()).not.toThrow();
