@@ -50,6 +50,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'ScenarioManagementPlugin',
     ossImport: () => import('./scenario-management/scenario-management'),
     ossClassName: 'ScenarioManagementPlugin',
+    proImport: () => import('../plugins-pro/scenario-management-pro/scenario-management-pro'),
+    proClassName: 'ScenarioManagementPro',
     defaultConfig: { enabled: true, order: 1 },
   },
   {

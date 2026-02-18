@@ -64,7 +64,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
 
   bottomIconElementName: string = 'scenario-management-icon';
   bottomIconImg = landscape3Png;
-  formPrefix_ = 'scenario-management-form';
+  protected formPrefix_ = 'scenario-management-form';
   sideMenuElementName: string = 'scenario-management-menu';
   sideMenuElementHtml: string = html`
   <div id="scenario-management-menu" class="side-menu-parent start-hidden text-select">
@@ -212,7 +212,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return true;
   }
 
-  private onSubmit_(e?: Event): void {
+  protected onSubmit_(e?: Event): void {
     e?.preventDefault();
 
     const nameInput = getEl(`${this.formPrefix_}-name`) as HTMLInputElement;
@@ -260,13 +260,13 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     }
   }
 
-  private onDateChange_(e: Event): void {
+  protected onDateChange_(e: Event): void {
     const input = e.target as HTMLInputElement;
 
     this.validateDate_(input);
   }
 
-  private validateScenario_(scenario: ScenarioData): boolean {
+  protected validateScenario_(scenario: ScenarioData): boolean {
     if (scenario.startTime && scenario.endTime && scenario.startTime >= scenario.endTime) {
       errorManagerInstance.warn('Scenario start time must be before end time.');
 
@@ -300,7 +300,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return true;
   }
 
-  private validateDate_(input: HTMLInputElement): boolean {
+  protected validateDate_(input: HTMLInputElement): boolean {
     const dateStr = input.value;
 
     // Simple regex to validate the format YYYY-MM-DD HH:MM:SS.sss
@@ -321,7 +321,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return isValid;
   }
 
-  private onSave_(evt: Event): void {
+  protected onSave_(evt: Event): void {
     this.onSubmit_();
     ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
     const blob = new Blob([JSON.stringify(this.scenario, null, 2)], {
@@ -338,7 +338,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     evt.preventDefault();
   }
 
-  private onLoad_(): void {
+  protected onLoad_(): void {
     ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
     const input = document.createElement('input');
 
