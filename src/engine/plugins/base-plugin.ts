@@ -42,6 +42,7 @@ import {
   hasSecondaryMenu,
   hasSideMenu,
   IconPlacement,
+  UtilityGroup,
 } from './core/plugin-capabilities';
 
 export interface ClickDragOptions {
@@ -265,6 +266,12 @@ export abstract class KeepTrackPlugin {
   iconPlacement: IconPlacement = IconPlacement.BOTTOM_ONLY;
 
   /**
+   * Which section of the utility panel this icon belongs to.
+   * Only relevant when iconPlacement is UTILITY_ONLY or BOTH.
+   */
+  utilityGroup: UtilityGroup | null = null;
+
+  /**
    * The maximum order for the bottom icon.
    * This is used to ensure that the bottom icons are sorted correctly.
    */
@@ -416,6 +423,9 @@ export abstract class KeepTrackPlugin {
       }
       if (config.placement) {
         this.iconPlacement = config.placement;
+      }
+      if (config.utilityGroup) {
+        this.utilityGroup = config.utilityGroup;
       }
 
       this.bottomIconComponent_ = new BottomIconComponent(
@@ -1006,6 +1016,8 @@ export abstract class KeepTrackPlugin {
   }
 
   static readonly utilityPanelContainerId = 'bottom-icons-utility';
+  static readonly utilityCameraContainerId = 'utility-camera-icons';
+  static readonly utilityLayerContainerId = 'utility-layer-icons';
 
   /**
    * Adds a utility panel icon for this plugin.
@@ -1042,7 +1054,18 @@ export abstract class KeepTrackPlugin {
           ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
           EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, this.bottomIconElementName);
         });
-        getEl(KeepTrackPlugin.utilityPanelContainerId)?.appendChild(item);
+
+        let containerId: string;
+
+        if (this.utilityGroup === UtilityGroup.CAMERA_MODE) {
+          containerId = KeepTrackPlugin.utilityCameraContainerId;
+        } else {
+          containerId = KeepTrackPlugin.utilityLayerContainerId;
+        }
+
+        const container = getEl(containerId) ?? getEl(KeepTrackPlugin.utilityPanelContainerId);
+
+        container?.appendChild(item);
       },
     );
   }

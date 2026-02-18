@@ -37,6 +37,16 @@ export enum IconPlacement {
   BOTH = 'both',
 }
 
+/**
+ * Which section of the utility panel a plugin's icon belongs to.
+ */
+export enum UtilityGroup {
+  /** Camera/view mode icons (radio behavior — one active at a time). */
+  CAMERA_MODE = 'camera-mode',
+  /** Layer toggle icons (checkbox behavior — multiple can be active). */
+  LAYER_TOGGLE = 'layer-toggle',
+}
+
 // ============================================================================
 // Bottom Icon Capability
 // ============================================================================
@@ -86,6 +96,12 @@ export interface IBottomIconConfig {
    * @default IconPlacement.BOTTOM_ONLY
    */
   placement?: IconPlacement;
+
+  /**
+   * Which section of the utility panel this icon belongs to.
+   * Only relevant when placement is UTILITY_ONLY or BOTH.
+   */
+  utilityGroup?: UtilityGroup;
 }
 
 /**

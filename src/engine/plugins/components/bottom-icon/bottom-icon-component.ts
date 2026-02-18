@@ -81,7 +81,7 @@ export interface BottomIconCallbacks {
  * - Event handling
  */
 export class BottomIconComponent {
-  private readonly config: Required<IBottomIconConfig>;
+  private readonly config: Required<Omit<IBottomIconConfig, 'utilityGroup'>> & Pick<IBottomIconConfig, 'utilityGroup'>;
   private readonly pluginId: string;
   private readonly callbacks: BottomIconCallbacks;
 
@@ -113,6 +113,7 @@ export class BottomIconComponent {
       order: config.order ?? DEFAULTS.MAX_ORDER,
       isDisabledOnLoad: config.isDisabledOnLoad ?? false,
       placement: config.placement ?? IconPlacement.BOTTOM_ONLY,
+      utilityGroup: config.utilityGroup,
     };
   }
 
