@@ -810,7 +810,11 @@ export class Earth {
       fragColor = vec4(dayTexColor + nightColor + bumpTexColor + specLightColor, 1.0);
 
       // Political map (Draw before clouds and atmosphere)
-      fragColor += textureLod(uPoliticalMap, vUv, 1.0) * diffuse;
+      // Use full resolution (LOD -1) and don't multiply by diffuse so
+      // boundaries remain visible on the night side and when ambient
+      // lighting is off.
+      vec4 politicalColor = textureLod(uPoliticalMap, vUv, -1.0);
+      fragColor.rgb += politicalColor.rgb * politicalColor.a;
 
       // ................................................
       // Clouds
