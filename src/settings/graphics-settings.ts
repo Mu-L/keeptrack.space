@@ -80,6 +80,10 @@ export class GraphicsSettings {
    * Determines whether or not to draw the Aurora effect.
    */
   isDrawAurora = true;
+  /**
+   * Determines whether or not to draw graticule (lat/lon grid) lines on the Earth.
+   */
+  isDrawGraticule = false;
 
   // Sun Settings
   sunTextureQuality: SunTextureQuality;

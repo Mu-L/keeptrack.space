@@ -30,6 +30,7 @@ export enum StorageKey {
   SETTINGS_SEARCH_LIMIT = 'v2-keepTrack-settings-searchLimit',
   SETTINGS_DRAW_TRAILING_ORBITS = 'v2-keepTrack-settings-drawTrailingOrbits',
   SETTINGS_DRAW_AURORA = 'v2-keepTrack-settings-drawAurora',
+  SETTINGS_DRAW_GRATICULE = 'v2-keepTrack-settings-drawGraticule',
   SETTINGS_DRAW_SUN = 'v2-keepTrack-settings-drawSun',
   SETTINGS_CONFIDENCE_LEVELS = 'v2-keepTrack-settings-confidenceLevels',
   SETTINGS_DRAW_COVARIANCE_ELLIPSOID = 'v2-keepTrack-settings-drawCovarianceEllipsoid',
