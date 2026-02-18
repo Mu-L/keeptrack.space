@@ -49,6 +49,7 @@ export interface EngineEventMap {
   [EventBusEvent.uiManagerOnReady]: [];
   [EventBusEvent.updateSelectBox]: [Satellite | MissileObject];
   [EventBusEvent.ConeMeshUpdate]: [];
+  [EventBusEvent.FrustumMeshUpdate]: [];
   [EventBusEvent.bottomMenuModeChange]: [];
   [EventBusEvent.saveSettings]: [];
   [EventBusEvent.loadSettings]: [];

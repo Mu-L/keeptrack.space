@@ -68,6 +68,7 @@ export enum EventBusEvent {
   canvasMouseDown = 'canvasMouseDown',
   touchStart = 'touchStart',
   ConeMeshUpdate = 'ConeMeshUpdate',
+  FrustumMeshUpdate = 'FrustumMeshUpdate',
   bottomMenuModeChange = 'bottomMenuModeChange',
   saveSettings = 'saveSettings',
   loadSettings = 'loadSettings',

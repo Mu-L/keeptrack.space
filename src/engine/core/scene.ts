@@ -30,6 +30,7 @@ import { Saturn } from '../rendering/draw-manager/celestial-bodies/saturn';
 import { Uranus } from '../rendering/draw-manager/celestial-bodies/uranus';
 import { Venus } from '../rendering/draw-manager/celestial-bodies/venus';
 import { ConeMeshFactory } from '../rendering/draw-manager/cone-mesh-factory';
+import { FrustumMeshFactory } from '../rendering/draw-manager/frustum-mesh-factory';
 import { Box } from '../rendering/draw-manager/cube';
 import { Earth } from '../rendering/draw-manager/earth';
 import { AtmosphereSettings } from '../rendering/draw-manager/earth-quality-enums';
@@ -94,6 +95,7 @@ export class Scene {
   godrays: Godrays;
   sensorFovFactory: SensorFovMeshFactory;
   coneFactory: ConeMeshFactory;
+  frustumFactory: FrustumMeshFactory;
   /** The pizza box shaped search around a satellite. */
   searchBox: Box;
   frameBuffers = {
@@ -161,6 +163,7 @@ export class Scene {
     this.secondaryCovBubble = new Ellipsoid(([0, 0, 0]));
     this.sensorFovFactory = new SensorFovMeshFactory();
     this.coneFactory = new ConeMeshFactory();
+    this.frustumFactory = new FrustumMeshFactory();
 
     EventBus.getInstance().emit(EventBusEvent.SceneReady);
   }
@@ -188,6 +191,7 @@ export class Scene {
 
     this.sensorFovFactory.updateAll();
     this.coneFactory.updateAll();
+    this.frustumFactory.updateAll();
   }
 
   updateWorldShift() {
@@ -260,6 +264,7 @@ export class Scene {
 
     this.sensorFovFactory.drawAll(camera.projectionMatrix, camera.matrixWorldInverse, renderer.postProcessingManager.curBuffer as WebGLBuffer);
     this.coneFactory.drawAll(camera.projectionMatrix, camera.matrixWorldInverse, renderer.postProcessingManager.curBuffer as WebGLBuffer);
+    this.frustumFactory.drawAll(camera.projectionMatrix, camera.matrixWorldInverse, renderer.postProcessingManager.curBuffer as WebGLBuffer);
   }
 
   averageDrawTime = 0;
