@@ -309,21 +309,28 @@ export class UiManager {
   }
 
   private sortUtilityIcons_() {
-    const utilityIcons = document.querySelectorAll('#bottom-icons-utility > div');
-    const sortedIcons = Array.from(utilityIcons).sort((a, b) => {
-      const aOrder = parseInt(a.getAttribute('data-order') ?? '100', 10);
-      const bOrder = parseInt(b.getAttribute('data-order') ?? '100', 10);
+    const sortWithinContainer = (containerId: string) => {
+      const container = getEl(containerId);
 
-      return aOrder - bOrder;
-    });
-    const utilityContainer = getEl('bottom-icons-utility');
+      if (!container) {
+        return;
+      }
 
-    if (utilityContainer) {
-      utilityContainer.innerHTML = '';
-      sortedIcons.forEach((icon) => {
-        utilityContainer.appendChild(icon);
+      const icons = Array.from(container.querySelectorAll(':scope > div'));
+      const sorted = icons.sort((a, b) => {
+        const aOrder = parseInt(a.getAttribute('data-order') ?? '100', 10);
+        const bOrder = parseInt(b.getAttribute('data-order') ?? '100', 10);
+
+        return aOrder - bOrder;
       });
-    }
+
+      sorted.forEach((icon) => {
+        container.appendChild(icon);
+      });
+    };
+
+    sortWithinContainer('utility-camera-icons');
+    sortWithinContainer('utility-layer-icons');
   }
 
   initMenuController() {

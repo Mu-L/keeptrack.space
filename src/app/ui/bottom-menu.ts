@@ -20,6 +20,8 @@ export class BottomMenu {
   static readonly settingsMenuId = 'menu-filter-settings';
   static readonly allMenuId = 'menu-filter-all';
   static readonly utilityPanelId = 'bottom-icons-utility';
+  static readonly utilityCameraContainerId = 'utility-camera-icons';
+  static readonly utilityLayerContainerId = 'utility-layer-icons';
 
   static init() {
     if (!settingsManager.isDisableBottomMenu) {
@@ -74,7 +76,13 @@ export class BottomMenu {
           </div>
         </div>
         <div id="bottom-icons"></div>
-        <div id="${BottomMenu.utilityPanelId}"></div>
+        <div id="${BottomMenu.utilityPanelId}">
+          <div class="utility-section-header">Camera Modes</div>
+          <div id="${BottomMenu.utilityCameraContainerId}" class="utility-section-icons"></div>
+          <hr class="utility-section-divider" />
+          <div class="utility-section-header">Layer Toggles</div>
+          <div id="${BottomMenu.utilityLayerContainerId}" class="utility-section-icons"></div>
+        </div>
       </div>
     `;
     getEl('nav-footer')!.appendChild(bottomMenuNode);
