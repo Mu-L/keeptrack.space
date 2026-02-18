@@ -74,7 +74,7 @@ describe('plugins', () => {
       OrbitReferences: {
         enabled: true,
       },
-      DataExportPlugin: {
+      CatalogManagementPlugin: {
         enabled: true,
       },
       CloseObjectsPlugin: {

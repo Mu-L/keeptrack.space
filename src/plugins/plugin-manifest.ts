@@ -27,13 +27,6 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true },
     alwaysEnabled: true,
   },
-  {
-    configKey: 'CatalogDropPlugin',
-    ossImport: () => import('./catalog-drop/catalog-drop'),
-    ossClassName: 'CatalogDropPlugin',
-    defaultConfig: { enabled: true },
-    alwaysEnabled: true,
-  },
 
   // ── Data plugins (must load before catalog) ──────────────────────────────
   {
@@ -594,11 +587,11 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 451 },
   },
   {
-    configKey: 'DataExportPlugin',
-    ossImport: () => import('./data-export/data-export'),
-    ossClassName: 'DataExportPlugin',
-    proImport: () => import('../plugins-pro/data-export/data-export'),
-    proClassName: 'DataExportPro',
+    configKey: 'CatalogManagementPlugin',
+    ossImport: () => import('./catalog-management/catalog-management'),
+    ossClassName: 'CatalogManagementPlugin',
+    proImport: () => import('../plugins-pro/catalog-management/catalog-management'),
+    proClassName: 'CatalogManagementPro',
     defaultConfig: { enabled: true, order: 420 },
   },
   {
