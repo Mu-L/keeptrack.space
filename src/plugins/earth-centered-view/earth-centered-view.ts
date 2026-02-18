@@ -5,7 +5,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import globePng from '@public/img/icons/globe.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
@@ -19,6 +19,7 @@ export class EarthCenteredView extends KeepTrackPlugin {
       label: 'Earth View',
       image: globePng,
       placement: IconPlacement.UTILITY_ONLY,
+      utilityGroup: UtilityGroup.CAMERA_MODE,
     };
   }
 

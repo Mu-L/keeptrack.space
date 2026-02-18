@@ -1,7 +1,7 @@
 import { SoundNames } from '@app/engine/audio/sounds';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import backgroundGridImage from '@public/img/icons/background-grid-small.png';
 
 export class GraticuleToggle extends KeepTrackPlugin {
@@ -18,6 +18,7 @@ export class GraticuleToggle extends KeepTrackPlugin {
       label: 'Graticule',
       image: backgroundGridImage,
       placement: IconPlacement.UTILITY_ONLY,
+      utilityGroup: UtilityGroup.LAYER_TOGGLE,
     };
   }
 

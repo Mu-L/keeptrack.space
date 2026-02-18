@@ -6,7 +6,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import { t7e } from '@app/locales/keys';
 import { Satellite } from '@ootk/src/main';
 import satelliteAltPng from '@public/img/icons/satellite-alt.png';
@@ -33,6 +33,7 @@ export class SatelliteFixedView extends KeepTrackPlugin {
       label: 'Satellite Fixed View',
       image: satelliteAltPng,
       placement: IconPlacement.UTILITY_ONLY,
+      utilityGroup: UtilityGroup.CAMERA_MODE,
     };
   }
 

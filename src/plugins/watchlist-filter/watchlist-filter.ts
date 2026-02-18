@@ -5,7 +5,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IKeyboardShortcut, IconPlacement } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IKeyboardShortcut, IconPlacement, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import satellitePng from '@public/img/icons/satellite.png';
 import { WatchlistPlugin } from '../satellite-lists/satellite-lists';
 
@@ -24,6 +24,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
       image: satellitePng,
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
+      utilityGroup: UtilityGroup.LAYER_TOGGLE,
     };
   }
 

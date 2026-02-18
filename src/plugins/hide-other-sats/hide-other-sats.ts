@@ -4,7 +4,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
-import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement } from '@app/engine/plugins/core/plugin-capabilities';
+import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import { SettingsManager } from '@app/settings/settings';
 import disabledVisiblePng from '@public/img/icons/disabled-visible.png';
 
@@ -23,6 +23,7 @@ export class HideOtherSatellitesPlugin extends KeepTrackPlugin {
       image: disabledVisiblePng,
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
+      utilityGroup: UtilityGroup.LAYER_TOGGLE,
     };
   }
 

@@ -30,7 +30,7 @@ import { t7e } from '@app/locales/keys';
 import { Satellite } from '@ootk/src/main';
 import viewInAirPng from '@public/img/icons/view-in-air.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { IconPlacement, IKeyboardShortcut } from '../../engine/plugins/core/plugin-capabilities';
+import { IconPlacement, IKeyboardShortcut, UtilityGroup } from '../../engine/plugins/core/plugin-capabilities';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 export class SatelliteViewPlugin extends KeepTrackPlugin {
@@ -49,6 +49,7 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
   bottomIconImg = viewInAirPng;
   isIconDisabledOnLoad = true;
   iconPlacement = IconPlacement.UTILITY_ONLY;
+  utilityGroup = UtilityGroup.CAMERA_MODE;
 
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
