@@ -193,7 +193,7 @@
     },
     "SatelliteFov": {
       "bottomIconLabel": "Satellite FOV",
-      "title": "Satellite Field of View Menu",
+      "title": "Satellite Field of View",
       "helpBody": "The Satellite Field of View plugin allows you to control the field of view of a satellite."
     },
     "Planetarium": {
