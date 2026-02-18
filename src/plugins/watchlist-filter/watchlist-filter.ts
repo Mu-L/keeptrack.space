@@ -25,6 +25,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,
+      isDisabledOnLoad: true,
     };
   }
 
@@ -52,22 +53,32 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
   addJs(): void {
     super.addJs();
 
-    // Auto-deactivate when watchlist becomes empty
-    EventBus.getInstance().on(EventBusEvent.onWatchlistRemove, () => {
-      const watchlistPlugin = PluginRegistry.getPlugin(WatchlistPlugin);
+    const eventBus = EventBus.getInstance();
 
-      if (this.isMenuButtonActive && (!watchlistPlugin || watchlistPlugin.watchlistList.length === 0)) {
+    // Enable/disable icon based on watchlist contents.
+    // OSS WatchlistPlugin emits onWatchlistAdd/onWatchlistRemove;
+    // Pro SatelliteListsPlugin only emits onWatchlistUpdated.
+    const updateIconState_ = (list: { id: number; inView: boolean }[]) => {
+      if (list.length > 0) {
+        this.setBottomIconToEnabled();
+      } else {
+        const watchlistPlugin = PluginRegistry.getPlugin(WatchlistPlugin);
+
         watchlistPlugin?.setFilterActive(false);
-        this.setBottomIconToUnselected();
+        this.setBottomIconToDisabled();
       }
-    });
+    };
+
+    eventBus.on(EventBusEvent.onWatchlistAdd, updateIconState_);
+    eventBus.on(EventBusEvent.onWatchlistRemove, updateIconState_);
+    eventBus.on(EventBusEvent.onWatchlistUpdated, updateIconState_);
   }
 
   onBottomIconClick(): void {
     const watchlistPlugin = PluginRegistry.getPlugin(WatchlistPlugin);
 
     if (!watchlistPlugin || watchlistPlugin.watchlistList.length === 0) {
-      this.shakeBottomIcon();
+      this.setBottomIconToDisabled();
       ServiceLocator.getUiManager().toast('No satellites in watchlist', ToastMsgType.caution);
 
       return;
