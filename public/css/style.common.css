@@ -2728,7 +2728,7 @@ button.ui-button::-moz-focus-inner {
 
 .side-menu-title-text {
   flex: 0 0 auto;
-  margin: 0 1rem;
+  margin-left: 1rem;
   text-align: center;
   width: 300px;
 }

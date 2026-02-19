@@ -1,24 +1,24 @@
 .cm-dropzone {
-  border: 2px dashed rgba(0, 200, 255, 0.4);
-  border-radius: 12px;
-  padding: 30px;
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  border: 3px dashed var(--color-dark-border);
+  border-radius: 4px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 10px 0;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  color: var(--color-dark-text-accent);
+  font-size: 1.1rem;
+  background-color: rgba(0, 0, 0, 0.85);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: all;
+  cursor: copy;
 }
 
-.cm-dropzone.drag-over {
-  border-color: rgba(0, 200, 255, 0.8);
-  background: rgba(0, 200, 255, 0.08);
-  color: white;
-}
-
-.cm-dropzone-icon {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-}
-
-.cm-dropzone-text {
-  font-size: 0.95rem;
+.cm-dropzone.visible {
+  display: flex;
 }

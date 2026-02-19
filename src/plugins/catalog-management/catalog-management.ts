@@ -44,8 +44,8 @@ import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { t7e } from '@app/locales/keys';
 import { BaseObject, Satellite } from '@ootk/src/main';
-import { saveAs } from 'file-saver';
 import folderCodePng from '@public/img/icons/folder-code.png';
+import { saveAs } from 'file-saver';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './catalog-management.css';
 
@@ -56,7 +56,7 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
   dependencies_ = [];
 
   private isLoading_ = false;
-  private dragEnterCount_ = 0;
+  private docDragEnterCount_ = 0;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -91,8 +91,8 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
   private getDragOptions_(): IDragOptions {
     return {
       isDraggable: true,
-      minWidth: 350,
-      maxWidth: 500,
+      minWidth: 400,
+      maxWidth: 550,
     };
   }
 
@@ -119,6 +119,9 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
     return html`
       <div id="catalog-management-menu" class="side-menu-parent start-hidden text-select">
         <div class="side-menu" style="scrollbar-gutter: stable;">
+          <div id="cm-dropzone" class="cm-dropzone">
+            Drop .tce, .tle, or .txt file to load catalog
+          </div>
           <div class="row">
             ${tabsHtml}
           </div>
@@ -136,12 +139,6 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
             Import Catalog &#9658;
           </button>
         </center>
-      </div>
-      <div id="cm-dropzone" class="cm-dropzone">
-        <div class="cm-dropzone-inner">
-          <div class="cm-dropzone-icon">&#128752;</div>
-          <div class="cm-dropzone-text">Drop .tce, .tle, or .txt file here</div>
-        </div>
       </div>
     `;
   }
@@ -254,7 +251,6 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
   private initImportHandlers_(): void {
     const importBtn = getEl('cm-import-btn');
     const fileInput = getEl('cm-import-file') as HTMLInputElement | null;
-    const dropzone = getEl('cm-dropzone');
 
     importBtn?.addEventListener('click', () => {
       fileInput?.click();
@@ -267,60 +263,92 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
       }
     });
 
+    this.initDragAndDrop_();
+  }
+
+  private hideDropzone_(): void {
+    const dropzone = getEl('cm-dropzone', true);
+
     if (dropzone) {
-      dropzone.addEventListener('dragenter', (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.dragEnterCount_++;
-        dropzone.classList.add('drag-over');
-      });
+      dropzone.classList.remove('visible');
+    }
+  }
 
-      dropzone.addEventListener('dragleave', (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.dragEnterCount_--;
-        if (this.dragEnterCount_ <= 0) {
-          dropzone.classList.remove('drag-over');
-          this.dragEnterCount_ = 0;
+  private initDragAndDrop_(): void {
+    const dropzone = getEl('cm-dropzone', true);
+
+    if (!dropzone) {
+      return;
+    }
+
+    document.addEventListener('dragenter', (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes('Files')) {
+        return;
+      }
+      e.preventDefault();
+      this.docDragEnterCount_++;
+      if (this.isMenuButtonActive) {
+        dropzone.classList.add('visible');
+      }
+    });
+
+    document.addEventListener('dragleave', (e: DragEvent) => {
+      e.preventDefault();
+      if (e.clientX <= 0 && e.clientY <= 0) {
+        this.docDragEnterCount_ = 0;
+        this.hideDropzone_();
+      } else {
+        this.docDragEnterCount_--;
+        if (this.docDragEnterCount_ <= 0) {
+          this.docDragEnterCount_ = 0;
+          this.hideDropzone_();
         }
-      });
+      }
+    });
 
-      dropzone.addEventListener('dragover', (e: DragEvent) => {
+    document.addEventListener('dragover', (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes('Files')) {
         e.preventDefault();
-        e.stopPropagation();
-        if (e.dataTransfer) {
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
+      }
+    });
 
-      dropzone.addEventListener('drop', (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.remove('drag-over');
-        this.dragEnterCount_ = 0;
+    document.addEventListener('drop', () => {
+      this.docDragEnterCount_ = 0;
+      this.hideDropzone_();
+    });
 
-        const files = e.dataTransfer?.files;
+    dropzone.addEventListener('dragover', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
 
-        if (!files || files.length === 0) {
-          return;
-        }
+    dropzone.addEventListener('drop', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.docDragEnterCount_ = 0;
+      this.hideDropzone_();
 
-        const validFile = Array.from(files).find(
-          (f) => f.name.endsWith('.tce') || f.name.endsWith('.txt') || f.name.endsWith('.tle'),
+      const files = (e as DragEvent).dataTransfer?.files;
+
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      const validFile = Array.from(files).find(
+        (f) => f.name.endsWith('.tce') || f.name.endsWith('.txt') || f.name.endsWith('.tle'),
+      );
+
+      if (!validFile) {
+        ServiceLocator.getUiManager().toast(
+          'No .tce, .tle, or .txt file found in drop',
+          ToastMsgType.caution,
         );
 
-        if (!validFile) {
-          ServiceLocator.getUiManager().toast(
-            'No .tce, .tle, or .txt file found in drop',
-            ToastMsgType.caution,
-          );
+        return;
+      }
 
-          return;
-        }
-
-        this.handleImportFile_(validFile);
-      });
-    }
+      this.handleImportFile_(validFile);
+    });
   }
 
   private initExportHandlers_(): void {
