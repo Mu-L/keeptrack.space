@@ -1,3 +1,4 @@
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -9,7 +10,6 @@ import { isThisNode } from '@app/engine/utils/isThisNode';
 import landscape3Png from '@public/img/icons/landscape3.png';
 import { saveAs } from 'file-saver';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '@app/engine/audio/sounds';
 
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -57,7 +57,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
   readonly id = 'ScenarioManagementPlugin';
   dependencies_ = [];
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.SETTINGS, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
 
   defaultScenarioName = 'My Scenario';
   defaultScenarioDescription = 'Description of My Scenario';
