@@ -1,4 +1,5 @@
 import { LayersManager } from '@app/app/ui/layers-manager';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -12,11 +13,10 @@ import { parseRgba } from '@app/engine/utils/rgba';
 import { rgbCss } from '@app/engine/utils/rgbCss';
 import { SettingsManager } from '@app/settings/settings';
 import { SatLabelMode } from '@app/settings/ui-settings';
+import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
 import settingsPng from '@public/img/icons/settings.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '@app/engine/audio/sounds';
 import { TimeMachine } from '../time-machine/time-machine';
-import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
 
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
   readonly id = 'SettingsMenuPlugin';
   dependencies_ = [];
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.SETTINGS, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SETTINGS, MenuMode.ALL];
 
   bottomIconElementName: string = 'settings-menu-icon';
   bottomIconImg = settingsPng;
