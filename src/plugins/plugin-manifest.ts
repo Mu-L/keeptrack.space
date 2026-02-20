@@ -617,6 +617,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 423 },
   },
   {
+    configKey: 'OpticalSimulation',
+    proImport: () => import('../plugins-pro/optical-simulation/optical-simulation'),
+    proClassName: 'OpticalSimulation',
+    defaultConfig: { enabled: true, order: 425 },
+  },
+  {
     configKey: 'EclipseSolarAnalysis',
     ossImport: () => import('./eclipse-solar-analysis/eclipse-solar-analysis'),
     ossClassName: 'EclipseSolarAnalysis',
@@ -681,12 +687,16 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'Inc2AltPlots',
     ossImport: () => import('./plot-analysis/inc2alt'),
     ossClassName: 'Inc2AltPlots',
+    proImport: () => import('../plugins-pro/plot-analysis/inc2alt'),
+    proClassName: 'Inc2AltPlotsPro',
     defaultConfig: { enabled: true, order: 265 },
   },
   {
     configKey: 'Inc2LonPlots',
     ossImport: () => import('./plot-analysis/inc2lon'),
     ossClassName: 'Inc2LonPlots',
+    proImport: () => import('../plugins-pro/plot-analysis/inc2lon'),
+    proClassName: 'Inc2LonPlotsPro',
     defaultConfig: { enabled: true, order: 266 },
   },
 
