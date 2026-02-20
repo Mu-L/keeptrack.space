@@ -32,9 +32,6 @@ describe('Inc2AltPlots_class', () => {
       const config = plugin.getSideMenuConfig();
 
       expect(config.elementName).toBe('inc2alt-plots-menu');
-      expect(config.dragOptions?.isDraggable).toBe(true);
-      expect(config.dragOptions?.minWidth).toBe(650);
-      expect(config.dragOptions?.maxWidth).toBe(1200);
     });
 
     it('should return correct help config', () => {
@@ -52,15 +49,6 @@ describe('Inc2AltPlots_class', () => {
       expect(shortcuts).toHaveLength(1);
       expect(shortcuts[0].key).toBe('I');
       expect(shortcuts[0].callback).toBeInstanceOf(Function);
-    });
-
-    it('should return correct drag options', () => {
-      const plugin = new Inc2AltPlots();
-      const dragOptions = plugin['getDragOptions_']();
-
-      expect(dragOptions.isDraggable).toBe(true);
-      expect(dragOptions.minWidth).toBe(650);
-      expect(dragOptions.maxWidth).toBe(1200);
     });
 
     it('should build side menu HTML', () => {
@@ -98,7 +86,8 @@ describe('Inc2AltPlots_class', () => {
 
   describe('getPlotData', () => {
     it('should return constellation-grouped data', () => {
-      const data = Inc2AltPlots.getPlotData();
+      const plugin = new Inc2AltPlots();
+      const data = plugin.getPlotData();
 
       expect(data).toBeDefined();
       expect(Array.isArray(data)).toBe(true);
@@ -108,7 +97,8 @@ describe('Inc2AltPlots_class', () => {
     });
 
     it('should have all expected constellation names', () => {
-      const data = Inc2AltPlots.getPlotData();
+      const plugin = new Inc2AltPlots();
+      const data = plugin.getPlotData();
       const names = data.map((d) => d.name);
 
       expect(names).toEqual(['Starlink', 'OneWeb', 'Iridium', 'Orbcomm', 'Globalstar', 'Planet', 'Spire', 'Other']);

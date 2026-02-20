@@ -415,6 +415,9 @@ export class Time2LonPlots extends KeepTrackPlugin {
       for (let i = 0; i < objData.length; i++) {
         const obj = objData[i];
 
+        if (!obj.isSatellite()) {
+          continue;
+        }
         if (!allowedTypes.has(obj.type)) {
           continue;
         }

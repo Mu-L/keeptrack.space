@@ -1,3 +1,4 @@
+import { getCountryMapList } from '@app/app/data/catalogs/countries';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -12,12 +13,14 @@ import {
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { Satellite, SpaceObjectType } from '@ootk/src/main';
+import { CatalogSource, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import barChart4BarsPng from '@public/img/icons/bar-chart-4-bars.png';
 import * as echarts from 'echarts';
 import 'echarts-gl';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './inc2lon.css';
+
+type T7eKey = Parameters<typeof t7e>[0];
 
 /** Data tuple: [inclination, longitude, period, name, id] */
 type Inc2LonDataItem = [number, number, number, string, number];
@@ -27,28 +30,61 @@ interface Inc2LonCountryData {
   value: Inc2LonDataItem[];
 }
 
+/** Filter settings for the inclination vs longitude scatter plot */
+export interface Inc2LonFilters {
+  activePayloads: boolean;
+  inactivePayloads: boolean;
+  rocketBodies: boolean;
+  debris: boolean;
+  celestrak: boolean;
+  vimpel: boolean;
+  minInclination: number;
+  maxInclination: number;
+  maxEccentricity: number;
+  minPeriod: number;
+  maxPeriod: number;
+}
+
 export class Inc2LonPlots extends KeepTrackPlugin {
   readonly id = 'Inc2LonPlots';
   dependencies_: string[] = [SelectSatManager.name];
-  private readonly selectSatManager_: SelectSatManager;
+  isRenderPausedOnOpen = true;
 
-  private static readonly maxEccentricity_ = 0.1;
-  private static readonly minSatellitePeriod_ = 1240;
-  private static readonly maxSatellitePeriod_ = 1640;
-  private static readonly maxInclination_ = 17;
+  private readonly selectSatManager_: SelectSatManager;
+  private readonly plotCanvasId_ = 'plot-analysis-chart-inc2lon';
+  chart: echarts.ECharts | null = null;
+  private resizeHandler_: (() => void) | null = null;
+
+  protected currentFilters_: Inc2LonFilters = {
+    activePayloads: true,
+    inactivePayloads: false,
+    rocketBodies: false,
+    debris: false,
+    celestrak: true,
+    vimpel: false,
+    minInclination: 0,
+    maxInclination: 17,
+    maxEccentricity: 0.1,
+    minPeriod: 1240,
+    maxPeriod: 1640,
+  };
+
+  private readonly logo_ = new Image();
+  private readonly secondaryLogo_ = new Image();
+
+  private static readonly chunkSize_ = 50;
+  private static readonly topCountryCount_ = 15;
 
   constructor() {
     super();
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager;
+    this.downloadIconCb = () => this.onDownload_();
+
+    this.logo_.src = `${settingsManager.installDirectory}img/logo-primary.png`;
+    if (settingsManager.isShowSecondaryLogo) {
+      this.secondaryLogo_.src = `${settingsManager.installDirectory}img/logo-secondary.png`;
+    }
   }
-
-  // =========================================================================
-  // Plugin-specific properties
-  // =========================================================================
-
-  private readonly plotCanvasId_ = 'plot-analysis-chart-inc2lon';
-  chart: echarts.ECharts | null = null;
-  private resizeHandler_: (() => void) | null = null;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -57,7 +93,7 @@ export class Inc2LonPlots extends KeepTrackPlugin {
   getBottomIconConfig(): IBottomIconConfig {
     return {
       elementName: 'inc2lon-plots-icon',
-      label: t7e('plugins.Inc2LonPlots.bottomIconLabel' as Parameters<typeof t7e>[0]),
+      label: t7e('plugins.Inc2LonPlots.bottomIconLabel' as T7eKey),
       image: barChart4BarsPng,
       menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
     };
@@ -66,7 +102,7 @@ export class Inc2LonPlots extends KeepTrackPlugin {
   getSideMenuConfig(): ISideMenuConfig {
     return {
       elementName: 'inc2lon-plots-menu',
-      title: t7e('plugins.Inc2LonPlots.title' as Parameters<typeof t7e>[0]),
+      title: t7e('plugins.Inc2LonPlots.title' as T7eKey),
       html: this.buildSideMenuHtml_(),
       dragOptions: this.getDragOptions_(),
     };
@@ -74,8 +110,8 @@ export class Inc2LonPlots extends KeepTrackPlugin {
 
   getHelpConfig(): IHelpConfig {
     return {
-      title: t7e('plugins.Inc2LonPlots.title' as Parameters<typeof t7e>[0]),
-      body: t7e('plugins.Inc2LonPlots.helpBody' as Parameters<typeof t7e>[0]),
+      title: t7e('plugins.Inc2LonPlots.title' as T7eKey),
+      body: t7e('plugins.Inc2LonPlots.helpBody' as T7eKey),
     };
   }
 
@@ -90,24 +126,26 @@ export class Inc2LonPlots extends KeepTrackPlugin {
 
   private getDragOptions_(): IDragOptions {
     return {
-      isDraggable: true,
-      minWidth: 650,
-      maxWidth: 1200,
-      onResizeComplete: () => {
-        this.chart?.resize();
-      },
+      isDraggable: false,
     };
   }
 
   private buildSideMenuHtml_(): string {
+    const innerHtml = html`
+      <div id="${this.plotCanvasId_}" class="inc2lon-chart-container"></div>
+    `;
+
+    // When a secondary menu exists (pro), generateSideMenuHtml_() in the base plugin
+    // wraps sideMenuElementHtml in the standard side-menu template. Without a secondary
+    // menu (OSS), the raw HTML is inserted directly, so we must include the wrapper.
+    if ('getSecondaryMenuConfig' in this) {
+      return innerHtml;
+    }
+
     return html`
-      <div id="inc2lon-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal">
-        <div id="plot-analysis-content" class="side-menu">
-          <div id="${this.plotCanvasId_}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
-        </div>
-        <div id="inc2lon-stats">
-          <div id="inc2lon-total-count">--</div>
-          <div id="inc2lon-country-counts"></div>
+      <div id="inc2lon-plots-menu" class="side-menu-parent start-hidden text-select">
+        <div id="inc2lon-plots-menu-content" class="side-menu">
+          ${innerHtml}
         </div>
       </div>
     `;
@@ -121,11 +159,15 @@ export class Inc2LonPlots extends KeepTrackPlugin {
     if (!this.isMenuButtonActive) {
       return;
     }
-    const chartDom = getEl(this.plotCanvasId_)!;
-    const plotData = Inc2LonPlots.getPlotData();
 
-    this.createPlot(plotData, chartDom);
-    this.updateStatistics_(plotData);
+    const chartDom = getEl(this.plotCanvasId_);
+
+    if (!chartDom) {
+      return;
+    }
+
+    this.initChart_(chartDom);
+    this.refreshPlot_();
   }
 
   onBottomIconDeselect(): void {
@@ -139,58 +181,16 @@ export class Inc2LonPlots extends KeepTrackPlugin {
     }
   }
 
-  private updateStatistics_(data: Inc2LonCountryData[]): void {
-    const totalEl = getEl('inc2lon-total-count');
-    const countsEl = getEl('inc2lon-country-counts');
-
-    if (!totalEl || !countsEl) {
-      return;
-    }
-
-    let total = 0;
-    const counts: { name: string; count: number }[] = [];
-
-    data.forEach((group) => {
-      const count = group.value?.length || 0;
-
-      total += count;
-      if (count > 0) {
-        counts.push({ name: group.name, count });
-      }
-    });
-
-    counts.sort((a, b) => b.count - a.count);
-
-    totalEl.textContent = `${t7e('plugins.Inc2LonPlots.labels.totalGeoPayloads' as Parameters<typeof t7e>[0])}: ${total}`;
-
-    countsEl.textContent = '';
-    counts.forEach((c) => {
-      const span = document.createElement('span');
-      const bold = document.createElement('b');
-
-      bold.textContent = `${c.name}:`;
-      span.appendChild(bold);
-      span.appendChild(document.createTextNode(` ${c.count}`));
-      countsEl.appendChild(span);
-    });
-  }
-
   // Bridge for legacy event system
   bottomIconCallback = (): void => {
     this.onBottomIconClick();
   };
 
   // =========================================================================
-  // Lifecycle methods
+  // Chart setup
   // =========================================================================
 
-  createPlot(data: Inc2LonCountryData[], chartDom: HTMLElement) {
-    // Dont Load Anything if the Chart is Closed
-    if (!this.isMenuButtonActive) {
-      return;
-    }
-
-    // Delete any old charts and start fresh
+  private initChart_(chartDom: HTMLElement): void {
     if (this.chart) {
       echarts.dispose(this.chart);
     }
@@ -198,20 +198,46 @@ export class Inc2LonPlots extends KeepTrackPlugin {
     this.chart.on('click', (event) => {
       const eventData = event.data as { id?: number };
 
-      if (eventData?.id) {
+      if (typeof eventData?.id === 'number') {
         this.selectSatManager_.selectSat(eventData.id);
       }
     });
 
-    // Setup resize handler
     if (this.resizeHandler_) {
       window.removeEventListener('resize', this.resizeHandler_);
     }
     this.resizeHandler_ = () => this.chart?.resize();
     window.addEventListener('resize', this.resizeHandler_);
+  }
 
-    // Setup Chart - use notMerge to ensure colors reset properly on reopen
+  refreshPlot_(): void {
+    if (!this.chart || !this.isMenuButtonActive) {
+      return;
+    }
+
+    this.chart.showLoading({
+      text: 'Computing satellite positions...',
+      color: '#4fc3f7',
+      textColor: '#fff',
+      maskColor: 'rgba(0, 0, 0, 0.7)',
+    });
+
+    this.getPlotDataAsync_(this.currentFilters_).then((data) => {
+      if (!this.isMenuButtonActive || !this.chart) {
+        return;
+      }
+      this.chart.hideLoading();
+      this.renderChart_(data);
+    });
+  }
+
+  private renderChart_(data: Inc2LonCountryData[]): void {
+    if (!this.chart || !this.isMenuButtonActive) {
+      return;
+    }
+
     this.chart.setOption({
+      animation: false,
       title: {
         text: 'GEO Inclination vs Longitude Scatter Plot',
         textStyle: {
@@ -221,6 +247,7 @@ export class Inc2LonPlots extends KeepTrackPlugin {
       },
       legend: {
         show: true,
+        top: 30,
         textStyle: {
           color: '#fff',
         },
@@ -253,28 +280,32 @@ export class Inc2LonPlots extends KeepTrackPlugin {
       },
       xAxis: {
         name: 'Longitude (\u00B0)',
-        type: 'value',
+        type: 'value' as const,
         position: 'bottom',
+        nameLocation: 'middle',
+        nameGap: 35,
+        axisLabel: { color: '#999' },
+        nameTextStyle: { color: '#fff', fontSize: 14 },
       },
       yAxis: {
         name: 'Inclination (\u00B0)',
-        type: 'value',
+        type: 'value' as const,
         position: 'left',
-      },
-      zAxis: {
-        name: 'Period (min)',
-        type: 'value',
+        nameLocation: 'middle',
+        nameGap: 50,
+        axisLabel: { color: '#999' },
+        nameTextStyle: { color: '#fff', fontSize: 14 },
       },
       dataZoom: [
         {
-          type: 'slider',
+          type: 'slider' as const,
           show: true,
           xAxisIndex: [0],
           start: -180,
           end: 180,
         },
         {
-          type: 'slider',
+          type: 'slider' as const,
           show: true,
           yAxisIndex: [0],
           left: '93%',
@@ -282,13 +313,13 @@ export class Inc2LonPlots extends KeepTrackPlugin {
           end: 65,
         },
         {
-          type: 'inside',
+          type: 'inside' as const,
           xAxisIndex: [0],
           start: -180,
           end: 180,
         },
         {
-          type: 'inside',
+          type: 'inside' as const,
           yAxisIndex: [0],
           start: 0,
           end: 65,
@@ -299,8 +330,8 @@ export class Inc2LonPlots extends KeepTrackPlugin {
           left: 'left',
           top: '10%',
           dimension: 2,
-          min: 1240,
-          max: 1640,
+          min: this.currentFilters_.minPeriod,
+          max: this.currentFilters_.maxPeriod,
           itemWidth: 30,
           itemHeight: 500,
           calculable: true,
@@ -350,87 +381,214 @@ export class Inc2LonPlots extends KeepTrackPlugin {
     }, true);
   }
 
-  static getPlotData(): Inc2LonCountryData[] {
-    const china: Inc2LonDataItem[] = [];
-    const usa: Inc2LonDataItem[] = [];
-    const france: Inc2LonDataItem[] = [];
-    const russia: Inc2LonDataItem[] = [];
-    const india: Inc2LonDataItem[] = [];
-    const japan: Inc2LonDataItem[] = [];
-    const other: Inc2LonDataItem[] = [];
+  private onDownload_(): void {
+    if (!this.chart) {
+      return;
+    }
 
-    const catalogManager = ServiceLocator.getCatalogManager();
-    const now = ServiceLocator.getTimeManager().simulationTimeObj;
-
-    catalogManager.objectCache.forEach((obj) => {
-      if (obj.type !== SpaceObjectType.PAYLOAD) {
-        return;
-      }
-      const sat = obj as Satellite;
-
-      // Only GEO objects
-      if (sat.eccentricity > Inc2LonPlots.maxEccentricity_) {
-        return;
-      }
-      if (sat.period < Inc2LonPlots.minSatellitePeriod_) {
-        return;
-      }
-      if (sat.period > Inc2LonPlots.maxSatellitePeriod_) {
-        return;
-      }
-      if (sat.inclination > Inc2LonPlots.maxInclination_) {
-        return;
-      }
-
-      // Update Position
-      const lla = sat.lla(now);
-
-      if (!lla) {
-        return;
-      }
-
-      switch (sat.country) {
-        case 'US':
-          usa.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-          return;
-        case 'RU':
-        case 'USSR':
-          russia.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-          return;
-        case 'F':
-          france.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-          return;
-
-        case 'CN':
-          china.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-          return;
-        case 'IN':
-          india.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-          return;
-
-        case 'J':
-          japan.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-          return;
-        default:
-          other.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
-
-      }
+    const chartDataUrl = this.chart.getDataURL({
+      type: 'png',
+      backgroundColor: '#1f1f1f',
+      pixelRatio: 2,
     });
 
-    return [
-      { name: 'France', value: france },
-      { name: 'USA', value: usa },
-      { name: 'Other', value: other },
-      { name: 'Russia', value: russia },
-      { name: 'China', value: china },
-      { name: 'India', value: india },
-      { name: 'Japan', value: japan },
-    ];
+    const chartImg = new Image();
+
+    chartImg.onload = () => {
+      const canvas = document.createElement('canvas');
+
+      canvas.width = chartImg.width;
+      canvas.height = chartImg.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        return;
+      }
+
+      ctx.drawImage(chartImg, 0, 0);
+
+      const paddingX = 40;
+      const paddingY = 50;
+      const logoHeight = Math.max(40, canvas.height * 0.06);
+
+      if (!settingsManager.copyrightOveride && this.logo_.complete && this.logo_.naturalWidth > 0) {
+        const logoWidth = this.logo_.width * (logoHeight / this.logo_.height);
+
+        if (settingsManager.isShowSecondaryLogo && this.secondaryLogo_.complete && this.secondaryLogo_.naturalWidth > 0) {
+          const secLogoWidth = this.secondaryLogo_.width * (logoHeight / this.secondaryLogo_.height);
+
+          ctx.drawImage(this.secondaryLogo_, paddingX, paddingY, secLogoWidth, logoHeight);
+          ctx.drawImage(this.logo_, paddingX + secLogoWidth + paddingX, paddingY, logoWidth, logoHeight);
+        } else {
+          ctx.drawImage(this.logo_, paddingX, paddingY, logoWidth, logoHeight);
+        }
+      }
+
+      const link = document.createElement('a');
+
+      link.download = 'inc2lon-scatter.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    chartImg.src = chartDataUrl;
   }
+
+  // =========================================================================
+  // Async data gathering (chunked to prevent UI jank)
+  // =========================================================================
+
+  private getPlotDataAsync_(filters: Inc2LonFilters): Promise<Inc2LonCountryData[]> {
+    return new Promise((resolve) => {
+      const catalogManager = ServiceLocator.getCatalogManager();
+      const now = ServiceLocator.getTimeManager().simulationTimeObj;
+      const objData = catalogManager.objectCache;
+      const allowedTypes = Inc2LonPlots.buildAllowedTypes_(filters);
+
+      // Pre-filter to find matching object indices
+      const matchingIndices: number[] = [];
+
+      for (let i = 0; i < objData.length; i++) {
+        const obj = objData[i];
+
+        if (!obj.isSatellite()) {
+          continue;
+        }
+        if (!allowedTypes.has(obj.type)) {
+          continue;
+        }
+
+        const sat = obj as Satellite;
+
+        // For payloads, check active/inactive status
+        if (obj.type === SpaceObjectType.PAYLOAD) {
+          const isActive = sat.status === PayloadStatus.OPERATIONAL;
+
+          if (isActive && !filters.activePayloads) {
+            continue;
+          }
+          if (!isActive && !filters.inactivePayloads) {
+            continue;
+          }
+        }
+
+        if (sat.eccentricity > filters.maxEccentricity) {
+          continue;
+        }
+        if (sat.period < filters.minPeriod) {
+          continue;
+        }
+        if (sat.period > filters.maxPeriod) {
+          continue;
+        }
+        if (sat.inclination < filters.minInclination || sat.inclination > filters.maxInclination) {
+          continue;
+        }
+
+        // Source filter
+        if (sat.source === CatalogSource.VIMPEL && !filters.vimpel) {
+          continue;
+        }
+        if (sat.source !== CatalogSource.VIMPEL && !filters.celestrak) {
+          continue;
+        }
+
+        matchingIndices.push(i);
+      }
+
+      // Build dynamic top-N country lookup
+      const countryCounts: Record<string, number> = {};
+
+      for (const idx of matchingIndices) {
+        const sat = objData[idx] as Satellite;
+
+        countryCounts[sat.country] = (countryCounts[sat.country] || 0) + 1;
+      }
+      const topCountries = Inc2LonPlots.buildTopCountries_(countryCounts);
+
+      // Group data by country display name
+      const countryBuckets = new Map<string, Inc2LonDataItem[]>();
+      let offset = 0;
+
+      const processChunk = () => {
+        const end = Math.min(offset + Inc2LonPlots.chunkSize_, matchingIndices.length);
+
+        for (let i = offset; i < end; i++) {
+          const sat = objData[matchingIndices[i]] as Satellite;
+          const lla = sat.lla(now);
+
+          if (!lla) {
+            continue;
+          }
+
+          const displayName = topCountries.get(sat.country) ?? 'Other';
+
+          if (!countryBuckets.has(displayName)) {
+            countryBuckets.set(displayName, []);
+          }
+          countryBuckets.get(displayName)!.push([
+            sat.inclination, lla.lon, sat.period, sat.name, sat.id,
+          ]);
+        }
+
+        offset = end;
+
+        if (offset < matchingIndices.length && this.isMenuButtonActive) {
+          setTimeout(processChunk, 0);
+        } else {
+          const result: Inc2LonCountryData[] = [];
+
+          for (const [name, value] of countryBuckets) {
+            result.push({ name, value });
+          }
+          resolve(result);
+        }
+      };
+
+      processChunk();
+    });
+  }
+
+  static buildAllowedTypes_(filters: Inc2LonFilters): Set<SpaceObjectType> {
+    const types = new Set<SpaceObjectType>();
+
+    if (filters.activePayloads || filters.inactivePayloads) {
+      types.add(SpaceObjectType.PAYLOAD);
+    }
+    if (filters.rocketBodies) {
+      types.add(SpaceObjectType.ROCKET_BODY);
+    }
+    if (filters.debris) {
+      types.add(SpaceObjectType.DEBRIS);
+    }
+
+    return types;
+  }
+
+  /**
+   * Count objects per country code, pick the top N, and return
+   * a Map from raw country code to human-readable display name.
+   * Codes outside the top N map to 'Other'.
+   */
+  static buildTopCountries_(countryCounts: Record<string, number>): Map<string, string> {
+    const sorted = Object.entries(countryCounts)
+      .sort(([, a], [, b]) => b - a);
+
+    const countryMap = getCountryMapList() as Record<string, string>;
+    const topCodes = sorted.slice(0, Inc2LonPlots.topCountryCount_).map(([code]) => code);
+    const lookup = new Map<string, string>();
+
+    for (const code of topCodes) {
+      lookup.set(code, countryMap[code] ?? code);
+    }
+
+    // Everything else maps to 'Other'
+    for (const [code] of sorted) {
+      if (!lookup.has(code)) {
+        lookup.set(code, 'Other');
+      }
+    }
+
+    return lookup;
+  }
+
 }

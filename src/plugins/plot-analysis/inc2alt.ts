@@ -4,7 +4,6 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import {
   IBottomIconConfig,
-  IDragOptions,
   IHelpConfig,
   IKeyboardShortcut,
   ISideMenuConfig,
@@ -12,7 +11,7 @@ import {
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { Satellite, SpaceObjectType } from '@ootk/src/main';
+import { CatalogSource, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import waterfall2Png from '@public/img/icons/waterfall2.png';
 import * as echarts from 'echarts';
 import 'echarts-gl';
@@ -51,6 +50,21 @@ interface Inc2AltConstellationData {
   value: Inc2AltDataItem[];
 }
 
+/** Filter settings for the Inc2Alt scatter plot */
+export interface Inc2AltFilters {
+  activePayloads: boolean;
+  inactivePayloads: boolean;
+  rocketBodies: boolean;
+  debris: boolean;
+  celestrak: boolean;
+  vimpel: boolean;
+  minAltitude: number;
+  maxAltitude: number;
+  minInclination: number;
+  maxInclination: number;
+  maxPeriod: number;
+}
+
 export class Inc2AltPlots extends KeepTrackPlugin {
   readonly id = 'Inc2AltPlots';
   dependencies_: string[] = [SelectSatManager.name];
@@ -65,9 +79,23 @@ export class Inc2AltPlots extends KeepTrackPlugin {
   // Plugin-specific properties
   // =========================================================================
 
-  private readonly plotCanvasId_ = 'plot-analysis-chart-inc2alt';
+  protected readonly plotCanvasId_ = 'plot-analysis-chart-inc2alt';
   chart: echarts.ECharts | null = null;
   private resizeHandler_: (() => void) | null = null;
+
+  protected currentFilters_: Inc2AltFilters = {
+    activePayloads: true,
+    inactivePayloads: false,
+    rocketBodies: false,
+    debris: false,
+    celestrak: true,
+    vimpel: false,
+    minAltitude: 70,
+    maxAltitude: 3000,
+    minInclination: 0,
+    maxInclination: 180,
+    maxPeriod: 250,
+  };
 
   // =========================================================================
   // Composition-based configuration methods
@@ -87,7 +115,6 @@ export class Inc2AltPlots extends KeepTrackPlugin {
       elementName: 'inc2alt-plots-menu',
       title: t7e('plugins.Inc2AltPlots.title'),
       html: this.buildSideMenuHtml_(),
-      dragOptions: this.getDragOptions_(),
     };
   }
 
@@ -107,26 +134,26 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     ];
   }
 
-  private getDragOptions_(): IDragOptions {
-    return {
-      isDraggable: true,
-      minWidth: 650,
-      maxWidth: 1200,
-      onResizeComplete: () => {
-        this.chart?.resize();
-      },
-    };
-  }
-
   private buildSideMenuHtml_(): string {
+    const innerHtml = html`
+      <div id="${this.plotCanvasId_}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
+      <div id="inc2alt-stats">
+        <div id="inc2alt-total-count">--</div>
+        <div id="inc2alt-constellation-counts"></div>
+      </div>
+    `;
+
+    // When a secondary menu exists (pro), generateSideMenuHtml_() in the base plugin
+    // wraps sideMenuElementHtml in the standard side-menu template. Without a secondary
+    // menu (OSS), the raw HTML is inserted directly, so we must include the wrapper.
+    if ('getSecondaryMenuConfig' in this) {
+      return innerHtml;
+    }
+
     return html`
       <div id="inc2alt-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal">
         <div id="plot-analysis-content" class="side-menu">
-          <div id="${this.plotCanvasId_}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
-        </div>
-        <div id="inc2alt-stats">
-          <div id="inc2alt-total-count">--</div>
-          <div id="inc2alt-constellation-counts"></div>
+          ${innerHtml}
         </div>
       </div>
     `;
@@ -140,8 +167,22 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     if (!this.isMenuButtonActive) {
       return;
     }
-    const chartDom = getEl(this.plotCanvasId_)!;
-    const plotData = Inc2AltPlots.getPlotData();
+
+    this.refreshPlot_();
+  }
+
+  refreshPlot_(): void {
+    if (!this.isMenuButtonActive) {
+      return;
+    }
+
+    const chartDom = getEl(this.plotCanvasId_);
+
+    if (!chartDom) {
+      return;
+    }
+
+    const plotData = this.getPlotData();
 
     this.createPlot(plotData, chartDom);
     this.updateStatistics_(plotData);
@@ -158,7 +199,7 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     }
   }
 
-  private updateStatistics_(data: Inc2AltConstellationData[]): void {
+  protected updateStatistics_(data: Inc2AltConstellationData[]): void {
     const totalEl = getEl('inc2alt-total-count');
     const countsEl = getEl('inc2alt-constellation-counts');
 
@@ -385,7 +426,7 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     }, true);
   }
 
-  static getPlotData(): Inc2AltConstellationData[] {
+  getPlotData(): Inc2AltConstellationData[] {
     // Group by constellation instead of country
     const constellations: Record<string, Inc2AltDataItem[]> = {
       Starlink: [],
@@ -400,24 +441,55 @@ export class Inc2AltPlots extends KeepTrackPlugin {
 
     const catalogManager = ServiceLocator.getCatalogManager();
     const now = ServiceLocator.getTimeManager().simulationTimeObj;
+    const filters = this.currentFilters_;
+    const allowedTypes = Inc2AltPlots.buildAllowedTypes_(filters);
 
     catalogManager.objectCache.forEach((obj) => {
-      if (obj.type !== SpaceObjectType.PAYLOAD) {
+      if (!allowedTypes.has(obj.type)) {
         return;
+      }
+
+      // For payloads, check active/inactive status
+      if (obj.type === SpaceObjectType.PAYLOAD) {
+        const sat = obj as Satellite;
+        const isActive = sat.status === PayloadStatus.OPERATIONAL;
+
+        if (isActive && !filters.activePayloads) {
+          return;
+        }
+        if (!isActive && !filters.inactivePayloads) {
+          return;
+        }
       }
 
       let sat = obj as Satellite;
 
-      if (sat.period > 250) {
+      if (sat.period > filters.maxPeriod) {
+        return;
+      }
+      if (sat.inclination < filters.minInclination || sat.inclination > filters.maxInclination) {
         return;
       }
 
-      sat = catalogManager.getSat(sat.id, GetSatType.POSITION_ONLY)!;
+      // Source filter
+      if (sat.source === CatalogSource.VIMPEL && !filters.vimpel) {
+        return;
+      }
+      if (sat.source !== CatalogSource.VIMPEL && !filters.celestrak) {
+        return;
+      }
+
+      const satWithPos = catalogManager.getSat(sat.id, GetSatType.POSITION_ONLY);
+
+      if (!satWithPos) {
+        return;
+      }
+
+      sat = satWithPos;
 
       const alt = sat.lla(now)?.alt ?? 0;
 
-      // Filter out decayed satellites and those beyond 3,000 (makes slider usable)
-      if (alt < 70 || alt > 3000) {
+      if (alt < filters.minAltitude || alt > filters.maxAltitude) {
         return;
       }
 
@@ -447,5 +519,21 @@ export class Inc2AltPlots extends KeepTrackPlugin {
       { name: 'Spire', value: constellations.Spire },
       { name: 'Other', value: constellations.Other },
     ];
+  }
+
+  static buildAllowedTypes_(filters: Inc2AltFilters): Set<SpaceObjectType> {
+    const types = new Set<SpaceObjectType>();
+
+    if (filters.activePayloads || filters.inactivePayloads) {
+      types.add(SpaceObjectType.PAYLOAD);
+    }
+    if (filters.rocketBodies) {
+      types.add(SpaceObjectType.ROCKET_BODY);
+    }
+    if (filters.debris) {
+      types.add(SpaceObjectType.DEBRIS);
+    }
+
+    return types;
   }
 }
