@@ -23,6 +23,7 @@ export class BottomMenu {
   static readonly utilityPanelId = 'bottom-icons-utility';
   static readonly utilityCameraContainerId = 'utility-camera-icons';
   static readonly utilityLayerContainerId = 'utility-layer-icons';
+  static readonly utilitySettingsContainerId = 'utility-settings-icons';
 
   static init() {
     if (!settingsManager.isDisableBottomMenu) {
@@ -89,6 +90,9 @@ export class BottomMenu {
           <hr class="utility-section-divider" />
           <div class="utility-section-header">Layer Toggles</div>
           <div id="${BottomMenu.utilityLayerContainerId}" class="utility-section-icons"></div>
+          <hr class="utility-section-divider" />
+          <div class="utility-section-header">Settings</div>
+          <div id="${BottomMenu.utilitySettingsContainerId}" class="utility-section-icons"></div>
         </div>
       </div>
     `;
