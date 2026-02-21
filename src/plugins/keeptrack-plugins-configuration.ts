@@ -90,6 +90,7 @@ export type KeepTrackPluginsConfiguration = {
   OpticalSimulation?: PluginConfiguration;
   GraticuleToggle?: PluginConfiguration;
   HideOtherSatellitesPlugin?: PluginConfiguration;
+  SkipInterpolationToggle?: PluginConfiguration;
   KeyboardShortcutsPlugin?: PluginConfiguration;
   DopsPlugin?: PluginConfiguration;
   SatConstellations?: PluginConfiguration;

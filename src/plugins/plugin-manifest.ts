@@ -525,6 +525,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 312 },
   },
   {
+    configKey: 'SkipInterpolationToggle',
+    ossImport: () => import('./skip-interpolation-toggle/skip-interpolation-toggle'),
+    ossClassName: 'SkipInterpolationToggle',
+    defaultConfig: { enabled: true, order: 314 },
+  },
+  {
     configKey: 'KeyboardShortcutsPlugin',
     proImport: () => import('../plugins-pro/keyboard-shortcuts/keyboard-shortcuts'),
     proClassName: 'KeyboardShortcutsPlugin',

@@ -105,6 +105,11 @@ export class GraphicsSettings {
    */
   isUseSunTexture = false;
   isDrawNightAsDay = false;
+  /**
+   * When true, skips per-frame interpolation of TLE satellite positions.
+   * Satellites will only update when a new propagation message arrives from the worker.
+   */
+  isSkipTleInterpolation = false;
 
   // Godrays (Sun illumination effects)
   /**
