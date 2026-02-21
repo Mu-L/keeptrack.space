@@ -127,6 +127,7 @@ stats.json
 
 # Local env files
 .env
+.env.offline
 
 # Cypress Testing Files
 cypress
