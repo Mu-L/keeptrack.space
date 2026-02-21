@@ -206,7 +206,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
   }
 
   private pushOverlayElement_(s: number, propTime: number, infoOverlayDOMHtmlStrArr: string[]) {
-    const isSatInView = ServiceLocator.getDotsManager().inViewData[this.nextPassArray[s].sat.id];
+    const isSatInView = ServiceLocator.getDotsManager().inViewData?.[this.nextPassArray[s].sat.id];
     // If old time and not in view, skip it
 
     if (this.nextPassArray[s].time.getTime() - propTime < -1000 * 60 * 5 && !isSatInView) {
