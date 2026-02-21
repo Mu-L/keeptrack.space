@@ -76,6 +76,8 @@ export interface SymbologyConfiguration {
   rules: AffiliationRule[];
   /** Default affiliation for satellites that don't match any rule */
   defaultAffiliation: Affiliation;
+  /** Version of default rules that were last loaded — used to detect stale cached defaults */
+  defaultRulesVersion?: number;
 }
 
 /**

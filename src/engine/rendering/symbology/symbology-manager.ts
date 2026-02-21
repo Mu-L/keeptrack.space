@@ -441,17 +441,41 @@ export class SymbologyManager {
   }
 
   /**
-   * Load default rules (called by pro plugin)
+   * Load default rules (called by pro plugin).
+   *
+   * If no rules exist, inject the provided defaults.
+   * If the cached defaultRulesVersion is older than the provided version,
+   * refresh default-origin rules while preserving user-added rules.
    */
-  loadDefaultRules(rules: AffiliationRule[]): void {
+  loadDefaultRules(rules: AffiliationRule[], version = 0): void {
+    const cachedVersion = this.configuration_.defaultRulesVersion;
+
     if (this.configuration_.rules.length === 0) {
+      // First time — inject all defaults
       this.configuration_.rules = rules;
-      this.sortRules_();
-      this.clearCache_();
+      this.configuration_.defaultRulesVersion = version;
+      this.applyDefaultRulesUpdate_();
+    } else if (typeof cachedVersion === 'undefined') {
+      // Migration: existing cache from before version tracking — stamp version, keep rules
+      this.configuration_.defaultRulesVersion = version;
       this.saveConfiguration_();
-      if (this.isReady_) {
-        this.updateAffiliationBuffer();
-      }
+    } else if (version > cachedVersion) {
+      // Defaults have changed — refresh default rules, keep user-added ones
+      const defaultRuleIds = new Set(rules.map((r) => r.id));
+      const userRules = this.configuration_.rules.filter((r) => !defaultRuleIds.has(r.id));
+
+      this.configuration_.rules = [...rules, ...userRules];
+      this.configuration_.defaultRulesVersion = version;
+      this.applyDefaultRulesUpdate_();
+    }
+  }
+
+  private applyDefaultRulesUpdate_(): void {
+    this.sortRules_();
+    this.clearCache_();
+    this.saveConfiguration_();
+    if (this.isReady_) {
+      this.updateAffiliationBuffer();
     }
   }
 
@@ -547,6 +571,8 @@ export class SymbologyManager {
     this.objectTypeBuffer_ = new Uint8Array(numObjects);
     this.stalenessBuffer_ = new Uint8Array(numObjects);
 
+    // Clear any stale cache entries before full re-evaluation
+    this.clearCache_();
     this.updateAffiliationBuffer();
     this.updateObjectTypeBuffer();
     this.updateStalenessBuffer();
@@ -567,6 +593,7 @@ export class SymbologyManager {
           enabled: config.enabled ?? false,
           rules: config.rules ?? [],
           defaultAffiliation: config.defaultAffiliation ?? Affiliation.UNKNOWN,
+          defaultRulesVersion: config.defaultRulesVersion,
         };
       }
     } catch (e) {
