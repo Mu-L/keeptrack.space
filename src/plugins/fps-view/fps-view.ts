@@ -24,7 +24,7 @@ export class FpsView extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: '5',
+        key: '8',
         callback: () => this.bottomIconCallback(),
       },
     ];

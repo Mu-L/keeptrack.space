@@ -48,13 +48,14 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
   isRequireSatelliteSelected = true;
   bottomIconImg = viewInAirPng;
   isIconDisabledOnLoad = true;
+  isIconDisabled = true;
   iconPlacement = IconPlacement.UTILITY_ONLY;
   utilityGroup = UtilityGroup.CAMERA_MODE;
 
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: '4',
+        key: '5',
         callback: () => this.bottomIconCallback(),
       },
     ];
