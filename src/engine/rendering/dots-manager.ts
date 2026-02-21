@@ -935,7 +935,7 @@ export class DotsManager {
         }
       }
 
-      if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
+      if ((settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) && !settingsManager.isSkipTleInterpolation) {
         this.interpolatePositionsOfTleSatellites_(renderer);
       }
     }
