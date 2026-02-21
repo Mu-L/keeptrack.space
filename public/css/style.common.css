@@ -3934,8 +3934,8 @@ input:focus {
   color: white;
   max-width: 550px;
   padding-left: 20px;
-  top: 110px;
-  height: auto;
+  top: calc(var(--top-menu-height) + 100px);
+  height: 100%;
   overflow: auto;
   z-index: 10;
 }
