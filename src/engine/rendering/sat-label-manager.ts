@@ -5,6 +5,7 @@ import { ServiceLocator } from '../core/service-locator';
 import { RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { BufferAttribute } from './buffer-attribute';
+import { DepthManager } from './depth-manager';
 import { WebGlProgramHelper } from './webgl-program';
 
 /* eslint-disable camelcase */
@@ -66,6 +67,7 @@ export class SatLabelManager {
     u_currentGmst: <WebGLUniformLocation><unknown>null,
     u_earthRadius: <WebGLUniformLocation><unknown>null,
     u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
+    u_logDepthBufFC: <WebGLUniformLocation><unknown>null,
   };
 
   init(gl: WebGL2RenderingContext, maxLabels: number): void {
@@ -120,7 +122,7 @@ export class SatLabelManager {
         this.satPositionData_[base + 1] = py;
         this.satPositionData_[base + 2] = pz;
         this.glyphIndexData_[instanceIdx] = glyphIdx;
-        this.charOffsetData_[instanceIdx] = c * 10; // 10px per character
+        this.charOffsetData_[instanceIdx] = c; // character index; pixel spacing computed in shader
         instanceIdx++;
       }
 
@@ -193,6 +195,7 @@ export class SatLabelManager {
 
     gl.uniform2f(this.uniforms_.u_screenSize, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.uniform1f(this.uniforms_.u_glyphSize, gl.drawingBufferWidth * 0.013);
+    gl.uniform1f(this.uniforms_.u_logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
 
     // Bind glyph atlas texture
     gl.activeTexture(gl.TEXTURE0);
@@ -213,10 +216,11 @@ export class SatLabelManager {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    // In planetarium mode, keep depth test enabled so labels are occluded by the ground plane
-    const isPlanetarium = ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM;
+    // In planetarium/fixed-to-earth mode, keep depth test enabled so labels are occluded by the Earth
+    const cameraType = ServiceLocator.getMainCamera().cameraType;
+    const useDepthTest = cameraType === CameraType.PLANETARIUM || cameraType === CameraType.FIXED_TO_EARTH;
 
-    if (!isPlanetarium) {
+    if (!useDepthTest) {
       gl.disable(gl.DEPTH_TEST);
     }
 
@@ -298,6 +302,7 @@ export class SatLabelManager {
       uniform float u_currentGmst;
       uniform float u_earthRadius;
       uniform float u_flatMapCenterX;
+      uniform float u_logDepthBufFC;
 
       out vec2 vTexCoord;
       out float vClipW;
@@ -359,8 +364,10 @@ export class SatLabelManager {
         // Convert NDC to screen pixels
         vec2 screenPos = (ndc * 0.5 + 0.5) * u_screenSize;
 
-        // Offset: +20px right of dot, centered vertically
-        screenPos.x += 20.0 + a_charOffset;
+        // Offset: right of dot, centered vertically
+        // Character advance is proportional to glyph size so labels scale with screen
+        float charAdvance = u_glyphSize * 0.55;
+        screenPos.x += u_glyphSize * 0.8 + a_charOffset * charAdvance;
         screenPos.y -= u_glyphSize * 0.5;
 
         // Add quad vertex offset (in pixels)
@@ -369,7 +376,9 @@ export class SatLabelManager {
         // Convert back to NDC
         vec2 finalNdc = (screenPos / u_screenSize) * 2.0 - 1.0;
 
-        gl_Position = vec4(finalNdc, clipPos.z / clipPos.w, 1.0);
+        // Use logarithmic depth to match the Earth's depth encoding
+        float logZ = log2(1.0 + clipPos.w) * u_logDepthBufFC - 1.0;
+        gl_Position = vec4(finalNdc, logZ, 1.0);
 
         // Compute texture coordinates into glyph atlas
         // Flip Y because canvas Y=0 is top but WebGL texture Y=0 is bottom
