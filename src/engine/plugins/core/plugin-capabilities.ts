@@ -45,6 +45,8 @@ export enum UtilityGroup {
   CAMERA_MODE = 'camera-mode',
   /** Layer toggle icons (checkbox behavior — multiple can be active). */
   LAYER_TOGGLE = 'layer-toggle',
+  /** Settings toggle icons (checkbox behavior — multiple can be active). */
+  SETTINGS_TOGGLE = 'settings-toggle',
 }
 
 // ============================================================================
