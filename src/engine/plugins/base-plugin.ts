@@ -1029,6 +1029,7 @@ export abstract class KeepTrackPlugin {
   static readonly utilityPanelContainerId = 'bottom-icons-utility';
   static readonly utilityCameraContainerId = 'utility-camera-icons';
   static readonly utilityLayerContainerId = 'utility-layer-icons';
+  static readonly utilitySettingsContainerId = 'utility-settings-icons';
 
   /**
    * Adds a utility panel icon for this plugin.
@@ -1070,6 +1071,8 @@ export abstract class KeepTrackPlugin {
 
         if (this.utilityGroup === UtilityGroup.CAMERA_MODE) {
           containerId = KeepTrackPlugin.utilityCameraContainerId;
+        } else if (this.utilityGroup === UtilityGroup.SETTINGS_TOGGLE) {
+          containerId = KeepTrackPlugin.utilitySettingsContainerId;
         } else {
           containerId = KeepTrackPlugin.utilityLayerContainerId;
         }
