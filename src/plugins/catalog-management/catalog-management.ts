@@ -57,6 +57,7 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
 
   private isLoading_ = false;
   private docDragEnterCount_ = 0;
+  private keepSatInfo_ = false;
 
   // =========================================================================
   // Composition-based configuration methods
@@ -132,6 +133,14 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
 
   protected buildImportTabHtml_(): string {
     return html`
+      <div class="switch row cm-toggle-row">
+        <label for="cm-keep-sat-info" data-position="top" data-delay="50"
+          data-tooltip="Update TLEs for existing satellites while preserving name, country, and mission data. Satellites not in the imported file are removed.">
+          <input id="cm-keep-sat-info" type="checkbox" />
+          <span class="lever"></span>
+          Keep Satellite Information
+        </label>
+      </div>
       <div class="row">
         <center>
           <input type="file" id="cm-import-file" accept=".tce,.tle,.txt" style="display:none" />
@@ -251,6 +260,11 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
   private initImportHandlers_(): void {
     const importBtn = getEl('cm-import-btn');
     const fileInput = getEl('cm-import-file') as HTMLInputElement | null;
+    const keepSatToggle = getEl('cm-keep-sat-info') as HTMLInputElement | null;
+
+    keepSatToggle?.addEventListener('change', () => {
+      this.keepSatInfo_ = keepSatToggle.checked;
+    });
 
     importBtn?.addEventListener('click', () => {
       fileInput?.click();
@@ -422,7 +436,11 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
       }
 
       try {
-        await CatalogLoader.reloadCatalog(content);
+        if (this.keepSatInfo_) {
+          await CatalogLoader.mergeAndReloadCatalog(content);
+        } else {
+          await CatalogLoader.reloadCatalog(content);
+        }
         ServiceLocator.getUiManager().toast(
           `Loaded catalog from ${file.name}`,
           ToastMsgType.normal,
