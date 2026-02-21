@@ -636,7 +636,8 @@ export class DotsManager {
     this.programs.picking.program = new WebGlProgramHelper(gl, this.shaders_.picking.vert, this.shaders_.picking.frag).program;
 
     GlUtils.assignAttributes(this.programs.picking.attribs, gl, this.programs.picking.program, ['a_position', 'a_color', 'a_pickable']);
-    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_currentGmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
+    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program,
+      ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_currentGmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
 
     // Assign polar view uniforms separately — some ANGLE backends strip these from conditional branches
     const polarPickUniforms = ['u_polarViewMode', 'u_sensorEcef', 'u_ecefToEnu', 'u_polarRadius', 'u_polarZoom'] as const;
@@ -858,7 +859,9 @@ export class DotsManager {
 
     spaceObject.velocity = { x: 0, y: 0, z: 0 } as TemeVec3<KilometersPerSecond>;
 
-    const isChanged = spaceObject.velocity.x !== this.velocityData[i * 3] || spaceObject.velocity.y !== this.velocityData[i * 3 + 1] || spaceObject.velocity.z !== this.velocityData[i * 3 + 2];
+    const isChanged = spaceObject.velocity.x !== this.velocityData[i * 3] ||
+      spaceObject.velocity.y !== this.velocityData[i * 3 + 1] ||
+      spaceObject.velocity.z !== this.velocityData[i * 3 + 2];
 
     spaceObject.velocity.x = (this.velocityData[i * 3] as KilometersPerSecond) || (0 as KilometersPerSecond);
     spaceObject.velocity.y = (this.velocityData[i * 3 + 1] as KilometersPerSecond) || (0 as KilometersPerSecond);
