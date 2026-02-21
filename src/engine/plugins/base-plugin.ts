@@ -30,6 +30,7 @@ import { SideMenuComponent } from './components/side-menu/side-menu-component';
 import downloadPng from '@public/img/icons/download.png';
 import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
 import settingsPng from '@public/img/icons/settings.png';
+export { default as fileExcelPng } from '@public/img/icons/file-excel.png';
 
 // Type guard imports for capability detection
 import {
@@ -150,6 +151,12 @@ export abstract class KeepTrackPlugin {
    * Download icon is automatically added if this is defined.
    */
   downloadIconCb: (() => void) | null = null;
+
+  /**
+   * The image source for the download button icon.
+   * Defaults to the generic download icon. Set to `fileExcelPng` for XLSX exports.
+   */
+  downloadIconSrc: string = downloadPng;
 
   /**
    * Whether the side menu settings are open.
@@ -788,7 +795,7 @@ export abstract class KeepTrackPlugin {
       <button id="${this.sideMenuElementName}-download-btn"
         class="center-align btn btn-ui waves-effect waves-light icon-btn"
         type="button">
-        <img src="${downloadPng}" alt="Download" class="icon-btn-img" />
+        <img src="${this.downloadIconSrc}" alt="Download" class="icon-btn-img" />
       </button>
     ` : '';
     const settingsIconHtml = this.sideMenuSecondaryHtml ? html`
@@ -870,6 +877,7 @@ export abstract class KeepTrackPlugin {
 
   static readonly registeredMenus = {
     [MenuMode.BASIC]: [] as string[],
+    [MenuMode.CREATE]: [] as string[],
     [MenuMode.ADVANCED]: [] as string[],
     [MenuMode.ANALYSIS]: [] as string[],
     [MenuMode.EXPERIMENTAL]: [] as string[],
@@ -886,6 +894,9 @@ export abstract class KeepTrackPlugin {
           switch (parseInt(menuMode)) {
             case MenuMode.BASIC:
               hideEl(BottomMenu.basicMenuId);
+              break;
+            case MenuMode.CREATE:
+              hideEl(BottomMenu.createMenuId);
               break;
             case MenuMode.ADVANCED:
               hideEl(BottomMenu.advancedMenuId);

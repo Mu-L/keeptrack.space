@@ -14,6 +14,7 @@ import settingsPng from '@public/img/icons/settings.png';
 
 export class BottomMenu {
   static readonly basicMenuId = 'menu-filter-basic';
+  static readonly createMenuId = 'menu-filter-create';
   static readonly advancedMenuId = 'menu-filter-advanced';
   static readonly analysisMenuId = 'menu-filter-analysis';
   static readonly experimentalMenuId = 'menu-filter-experimental';
@@ -43,6 +44,12 @@ export class BottomMenu {
               <img alt="Basic Menu" src="" delayedsrc="${localCafePng}" />
             </div>
             <span class="bmenu-filter-title">Basic Menu</span>
+          </div>
+          <div id="${BottomMenu.createMenuId}" class="bmenu-filter-item">
+            <div class="bmenu-filter-item-inner">
+              <img alt="Create Menu" src="" delayedsrc="${localCafePng}" />
+            </div>
+            <span class="bmenu-filter-title">Create Menu</span>
           </div>
           <div id="${BottomMenu.advancedMenuId}" class="bmenu-filter-item">
             <div class="bmenu-filter-item-inner">
@@ -107,7 +114,7 @@ export class BottomMenu {
 
   private static deselectAllBottomMenuFilterButtons_() {
     const menuIds = [
-      BottomMenu.basicMenuId, BottomMenu.advancedMenuId, BottomMenu.analysisMenuId,
+      BottomMenu.basicMenuId, BottomMenu.createMenuId, BottomMenu.advancedMenuId, BottomMenu.analysisMenuId,
       BottomMenu.experimentalMenuId, BottomMenu.settingsMenuId, BottomMenu.allMenuId,
     ];
 
@@ -135,14 +142,16 @@ export class BottomMenu {
 
   static addBottomMenuFilterButtons() {
     const menuBasicDom = getEl(BottomMenu.basicMenuId);
+    const menuCreateDom = getEl(BottomMenu.createMenuId);
     const menuAdvancedDom = getEl(BottomMenu.advancedMenuId);
     const menuAnalysisDom = getEl(BottomMenu.analysisMenuId);
     const menuExperimentalDom = getEl(BottomMenu.experimentalMenuId);
     const menuSettingsDom = getEl(BottomMenu.settingsMenuId);
     const menuAllDom = getEl(BottomMenu.allMenuId);
 
-    if (menuBasicDom && menuAdvancedDom && menuAnalysisDom && menuAllDom && menuExperimentalDom && menuSettingsDom) {
+    if (menuBasicDom && menuCreateDom && menuAdvancedDom && menuAnalysisDom && menuAllDom && menuExperimentalDom && menuSettingsDom) {
       menuBasicDom.addEventListener('click', () => BottomMenu.onBottomMenuFilterClick_(menuBasicDom, MenuMode.BASIC));
+      menuCreateDom.addEventListener('click', () => BottomMenu.onBottomMenuFilterClick_(menuCreateDom, MenuMode.CREATE));
       menuAdvancedDom.addEventListener('click', () => BottomMenu.onBottomMenuFilterClick_(menuAdvancedDom, MenuMode.ADVANCED));
       menuAnalysisDom.addEventListener('click', () => BottomMenu.onBottomMenuFilterClick_(menuAnalysisDom, MenuMode.ANALYSIS));
       menuExperimentalDom.addEventListener('click', () => BottomMenu.onBottomMenuFilterClick_(menuExperimentalDom, MenuMode.EXPERIMENTAL));

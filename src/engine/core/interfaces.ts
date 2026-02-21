@@ -1,4 +1,4 @@
-import { BaseObject, Degrees, Satellite, Kilometers, Meters, Milliseconds, Radians, SpaceObjectType, Vec3Flat, ZoomValue } from '@ootk/src/main';
+import { BaseObject, Degrees, Kilometers, Meters, Milliseconds, Radians, Satellite, SpaceObjectType, Vec3Flat, ZoomValue } from '@ootk/src/main';
 import type { ColorSchemeParams } from '../rendering/color-schemes/color-scheme';
 
 /** Array of ECI Coordinates [x, y, z] */
@@ -215,6 +215,7 @@ export enum Pickable {
 
 export enum MenuMode {
   BASIC,
+  CREATE,
   ADVANCED,
   ANALYSIS,
   EXPERIMENTAL,
