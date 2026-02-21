@@ -43,6 +43,7 @@ import { t7e } from '@app/locales/keys';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
 import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { DEG2RAD, GreenwichMeanSiderealTime, Radians, SpaceObjectType, Sun, ZoomValue, calcGmst, lla2eci, spaceObjType2Str } from '@ootk/src/main';
+import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
 import { SensorFov } from '../../plugins/sensor-fov/sensor-fov';
 import { SensorSurvFence } from '../../plugins/sensor-surv/sensor-surv-fence';
 import { LookAnglesPlugin } from '../../plugins/sensor/look-angles-plugin';
@@ -440,6 +441,13 @@ export class SensorManager {
       PersistenceManager.getInstance().saveItem(StorageKey.CURRENT_SENSOR, JSON.stringify([selectedSensor, sensorId]));
     }
     EventBus.getInstance().emit(EventBusEvent.setSensor, selectedSensor, sensorId ?? null);
+
+    // Re-fire satellite selection so plugins that need both sensor + satellite can reevaluate
+    const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+    if (selectSatManager && selectSatManager.selectedSat >= 0) {
+      EventBus.getInstance().emit(EventBusEvent.selectSatData, selectSatManager.primarySatObj, selectSatManager.selectedSat);
+    }
 
     for (const sensor of this.currentSensors) {
       ServiceLocator.getScene().sensorFovFactory.generateSensorFovMesh(sensor);
