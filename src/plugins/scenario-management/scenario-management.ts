@@ -3,6 +3,7 @@ import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { compressToGzip, decompressFromGzip } from '@app/engine/utils/compression';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
@@ -44,13 +45,6 @@ export interface ScenarioData {
   description: string;
   startTime: Date | null;
   endTime: Date | null;
-}
-
-interface ScenarioFile {
-  name: string;
-  description?: string;
-  startTime?: string;
-  endTime?: string;
 }
 
 export class ScenarioManagementPlugin extends KeepTrackPlugin {
@@ -321,21 +315,31 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return isValid;
   }
 
-  protected onSave_(evt: Event): void {
+  protected async onSave_(evt: Event): Promise<void> {
+    evt.preventDefault();
     this.onSubmit_();
     ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
-    const blob = new Blob([JSON.stringify(this.scenario, null, 2)], {
-      type: 'text/plain;charset=utf-8',
-    });
+
+    const file = {
+      version: '3.0' as const,
+      scenario: {
+        name: this.scenario.name,
+        description: this.scenario.description,
+        ...(this.scenario.startTime ? { startTime: this.scenario.startTime.toISOString() } : {}),
+        ...(this.scenario.endTime ? { endTime: this.scenario.endTime.toISOString() } : {}),
+      },
+    };
 
     try {
-      saveAs(blob, `keeptrack-scenario-${this.scenario.name}.json`);
+      const compressed = await compressToGzip(JSON.stringify(file));
+      const blob = new Blob([compressed.buffer as ArrayBuffer], { type: 'application/gzip' });
+
+      saveAs(blob, `keeptrack-scenario-${this.scenario.name}.kts`);
     } catch (e) {
       if (!isThisNode()) {
         errorManagerInstance.error(e, 'scenario-management.ts', 'Error saving scenario!');
       }
     }
-    evt.preventDefault();
   }
 
   protected onLoad_(): void {
@@ -343,35 +347,39 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     const input = document.createElement('input');
 
     input.type = 'file';
-    input.accept = '.json,text/json';
+    input.accept = '.kts,application/gzip';
 
     input.onchange = (e: Event) => {
       const target = e.target as HTMLInputElement;
 
       if (target.files && target.files.length > 0) {
-        const file = target.files[0];
         const reader = new FileReader();
 
         reader.onload = (event: ProgressEvent<FileReader>) => {
-          if (event.target && typeof event.target.result === 'string') {
-            try {
-              const scenarioFile: ScenarioFile = JSON.parse(event.target.result);
-              const scenarioData = {
-                name: scenarioFile.name,
-                description: scenarioFile.description || '',
-                startTime: scenarioFile.startTime ? new Date(scenarioFile.startTime) : null,
-                endTime: scenarioFile.endTime ? new Date(scenarioFile.endTime) : null,
-              };
+          if (event.target?.result instanceof ArrayBuffer) {
+            decompressFromGzip(new Uint8Array(event.target.result)).then((json) => {
+              try {
+                const parsed = JSON.parse(json);
+                const scenario = parsed.scenario;
+                const scenarioData = {
+                  name: scenario.name,
+                  description: scenario.description || '',
+                  startTime: scenario.startTime ? new Date(scenario.startTime) : null,
+                  endTime: scenario.endTime ? new Date(scenario.endTime) : null,
+                };
 
-              if (this.updateScenario(scenarioData)) {
-                ServiceLocator.getUiManager().toast('Scenario loaded successfully!', ToastMsgType.normal);
+                if (this.updateScenario(scenarioData)) {
+                  ServiceLocator.getUiManager().toast('Scenario loaded successfully!', ToastMsgType.normal);
+                }
+              } catch (error) {
+                errorManagerInstance.error(error, 'scenario-management.ts', 'Error loading scenario file!');
               }
-            } catch (error) {
-              errorManagerInstance.error(error, 'scenario-management.ts', 'Error loading scenario file!');
-            }
+            }).catch((error: Error) => {
+              errorManagerInstance.error(error, 'scenario-management.ts', 'Error decompressing scenario file!');
+            });
           }
         };
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(target.files[0]);
       }
     };
 
