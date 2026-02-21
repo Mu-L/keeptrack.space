@@ -20,18 +20,24 @@
 import { SpaceObjectType } from '@ootk/src/types/types';
 
 /**
- * MIL-STD-2525 inspired affiliation categories.
- * Values are intentionally 0-3 to pack efficiently into a single byte for GPU transmission.
+ * MIL-STD-2525D inspired affiliation categories.
+ * Values are intentionally 0-5 to pack efficiently into a single byte for GPU transmission.
+ *
+ * Solid outlines indicate confirmed identity; dashed outlines indicate assessed/assumed identity.
  */
 export enum Affiliation {
-  /** Friendly - Rendered as rounded rectangle */
+  /** Friendly - Rendered as circle with solid outline */
   FRIEND = 0,
-  /** Hostile - Rendered as diamond */
+  /** Hostile - Rendered as diamond with solid outline */
   HOSTILE = 1,
-  /** Neutral - Rendered as square */
+  /** Neutral - Rendered as square with solid outline */
   NEUTRAL = 2,
-  /** Unknown - Rendered as quatrefoil (4 overlapping circles) */
+  /** Unknown - Rendered as quatrefoil with solid outline */
   UNKNOWN = 3,
+  /** Assumed Friend - Rendered as circle with dashed outline */
+  ASSUMED_FRIEND = 4,
+  /** Suspect - Rendered as diamond with dashed outline */
+  SUSPECT = 5,
 }
 
 /**

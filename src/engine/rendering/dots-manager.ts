@@ -51,6 +51,7 @@ export class DotsManager {
   private positionBufferOneTime_ = false;
   private affiliationBufferOneTime_ = false;
   private objectTypeBufferOneTime_ = false;
+  private stalenessBufferOneTime_ = false;
   private settings_: SettingsManager;
   // Array for which colors go to which ids
   private isSizeBufferOneTime_ = false;
@@ -65,6 +66,7 @@ export class DotsManager {
     pickability: <WebGLBuffer><unknown>null,
     affiliation: <WebGLBuffer><unknown>null,
     objectType: <WebGLBuffer><unknown>null,
+    staleness: <WebGLBuffer><unknown>null,
   };
 
   inSunData: Int8Array;
@@ -113,6 +115,11 @@ export class DotsManager {
         }),
         a_objectType: new BufferAttribute({
           location: 5,
+          vertices: 1,
+          offset: 0,
+        }),
+        a_staleness: new BufferAttribute({
+          location: 6,
           vertices: 1,
           offset: 0,
         }),
@@ -313,6 +320,19 @@ export class DotsManager {
         if (!this.objectTypeBufferOneTime_) {
           gl.bufferData(gl.ARRAY_BUFFER, objectTypeData, gl.STATIC_DRAW);
           this.objectTypeBufferOneTime_ = true;
+        }
+      }
+
+      // Update staleness buffer
+      const stalenessData = symbologyManager.getStalenessData();
+
+      if (stalenessData && stalenessData.length > 0) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.staleness);
+        if (!this.stalenessBufferOneTime_) {
+          gl.bufferData(gl.ARRAY_BUFFER, stalenessData, gl.DYNAMIC_DRAW);
+          this.stalenessBufferOneTime_ = true;
+        } else {
+          gl.bufferSubData(gl.ARRAY_BUFFER, 0, stalenessData);
         }
       }
 
@@ -536,6 +556,7 @@ export class DotsManager {
     this.initColorBuffer(colorBuffer);
     this.initAffiliationBuffer();
     this.initObjectTypeBuffer();
+    this.initStalenessBuffer();
     this.initVao(); // Needs ColorBuffer first
 
     // Load symbology texture asynchronously (non-blocking)
@@ -558,6 +579,15 @@ export class DotsManager {
     const gl = ServiceLocator.getRenderer().gl;
 
     this.buffers.objectType = gl.createBuffer();
+  }
+
+  /**
+   * Initialize the staleness buffer for epoch age rendering
+   */
+  initStalenessBuffer(): void {
+    const gl = ServiceLocator.getRenderer().gl;
+
+    this.buffers.staleness = gl.createBuffer();
   }
 
   /**
@@ -666,6 +696,11 @@ export class DotsManager {
     gl.enableVertexAttribArray(this.programs.dots.attribs.a_objectType.location);
     gl.vertexAttribPointer(this.programs.dots.attribs.a_objectType.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
 
+    // Staleness buffer for epoch age rendering
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.staleness);
+    gl.enableVertexAttribArray(this.programs.dots.attribs.a_staleness.location);
+    gl.vertexAttribPointer(this.programs.dots.attribs.a_staleness.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
+
     gl.bindVertexArray(null);
 
     // Picking Program
@@ -696,6 +731,7 @@ export class DotsManager {
     this.isSizeBufferOneTime_ = false;
     this.affiliationBufferOneTime_ = false;
     this.objectTypeBufferOneTime_ = false;
+    this.stalenessBufferOneTime_ = false;
     this.pickingColorData = [];
     this.isReady = false;
     // Force updateCruncherBuffers to allocate new typed arrays
@@ -1001,6 +1037,7 @@ export class DotsManager {
             in float vAffiliation;
             in float vObjectType;
             in float vPointSize;
+            in float vStaleness;
 
             out vec4 fragColor;
 
@@ -1042,11 +1079,11 @@ export class DotsManager {
             float getShapeSDF(vec2 p, float affiliation) {
               float size = 0.95;
 
-              if (affiliation < 0.5) {
-                // FRIEND (0) - Circle
+              if (affiliation < 0.5 || (affiliation > 3.5 && affiliation < 4.5)) {
+                // FRIEND (0) or ASSUMED_FRIEND (4) - Circle
                 return sdCircle(p, size * 0.7);
-              } else if (affiliation < 1.5) {
-                // HOSTILE (1) - Diamond
+              } else if (affiliation < 1.5 || affiliation > 4.5) {
+                // HOSTILE (1) or SUSPECT (5) - Diamond
                 return sdDiamond(p, size * 0.7);
               } else if (affiliation < 2.5) {
                 // NEUTRAL (2) - Square
@@ -1057,13 +1094,13 @@ export class DotsManager {
               }
             }
 
-            // Get color based on affiliation (MIL-STD-2525 inspired)
+            // Get color based on affiliation (MIL-STD-2525D inspired)
             vec3 getAffiliationColor(float affiliation) {
-              if (affiliation < 0.5) {
-                // FRIEND - Cyan
+              if (affiliation < 0.5 || (affiliation > 3.5 && affiliation < 4.5)) {
+                // FRIEND (0) or ASSUMED_FRIEND (4) - Cyan
                 return vec3(0.0, 0.784, 1.0);
-              } else if (affiliation < 1.5) {
-                // HOSTILE - Red
+              } else if (affiliation < 1.5 || affiliation > 4.5) {
+                // HOSTILE (1) or SUSPECT (5) - Red
                 return vec3(1.0, 0.196, 0.196);
               } else if (affiliation < 2.5) {
                 // NEUTRAL - Green
@@ -1076,7 +1113,13 @@ export class DotsManager {
 
             // Sample from sprite atlas (8x8 grid, 16 icons per affiliation)
             vec4 sampleSpriteAtlas(vec2 uv, float affiliation, float objectType) {
-              float atlasIndex = affiliation * 16.0 + objectType;
+              // Map new affiliations to parent affiliation for atlas lookup
+              // ASSUMED_FRIEND (4) -> FRIEND (0), SUSPECT (5) -> HOSTILE (1)
+              float atlasAffil = affiliation;
+              if (affiliation > 3.5 && affiliation < 4.5) atlasAffil = 0.0;
+              if (affiliation > 4.5) atlasAffil = 1.0;
+
+              float atlasIndex = atlasAffil * 16.0 + objectType;
               float col = mod(atlasIndex, 8.0);
               float row = floor(atlasIndex / 8.0);
               vec2 cellUV = (uv + vec2(col, row)) / 8.0;
@@ -1092,11 +1135,34 @@ export class DotsManager {
               return vec4(vColor.rgb, vColor.a * alpha);
             }
 
+            // Dashed pattern for Assumed Friend / Suspect (~6 segments, 50% duty)
+            float dashPattern(vec2 p) {
+              float angle = atan(p.y, p.x);
+              return step(0.5, fract(angle * 3.0 / 3.14159));
+            }
+
+            // Dotted pattern for stale epoch data (~12 segments, 35% duty)
+            float dotPattern(vec2 p) {
+              float angle = atan(p.y, p.x);
+              return step(0.65, fract(angle * 6.0 / 3.14159));
+            }
+
             // Render SDF shape (intermediate fallback when no atlas)
             vec4 renderSdfShape(vec2 ptCoord) {
               float sdf = getShapeSDF(ptCoord, vAffiliation);
               float strokeWidth = 0.12;
               float alpha = 1.0 - smoothstep(0.0, 0.06, abs(sdf) - strokeWidth);
+              if (alpha < 0.01) return vec4(0.0);
+
+              // Staleness takes visual priority (dotted pattern)
+              if (vStaleness > 0.5) {
+                alpha *= dotPattern(ptCoord);
+              }
+              // Dashed pattern for Assumed Friend (4) / Suspect (5)
+              else if (vAffiliation > 3.5) {
+                alpha *= dashPattern(ptCoord);
+              }
+
               if (alpha < 0.01) return vec4(0.0);
               vec3 color = getAffiliationColor(vAffiliation);
               return vec4(color, vColor.a * alpha);
@@ -1108,7 +1174,8 @@ export class DotsManager {
 
               vec4 finalColor;
 
-              if (u_symbologyEnabled) {
+              if (u_symbologyEnabled && !(vObjectType > 5.5 && vObjectType < 6.5)) {
+                // Skip symbology for stars (type 6) - render as simple dots
                 // Check if sprite atlas is available and point is large enough
                 if (u_iconMinSize > 0.0 && vPointSize >= u_iconMinSize) {
                   // Full sprite atlas rendering
@@ -1145,6 +1212,7 @@ export class DotsManager {
           in float a_size;
           in float a_affiliation;
           in float a_objectType;
+          in float a_staleness;
 
           uniform float u_minSize;
           uniform float u_maxSize;
@@ -1171,6 +1239,7 @@ export class DotsManager {
           out float vAffiliation;
           out float vObjectType;
           out float vPointSize;
+          out float vStaleness;
 
           float when_lt(float x, float y) {
               return max(sign(y - x), 0.0);
@@ -1196,6 +1265,7 @@ export class DotsManager {
                       vDist = eciDist;
                       vAffiliation = a_affiliation;
                       vObjectType = a_objectType;
+                      vStaleness = a_staleness;
                       vPointSize = 0.0;
                       return;
                   }
@@ -1223,6 +1293,7 @@ export class DotsManager {
                       vDist = eciDist;
                       vAffiliation = a_affiliation;
                       vObjectType = a_objectType;
+                      vStaleness = a_staleness;
                       vPointSize = 0.0;
                       return;
                   }
@@ -1254,6 +1325,7 @@ export class DotsManager {
                       vDist = eciDist;
                       vAffiliation = a_affiliation;
                       vObjectType = a_objectType;
+                      vStaleness = a_staleness;
                       vPointSize = 0.0;
                       return;
                   }
@@ -1301,6 +1373,7 @@ export class DotsManager {
                 vDist = dist;
                 vAffiliation = a_affiliation;
                 vObjectType = a_objectType;
+                vStaleness = a_staleness;
                 return;
               }
 
@@ -1315,6 +1388,7 @@ export class DotsManager {
                 vDist = dist;
                 vAffiliation = a_affiliation;
                 vObjectType = a_objectType;
+                vStaleness = a_staleness;
                 return;
               }
 
@@ -1346,6 +1420,7 @@ export class DotsManager {
               vDist = dist;
               vAffiliation = a_affiliation;
               vObjectType = a_objectType;
+              vStaleness = a_staleness;
           }
         `,
       },

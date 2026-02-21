@@ -45,7 +45,9 @@ export class SymbologyManager {
   private manualOverrides_: Map<number, SatelliteAffiliationOverride> = new Map();
   private affiliationBuffer_: Uint8Array = new Uint8Array(0);
   private objectTypeBuffer_: Uint8Array = new Uint8Array(0);
+  private stalenessBuffer_: Uint8Array = new Uint8Array(0);
   private objectTypeBufferInitialized_ = false;
+  private lastStalenessUpdate_ = 0;
   private gl_: WebGL2RenderingContext | null = null;
   private glBuffer_: WebGLBuffer | null = null;
   private bufferInitialized_ = false;
@@ -72,7 +74,9 @@ export class SymbologyManager {
     this.affiliationCache_.clear();
     this.affiliationBuffer_ = new Uint8Array(0);
     this.objectTypeBuffer_ = new Uint8Array(0);
+    this.stalenessBuffer_ = new Uint8Array(0);
     this.objectTypeBufferInitialized_ = false;
+    this.lastStalenessUpdate_ = 0;
     this.bufferInitialized_ = false;
     this.isReady_ = false;
   }
@@ -181,6 +185,51 @@ export class SymbologyManager {
    */
   getObjectTypeData(): Uint8Array {
     return this.objectTypeBuffer_;
+  }
+
+  /**
+   * Get the staleness buffer data (Uint8Array).
+   * Values: 0 = fresh (epoch <= 16h), 1 = stale (epoch > 16h).
+   * Automatically recalculates if more than 60 seconds have elapsed.
+   */
+  getStalenessData(): Uint8Array {
+    const now = Date.now();
+
+    if (now - this.lastStalenessUpdate_ > 60_000) {
+      this.updateStalenessBuffer();
+    }
+
+    return this.stalenessBuffer_;
+  }
+
+  /**
+   * Recalculate staleness for all satellites based on TLE epoch age.
+   * Objects with epoch > 16 hours old are marked as stale.
+   */
+  updateStalenessBuffer(): void {
+    const catalogManager = ServiceLocator.getCatalogManager();
+
+    if (!catalogManager || this.stalenessBuffer_.length === 0) {
+      return;
+    }
+
+    const numObjects = catalogManager.numObjects;
+    const now = ServiceLocator.getTimeManager()?.simulationTimeObj ?? new Date();
+    const staleThresholdHours = 16;
+
+    for (let i = 0; i < numObjects; i++) {
+      const obj = catalogManager.getObject(i);
+
+      if (obj instanceof Satellite && typeof obj.ageOfElset === 'function') {
+        const ageHours = Math.abs(obj.ageOfElset(now, 'hours'));
+
+        this.stalenessBuffer_[i] = ageHours > staleThresholdHours ? 1 : 0;
+      } else {
+        this.stalenessBuffer_[i] = 0;
+      }
+    }
+
+    this.lastStalenessUpdate_ = Date.now();
   }
 
   /**
@@ -426,8 +475,7 @@ export class SymbologyManager {
             return true;
           }
 
-          return sat.country?.toLowerCase() === p.toLowerCase() ||
-            sat.country?.includes(p);
+          return sat.country?.toLowerCase() === p.toLowerCase();
         });
 
       case 'name':
@@ -497,9 +545,11 @@ export class SymbologyManager {
 
     this.affiliationBuffer_ = new Uint8Array(numObjects);
     this.objectTypeBuffer_ = new Uint8Array(numObjects);
+    this.stalenessBuffer_ = new Uint8Array(numObjects);
 
     this.updateAffiliationBuffer();
     this.updateObjectTypeBuffer();
+    this.updateStalenessBuffer();
   }
 
   /**
