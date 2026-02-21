@@ -438,7 +438,15 @@ export class SensorManager {
 
     // Run any callbacks
     if (settingsManager.offlineMode) {
-      PersistenceManager.getInstance().saveItem(StorageKey.CURRENT_SENSOR, JSON.stringify([selectedSensor, sensorId]));
+      let sensorData: string | { objName: string } | null = null;
+
+      if (typeof selectedSensor === 'string') {
+        sensorData = selectedSensor;
+      } else if (selectedSensor) {
+        sensorData = { objName: selectedSensor.objName };
+      }
+
+      PersistenceManager.getInstance().saveItem(StorageKey.CURRENT_SENSOR, JSON.stringify([sensorData, sensorId]));
     }
     EventBus.getInstance().emit(EventBusEvent.setSensor, selectedSensor, sensorId ?? null);
 
