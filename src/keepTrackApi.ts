@@ -6,7 +6,7 @@ import type { SettingsManager } from './settings/settings';
 import { PluginRegistry } from './engine/core/plugin-registry';
 import { ServiceLocator } from './engine/core/service-locator';
 import { EventBus } from './engine/events/event-bus';
-import { saveCsv, saveVariable } from './engine/utils/saveVariable';
+import { copyTsvToClipboard, saveCsv, saveVariable, saveXlsx } from './engine/utils/saveVariable';
 
 import type { CatalogManager } from './app/data/catalog-manager';
 import type { GroupsManager } from './app/data/groups-manager';
@@ -141,6 +141,8 @@ export class KeepTrackApi {
 
   // Save utilities
   saveCsv = saveCsv;
+  saveXlsx = saveXlsx;
+  copyTsvToClipboard = copyTsvToClipboard;
   saveVariable = saveVariable;
 }
 
