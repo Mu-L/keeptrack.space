@@ -2322,6 +2322,7 @@ button.ui-button::-moz-focus-inner {
 }
 
 #info-overlay-menu.side-menu-parent {
+  height: 100%;
   border: none;
 }
 
