@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "TimeMachine": {
+      "bottomIconLabel": "Máquina del Tiempo"
+    }
+  }
+}

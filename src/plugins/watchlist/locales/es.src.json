@@ -1,0 +1,14 @@
+{
+  "plugins": {
+    "WatchlistPlugin": {
+      "bottomIconLabel": "Lista de satélites",
+      "title": "Lista de satélites",
+      "helpBody": "El menú de lista de satélites te permite crear una lista de satélites prioritarios para rastrear. Esto te permite recuperar rápidamente los satélites que más te interesan. La lista se guarda en el almacenamiento local de tu navegador y estará disponible la próxima vez que visites el sitio. <br><br> Cuando los satélites en la lista de satélites entran en el campo de visión del sensor seleccionado, se mostrará una notificación, se dibujará una línea desde el sensor al satélite y el número del satélite se mostrará en el globo. <br><br> La función de superposición depende de que la lista de satélites esté poblada."
+    },
+    "WatchlistOverlay": {
+      "bottomIconLabel": "Superposición",
+      "title": "Menú de Superposición",
+      "helpBody": "<p> La Superposición de la lista de satélites muestra el próximo tiempo de pase para cada satélite en tu lista de satélites. La superposición se actualiza cada 10 segundos. </p> <p> La superposición está codificada por colores para mostrar el tiempo hasta el próximo pase. Los colores son los siguientes: </p> <ul> <li>Amarillo - En Vista</li> <li>Azul - El tiempo hasta el próximo pase es de hasta 30 minutos después del tiempo actual o 10 minutos antes del tiempo actual</li> <li>Blanco - Cualquier pase futuro que no cumpla con los requisitos anteriores</li> </ul> <p> Hacer clic en un satélite en la superposición centrará el mapa en ese satélite. </p>"
+    }
+  }
+}

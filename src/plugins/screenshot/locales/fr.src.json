@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "Screenshot": {
+      "bottomIconLabel": "Prendre une photo"
+    }
+  }
+}

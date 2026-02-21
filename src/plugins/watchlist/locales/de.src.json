@@ -1,0 +1,14 @@
+{
+  "plugins": {
+    "WatchlistPlugin": {
+      "bottomIconLabel": "Satellitenliste",
+      "title": "Satellitenliste",
+      "helpBody": "Das Satellitenliste-Menü ermöglicht es Ihnen, eine Liste von Prioritätssatelliten zu erstellen, die Sie verfolgen möchten. Dies ermöglicht es Ihnen, schnell auf die Satelliten zuzugreifen, die Sie am meisten interessieren. Die Liste wird im lokalen Speicher Ihres Browsers gespeichert und steht Ihnen beim nächsten Besuch der Website zur Verfügung. <br><br> Wenn Satelliten auf der Satellitenliste in das Sichtfeld des ausgewählten Sensors eintreten, wird eine Benachrichtigung angezeigt, eine Linie vom Sensor zum Satelliten gezogen und die Nummer des Satelliten auf dem Globus angezeigt. <br><br> Die Überlagerung-Funktion basiert darauf, dass die Satellitenliste gefüllt ist."
+    },
+    "WatchlistOverlay": {
+      "bottomIconLabel": "Überlagerung",
+      "title": "Überlagerung-Menü",
+      "helpBody": "<p> Das Satellitenliste-Überlagerung zeigt die nächste Durchgangszeit für jeden Satelliten in Ihrer Satellitenliste an. Das Überlagerung wird alle 10 Sekunden aktualisiert. </p> <p> Das Überlagerung ist farbcodiert, um die Zeit bis zum nächsten Durchgang anzuzeigen. Die Farben sind wie folgt: </p> <ul> <li>Gelb - In Sicht</li> <li>Blau - Zeit bis zum nächsten Durchgang beträgt bis zu 30 Minuten nach der aktuellen Zeit oder 10 Minuten vor der aktuellen Zeit</li> <li>Weiß - Jeder zukünftige Durchgang, der nicht die obigen Anforderungen erfüllt</li> </ul> <p> Durch Klicken auf einen Satelliten im Überlagerung wird die Karte auf diesen Satelliten zentriert. </p>"
+    }
+  }
+}

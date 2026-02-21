@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "GraphicsMenuPlugin": {
+      "bottomIconLabel": "Grafikmenü",
+      "title": "Grafikmenü",
+      "helpBody": "Das Grafikmenü wird verwendet, um die Grafikeinstellungen der Anwendung zu ändern."
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "ManeuverPlugin": {
+      "bottomIconLabel": "Manœuvre",
+      "title": "Menu Manœuvre",
+      "helpBody": "Le menu Manœuvre permet de créer une manœuvre pour un satellite.<br><br>Le menu vous permet de sélectionner le type de manœuvre, l'heure de la manœuvre et l'amplitude de la manœuvre. La manœuvre peut être appliquée à un satellite en le sélectionnant dans la liste des satellites."
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "SensorInfoPlugin": {
+      "bottomIconLabel": "Info Capteur",
+      "title": "Menu Info Capteur",
+      "helpBody": "Info Capteur fournit des informations sur le capteur actuellement sélectionné. Les informations sont basées sur des données publiques et peuvent ne pas toujours être 100% exactes. Si vous avez des données publiques sur d'autres capteurs ou des corrections à apporter, contactez-moi à <a href=\"mailto:admin@keeptrack.space\">admin@keeptrack.space</a>. <br><br> Les informations fournies incluent : <ul style=\"margin-left: 40px;\"> <li> Nom du capteur </li> <li> Propriétaire du capteur </li> <li> Type de capteur </li> <li> Champ de vision du capteur </li> </ul> <br> De plus, des lignes peuvent être rapidement créées du capteur vers le soleil ou la lune depuis ce menu."
+    },
+    "CustomSensorPlugin": {
+      "bottomIconLabel": "Capteur personnalisé",
+      "title": "Menu Capteur personnalisé",
+      "helpBody": "Cela vous permet de créer un capteur personnalisé à utiliser dans les calculs et autres fonctions du menu. Il peut s'agir d'un capteur totalement original ou d'une modification d'un capteur existant. <br><br> Après avoir défini la latitude, la longitude et l'altitude du capteur, vous pouvez définir son champ de vision. Sélectionner télescope créera un champ de vision à 360 degrés avec un masque d'élévation de 10 degrés et une portée illimitée. Désélectionner l'option télescope permet de définir manuellement le champ de vision. <br><br> Si vous souhaitez modifier un capteur existant, sélectionnez-le d'abord dans la liste et le capteur personnalisé sera mis à jour avec ses informations."
+    },
+    "LookAnglesPlugin": {
+      "bottomIconLabel": "Angles de visée",
+      "title": "Menu Angles de visée",
+      "helpBody": "Le menu Angles de visée permet de calculer la distance, l'azimut et l'élévation entre un capteur et un satellite. Un satellite et un capteur doivent d'abord être sélectionnés pour utiliser ce menu. <br><br> L'option n'afficher que les heures de lever et de coucher ne calcule que ces moments pour le satellite. Cela permet de savoir rapidement quand un satellite sera visible d'un capteur. <br><br> La plage de recherche peut être modifiée en changeant la longueur et l'intervalle."
+    },
+    "MultiSiteLookAnglesPlugin": {
+      "bottomIconLabel": "Angles multi-sites",
+      "title": "Menu Angles multi-sites",
+      "helpBody": "Le menu Angles multi-sites permet de calculer la distance, l'azimut et l'élévation entre un satellite et plusieurs capteurs. Un satellite doit d'abord être sélectionné pour utiliser ce menu. <br><br> Par défaut, le menu calcule les angles de visée pour tous les capteurs du Space Surveillance Network. Pour calculer les angles pour d'autres capteurs, vous pouvez exporter un fichier csv en bas du menu. Le fichier csv contiendra les angles pour tous les capteurs. <br><br> Cliquer sur une ligne du tableau sélectionne le capteur et change l'heure de la simulation à celle de l'angle de visée."
+    }
+  }
+}

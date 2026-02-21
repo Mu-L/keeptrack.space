@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "GraphicsMenuPlugin": {
+      "bottomIconLabel": "图形菜单",
+      "title": "图形菜单",
+      "helpBody": "图形菜单用于更改应用程序的图形设置。"
+    }
+  }
+}

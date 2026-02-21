@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "SensorInfoPlugin": {
+      "bottomIconLabel": "Sensorinfo",
+      "title": "Sensorinfo-Menü",
+      "helpBody": "Sensorinfo bietet Informationen über den aktuell ausgewählten Sensor. Die Informationen basieren auf öffentlich zugänglichen Daten und sind möglicherweise nicht immer 100% genau. Wenn Sie öffentliche Daten zu zusätzlichen Sensoren oder Korrekturen zu bestehenden Sensorinformationen haben, kontaktieren Sie mich bitte unter <a href=\"mailto:admin@keeptrack.space\">admin@keeptrack.space</a>. <br><br> Die bereitgestellten Informationen umfassen: <ul style=\"margin-left: 40px;\"> <li> Sensorname </li> <li> Sensoreigentümer </li> <li> Sensortyp </li> <li> Sichtfeld des Sensors </li> </ul> <br> Zusätzlich können von diesem Menü aus schnell Linien vom Sensor zur Sonne oder zum Mond erstellt werden."
+    },
+    "CustomSensorPlugin": {
+      "bottomIconLabel": "Benutzerdefinierter Sensor",
+      "title": "Menü für benutzerdefinierte Sensoren",
+      "helpBody": "Dies ermöglicht es Ihnen, einen benutzerdefinierten Sensor für Berechnungen und andere Menüfunktionen zu erstellen. Dies kann ein völlig origineller Sensor oder eine Modifikation eines bestehenden Sensors sein. <br><br> Nachdem Sie den Breitengrad, den Längengrad und die Höhe des Sensors festgelegt haben, können Sie das Sichtfeld des Sensors einstellen. Die Auswahl von 'Teleskop' erstellt ein 360-Grad-Sichtfeld mit einer Elevationsmaske von 10 Grad und unbegrenzter Reichweite. Wenn Sie die Teleskop-Option deaktivieren, können Sie das Sichtfeld manuell einstellen. <br><br> Wenn Sie versuchen, einen bestehenden Sensor zu bearbeiten, können Sie ihn zuerst aus der Sensorliste auswählen, und der benutzerdefinierte Sensor wird mit den Informationen des ausgewählten Sensors aktualisiert."
+    },
+    "LookAnglesPlugin": {
+      "bottomIconLabel": "Blickwinkel",
+      "title": "Blickwinkel-Menü",
+      "helpBody": "Das Blickwinkel-Menü ermöglicht es Ihnen, die Entfernung, den Azimut und die Elevationswinkel zwischen einem Sensor und einem Satelliten zu berechnen. Ein Satellit und ein Sensor müssen zuerst ausgewählt werden, bevor das Menü verwendet werden kann. <br><br> Die Option 'Nur Auf- und Untergangszeiten umschalten' berechnet nur die Auf- und Untergangszeiten des Satelliten. Dies ist nützlich, um schnell zu bestimmen, wann ein Satellit für einen Sensor sichtbar sein wird. <br><br> Der Suchbereich kann durch Ändern der Längen- und Intervalloptionen modifiziert werden."
+    },
+    "MultiSiteLookAnglesPlugin": {
+      "bottomIconLabel": "Multi-Standort-Blickwinkel",
+      "title": "Multi-Standort-Blickwinkel-Menü",
+      "helpBody": "Das Multi-Standort-Blickwinkel-Menü ermöglicht es Ihnen, die Entfernung, den Azimut und die Elevationswinkel zwischen einem Satelliten und mehreren Sensoren zu berechnen. Ein Satellit muss zuerst ausgewählt werden, bevor das Menü verwendet werden kann. <br><br> Standardmäßig berechnet das Menü die Blickwinkel für alle Sensoren im Space Surveillance Network. Wenn Sie die Blickwinkel für zusätzliche Sensoren berechnen möchten, können Sie am unteren Rand des Menüs eine CSV-Datei exportieren. Die CSV-Datei enthält Blickwinkel für alle Sensoren. <br><br> Durch Klicken auf eine Zeile in der Tabelle wird der Sensor ausgewählt und die Simulationszeit auf die Zeit des Blickwinkels geändert."
+    }
+  }
+}

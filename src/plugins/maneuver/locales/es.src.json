@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "ManeuverPlugin": {
+      "bottomIconLabel": "Maniobra",
+      "title": "Menú de Maniobras",
+      "helpBody": "El Menú de Maniobras se utiliza para crear una maniobra para un satélite.<br><br>El menú te permite seleccionar el tipo de maniobra, el momento de la maniobra y la magnitud de la maniobra. La maniobra puede aplicarse a un satélite seleccionándolo de la lista de satélites."
+    }
+  }
+}

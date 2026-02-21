@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "Planetarium": {
+      "bottomIconLabel": "플라네타리움 뷰"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "GraphicsMenuPlugin": {
+      "bottomIconLabel": "Menú de Gráficos",
+      "title": "Menú de Gráficos",
+      "helpBody": "El Menú de Gráficos se utiliza para cambiar la configuración gráfica de la aplicación."
+    }
+  }
+}

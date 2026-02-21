@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "Planetarium": {
+      "bottomIconLabel": "Planetariumsansicht"
+    }
+  }
+}

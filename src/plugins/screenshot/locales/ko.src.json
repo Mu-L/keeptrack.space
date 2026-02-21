@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "Screenshot": {
+      "bottomIconLabel": "사진 찍기"
+    }
+  }
+}

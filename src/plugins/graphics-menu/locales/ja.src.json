@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "GraphicsMenuPlugin": {
+      "bottomIconLabel": "グラフィックメニュー",
+      "title": "グラフィックメニュー",
+      "helpBody": "グラフィックメニューは、アプリケーションのグラフィック設定を変更するために使用されます。"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "plugins": {
+    "ManeuverPlugin": {
+      "bottomIconLabel": "Maneuver",
+      "title": "Maneuver Menu",
+      "helpBody": "The Maneuver Menu is used to create a maneuver for a satellite. <br><br> The menu allows you to select the type of maneuver, the time of the maneuver, and the magnitude of the maneuver. The maneuver can be applied to a satellite by selecting it from the list of satellites."
+    }
+  }
+}
