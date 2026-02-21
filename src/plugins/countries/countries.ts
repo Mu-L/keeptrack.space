@@ -10,6 +10,8 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import {
   IBottomIconConfig,
+  ICommandPaletteCapable,
+  ICommandPaletteCommand,
   IDragOptions,
   IHelpConfig,
   IKeyboardShortcut,
@@ -37,7 +39,7 @@ import { TopMenu } from '../top-menu/top-menu';
  * 2. Select a country from the list to filter satellites by that country.
  * 3. The search box will be populated with the SCC numbers of the satellites from the selected country.
  */
-export class CountriesMenu extends KeepTrackPlugin {
+export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCapable {
   readonly id = 'CountriesMenu';
   dependencies_ = [TopMenu.name];
 
@@ -89,6 +91,45 @@ export class CountriesMenu extends KeepTrackPlugin {
         callback: () => this.bottomMenuClicked(),
       },
     ];
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const category = 'Countries';
+    const catalogManager = ServiceLocator.getCatalogManager();
+    const countryCodeList = [] as string[];
+
+    catalogManager.getSats().forEach((sat) => {
+      if (sat.country && !countryCodeList.includes(sat.country) && sat.country !== 'ANALSAT') {
+        countryCodeList.push(sat.country);
+      }
+    });
+
+    const countryGroups: Record<string, string[]> = {};
+
+    countryCodeList.forEach((countryCode) => {
+      const country = StringExtractor.extractCountry(countryCode);
+
+      if (countryCode === '') {
+        return;
+      }
+      if (!countryGroups[country]) {
+        countryGroups[country] = [];
+      }
+      countryGroups[country].push(countryCode);
+    });
+
+    return Object.entries(countryGroups)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([country, codes]) => {
+        const dataGroup = codes.join('|');
+
+        return {
+          id: `CountriesMenu.selectCountry.${dataGroup}`,
+          label: `Select Country: ${country}`,
+          category,
+          callback: () => this.countryMenuClick_(dataGroup),
+        };
+      });
   }
 
   getHelpConfig(): IHelpConfig {

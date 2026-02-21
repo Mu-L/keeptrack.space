@@ -6,6 +6,8 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import {
   IBottomIconConfig,
+  ICommandPaletteCapable,
+  ICommandPaletteCommand,
   IContextMenuConfig,
   IDragOptions,
   IHelpConfig,
@@ -21,7 +23,7 @@ import { settingsManager } from '@app/settings/settings';
 import palettePng from '@public/img/icons/palette.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
-export class ColorMenu extends KeepTrackPlugin {
+export class ColorMenu extends KeepTrackPlugin implements ICommandPaletteCapable {
   readonly id = 'ColorMenu';
   dependencies_ = [];
 
@@ -139,6 +141,20 @@ export class ColorMenu extends KeepTrackPlugin {
         callback: () => this.bottomMenuClicked(),
       },
     ];
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const category = 'Colors';
+    const colorSchemes = ServiceLocator.getColorSchemeManager().colorSchemeInstances;
+
+    return Object.values(colorSchemes)
+      .filter((cs) => cs.isOptionInColorMenu && settingsManager.colorSchemeInstances[cs.id]?.enabled)
+      .map((cs) => ({
+        id: `ColorMenu.setColorScheme.${cs.id}`,
+        label: `Set Color Scheme: ${cs.label}`,
+        category,
+        callback: () => ColorMenu.colorsMenuClick(cs.id),
+      }));
   }
 
   getHelpConfig(): IHelpConfig {

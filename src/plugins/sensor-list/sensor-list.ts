@@ -17,14 +17,14 @@ import { DateTimeManager } from '../date-time-manager/date-time-manager';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { SoundNames } from '@app/engine/audio/sounds';
-import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { ICommandPaletteCommand, ICommandPaletteCapable, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { keepTrackApi } from './../../keepTrackApi';
 import './sensor-list.css';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 // TODO: Add a search bar and filter for sensors
 
-export class SensorListPlugin extends KeepTrackPlugin {
+export class SensorListPlugin extends KeepTrackPlugin implements ICommandPaletteCapable {
   readonly id = 'SensorListPlugin';
   dependencies_: string[] = [DateTimeManager.name];
   private readonly sensorGroups_: SensorGroup[] = sensorGroups;
@@ -89,6 +89,66 @@ export class SensorListPlugin extends KeepTrackPlugin {
         },
       },
     ];
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const category = 'Sensors';
+
+    const sensorCommands: ICommandPaletteCommand[] = Object.entries(sensors).map(([key, sensor]) => ({
+      id: `SensorListPlugin.setSensor.${key}`,
+      label: `Set Current Sensor to ${sensor.uiName}`,
+      category,
+      callback: () => {
+        const sm = ServiceLocator.getSensorManager();
+
+        sm.clearSecondarySensors();
+        sm.setSensor(sensor);
+
+        if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) <= -1) {
+          try {
+            keepTrackApi
+              .getMainCamera()
+              .lookAtLatLon(
+                sm.currentSensors[0].lat,
+                sm.currentSensors[0].lon,
+                sm.currentSensors[0].zoom ?? ZoomValue.GEO,
+                ServiceLocator.getTimeManager().selectedDate,
+              );
+          } catch {
+            // Multi-sensor groups may fail
+          }
+        }
+      },
+    }));
+
+    const groupCommands: ICommandPaletteCommand[] = this.sensorGroups_.map((group) => ({
+      id: `SensorListPlugin.setSensorGroup.${group.name}`,
+      label: `Set Sensor Group: ${group.header}`,
+      category,
+      callback: () => {
+        const sm = ServiceLocator.getSensorManager();
+
+        sm.clearSecondarySensors();
+        sm.setSensor(group.name);
+
+        if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) <= -1) {
+          try {
+            keepTrackApi
+              .getMainCamera()
+              .lookAtLatLon(
+                sm.currentSensors[0].lat,
+                sm.currentSensors[0].lon,
+                sm.currentSensors[0].zoom ?? ZoomValue.GEO,
+                ServiceLocator.getTimeManager().selectedDate,
+              );
+          } catch {
+            // Multi-sensor groups may fail
+          }
+        }
+      },
+    }));
+
+    return [...groupCommands, ...sensorCommands];
   }
 
   addHtml(): void {
