@@ -68,7 +68,7 @@ export class NewLaunch extends KeepTrackPlugin {
     (<HTMLInputElement>getEl('nl-inc')).value = sat.inclination.toFixed(4).padStart(8, '0');
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CREATE, MenuMode.ALL];
 
   bottomIconImg = rocketLaunchPng;
   isRequireSatelliteSelected = true;

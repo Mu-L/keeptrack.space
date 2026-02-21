@@ -19,7 +19,7 @@ import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { t7e } from '@app/locales/keys';
 import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
-import { BaseObject, Satellite, Kilometers, Tle, TleLine1, TleLine2, eci2lla, OrbitFinder } from '@ootk/src/main';
+import { BaseObject, eci2lla, Kilometers, OrbitFinder, Satellite, Tle, TleLine1, TleLine2 } from '@ootk/src/main';
 import streamPng from '@public/img/icons/stream.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
@@ -47,7 +47,7 @@ export class Breakup extends KeepTrackPlugin {
       elementName: 'breakup-bottom-icon',
       label: 'Create Breakup',
       image: streamPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.CREATE, MenuMode.ALL],
       isDisabledOnLoad: true,
     };
   }

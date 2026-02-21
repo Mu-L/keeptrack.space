@@ -1,5 +1,9 @@
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { UiGeolocation } from '@app/app/ui/ui-manager-geolocation';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
@@ -11,16 +15,12 @@ import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
 import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { Degrees, Kilometers, SpaceObjectType, ZoomValue } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import sensorAddPng from '@public/img/icons/sensor-add.png';
 import { ClickDragOptions, KeepTrackPlugin, SideMenuSettingsOptions } from '../../engine/plugins/base-plugin';
 import { SensorFov } from '../sensor-fov/sensor-fov';
 import { SensorSurvFence } from '../sensor-surv/sensor-surv-fence';
-import { SoundNames } from '@app/engine/audio/sounds';
 import { SensorInfoPlugin } from './sensor-info-plugin';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class CustomSensorPlugin extends KeepTrackPlugin {
   readonly id = 'CustomSensorPlugin';
@@ -40,7 +40,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
     }
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CREATE, MenuMode.ALL];
 
   bottomIconImg = sensorAddPng;
 

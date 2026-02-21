@@ -31,7 +31,7 @@ export class MissilePlugin extends KeepTrackPlugin {
       elementName: `${this.id}-bottom-icon`,
       label: 'Missile',
       image: rocketPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.CREATE, MenuMode.ALL],
     };
   }
 

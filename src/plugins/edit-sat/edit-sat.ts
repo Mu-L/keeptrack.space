@@ -52,7 +52,7 @@ export class EditSat extends KeepTrackPlugin {
       elementName: 'edit-satellite-bottom-icon',
       label: t7e('plugins.EditSat.bottomIconLabel' as T7eKey),
       image: editSatellitePng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.CREATE, MenuMode.ALL],
       isDisabledOnLoad: true,
     };
   }

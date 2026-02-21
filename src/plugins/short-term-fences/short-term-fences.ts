@@ -3,18 +3,18 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
 import wifiFindPng from '@public/img/icons/wifi-find.png';
 
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { SoundNames } from '@app/engine/audio/sounds';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { BaseObject, DEG2RAD, Degrees, EpochUTC, Kilometers, RAE, Radians, SpaceObjectType, ZoomValue, eci2rae } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class ShortTermFences extends KeepTrackPlugin {
   readonly id = 'ShortTermFences';
@@ -36,7 +36,7 @@ export class ShortTermFences extends KeepTrackPlugin {
     isDraggable: true,
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CREATE, MenuMode.ALL];
 
   sideMenuElementName = 'stf-menu';
   sideMenuElementHtml: string = html`
