@@ -8,7 +8,7 @@ import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { truncateString } from '@app/engine/utils/truncate-string';
 import calendar2Png from '@public/img/icons/calendar2.png';
 import fetchPng from '@public/img/icons/download.png';
@@ -157,7 +157,7 @@ export class NextLaunchesPlugin extends KeepTrackPlugin {
 
         getEl('export-launch-info')!.addEventListener('click', () => {
           ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
-          saveCsv(this.launchList as unknown as Array<Record<string, unknown>>, 'launchList');
+          saveXlsx(this.launchList as unknown as Array<Record<string, unknown>>, 'launchList');
         });
       },
     );

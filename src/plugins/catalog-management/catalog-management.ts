@@ -179,7 +179,7 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
       <div class="row">
         <center>
           <button id="de-export-csv" class="btn btn-ui waves-effect waves-light">
-            Export Catalog CSV &#9658;
+            Export Catalog XLSX &#9658;
           </button>
         </center>
       </div>

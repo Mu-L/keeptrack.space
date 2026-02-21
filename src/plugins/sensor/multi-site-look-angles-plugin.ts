@@ -1,6 +1,8 @@
 import { SatMath } from '@app/app/analysis/sat-math';
 import { sensors } from '@app/app/data/catalogs/sensors';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData } from '@app/app/sensors/sensor-math';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -10,23 +12,23 @@ import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { showLoading } from '@app/engine/utils/showLoading';
 import {
   BaseObject,
-  Degrees, Satellite,
+  Degrees,
   Kilometers,
   MINUTES_PER_DAY,
+  Satellite,
   SatelliteRecord, Seconds,
   SpaceObjectType,
-  TAU} from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+  TAU,
+} from '@ootk/src/main';
 import tableRowsPng from '@public/img/icons/table-rows.png';
 import { sensorGroups } from '../../app/data/catalogs/sensor-groups';
 import { SensorManager } from '../../app/sensors/sensorManager';
-import { ClickDragOptions, KeepTrackPlugin, SideMenuSettingsOptions } from '../../engine/plugins/base-plugin';
+import { ClickDragOptions, fileExcelPng, KeepTrackPlugin, SideMenuSettingsOptions } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
 export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
   readonly id = 'MultiSiteLookAnglesPlugin';
   dependencies_ = [SelectSatManager.name];
@@ -99,6 +101,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
       </div>
     </div>`;
   sideMenuSettingsWidth: number = 350;
+  downloadIconSrc = fileExcelPng;
   downloadIconCb = () => {
     ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
     const exportData = ServiceLocator.getSensorManager().lastMultiSiteArray.map((look) => ({
@@ -110,7 +113,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
       visible: look.visible,
     }));
 
-    saveCsv(exportData, `multisite-${(this.selectSatManager_?.getSelectedSat() as Satellite | undefined)?.sccNum6 ?? '000000'}-look-angles`);
+    saveXlsx(exportData, `multisite-${(this.selectSatManager_?.getSelectedSat() as Satellite | undefined)?.sccNum6 ?? '000000'}-look-angles`);
   };
   sideMenuSecondaryOptions: SideMenuSettingsOptions = {
     width: 300,
@@ -226,17 +229,9 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
   private getlookanglesMultiSite_(sat: Satellite, sensors?: DetailedSensor[]): void {
     const timeManagerInstance = ServiceLocator.getTimeManager();
     const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const staticSet = ServiceLocator.getCatalogManager().staticSet;
 
     if (!sensors) {
-      sensors = [];
-      for (const sensorName in staticSet) {
-        if (staticSet[sensorName] instanceof DetailedSensor) {
-          const sensor = staticSet[sensorName];
-
-          sensors.push(sensor);
-        }
-      }
+      sensors = this.sensorList_;
     }
 
     const isResetToDefault = !sensorManagerInstance.isSensorSelected();
@@ -300,7 +295,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
       sensorManagerInstance.setCurrentSensor(tempSensor);
     }
 
-    this.populateMultiSiteTable_(multiSiteArray);
+    this.populateMultiSiteTable_(multiSiteArray, sensors);
   }
 
   private static propagateMultiSite_(now: Date, satrec: SatelliteRecord, sensor: DetailedSensor): TearrData {
@@ -337,9 +332,9 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
 
   }
 
-  private populateMultiSiteTable_(multiSiteArray: TearrData[]) {
+  private populateMultiSiteTable_(multiSiteArray: TearrData[], sensors: DetailedSensor[]) {
     const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const staticSet = ServiceLocator.getCatalogManager().staticSet;
+    const sensorMap = new Map(sensors.map((s) => [s.objName, s]));
 
     const tbl = <HTMLTableElement>getEl('multi-site-look-angles-table'); // Identify the table to update
 
@@ -373,7 +368,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     const timeManagerInstance = ServiceLocator.getTimeManager();
 
     for (const entry of multiSiteArray) {
-      const sensor = staticSet.find((s) => s.objName === entry.objName);
+      const sensor = entry.objName ? sensorMap.get(entry.objName) : null;
 
       if (!sensor) {
         continue;

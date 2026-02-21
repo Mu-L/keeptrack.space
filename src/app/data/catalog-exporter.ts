@@ -1,4 +1,4 @@
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { BaseObject, Satellite } from '@ootk/src/main';
 import { saveAs } from 'file-saver';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
@@ -77,7 +77,7 @@ export class CatalogExporter {
           power: sat.power,
         });
       }
-      saveCsv(catalogTLE2, 'catalogInfo');
+      saveXlsx(catalogTLE2, 'catalogInfo');
     } catch {
       /*
        * DEBUG:
@@ -102,7 +102,7 @@ export class CatalogExporter {
         };
       });
 
-    saveCsv(data, 'satInView');
+    saveXlsx(data, 'satInView');
   }
 
   static exportTle2Txt(objData: BaseObject[], numberOfLines = 2, isDeleteAnalysts = true) {

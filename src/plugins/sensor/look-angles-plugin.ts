@@ -1,3 +1,4 @@
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData, TearrType } from '@app/app/sensors/sensor-math';
 import { GetSatType, MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -9,12 +10,11 @@ import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { BaseObject, Satellite, SpaceObjectType } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import tableChartPng from '@public/img/icons/table-chart.png';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { ClickDragOptions, fileExcelPng, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 type LookAngleData = TearrData & { canStationObserve: boolean };
@@ -63,8 +63,8 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
 
   dragOptions: ClickDragOptions = {
     isDraggable: true,
-    minWidth: 400,
-    maxWidth: 600,
+    minWidth: 500,
+    maxWidth: 800,
   };
 
   sideMenuElementName: string = 'look-angles-menu';
@@ -97,6 +97,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
           <label for="look-anglesInterval" class="active">Interval (Seconds)</label>
       </div>
     </div>`;
+  downloadIconSrc = fileExcelPng;
   downloadIconCb = () => {
     const sensor = ServiceLocator.getSensorManager().getSensor();
 
@@ -132,7 +133,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
       Sensor: sensorDisplayName,
     }));
 
-    saveCsv(csvData, `${sensorDisplayName ?? 'unk'}-${(this.selectSatManager_.getSelectedSat() as Satellite).sccNum6}-look-angles`);
+    saveXlsx(csvData, `${sensorDisplayName ?? 'unk'}-${(this.selectSatManager_.getSelectedSat() as Satellite).sccNum6}-look-angles`);
   };
   sideMenuSecondaryOptions = {
     width: 300,

@@ -35,7 +35,7 @@ import {
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { t7e } from '@app/locales/keys';
 import { eci2rae, Kilometers, MINUTES_PER_DAY, RaeVec3, Satellite, SatelliteRecord, TAU } from '@ootk/src/main';
 import eventNotePng from '@public/img/icons/event-note.png';
@@ -186,7 +186,7 @@ export class BestPassPlugin extends KeepTrackPlugin {
     } else {
       const passes = this.findBestPasses_(sats, sensorManagerInstance.getSensor()!);
 
-      saveCsv(passes, 'bestSatTimes');
+      saveXlsx(passes, 'bestSatTimes');
     }
   }
 

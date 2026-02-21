@@ -14,7 +14,7 @@ import {
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { t7e } from '@app/locales/keys';
 import { BaseObject, Satellite } from '@ootk/src/main';
 import transponderChannelDataPng from '@public/img/icons/sat-channel-freq.png';
@@ -279,6 +279,6 @@ export class TransponderChannelData extends KeepTrackPlugin {
       return;
     }
 
-    saveCsv(this.dataCache_.map((info) => ({ ...info })), 'channel-info.csv');
+    saveXlsx(this.dataCache_.map((info) => ({ ...info })), 'channel-info');
   }
 }
