@@ -20,7 +20,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
   getBottomIconConfig(): IBottomIconConfig {
     return {
       elementName: 'watchlist-filter-icon',
-      label: 'Show Watchlist Only',
+      label: 'Show Satellite List Only',
       image: satellitePng,
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
@@ -42,7 +42,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
     return [
       {
         id: 'WatchlistFilter.toggle',
-        label: 'Show Watchlist Satellites Only',
+        label: 'Show Satellite List Only',
         category: 'Display',
         shortcutHint: 'W',
         callback: () => this.bottomMenuClicked(),
@@ -79,7 +79,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
 
     if (!watchlistPlugin || watchlistPlugin.watchlistList.length === 0) {
       this.setBottomIconToDisabled();
-      ServiceLocator.getUiManager().toast('No satellites in watchlist', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast('No satellites in list', ToastMsgType.caution);
 
       return;
     }

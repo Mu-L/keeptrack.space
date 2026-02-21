@@ -52,7 +52,7 @@ export class SatelliteTimeline extends KeepTrackPlugin {
     }
 
     if (PluginRegistry.getPlugin(WatchlistPlugin)?.watchlistList.length === 0 && PluginRegistry.getPlugin(SelectSatManager)?.selectedSat === -1) {
-      ServiceLocator.getUiManager().toast('Add Satellites to Watchlist or Select a Satellite', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast('Add Satellites to List or Select a Satellite', ToastMsgType.caution);
       shake(getEl(this.bottomIconElementName));
 
       return;

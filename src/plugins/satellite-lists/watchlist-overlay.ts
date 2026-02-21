@@ -41,7 +41,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     }
 
     if (PluginRegistry.getPlugin(WatchlistPlugin)?.watchlistList.length === 0) {
-      ServiceLocator.getUiManager().toast('Add Satellites to Watchlist!', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast('Add Satellites to List!', ToastMsgType.caution);
       shake(getEl('menu-info-overlay'));
 
       return;
@@ -52,7 +52,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     }
 
     if (this.watchlistPlugin_.watchlistList.length === 0 && !this.watchlistPlugin_.isWatchlistChanged) {
-      ServiceLocator.getUiManager().toast('Add Satellites to Watchlist!', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast('Add Satellites to List!', ToastMsgType.caution);
       shake(getEl('menu-info-overlay'));
       this.nextPassArray = [];
 

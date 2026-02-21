@@ -78,7 +78,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     <div id="watchlist-menu" class="side-menu-parent start-hidden text-select">
       <div id="watchlist-content" class="side-menu">
         <div class="row">
-          <h5 class="center-align">Satellite Watchlist</h5>
+          <h5 class="center-align">Satellite List</h5>
           <div id="watchlist-list">
           </div>
           <br />
@@ -111,14 +111,14 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     </div>`;
 
   sideMenuElementName: string = 'watchlist-menu';
-  sideMenuTitle = 'Satellite Watchlist';
+  sideMenuTitle = 'Satellite List';
 
   sideMenuSecondaryHtml = html`
     <div class="switch row">
       <label>
         <input id="watchlist-hide-others" type="checkbox" />
         <span class="lever"></span>
-        Hide Non-Watchlist Objects
+        Hide Other Objects
       </label>
     </div>
     <div class="row" style="margin-bottom: 0;">
@@ -337,13 +337,13 @@ export class WatchlistPlugin extends KeepTrackPlugin {
         obj.id = sat.id;
         obj.inView = false;
       } else {
-        errorManagerInstance.warn('Watchlist File Format Incorret');
+        errorManagerInstance.warn('List File Format Incorrect');
 
         return [];
       }
     }
     if (newWatchlist.length > 0) {
-      ServiceLocator.getUiManager().toast(`Watchlist Loaded with ${newWatchlist.length} Satellites`, ToastMsgType.normal);
+      ServiceLocator.getUiManager().toast(`Satellite List Loaded with ${newWatchlist.length} Satellites`, ToastMsgType.normal);
     }
 
     return newWatchlist;
@@ -586,11 +586,11 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       const sat = ServiceLocator.getCatalogManager().getSat(id);
 
       if (sat?.sccNum) {
-        errorManagerInstance.warn(`NORAD: ${sat.sccNum} already in watchlist!`, true);
+        errorManagerInstance.warn(`NORAD: ${sat.sccNum} already in list!`, true);
       } else if (sat) {
         const jscString = sat.source === CatalogSource.VIMPEL ? ` (JSC Vimpel ${sat.altId})` : '';
 
-        errorManagerInstance.warn(`Object ${id}${jscString} already in watchlist!`, true);
+        errorManagerInstance.warn(`Object ${id}${jscString} already in list!`, true);
       }
     }
 
@@ -738,7 +738,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     const target = evt.target;
 
     if (!target) {
-      errorManagerInstance.error(new Error('target is null'), 'watchlist.ts', 'Error reading watchlist!');
+      errorManagerInstance.error(new Error('target is null'), 'watchlist.ts', 'Error reading list!');
 
       return;
     }
@@ -748,7 +748,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     }
 
     if (evt.target.error) {
-      errorManagerInstance.error(evt.target.error, 'watchlist.ts', 'Error reading watchlist!');
+      errorManagerInstance.error(evt.target.error, 'watchlist.ts', 'Error reading list!');
 
       return;
     }
@@ -768,13 +768,13 @@ export class WatchlistPlugin extends KeepTrackPlugin {
         newWatchlist = [];
       }
     } catch {
-      errorManagerInstance.warn('Watchlist File Format Incorret');
+      errorManagerInstance.warn('List File Format Incorrect');
 
       return;
     }
 
     if (newWatchlist.length === 0) {
-      errorManagerInstance.warn('Watchlist File Format Incorret');
+      errorManagerInstance.warn('List File Format Incorrect');
 
       return;
     }
@@ -810,7 +810,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       saveAs(blob, 'watchlist.json');
     } catch (e) {
       if (!isThisNode()) {
-        errorManagerInstance.error(e, 'watchlist.ts', 'Error saving watchlist!');
+        errorManagerInstance.error(e, 'watchlist.ts', 'Error saving list!');
       }
     }
     evt.preventDefault();
@@ -848,7 +848,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
 
       return savedSatList;
     } catch {
-      errorManagerInstance.warn('Watchlist File Format Incorrect');
+      errorManagerInstance.warn('List File Format Incorrect');
 
       return [];
     }
