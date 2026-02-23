@@ -1301,7 +1301,7 @@ export abstract class KeepTrackPlugin {
   verifySensorSelected(isMakeToast = true): boolean {
     if (!ServiceLocator.getSensorManager().isSensorSelected()) {
       if (isMakeToast) {
-        errorManagerInstance.warn(t7e('errorMsgs.SelectSensorFirst'), true);
+        errorManagerInstance.warnToast(t7e('errorMsgs.SelectSensorFirst'));
         this.shakeBottomIcon();
       }
 
@@ -1322,7 +1322,7 @@ export abstract class KeepTrackPlugin {
      * if (!selectSatManagerInstance || (selectSatManagerInstance?.selectedSat === -1 && (!searchDom || (<HTMLInputElement>searchDom).value === ''))) {
      */
     if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
-      errorManagerInstance.warn(t7e('errorMsgs.SelectSatelliteFirst'), true);
+      errorManagerInstance.warnToast(t7e('errorMsgs.SelectSatelliteFirst'));
       this.shakeBottomIcon();
 
       return false;
