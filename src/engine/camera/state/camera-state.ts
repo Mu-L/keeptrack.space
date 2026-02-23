@@ -1,7 +1,7 @@
 // app/keeptrack/camera/camera-state.ts
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { RADIUS_OF_EARTH } from '@app/engine/utils/constants';
+import { RADIUS_OF_EARTH, ZOOM_EXP } from '@app/engine/utils/constants';
 import { alt2zoom } from '@app/engine/utils/transforms';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { Degrees, GreenwichMeanSiderealTime, Kilometers, Radians } from '@ootk/src/main';
@@ -18,13 +18,14 @@ export class CameraState {
   camYaw: Radians = 0 as Radians;
 
   // ============ Zoom ============
-  private zoomLevel_ = 0.6925;
-  private zoomTarget_ = 0.6925;
+  static readonly DEFAULT_ZOOM = 0.4085;
+  private zoomLevel_ = CameraState.DEFAULT_ZOOM;
+  private zoomTarget_ = CameraState.DEFAULT_ZOOM;
   static readonly MAX_CAM_DIST_BUFFER: Kilometers = 25 as Kilometers;
   /** This buffer distance is used for close up camera positioning - it MUST match the MAX_CAM_DIST_BUFFER (25km)
    */
   private camDistBuffer_: Kilometers = CameraState.MAX_CAM_DIST_BUFFER;
-  earthCenteredLastZoom = 0.6925;
+  earthCenteredLastZoom = CameraState.DEFAULT_ZOOM;
   isZoomIn = false;
 
   // ============ Rotation Speeds & Targets ============
@@ -233,15 +234,24 @@ export class CameraState {
 
   // ============ Methods ============
 
+  /**
+   * Convert a distance from Earth center (km) to a zoom level [0..1].
+   */
+  private distToZoom_(dist: number): number {
+    const raw = ((dist - settingsManager.minZoomDistance) / (settingsManager.maxZoomDistance - settingsManager.minZoomDistance)) ** (1 / ZOOM_EXP);
+
+    return Number.isNaN(raw) ? 0.5 : Math.min(Math.max(raw, 0.0001), 1);
+  }
+
   zoomTargetChange(): void {
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
     const maxCovarianceDistance = Math.min((selectSatManagerInstance?.primarySatCovMatrix?.[2] ?? 0) * 10, 10000);
+    const wasSnapped = this.camZoomSnappedOnSat;
 
     if ((settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? '-1') === '-1') || (this.camDistBuffer >= settingsManager.nearZoomLevel)) {
 
       settingsManager.selectedColor = settingsManager.selectedColorFallback;
       ServiceLocator.getRenderer().setFarRenderer();
-      this.earthCenteredLastZoom = this.zoomTarget;
       this.camZoomSnappedOnSat = false;
 
       // calculate camera distance from target
@@ -254,29 +264,60 @@ export class CameraState {
         if (this.zoomTarget < this.zoomLevel && this.zoomTarget < curMinZoomLevel) {
           this.camZoomSnappedOnSat = true;
 
+          // Derive camDistBuffer from the current camera distance so the
+          // transition into near mode is seamless (no positional jump).
+          // Cap at nearZoomLevel - 1 so we stay strictly BELOW the threshold
+          // and avoid oscillating between near/far modes on subsequent frames.
+          const satDist = satAlt + RADIUS_OF_EARTH;
+          const camDist = this.zoomLevel_ ** ZOOM_EXP * (settingsManager.maxZoomDistance - settingsManager.minZoomDistance) + settingsManager.minZoomDistance;
+          const derived = <Kilometers>Math.max(camDist - satDist, settingsManager.minDistanceFromSatellite);
+          const nearCap = <Kilometers>(settingsManager.nearZoomLevel - 1);
+
           if (settingsManager.isDrawCovarianceEllipsoid) {
-            this.camDistBuffer = <Kilometers>(Math.max(Math.max(this.camDistBuffer, settingsManager.nearZoomLevel), maxCovarianceDistance) - 1);
+            this.camDistBuffer = <Kilometers>Math.min(Math.max(derived, maxCovarianceDistance), nearCap);
           } else {
-            this.camDistBuffer =
-              <Kilometers>Math.min(Math.max(this.camDistBuffer, settingsManager.nearZoomLevel), settingsManager.minDistanceFromSatellite);
+            this.camDistBuffer = <Kilometers>Math.min(derived, nearCap);
           }
+        } else if (wasSnapped) {
+          // Transitioning near → far: sync zoomLevel/zoomTarget to match the
+          // actual camera distance so there is no visible jump.
+          const camDist = satAlt + RADIUS_OF_EARTH + this.camDistBuffer;
+          const matchingZoom = this.distToZoom_(camDist);
+
+          this.zoomLevel_ = matchingZoom;
+          this.zoomTarget_ = matchingZoom;
         }
       }
+
+      this.earthCenteredLastZoom = this.zoomTarget;
 
     } else {
       ServiceLocator.getRenderer().setNearRenderer();
 
-      // Clamping camDistBuffer to be between minDistanceFromSatellite and maxZoomDistance
-      this.camDistBuffer = <Kilometers>Math.min(
-        Math.max(
-          this.camDistBuffer,
-          settingsManager.minDistanceFromSatellite,
-        ),
-        Math.max(
-          settingsManager.nearZoomLevel,
-          maxCovarianceDistance,
-        ),
-      );
+      const nearCap = <Kilometers>(settingsManager.nearZoomLevel - 1);
+
+      // Transitioning far → near: derive camDistBuffer from current camera
+      // distance so the close-up view starts exactly where the far view left off.
+      if (!wasSnapped) {
+        const target = selectSatManagerInstance?.getSelectedSat();
+
+        if (target) {
+          const satDist = Math.sqrt(target.position.x ** 2 + target.position.y ** 2 + target.position.z ** 2);
+          const camDist = this.zoomLevel_ ** ZOOM_EXP * (settingsManager.maxZoomDistance - settingsManager.minZoomDistance) + settingsManager.minZoomDistance;
+          const derived = <Kilometers>Math.max(camDist - satDist, settingsManager.minDistanceFromSatellite);
+
+          this.camDistBuffer = <Kilometers>Math.min(derived, nearCap);
+        }
+      } else {
+        // Already in near mode — just clamp camDistBuffer
+        this.camDistBuffer = <Kilometers>Math.min(
+          Math.max(
+            this.camDistBuffer,
+            settingsManager.minDistanceFromSatellite,
+          ),
+          nearCap,
+        );
+      }
     }
   }
 
@@ -285,15 +326,17 @@ export class CameraState {
    * @param isHardReset - If true, also resets zoom level
    */
   reset(isHardReset = false): void {
-    // Reset zoom
+    // Reset zoom to initial level (not max zoom out)
+    const initZoom = settingsManager.initZoomLevel ?? CameraState.DEFAULT_ZOOM;
+
     if (isHardReset) {
-      this.zoomLevel_ = 0.6925;
+      this.zoomLevel_ = initZoom;
     }
-    this.zoomTarget_ = 0.6925;
+    this.zoomTarget_ = initZoom;
     this.isZoomIn = false;
     this.camZoomSnappedOnSat = false;
     this.camAngleSnappedOnSat = false;
-    this.camDistBuffer = 0 as Kilometers;
+    this.camDistBuffer = CameraState.MAX_CAM_DIST_BUFFER;
 
     // Reset position
     this.position = [0, 0, 0];

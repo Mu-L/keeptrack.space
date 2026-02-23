@@ -290,8 +290,13 @@ export class Camera {
     const isCameraCloseToCovarianceBubble = settingsManager.isDrawCovarianceEllipsoid &&
       this.state.camDistBuffer < maxCovarianceDistance;
 
-    // Scale zoom sensitivity by current zoom level so zooming naturally decelerates when close to a body
-    const zoomSensitivity = Math.max(this.state.zoomLevel, 0.001);
+    // Scale zoom sensitivity by current zoom level so zooming naturally decelerates when close to a body.
+    // Use asymmetric scaling: full deceleration when zooming in, but a higher floor when zooming out
+    // so the user isn't trapped at close zoom levels.
+    const isZoomingOut = delta > 0;
+    const zoomSensitivity = isZoomingOut
+      ? Math.max(this.state.zoomLevel, 0.1)
+      : Math.max(this.state.zoomLevel, 0.001);
 
     if (settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? '-1') === '-1') {
       this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity; // delta is +/- 100
@@ -561,9 +566,8 @@ export class Camera {
   }
 
   init() {
-    // TODO: create a static for the default value
-    this.state.zoomLevel = settingsManager.initZoomLevel ?? 0.4085;
-    this.state.zoomTarget = settingsManager.initZoomLevel ?? 0.4085;
+    this.state.zoomLevel = settingsManager.initZoomLevel ?? CameraState.DEFAULT_ZOOM;
+    this.state.zoomTarget = settingsManager.initZoomLevel ?? CameraState.DEFAULT_ZOOM;
 
     this.inputHandler.init();
 
