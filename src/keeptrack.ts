@@ -438,6 +438,15 @@ theodore.kruczek at gmail dot com.
       this.isInitialized = true;
 
       EventBus.getInstance().emit(EventBusEvent.onKeepTrackReady);
+
+      // Register runtime internet connectivity detection
+      window.addEventListener('online', () => {
+        EventBus.getInstance().emit(EventBusEvent.connectivityChange, true);
+      });
+      window.addEventListener('offline', () => {
+        EventBus.getInstance().emit(EventBusEvent.connectivityChange, false);
+      });
+
       if (settingsManager.onLoadCb) {
         settingsManager.onLoadCb();
       }
