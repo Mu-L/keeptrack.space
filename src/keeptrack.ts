@@ -48,10 +48,10 @@ import { EventBusEvent } from './engine/events/event-bus-events';
 import { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import { DotsManager } from './engine/rendering/dots-manager';
 import { SatLabelManager } from './engine/rendering/sat-label-manager';
-import { SymbologyManager } from './engine/rendering/symbology/symbology-manager';
 import { lineManagerInstance } from './engine/rendering/line-manager';
 import { WebWorkerThreadManager } from './engine/threads/web-worker-thread';
 import { DemoManager } from './engine/utils/demo-mode';
+import { PersistenceManager } from './engine/persistence/persistence-manager';
 import { html } from './engine/utils/development/formatter';
 import { getEl } from './engine/utils/get-el';
 import { isThisNode } from './engine/utils/isThisNode';
@@ -123,7 +123,6 @@ export class KeepTrack {
     const satLabelManagerInstance = new SatLabelManager();
     const uiManagerInstance = new UiManager();
     const colorSchemeManagerInstance = new ColorSchemeManager();
-    const symbologyManagerInstance = new SymbologyManager();
     const sensorMathInstance = new SensorMath();
     const hoverManagerInstance = new HoverManager();
 
@@ -135,12 +134,18 @@ export class KeepTrack {
     Container.getInstance().registerSingleton(Singletons.SatLabelManager, satLabelManagerInstance);
     Container.getInstance().registerSingleton(Singletons.UiManager, uiManagerInstance);
     Container.getInstance().registerSingleton(Singletons.ColorSchemeManager, colorSchemeManagerInstance);
-    Container.getInstance().registerSingleton(Singletons.SymbologyManager, symbologyManagerInstance);
     Container.getInstance().registerSingleton(Singletons.SensorMath, sensorMathInstance);
     Container.getInstance().registerSingleton(Singletons.HoverManager, hoverManagerInstance);
 
     CameraControlWidget.getInstance().init();
     DemoManager.getInstance().init();
+
+    // Initialize enhanced persistence features (cross-tab sync, provider subscriptions).
+    // The PersistenceManager already works synchronously from its constructor;
+    // this adds the async enhancements without blocking boot.
+    PersistenceManager.getInstance().initialize().catch((e) => {
+      console.warn('Failed to initialize enhanced persistence:', e);
+    });
   }
 
   static getDefaultBodyHtml(): void {
@@ -335,7 +340,6 @@ theodore.kruczek at gmail dot com.
       const dotsManagerInstance = ServiceLocator.getDotsManager();
       const uiManagerInstance = ServiceLocator.getUiManager();
       const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
-      const symbologyManagerInstance = ServiceLocator.getSymbologyManager();
       const inputManagerInstance = ServiceLocator.getInputManager();
 
       this.engine.init();
@@ -370,7 +374,6 @@ theodore.kruczek at gmail dot com.
 
       catalogManagerInstance.init();
       colorSchemeManagerInstance.init(renderer);
-      symbologyManagerInstance.init(renderer.gl);
 
       if (settingsManager.noCatalogOnLoad) {
         // Empty catalog — still adds stars, sensors, planets, etc.
