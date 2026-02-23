@@ -25,6 +25,16 @@ import type { ClassificationString } from '../app/ui/classification';
 import { defaultPlugins } from './default-plugins';
 
 /**
+ * Controls how plugin icons behave when internet is unavailable.
+ */
+export enum OfflineIconBehavior {
+  /** Grey out the icon; not clickable */
+  DISABLE = 'disable',
+  /** Completely hide the icon from the bottom menu */
+  HIDE = 'hide',
+}
+
+/**
  * Core application settings and global flags
  */
 export class CoreSettings {
@@ -55,6 +65,8 @@ export class CoreSettings {
   installDirectory = '';
   /** Flag to determine if external data is available */
   offlineMode = false;
+  /** Controls how internet-dependent plugin icons behave when offline */
+  offlineIconBehavior: OfflineIconBehavior = OfflineIconBehavior.HIDE;
   /** Skip loading the satellite catalog on startup. Use with CatalogManagementPlugin to load catalogs via drag-and-drop or file picker. */
   noCatalogOnLoad = false;
   /**

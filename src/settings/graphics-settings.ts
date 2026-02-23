@@ -191,8 +191,6 @@ export class GraphicsSettings {
    * TODO: Reimplement stars
    */
   isDisableStars = true;
-  isDrawConstellationBoundaries: boolean | null = null;
-  isDrawNasaConstellations: boolean | null = null;
 
   // Image Quality
   /**
