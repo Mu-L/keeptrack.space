@@ -28,6 +28,7 @@ export class ShortTermFences extends KeepTrackPlugin {
 
   bottomIconImg = wifiFindPng;
   isRequireSensorSelected = true;
+  isIconDisabledOnLoad = true;
   isAddStfLinksOnce = false;
 
   dragOptions: ClickDragOptions = {

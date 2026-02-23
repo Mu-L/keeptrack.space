@@ -32,6 +32,7 @@ import calendarPng from '@public/img/icons/calendar.png';
 export class LaunchCalendar extends KeepTrackPlugin {
   readonly id = 'LaunchCalendar';
   dependencies_ = [];
+  requiresInternet = true;
   isForceHideSideMenus = true;
 
   getBottomIconConfig(): IBottomIconConfig {

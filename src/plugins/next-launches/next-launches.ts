@@ -75,6 +75,7 @@ export class NextLaunchesPlugin extends KeepTrackPlugin {
   dependencies_ = [];
   private isLoggedIn_ = false;
   private isFetching_ = false;
+  requiresInternet = true;
 
   bottomIconElementName: string = 'menu-nextLaunch';
   bottomIconImg = calendar2Png;

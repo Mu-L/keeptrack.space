@@ -6,6 +6,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { IBottomIconConfig, ICommandPaletteCommand, IKeyboardShortcut, IconPlacement, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
+import { t7e } from '@app/locales/keys';
 import satellitePng from '@public/img/icons/satellite.png';
 import { WatchlistPlugin } from '../satellite-lists/satellite-lists';
 
@@ -20,7 +21,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
   getBottomIconConfig(): IBottomIconConfig {
     return {
       elementName: 'watchlist-filter-icon',
-      label: 'Show Satellite List Only',
+      label: t7e('plugins.WatchlistFilter.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: satellitePng,
       menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
@@ -42,7 +43,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
     return [
       {
         id: 'WatchlistFilter.toggle',
-        label: 'Show Satellite List Only',
+        label: t7e('plugins.WatchlistFilter.bottomIconLabel' as Parameters<typeof t7e>[0]),
         category: 'Display',
         shortcutHint: 'W',
         callback: () => this.bottomMenuClicked(),
@@ -79,7 +80,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
 
     if (!watchlistPlugin || watchlistPlugin.watchlistList.length === 0) {
       this.setBottomIconToDisabled();
-      ServiceLocator.getUiManager().toast('No satellites in list', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast(t7e('plugins.WatchlistFilter.errorMsgs.noSatellitesInList' as Parameters<typeof t7e>[0]), ToastMsgType.caution);
 
       return;
     }

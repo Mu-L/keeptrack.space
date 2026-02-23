@@ -58,7 +58,6 @@
 }
 
 #calculator-menu #calc-velocity-toggle {
-  margin-bottom: 0;
   margin-top: -8px;
 }
 
@@ -70,13 +69,9 @@
 #calculator-menu #calc-velocity-toggle [type='checkbox']+span:not(.lever) {
   padding-left: 25px;
   height: 20px;
-  line-height: 20px;
+  line-height: 25px;
 }
 
-#calculator-menu #calc-velocity-toggle [type='checkbox']:checked+span:not(.lever)::before {
-  border-right-color: #f44336;
-  border-bottom-color: #f44336;
-}
 
 #calculator-menu #calc-load-sat-btn {
   margin-bottom: 8px;
