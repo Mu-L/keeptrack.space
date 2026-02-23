@@ -5,7 +5,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { setInnerHtml } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { WatchlistOverlay } from '../satellite-lists/watchlist-overlay';
+import { WatchlistOverlay } from '../watchlist/watchlist-overlay';
 
 export class Calendar {
   private readonly containerId: string;
