@@ -125,7 +125,7 @@
 
 .confirm-modal__message {
   margin: 0;
-  color: var(--color-dark-text-accent);
+  color: var(--color-dark-text);
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -271,8 +271,8 @@
   pointer-events: auto !important;
 }
 
-.list-selector-modal__checkbox + .list-selector-modal__name::before,
-.list-selector-modal__checkbox + .list-selector-modal__name::after {
+.list-selector-modal__checkbox+.list-selector-modal__name::before,
+.list-selector-modal__checkbox+.list-selector-modal__name::after {
   display: none !important;
 }
 
