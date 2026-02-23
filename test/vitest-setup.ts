@@ -154,6 +154,23 @@ vi.mock('echarts', () => {
 
 vi.mock('echarts-gl', () => ({}));
 
+// Mock xlsx to prevent tests from writing real files to disk (e.g. channel-info.xlsx)
+vi.mock('xlsx', () => {
+  const writeFile = vi.fn();
+  const utils = {
+    json_to_sheet: vi.fn(() => ({})),
+    book_new: vi.fn(() => ({})),
+    book_append_sheet: vi.fn(),
+  };
+
+  return {
+    __esModule: true,
+    default: { utils, writeFile },
+    utils,
+    writeFile,
+  };
+});
+
 global.requestAnimationFrame = function requestAnimationFrame(cb) {
   return setTimeout(cb, 0);
 };

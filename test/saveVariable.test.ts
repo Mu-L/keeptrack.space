@@ -6,24 +6,7 @@ import fileSaver from 'file-saver';
 import Papa from 'papaparse';
 import { disableConsoleErrors, enableConsoleErrors } from './environment/standard-env';
 
-const mockWriteFile = vi.fn();
-
-vi.mock('xlsx', () => ({
-  default: {
-    utils: {
-      json_to_sheet: vi.fn(() => ({})),
-      book_new: vi.fn(() => ({})),
-      book_append_sheet: vi.fn(),
-    },
-    writeFile: mockWriteFile,
-  },
-  utils: {
-    json_to_sheet: vi.fn(() => ({})),
-    book_new: vi.fn(() => ({})),
-    book_append_sheet: vi.fn(),
-  },
-  writeFile: mockWriteFile,
-}));
+// xlsx is mocked globally in vitest-setup.ts
 
 /**
  *Objective:
@@ -155,28 +138,30 @@ describe('code_snippet', () => {
 
   // Tests that saveXlsx generates and downloads an XLSX file with default name
   it('test_save_xlsx_default_name', async () => {
+    const { writeFile } = await import('xlsx');
     const items = [
       { a: 1, b: 2 },
       { a: 3, b: 4 },
     ];
 
-    mockWriteFile.mockClear();
+    (writeFile as ReturnType<typeof vi.fn>).mockClear();
     await saveXlsx(items);
 
-    expect(mockWriteFile).toHaveBeenCalledWith(expect.anything(), 'data.xlsx');
+    expect(writeFile).toHaveBeenCalledWith(expect.anything(), 'data.xlsx');
   });
 
   // Tests that saveXlsx uses provided name
   it('test_save_xlsx_provided_name', async () => {
+    const { writeFile } = await import('xlsx');
     const items = [
       { a: 1, b: 2 },
       { a: 3, b: 4 },
     ];
 
-    mockWriteFile.mockClear();
+    (writeFile as ReturnType<typeof vi.fn>).mockClear();
     await saveXlsx(items, 'myData');
 
-    expect(mockWriteFile).toHaveBeenCalledWith(expect.anything(), 'myData.xlsx');
+    expect(writeFile).toHaveBeenCalledWith(expect.anything(), 'myData.xlsx');
   });
 
   // Tests that copyTsvToClipboard copies tab-separated data to clipboard
