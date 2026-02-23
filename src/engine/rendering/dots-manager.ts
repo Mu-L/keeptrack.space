@@ -19,6 +19,8 @@ import { RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { BufferAttribute } from './buffer-attribute';
 import { DepthManager } from './depth-manager';
+import { IDotsShaderProvider } from './dots-shader-provider';
+import { createBaseFragShader, createBaseVertShader } from './dots-shaders-base';
 import { WebGlProgramHelper } from './webgl-program';
 import { WebGLRenderer } from './webgl-renderer';
 
@@ -49,10 +51,9 @@ export class DotsManager {
    * glsl code - keep as a string
    */
   private positionBufferOneTime_ = false;
-  private affiliationBufferOneTime_ = false;
-  private objectTypeBufferOneTime_ = false;
-  private stalenessBufferOneTime_ = false;
   private settings_: SettingsManager;
+  private shaderProvider_: IDotsShaderProvider | null = null;
+  private extraBuffers_: Record<string, WebGLBuffer> = {};
   // Array for which colors go to which ids
   private isSizeBufferOneTime_ = false;
 
@@ -61,9 +62,6 @@ export class DotsManager {
     size: <WebGLBuffer><unknown>null,
     color: <WebGLBuffer><unknown>null,
     pickability: <WebGLBuffer><unknown>null,
-    affiliation: <WebGLBuffer><unknown>null,
-    objectType: <WebGLBuffer><unknown>null,
-    staleness: <WebGLBuffer><unknown>null,
   };
 
   inSunData: Int8Array;
@@ -105,21 +103,6 @@ export class DotsManager {
           vertices: 1,
           offset: 0,
         }),
-        a_affiliation: new BufferAttribute({
-          location: 4,
-          vertices: 1,
-          offset: 0,
-        }),
-        a_objectType: new BufferAttribute({
-          location: 5,
-          vertices: 1,
-          offset: 0,
-        }),
-        a_staleness: new BufferAttribute({
-          location: 6,
-          vertices: 1,
-          offset: 0,
-        }),
       },
       uniforms: {
         u_pMvCamMatrix: <WebGLUniformLocation><unknown>null,
@@ -128,7 +111,6 @@ export class DotsManager {
         u_starMinSize: <WebGLUniformLocation><unknown>null,
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
-        u_symbologyEnabled: <WebGLUniformLocation><unknown>null,
         u_flatMapMode: <WebGLUniformLocation><unknown>null,
         u_gmst: <WebGLUniformLocation><unknown>null,
         u_currentGmst: <WebGLUniformLocation><unknown>null,
@@ -210,6 +192,14 @@ export class DotsManager {
   lastUpdateSimTime = 0;
 
   /**
+   * Register a custom shader provider (e.g., symbology plugin).
+   * Must be called before init().
+   */
+  registerShaderProvider(provider: IDotsShaderProvider): void {
+    this.shaderProvider_ = provider;
+  }
+
+  /**
    * Draws dots on a WebGLFramebuffer.
    * @param projectionCameraMatrix - The projection matrix.
    * @param tgtBuffer - The WebGLFramebuffer to draw on.
@@ -269,11 +259,10 @@ export class DotsManager {
       gl.uniform1f(this.programs.dots.uniforms.u_starMinSize, this.settings_.satShader.starMinSize);
     }
 
-    // Set symbology enabled uniform
-    const symbologyManager = ServiceLocator.getSymbologyManager();
-    const symbologyEnabled = symbologyManager?.isEnabled ?? false;
-
-    gl.uniform1i(this.programs.dots.uniforms.u_symbologyEnabled, symbologyEnabled ? 1 : 0);
+    // Let shader provider set extra uniforms (e.g., symbology)
+    if (this.shaderProvider_) {
+      this.shaderProvider_.setExtraUniforms(gl, this.programs.dots.uniforms);
+    }
 
     gl.bindVertexArray(this.programs.dots.vao);
 
@@ -292,44 +281,9 @@ export class DotsManager {
     }
     gl.vertexAttribPointer(this.programs.dots.attribs.a_position.location, 3, gl.FLOAT, false, 0, 0);
 
-    // Update affiliation buffer if symbology is enabled
-    if (symbologyEnabled && symbologyManager) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.affiliation);
-      const affiliationData = symbologyManager.getAffiliationData();
-
-      if (affiliationData.length > 0) {
-        if (!this.affiliationBufferOneTime_) {
-          gl.bufferData(gl.ARRAY_BUFFER, affiliationData, gl.DYNAMIC_DRAW);
-          this.affiliationBufferOneTime_ = true;
-        } else {
-          gl.bufferSubData(gl.ARRAY_BUFFER, 0, affiliationData);
-        }
-      }
-
-      // Update object type buffer (static after catalog load)
-      const objectTypeData = symbologyManager.getObjectTypeData();
-
-      if (objectTypeData.length > 0) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.objectType);
-        if (!this.objectTypeBufferOneTime_) {
-          gl.bufferData(gl.ARRAY_BUFFER, objectTypeData, gl.STATIC_DRAW);
-          this.objectTypeBufferOneTime_ = true;
-        }
-      }
-
-      // Update staleness buffer
-      const stalenessData = symbologyManager.getStalenessData();
-
-      if (stalenessData && stalenessData.length > 0) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.staleness);
-        if (!this.stalenessBufferOneTime_) {
-          gl.bufferData(gl.ARRAY_BUFFER, stalenessData, gl.DYNAMIC_DRAW);
-          this.stalenessBufferOneTime_ = true;
-        } else {
-          gl.bufferSubData(gl.ARRAY_BUFFER, 0, stalenessData);
-        }
-      }
-
+    // Let shader provider update extra buffers (e.g., symbology affiliation/staleness)
+    if (this.shaderProvider_) {
+      this.shaderProvider_.updateExtraBuffers(gl, this.extraBuffers_);
     }
 
     /*
@@ -536,38 +490,12 @@ export class DotsManager {
     this.setupPickingBuffer(catalogManagerInstance.objectCache.length);
     this.updateSizeBuffer(catalogManagerInstance.objectCache.length);
     this.initColorBuffer(colorBuffer);
-    this.initAffiliationBuffer();
-    this.initObjectTypeBuffer();
-    this.initStalenessBuffer();
+    if (this.shaderProvider_) {
+      const gl = ServiceLocator.getRenderer().gl;
+
+      this.extraBuffers_ = this.shaderProvider_.initExtraBuffers(gl);
+    }
     this.initVao(); // Needs ColorBuffer first
-
-  }
-
-  /**
-   * Initialize the affiliation buffer for symbology rendering
-   */
-  initAffiliationBuffer(): void {
-    const gl = ServiceLocator.getRenderer().gl;
-
-    this.buffers.affiliation = gl.createBuffer();
-  }
-
-  /**
-   * Initialize the object type buffer for sprite atlas rendering
-   */
-  initObjectTypeBuffer(): void {
-    const gl = ServiceLocator.getRenderer().gl;
-
-    this.buffers.objectType = gl.createBuffer();
-  }
-
-  /**
-   * Initialize the staleness buffer for epoch age rendering
-   */
-  initStalenessBuffer(): void {
-    const gl = ServiceLocator.getRenderer().gl;
-
-    this.buffers.staleness = gl.createBuffer();
   }
 
 
@@ -642,20 +570,10 @@ export class DotsManager {
     gl.enableVertexAttribArray(this.programs.dots.attribs.a_size.location);
     gl.vertexAttribPointer(this.programs.dots.attribs.a_size.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
 
-    // Affiliation buffer for symbology
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.affiliation);
-    gl.enableVertexAttribArray(this.programs.dots.attribs.a_affiliation.location);
-    gl.vertexAttribPointer(this.programs.dots.attribs.a_affiliation.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
-
-    // Object type buffer for sprite atlas rendering
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.objectType);
-    gl.enableVertexAttribArray(this.programs.dots.attribs.a_objectType.location);
-    gl.vertexAttribPointer(this.programs.dots.attribs.a_objectType.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
-
-    // Staleness buffer for epoch age rendering
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.staleness);
-    gl.enableVertexAttribArray(this.programs.dots.attribs.a_staleness.location);
-    gl.vertexAttribPointer(this.programs.dots.attribs.a_staleness.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
+    // Let shader provider set up extra VAO bindings (e.g., symbology buffers)
+    if (this.shaderProvider_) {
+      this.shaderProvider_.setupExtraVao(gl, this.programs.dots.attribs, this.extraBuffers_);
+    }
 
     gl.bindVertexArray(null);
 
@@ -685,9 +603,9 @@ export class DotsManager {
   resetForCatalogSwap(): void {
     this.positionBufferOneTime_ = false;
     this.isSizeBufferOneTime_ = false;
-    this.affiliationBufferOneTime_ = false;
-    this.objectTypeBufferOneTime_ = false;
-    this.stalenessBufferOneTime_ = false;
+    if (this.shaderProvider_) {
+      this.shaderProvider_.resetBufferState();
+    }
     this.pickingColorData = [];
     this.isReady = false;
     // Force updateCruncherBuffers to allocate new typed arrays
@@ -975,380 +893,31 @@ export class DotsManager {
   /**
    * Initializes the shaders used by the dots manager.
    */
-  // eslint-disable-next-line max-lines-per-function
   private initShaders_() {
-    this.shaders_ = {
-      dots: {
-        frag: glsl`#version 300 es
-            #extension GL_EXT_frag_depth : enable
-            precision highp float;
+    // Use shader provider if registered (e.g., symbology plugin), otherwise use base shaders
+    if (this.shaderProvider_) {
+      const config = this.shaderProvider_.getShaderConfig(this.settings_);
 
-            uniform float logDepthBufFC;
-            uniform bool u_symbologyEnabled;
+      this.shaders_ = {
+        dots: { frag: config.fragShader, vert: config.vertShader },
+        picking: <{ vert: string; frag: string }><unknown>null,
+      };
+      Object.assign(this.programs.dots.attribs, config.extraAttribs);
+      for (const u of config.extraUniforms) {
+        (this.programs.dots.uniforms as Record<string, WebGLUniformLocation | null>)[u] = null;
+      }
+    } else {
+      this.shaders_ = {
+        dots: {
+          frag: createBaseFragShader(this.settings_),
+          vert: createBaseVertShader(this.settings_),
+        },
+        picking: <{ vert: string; frag: string }><unknown>null,
+      };
+    }
 
-            in vec4 vColor;
-            in float vSize;
-            in float vDist;
-            in float vAffiliation;
-            in float vObjectType;
-            in float vPointSize;
-            in float vStaleness;
-
-            out vec4 fragColor;
-
-            float when_lt(float x, float y) {
-              return max(sign(y - x), 0.0);
-            }
-            float when_ge(float x, float y) {
-              return 1.0 - when_lt(x, y);
-            }
-
-            // SDF for circle (Friend shape)
-            float sdCircle(vec2 p, float r) {
-              return length(p) - r;
-            }
-
-            // SDF for diamond (Hostile shape)
-            float sdDiamond(vec2 p, float size) {
-              return (abs(p.x) + abs(p.y)) - size;
-            }
-
-            // SDF for square (Neutral shape)
-            float sdSquare(vec2 p, float size) {
-              vec2 d = abs(p) - vec2(size);
-              return max(d.x, d.y);
-            }
-
-            // SDF for quatrefoil - four overlapping circles (Unknown shape)
-            float sdQuatrefoil(vec2 p, float size) {
-              float r = size * 0.55;
-              float d = size * 0.35;
-              float d1 = length(p - vec2(d, 0.0)) - r;
-              float d2 = length(p - vec2(-d, 0.0)) - r;
-              float d3 = length(p - vec2(0.0, d)) - r;
-              float d4 = length(p - vec2(0.0, -d)) - r;
-              return min(min(d1, d2), min(d3, d4));
-            }
-
-            // Get shape SDF based on affiliation
-            float getShapeSDF(vec2 p, float affiliation) {
-              float size = 0.95;
-
-              if (affiliation < 0.5 || (affiliation > 3.5 && affiliation < 4.5)) {
-                // FRIEND (0) or ASSUMED_FRIEND (4) - Circle
-                return sdCircle(p, size * 0.7);
-              } else if (affiliation < 1.5 || affiliation > 4.5) {
-                // HOSTILE (1) or SUSPECT (5) - Diamond
-                return sdDiamond(p, size * 0.7);
-              } else if (affiliation < 2.5) {
-                // NEUTRAL (2) - Square
-                return sdSquare(p, size * 0.55);
-              } else {
-                // UNKNOWN (3) - Quatrefoil
-                return sdQuatrefoil(p, size);
-              }
-            }
-
-            // Get color based on affiliation (MIL-STD-2525D inspired)
-            vec3 getAffiliationColor(float affiliation) {
-              if (affiliation < 0.5 || (affiliation > 3.5 && affiliation < 4.5)) {
-                // FRIEND (0) or ASSUMED_FRIEND (4) - Cyan
-                return vec3(0.0, 0.784, 1.0);
-              } else if (affiliation < 1.5 || affiliation > 4.5) {
-                // HOSTILE (1) or SUSPECT (5) - Red
-                return vec3(1.0, 0.196, 0.196);
-              } else if (affiliation < 2.5) {
-                // NEUTRAL - Green
-                return vec3(0.0, 0.902, 0.302);
-              } else {
-                // UNKNOWN - Yellow
-                return vec3(1.0, 1.0, 0.0);
-              }
-            }
-
-            // Render simple colored dot (fallback)
-            vec4 renderSimpleDot(vec2 ptCoord) {
-              float r = (${settingsManager.satShader.blurFactor1} - min(abs(length(ptCoord)), 1.0));
-              float alpha = (2.0 * r + ${settingsManager.satShader.blurFactor2});
-              alpha = min(alpha, 1.0);
-              if (alpha < 0.01) return vec4(0.0);
-              return vec4(vColor.rgb, vColor.a * alpha);
-            }
-
-            // Dashed pattern for Assumed Friend / Suspect (~6 segments, 50% duty)
-            float dashPattern(vec2 p) {
-              float angle = atan(p.y, p.x);
-              return step(0.5, fract(angle * 3.0 / 3.14159));
-            }
-
-            // Dotted pattern for stale epoch data (~12 segments, 35% duty)
-            float dotPattern(vec2 p) {
-              float angle = atan(p.y, p.x);
-              return step(0.65, fract(angle * 6.0 / 3.14159));
-            }
-
-            // Render SDF shape (intermediate fallback when no atlas)
-            vec4 renderSdfShape(vec2 ptCoord) {
-              float sdf = getShapeSDF(ptCoord, vAffiliation);
-              float strokeWidth = 0.12;
-              float alpha = 1.0 - smoothstep(0.0, 0.06, abs(sdf) - strokeWidth);
-              if (alpha < 0.01) return vec4(0.0);
-
-              // Staleness takes visual priority (dotted pattern)
-              if (vStaleness > 0.5) {
-                alpha *= dotPattern(ptCoord);
-              }
-              // Dashed pattern for Assumed Friend (4) / Suspect (5)
-              else if (vAffiliation > 3.5) {
-                alpha *= dashPattern(ptCoord);
-              }
-
-              if (alpha < 0.01) return vec4(0.0);
-              vec3 color = getAffiliationColor(vAffiliation);
-              return vec4(color, vColor.a * alpha);
-            }
-
-            void main(void) {
-              vec2 ptCoord = gl_PointCoord * 2.0 - vec2(1.0, 1.0);
-
-              vec4 finalColor;
-
-              if (u_symbologyEnabled && !(vObjectType > 5.5 && vObjectType < 6.5)) {
-                // Skip symbology for stars (type 6) - render as simple dots
-                finalColor = renderSdfShape(ptCoord);
-                if (finalColor.a < 0.01) discard;
-              } else {
-                // Original circular dot rendering
-                finalColor = renderSimpleDot(ptCoord);
-                if (finalColor.a < 0.01) discard;
-              }
-
-              fragColor = finalColor;
-
-              ${DepthManager.getLogDepthFragCode()}
-            }
-          `,
-        vert: glsl`#version 300 es
-          precision highp float;
-          in vec3 a_position;
-          in vec4 a_color;
-          in float a_size;
-          in float a_affiliation;
-          in float a_objectType;
-          in float a_staleness;
-
-          uniform float u_minSize;
-          uniform float u_maxSize;
-          uniform float u_starMinSize;
-          uniform vec3 worldOffset;
-          uniform mat4 u_pMvCamMatrix;
-          uniform float logDepthBufFC;
-          uniform bool u_symbologyEnabled;
-          uniform bool u_flatMapMode;
-          uniform float u_gmst;
-          uniform float u_currentGmst;
-          uniform float u_earthRadius;
-          uniform float u_flatMapCenterX;
-          uniform float u_flatMapZoom;
-          uniform bool u_polarViewMode;
-          uniform vec3 u_sensorEcef;
-          uniform mat3 u_ecefToEnu;
-          uniform float u_polarRadius;
-          uniform float u_polarZoom;
-
-          out vec4 vColor;
-          out float vSize;
-          out float vDist;
-          out float vAffiliation;
-          out float vObjectType;
-          out float vPointSize;
-          out float vStaleness;
-
-          float when_lt(float x, float y) {
-              return max(sign(y - x), 0.0);
-          }
-          float when_ge(float x, float y) {
-              return 1.0 - when_lt(x, y);
-          }
-
-          void main(void) {
-              vec3 eciPos = a_position + worldOffset;
-              vec4 position;
-
-              if (u_flatMapMode) {
-                  float PI = 3.14159265359;
-                  float eciDist = length(eciPos);
-
-                  // Filter out stars and distant objects
-                  if (eciDist > 1.0e7) {
-                      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-                      gl_PointSize = 0.0;
-                      vColor = vec4(0.0);
-                      vSize = 0.0;
-                      vDist = eciDist;
-                      vAffiliation = a_affiliation;
-                      vObjectType = a_objectType;
-                      vStaleness = a_staleness;
-                      vPointSize = 0.0;
-                      return;
-                  }
-
-                  float lon = atan(eciPos.y, eciPos.x) - u_gmst;
-                  lon = mod(lon + PI, 2.0 * PI) - PI;
-                  float lat = atan(eciPos.z, length(eciPos.xy));
-                  float alt = eciDist - u_earthRadius;
-                  vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
-
-                  // Wrap X to nearest copy of camera center for seamless scrolling
-                  float mapW = 2.0 * PI * u_earthRadius;
-                  flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
-
-                  position = u_pMvCamMatrix * vec4(flatPos, 1.0);
-              } else if (u_polarViewMode) {
-                  float PI = 3.14159265359;
-                  float eciDist = length(eciPos);
-
-                  if (eciDist > 1.0e7) {
-                      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-                      gl_PointSize = 0.0;
-                      vColor = vec4(0.0);
-                      vSize = 0.0;
-                      vDist = eciDist;
-                      vAffiliation = a_affiliation;
-                      vObjectType = a_objectType;
-                      vStaleness = a_staleness;
-                      vPointSize = 0.0;
-                      return;
-                  }
-
-                  // ECI to ECEF — use u_currentGmst (main-thread, frame-accurate)
-                  // instead of u_gmst (from cruncher worker, may lag during rapid time changes)
-                  float cg = cos(u_currentGmst);
-                  float sg = sin(u_currentGmst);
-                  vec3 ecef = vec3(
-                      eciPos.x * cg + eciPos.y * sg,
-                     -eciPos.x * sg + eciPos.y * cg,
-                      eciPos.z
-                  );
-
-                  // ECEF to ENU (sensor-relative)
-                  vec3 d = ecef - u_sensorEcef;
-                  vec3 enu = u_ecefToEnu * d;
-
-                  // ENU to azimuth/elevation
-                  float az = atan(enu.x, enu.y);
-                  float el = atan(enu.z, length(enu.xy));
-
-                  // Cull below-horizon satellites
-                  if (el < 0.0) {
-                      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-                      gl_PointSize = 0.0;
-                      vColor = vec4(0.0);
-                      vSize = 0.0;
-                      vDist = eciDist;
-                      vAffiliation = a_affiliation;
-                      vObjectType = a_objectType;
-                      vStaleness = a_staleness;
-                      vPointSize = 0.0;
-                      return;
-                  }
-
-                  // Polar projection: zenith at center, horizon at edge
-                  float r = (PI / 2.0 - el) / (PI / 2.0);
-                  vec3 polarPos = vec3(
-                      r * sin(az) * u_polarRadius,
-                      r * cos(az) * u_polarRadius,
-                      0.0
-                  );
-
-                  position = u_pMvCamMatrix * vec4(polarPos, 1.0);
-              } else {
-                  // Rotate stale ground-object ECI positions to match current Earth rotation
-                  float groundDist = length(a_position.xyz);
-                  if (groundDist < 6421.0) {
-                      float deltaGmst = u_currentGmst - u_gmst;
-                      float cosD = cos(deltaGmst);
-                      float sinD = sin(deltaGmst);
-                      eciPos = vec3(
-                          eciPos.x * cosD - eciPos.y * sinD,
-                          eciPos.x * sinD + eciPos.y * cosD,
-                          eciPos.z
-                      );
-                  }
-                  position = u_pMvCamMatrix * vec4(eciPos, 1.0);
-              }
-
-              gl_Position = position;
-
-              ${DepthManager.getLogDepthVertCode()}
-
-              float dist = distance(vec3(0.0, 0.0, 0.0), a_position.xyz);
-
-              if (u_flatMapMode) {
-                // Scale dot size with zoom so dots remain visible when zoomed in
-                float zoomScale = sqrt(u_flatMapZoom);
-                float flatSize = mix(u_minSize, float(${settingsManager.satShader.starSize}), step(0.5, a_size));
-                float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
-                gl_PointSize = flatSize * zoomScale * symbologyScale;
-                vPointSize = gl_PointSize;
-                vColor = a_color;
-                vSize = a_size * 1.0;
-                vDist = dist;
-                vAffiliation = a_affiliation;
-                vObjectType = a_objectType;
-                vStaleness = a_staleness;
-                return;
-              }
-
-              if (u_polarViewMode) {
-                float zoomScale = sqrt(u_polarZoom);
-                float polarSize = mix(u_minSize, float(${settingsManager.satShader.starSize}), step(0.5, a_size));
-                float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
-                gl_PointSize = polarSize * zoomScale * symbologyScale;
-                vPointSize = gl_PointSize;
-                vColor = a_color;
-                vSize = a_size * 1.0;
-                vDist = dist;
-                vAffiliation = a_affiliation;
-                vObjectType = a_objectType;
-                vStaleness = a_staleness;
-                return;
-              }
-
-              float drawSize = 0.0;
-              float baseSize = pow(${settingsManager.satShader.distanceBeforeGrow} \/ position.z, 2.1);
-
-              // Use star min size for objects beyond 1e8 km (stars), regular min size for satellites
-              float effectiveMinSize = mix(u_minSize, u_starMinSize, step(1.0e8, dist));
-
-              // Satellite / Star
-              drawSize +=
-              when_lt(a_size, 0.5) *
-              (min(max(baseSize, effectiveMinSize), u_maxSize) * 1.0);
-
-              // Something on the ground
-              drawSize +=
-              when_lt(a_size, 0.5) * when_lt(dist, 6421.0) *
-              (min(max(baseSize, u_minSize * 0.5), u_maxSize) * 1.0);
-
-              // Searched Object
-              drawSize += when_ge(a_size, 0.5) * ${settingsManager.satShader.starSize};
-
-              // Increase size when symbology is enabled for better visibility of outline shapes
-              float symbologyScale = u_symbologyEnabled ? 2.0 : 1.0;
-              gl_PointSize = drawSize * symbologyScale;
-              vPointSize = gl_PointSize;
-              vColor = a_color;
-              vSize = a_size * 1.0;
-              vDist = dist;
-              vAffiliation = a_affiliation;
-              vObjectType = a_objectType;
-              vStaleness = a_staleness;
-          }
-        `,
-      },
-      picking: {
-        vert: `#version 300 es
+    this.shaders_.picking = {
+      vert: glsl`#version 300 es
                 precision mediump float;
                 in vec3 a_position;
                 in vec3 a_color;
@@ -1451,7 +1020,7 @@ export class DotsManager {
                 vColor = a_color * a_pickable;
                 }
             `,
-        frag: `#version 300 es
+      frag: glsl`#version 300 es
                 #extension GL_EXT_frag_depth : enable
                 precision mediump float;
 
@@ -1466,7 +1035,6 @@ export class DotsManager {
                     ${DepthManager.getLogDepthFragCode()}
                 }
             `,
-      },
     };
   }
 

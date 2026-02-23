@@ -4,7 +4,7 @@ import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { WatchlistPlugin } from '@app/plugins/satellite-lists/satellite-lists';
+import { WatchlistPlugin } from '@app/plugins/watchlist/watchlist';
 import { BaseObject, CatalogSource, GreenwichMeanSiderealTime, Kilometers, Milliseconds, Satellite, TemeVec3 } from '@ootk/src/main';
 import { mat4, vec2, vec4 } from 'gl-matrix';
 import { GroupType } from '../../app/data/object-group';
