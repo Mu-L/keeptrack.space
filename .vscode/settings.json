@@ -1,6 +1,5 @@
 {
   "jest.jestCommandLine": "",
-  "conventionalCommits.promptScopes": false,
   "editor.formatOnSave": true,
   "typescript.validate.enable": true,
   "npm.exclude": [
