@@ -415,11 +415,9 @@ export class CatalogLoader {
       // Reset rendering subsystems
       const dotsManager = ServiceLocator.getDotsManager();
       const colorSchemeManager = ServiceLocator.getColorSchemeManager();
-      const symbologyManager = ServiceLocator.getSymbologyManager();
 
       dotsManager.resetForCatalogSwap();
       colorSchemeManager.resetForCatalogSwap();
-      symbologyManager.resetForCatalogSwap();
 
       // Remove stars from staticSet to prevent injectStarData_ from adding duplicates
       // on repeated catalog swaps (injectStarData_ pushes into staticSet every time)
@@ -598,11 +596,9 @@ export class CatalogLoader {
       // Reset rendering subsystems
       const dotsManager = ServiceLocator.getDotsManager();
       const colorSchemeManager = ServiceLocator.getColorSchemeManager();
-      const symbologyManager = ServiceLocator.getSymbologyManager();
 
       dotsManager.resetForCatalogSwap();
       colorSchemeManager.resetForCatalogSwap();
-      symbologyManager.resetForCatalogSwap();
 
       // Remove stars from staticSet to prevent duplicates
       catalogManager.staticSet = catalogManager.staticSet.filter(
