@@ -118,7 +118,7 @@ export class Inc2LonPlots extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'G',
+        key: 'g',
         callback: () => this.bottomMenuClicked(),
       },
     ];
