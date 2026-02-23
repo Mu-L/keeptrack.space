@@ -1,8 +1,10 @@
 import { vi } from 'vitest';
 import { MenuMode, SolarBody } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { PlanetsMenuPlugin } from '@app/plugins/planets-menu/planets-menu';
+import { settingsManager } from '@app/settings/settings';
 import { setupDefaultHtml } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite } from '@test/generic-tests';
 
@@ -224,6 +226,170 @@ describe('PlanetsMenuPlugin', () => {
 
       plugin.bottomIconCallback();
       expect(plugin.onBottomIconClick).toHaveBeenCalled();
+    });
+
+    it('should register endOfDraw handler on addHtml', () => {
+      const plugin = new PlanetsMenuPlugin();
+      const onSpy = vi.spyOn(EventBus.getInstance(), 'on');
+
+      plugin.addHtml();
+
+      expect(onSpy).toHaveBeenCalledWith(EventBusEvent.endOfDraw, expect.any(Function));
+    });
+  });
+
+  describe('Planets disabled behavior', () => {
+    afterEach(() => {
+      settingsManager.isDisablePlanets = false;
+    });
+
+    describe('Init-time disable', () => {
+      it('should return context menu config with visibility false when planets disabled', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+        const config = plugin.getContextMenuConfig();
+
+        expect(config.isVisibleOnEarth).toBe(false);
+        expect(config.isVisibleOffEarth).toBe(false);
+      });
+
+      it('should return context menu config with visibility true when planets enabled', () => {
+        settingsManager.isDisablePlanets = false;
+        const plugin = new PlanetsMenuPlugin();
+        const config = plugin.getContextMenuConfig();
+
+        expect(config.isVisibleOnEarth).toBe(true);
+        expect(config.isVisibleOffEarth).toBe(true);
+      });
+
+      it('should disable and hide bottom icon in uiManagerFinal when planets disabled at init', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.addHtml();
+
+        const disableSpy = vi.spyOn(plugin, 'setBottomIconToDisabled').mockImplementation(() => undefined);
+        const hideSpy = vi.spyOn(plugin, 'hideBottomIcon');
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (plugin as any).uiManagerFinal_();
+
+        expect(disableSpy).toHaveBeenCalled();
+        expect(hideSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('Runtime disable', () => {
+      it('should disable bottom icon when planets are disabled at runtime', () => {
+        settingsManager.isDisablePlanets = false;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.addHtml();
+
+        const disableSpy = vi.spyOn(plugin, 'setBottomIconToDisabled').mockImplementation(() => undefined);
+
+        settingsManager.isDisablePlanets = true;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (plugin as any).checkPlanetsDisabledState_();
+
+        expect(disableSpy).toHaveBeenCalled();
+      });
+
+      it('should re-enable bottom icon when planets are re-enabled at runtime', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.addHtml();
+
+        const enableSpy = vi.spyOn(plugin, 'setBottomIconToEnabled').mockImplementation(() => undefined);
+
+        settingsManager.isDisablePlanets = false;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (plugin as any).checkPlanetsDisabledState_();
+
+        expect(enableSpy).toHaveBeenCalled();
+      });
+
+      it('should mutate rmbMenuItem visibility on runtime disable', () => {
+        settingsManager.isDisablePlanets = false;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.addHtml();
+
+        vi.spyOn(plugin, 'setBottomIconToDisabled').mockImplementation(() => undefined);
+
+        const rmbMenuItems = [{ elementIdL1: 'planets-rmb', isRmbOnEarth: true, isRmbOffEarth: true }];
+
+        vi.spyOn(ServiceLocator, 'getInputManager').mockReturnValue({ rmbMenuItems } as ReturnType<typeof ServiceLocator.getInputManager>);
+
+        settingsManager.isDisablePlanets = true;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (plugin as any).checkPlanetsDisabledState_();
+
+        expect(rmbMenuItems[0].isRmbOnEarth).toBe(false);
+        expect(rmbMenuItems[0].isRmbOffEarth).toBe(false);
+      });
+
+      it('should not toggle state when isDisablePlanets has not changed', () => {
+        settingsManager.isDisablePlanets = false;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.addHtml();
+
+        const disableSpy = vi.spyOn(plugin, 'setBottomIconToDisabled');
+        const enableSpy = vi.spyOn(plugin, 'setBottomIconToEnabled');
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (plugin as any).checkPlanetsDisabledState_();
+
+        expect(disableSpy).not.toHaveBeenCalled();
+        expect(enableSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Interaction guards', () => {
+      it('should not call addDeepSpaceProbesMenu_ when planets disabled', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const spy = vi.spyOn(plugin as any, 'addDeepSpaceProbesMenu_').mockImplementation(() => undefined);
+
+        plugin.onBottomIconClick();
+        expect(spy).not.toHaveBeenCalled();
+      });
+
+      it('should not call changePlanet when planets disabled via onContextMenuAction', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.changePlanet = vi.fn();
+
+        plugin.onContextMenuAction('planets-Mercury-rmb');
+        expect(plugin.changePlanet).not.toHaveBeenCalled();
+      });
+
+      it('should not execute keyboard shortcut when planets disabled', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+
+        plugin.changePlanet = vi.fn();
+
+        const shortcuts = plugin.getKeyboardShortcuts();
+
+        shortcuts[0].callback();
+        expect(plugin.changePlanet).not.toHaveBeenCalled();
+      });
+
+      it('should block showBottomIcon when planets disabled', () => {
+        settingsManager.isDisablePlanets = true;
+        const plugin = new PlanetsMenuPlugin();
+        const superSpy = vi.spyOn(Object.getPrototypeOf(PlanetsMenuPlugin.prototype), 'showBottomIcon');
+
+        plugin.showBottomIcon();
+
+        expect(superSpy).not.toHaveBeenCalled();
+      });
     });
   });
 });
