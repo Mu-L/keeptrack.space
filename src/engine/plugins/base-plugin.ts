@@ -2,6 +2,7 @@
 import { BottomMenu } from '@app/app/ui/bottom-menu';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, Singletons } from '@app/engine/core/interfaces';
+import { OfflineIconBehavior } from '@app/settings/core-settings';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
 import { KeepTrack } from '@app/keeptrack';
 import { t7e, TranslationKey } from '@app/locales/keys';
@@ -45,6 +46,12 @@ import {
   IconPlacement,
   UtilityGroup,
 } from './core/plugin-capabilities';
+
+/**
+ * Symbol-keyed property for the login gate token.
+ * Not enumerable — resistant to Object.keys() and devtools property listing.
+ */
+const LOGIN_GATE_KEY = Symbol('loginGate');
 
 export interface ClickDragOptions {
   leftOffset?: number;
@@ -180,6 +187,19 @@ export abstract class KeepTrackPlugin {
   isIconDisabledOnLoad = false;
 
   /**
+   * Whether this plugin requires internet connectivity to function.
+   * When true, the icon will be disabled or hidden when offline,
+   * based on settingsManager.offlineIconBehavior.
+   */
+  requiresInternet = false;
+
+  /**
+   * Whether the icon is currently disabled due to being offline.
+   * Prevents sensor/satellite enable handlers from re-enabling an offline-disabled icon.
+   */
+  private isOfflineDisabled_ = false;
+
+  /**
    * The image to use for the bottom icon.
    */
   bottomIconImg: Module;
@@ -284,6 +304,60 @@ export abstract class KeepTrackPlugin {
    */
   static readonly MAX_BOTTOM_ICON_ORDER: number = 600;
   private isInitialized_ = false;
+
+  // ============================================================================
+  // Login gate — anti-spoofing token system
+  // ============================================================================
+
+  /**
+   * Whether this plugin requires login to use.
+   * Set by PluginManager when loading a gated pro plugin.
+   */
+  isLoginRequired = false;
+
+  /**
+   * Symbol-keyed rotating token slot. Set by LoginGateService via setLoginGateToken().
+   * Not visible in Object.keys(), for...in, or devtools property list.
+   */
+  private [LOGIN_GATE_KEY]: string | null = null;
+
+  /**
+   * Callback provided by LoginGateService (pro-only) to get the current valid token.
+   * null in OSS builds where LoginGateService does not exist.
+   */
+  static loginGateTokenProvider: (() => string | null) | null = null;
+
+  /**
+   * Callback provided by LoginGateService (pro-only) to open the login modal.
+   * null in OSS builds where ModalLogin does not exist.
+   */
+  static loginGateOpenModal: (() => void) | null = null;
+
+  /**
+   * Sets the login gate token on a plugin instance. Called by LoginGateService
+   * to distribute or clear rotating tokens.
+   */
+  static setLoginGateToken(plugin: KeepTrackPlugin, token: string | null): void {
+    plugin[LOGIN_GATE_KEY] = token;
+  }
+
+  /**
+   * Checks whether the login gate allows this plugin to be used.
+   * Returns true if the plugin is not gated or if the token matches.
+   */
+  isLoginGateValid_(): boolean {
+    if (!this.isLoginRequired) {
+      return true;
+    }
+
+    const expectedToken = KeepTrackPlugin.loginGateTokenProvider?.() ?? null;
+
+    if (!expectedToken) {
+      return false;
+    }
+
+    return this[LOGIN_GATE_KEY] === expectedToken;
+  }
 
   // ============================================================================
   // Component instances for composition-based architecture
@@ -421,7 +495,7 @@ export abstract class KeepTrackPlugin {
       this.bottomIconElementName = config.elementName;
       this.bottomIconLabel = config.label;
       this.bottomIconImg = config.image as unknown as Module;
-      this.isIconDisabledOnLoad = config.isDisabledOnLoad ?? false;
+      this.isIconDisabledOnLoad = config.isDisabledOnLoad ?? this.isIconDisabledOnLoad;
       if (config.menuMode) {
         this.menuMode = config.menuMode;
       }
@@ -606,6 +680,7 @@ export abstract class KeepTrackPlugin {
       if (this.iconPlacement === IconPlacement.UTILITY_ONLY || this.iconPlacement === IconPlacement.BOTH) {
         this.addUtilityIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
       }
+      this.isIconDisabled = this.isIconDisabledOnLoad;
     }
 
     if (this.sideMenuElementName && this.sideMenuElementHtml) {
@@ -872,6 +947,10 @@ export abstract class KeepTrackPlugin {
       });
     }
 
+    if (this.requiresInternet) {
+      this.registerConnectivityHandlers_();
+    }
+
     this.isJsAdded = true;
   }
 
@@ -921,7 +1000,7 @@ export abstract class KeepTrackPlugin {
   registerMenuMode(): void {
     EventBus.getInstance().on(EventBusEvent.bottomMenuModeChange, (): void => {
       this.hideBottomIcon();
-      if (this.menuMode.includes(settingsManager.activeMenuMode)) {
+      if (this.menuMode.includes(settingsManager.activeMenuMode) && !this.isOfflineDisabled_) {
         this.showBottomIcon();
       }
     });
@@ -1011,6 +1090,11 @@ export abstract class KeepTrackPlugin {
         if (isDisabled) {
           button.classList.add('bmenu-item-disabled');
         }
+        if (this.isLoginRequired) {
+          button.classList.add('bmenu-item-pro');
+          button.setAttribute('data-pro-gated', '');
+        }
+
         button.innerHTML = `
           <div class="bmenu-item-inner">
             <img
@@ -1047,6 +1131,11 @@ export abstract class KeepTrackPlugin {
         if (isDisabled) {
           item.classList.add('bmenu-item-disabled');
         }
+        if (this.isLoginRequired) {
+          item.classList.add('bmenu-item-pro');
+          item.setAttribute('data-pro-gated', '');
+        }
+
         item.innerHTML = `
           <div class="bmenu-filter-item-inner">
             <img
@@ -1135,6 +1224,75 @@ export abstract class KeepTrackPlugin {
     getEl(`${this.id}-utility-icon`)?.classList.remove('bmenu-item-disabled');
   }
 
+  private registerConnectivityHandlers_(): void {
+    // Check initial state after icons are in the DOM
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, (): void => {
+      if (!navigator.onLine || settingsManager.offlineMode) {
+        this.setBottomIconToDisabledForOffline_();
+      }
+    });
+
+    // React to runtime connectivity changes
+    EventBus.getInstance().on(EventBusEvent.connectivityChange, (isOnline: boolean): void => {
+      if (isOnline) {
+        this.setBottomIconToEnabledForOnline_();
+      } else {
+        this.setBottomIconToDisabledForOffline_();
+      }
+    });
+  }
+
+  private setBottomIconToDisabledForOffline_(): void {
+    this.isOfflineDisabled_ = true;
+
+    if (settingsManager.offlineIconBehavior === OfflineIconBehavior.HIDE) {
+      if (this.isMenuButtonActive) {
+        this.hideSideMenus();
+      }
+      this.hideBottomIcon();
+    } else {
+      this.setBottomIconToDisabled();
+    }
+  }
+
+  /**
+   * Re-enables the bottom icon when the plugin comes back online.
+   *
+   * Checks various conditions before re-enabling:
+   * - If a sensor selection is required, verifies that a sensor is currently selected
+   * - If a satellite selection is required, verifies that a satellite is currently selected
+   * 
+   * Once prerequisites are met, the icon visibility depends on the offline icon behavior setting:
+   * - If set to HIDE: Only shows the icon if it's relevant to the current menu mode
+   * - Otherwise: Fully enables the icon
+   * 
+   * @private
+   */
+  private setBottomIconToEnabledForOnline_(): void {
+    this.isOfflineDisabled_ = false;
+
+    // Don't re-enable if other conditions still block this icon
+    if (this.isRequireSensorSelected && !ServiceLocator.getSensorManager().isSensorSelected()) {
+      return;
+    }
+    if (this.isRequireSatelliteSelected) {
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (!selectSatManager || selectSatManager.selectedSat === -1) {
+        return;
+      }
+    }
+
+    if (settingsManager.offlineIconBehavior === OfflineIconBehavior.HIDE) {
+      // Only show if this icon should be visible in the current menu mode
+      if (this.menuMode.includes(settingsManager.activeMenuMode)) {
+        this.showBottomIcon();
+      }
+    } else {
+      this.setBottomIconToEnabled();
+    }
+  }
+
   /**
    * Requires the user to select a sensor before opening their bottom menu.
    */
@@ -1194,7 +1352,7 @@ export abstract class KeepTrackPlugin {
           if (!obj?.isSatellite() || !ServiceLocator.getSensorManager().isSensorSelected()) {
             this.setBottomIconToDisabled();
             this.setBottomIconToUnselected();
-          } else {
+          } else if (!this.isOfflineDisabled_) {
             this.setBottomIconToEnabled();
           }
         },
@@ -1207,7 +1365,7 @@ export abstract class KeepTrackPlugin {
           if (!obj) {
             this.setBottomIconToDisabled();
             this.setBottomIconToUnselected();
-          } else {
+          } else if (!this.isOfflineDisabled_) {
             this.setBottomIconToEnabled();
           }
         },
@@ -1221,7 +1379,7 @@ export abstract class KeepTrackPlugin {
           if (!sensor && !sensorId) {
             this.setBottomIconToDisabled();
             this.setBottomIconToUnselected();
-          } else {
+          } else if (!this.isOfflineDisabled_) {
             this.setBottomIconToEnabled();
           }
         },
@@ -1240,7 +1398,19 @@ export abstract class KeepTrackPlugin {
             getEl(this.bottomIconElementName, true)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
             getEl(`${this.id}-utility-icon`, true)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
           } else {
-            // Verifiy that the user has selected a sensor and/or satellite if required
+            // Check login gate before any other activation logic
+            if (this.isLoginRequired && !this.isLoginGateValid_()) {
+              errorManagerInstance.warn(
+                t7e('errorMsgs.LoginRequired' as TranslationKey) ?? 'This feature requires login. Please sign in to continue.',
+                true,
+              );
+              this.shakeBottomIcon();
+              KeepTrackPlugin.loginGateOpenModal?.();
+
+              return;
+            }
+
+            // Verify that the user has selected a sensor and/or satellite if required
             if (this.isRequireSensorSelected) {
               if (!this.verifySensorSelected()) {
                 return;
