@@ -42,6 +42,7 @@ import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import bookmarksPng from '@public/img/icons/bookmarks.png';
 import saveAs from 'file-saver';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { IKeyboardShortcut } from '../../engine/plugins/core/plugin-capabilities';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { EL as SAT_INFO_EL } from '../sat-info-box/sat-info-box-html';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
@@ -55,6 +56,16 @@ export interface UpdateWatchlistParams {
 export class WatchlistPlugin extends KeepTrackPlugin {
   readonly id = 'WatchlistPlugin';
   dependencies_ = [];
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'W',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
   bottomIconCallback = () => {
     // The accounts for clicking the button again before the animation is done
     if (!this.isMenuButtonActive) {
@@ -78,7 +89,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     <div id="watchlist-menu" class="side-menu-parent start-hidden text-select">
       <div id="watchlist-content" class="side-menu">
         <div class="row">
-          <h5 class="center-align">Satellite List</h5>
+          <h5 class="center-align">Watchlist</h5>
           <div id="watchlist-list">
           </div>
           <br />
@@ -111,7 +122,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
     </div>`;
 
   sideMenuElementName: string = 'watchlist-menu';
-  sideMenuTitle = 'Satellite List';
+  sideMenuTitle = 'Watchlist';
 
   sideMenuSecondaryHtml = html`
     <div class="switch row">
@@ -343,7 +354,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       }
     }
     if (newWatchlist.length > 0) {
-      ServiceLocator.getUiManager().toast(`Satellite List Loaded with ${newWatchlist.length} Satellites`, ToastMsgType.normal);
+      ServiceLocator.getUiManager().toast(`Watchlist Loaded with ${newWatchlist.length} Satellites`, ToastMsgType.normal);
     }
 
     return newWatchlist;
@@ -586,11 +597,11 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       const sat = ServiceLocator.getCatalogManager().getSat(id);
 
       if (sat?.sccNum) {
-        errorManagerInstance.warn(`NORAD: ${sat.sccNum} already in list!`, true);
+        errorManagerInstance.warnToast(`NORAD: ${sat.sccNum} already in list!`);
       } else if (sat) {
         const jscString = sat.source === CatalogSource.VIMPEL ? ` (JSC Vimpel ${sat.altId})` : '';
 
-        errorManagerInstance.warn(`Object ${id}${jscString} already in list!`, true);
+        errorManagerInstance.warnToast(`Object ${id}${jscString} already in list!`);
       }
     }
 
@@ -677,7 +688,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       const id = ServiceLocator.getCatalogManager().sccNum2Id(parseInt(satNum)) ?? -1;
 
       if (id === -1) {
-        errorManagerInstance.warn(`Sat ${satNum} not found!`, true);
+        errorManagerInstance.warnToast(`Sat ${satNum} not found!`);
 
         return;
       }
@@ -788,7 +799,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       if (sat !== null && sat.id !== -1) {
         this.watchlistList.push({ id: sat.id, inView: false });
       } else {
-        errorManagerInstance.warn(`Sat ${obj.id} not found!`, true);
+        errorManagerInstance.warnToast(`Sat ${obj.id} not found!`);
       }
     }
     this.updateWatchlist();
@@ -829,7 +840,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       const sat = ServiceLocator.getCatalogManager().getSat(this.watchlistList[i].id, GetSatType.EXTRA_ONLY);
 
       if (sat === null) {
-        errorManagerInstance.warn(`Sat ${this.watchlistList[i].id} not found!`, true);
+        errorManagerInstance.warnToast(`Sat ${this.watchlistList[i].id} not found!`);
 
         continue;
       }

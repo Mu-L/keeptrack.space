@@ -15,7 +15,7 @@ import { Satellite, MILLISECONDS_PER_DAY } from '@ootk/src/main';
 import pictureInPicturePng from '@public/img/icons/picture-in-picture.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { WatchlistPlugin } from './satellite-lists';
+import { WatchlistPlugin } from './watchlist';
 
 export class WatchlistOverlay extends KeepTrackPlugin {
   readonly id = 'WatchlistOverlay';
