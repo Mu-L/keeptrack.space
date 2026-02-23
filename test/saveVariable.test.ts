@@ -6,6 +6,25 @@ import fileSaver from 'file-saver';
 import Papa from 'papaparse';
 import { disableConsoleErrors, enableConsoleErrors } from './environment/standard-env';
 
+const mockWriteFile = vi.fn();
+
+vi.mock('xlsx', () => ({
+  default: {
+    utils: {
+      json_to_sheet: vi.fn(() => ({})),
+      book_new: vi.fn(() => ({})),
+      book_append_sheet: vi.fn(),
+    },
+    writeFile: mockWriteFile,
+  },
+  utils: {
+    json_to_sheet: vi.fn(() => ({})),
+    book_new: vi.fn(() => ({})),
+    book_append_sheet: vi.fn(),
+  },
+  writeFile: mockWriteFile,
+}));
+
 /**
  *Objective:
  *The objective of this code snippet is to provide functions for saving variables as text files and arrays of objects as CSV files. The code includes a function to handle circular
@@ -140,24 +159,11 @@ describe('code_snippet', () => {
       { a: 1, b: 2 },
       { a: 3, b: 4 },
     ];
-    const mockWriteFile = vi.fn();
-    const mockSheet = {};
-    const mockWorkbook = {};
 
-    vi.doMock('xlsx', () => ({
-      utils: {
-        json_to_sheet: vi.fn(() => mockSheet),
-        book_new: vi.fn(() => mockWorkbook),
-        book_append_sheet: vi.fn(),
-      },
-      writeFile: mockWriteFile,
-    }));
-
+    mockWriteFile.mockClear();
     await saveXlsx(items);
 
-    // Dynamic import is used internally, so we verify no errors thrown
-    // The actual XLSX module mock is complex due to dynamic import; verify the function completes
-    expect(true).toBe(true);
+    expect(mockWriteFile).toHaveBeenCalledWith(expect.anything(), 'data.xlsx');
   });
 
   // Tests that saveXlsx uses provided name
@@ -167,8 +173,10 @@ describe('code_snippet', () => {
       { a: 3, b: 4 },
     ];
 
-    // saveXlsx handles errors internally, so this should not throw
-    await expect(saveXlsx(items, 'myData')).resolves.not.toThrow();
+    mockWriteFile.mockClear();
+    await saveXlsx(items, 'myData');
+
+    expect(mockWriteFile).toHaveBeenCalledWith(expect.anything(), 'myData.xlsx');
   });
 
   // Tests that copyTsvToClipboard copies tab-separated data to clipboard

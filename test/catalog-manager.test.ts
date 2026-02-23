@@ -9,6 +9,14 @@ import { defaultSat } from './environment/apiMocks';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
+vi.mock('@app/engine/utils/saveVariable', () => ({
+  saveXlsx: vi.fn(),
+  saveCsv: vi.fn(),
+  saveVariable: vi.fn(),
+  copyTsvToClipboard: vi.fn(),
+  getCircularReplacer: vi.fn(),
+}));
+
 // Test calcSatrec function
 describe('calcSatrec', () => {
   let catalogManagerInstance: CatalogManager;
