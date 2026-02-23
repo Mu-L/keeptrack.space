@@ -25,7 +25,7 @@ export class PoliticalMapToggle extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'L',
+        key: 'l',
         callback: () => this.bottomMenuClicked(),
       },
     ];
@@ -37,7 +37,7 @@ export class PoliticalMapToggle extends KeepTrackPlugin {
         id: 'PoliticalMapToggle.toggle',
         label: 'Toggle Political Boundaries',
         category: 'Display',
-        shortcutHint: 'L',
+        shortcutHint: 'l',
         callback: () => this.bottomMenuClicked(),
       },
     ];
