@@ -1,3 +1,4 @@
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { GlUtils } from '@app/engine/rendering/gl-utils';
 import { GLSL3 } from '@app/engine/rendering/material';
 import { Mesh } from '@app/engine/rendering/mesh';
@@ -8,7 +9,6 @@ import { SettingsManager } from '@app/settings/settings';
 import { DEG2RAD } from '@ootk/src/main';
 import { mat3, mat4 } from 'gl-matrix';
 import { DepthManager } from '../depth-manager';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 /* eslint-disable no-useless-escape */
 /* eslint-disable camelcase */
 
@@ -27,14 +27,10 @@ export class SkyBoxSphere {
 
   private gl_: WebGL2RenderingContext;
   private isTexturesReady_: boolean;
-  private isReadyBoundaries_ = false;
-  private isReadyConstellations_ = false;
   private isReadyGraySkybox_ = false;
   private mvMatrix_ = mat4.create();
   private nMatrix_ = mat3.create();
   private settings_: SettingsManager;
-  private textureBoundaries_ = <WebGLTexture><unknown>null;
-  private textureConstellations_ = <WebGLTexture><unknown>null;
   private textureGraySkybox_: WebGLTexture;
   mesh: Mesh;
   private isLoaded_ = false;
@@ -47,26 +43,6 @@ export class SkyBoxSphere {
     [MilkyWayTextureQuality.HIGH]: <WebGLTexture><unknown>null,
     [MilkyWayTextureQuality.ULTRA]: <WebGLTexture><unknown>null,
   };
-
-  static getSrcBoundaries(settings: SettingsManager): string {
-    if (!settings.installDirectory) {
-      throw new Error('installDirectory is not defined');
-    }
-
-    const src = `${settings.installDirectory}textures/skyboxBoundaries8k.jpg`;
-
-    return src;
-  }
-
-  static getSrcConstellations(settings: SettingsManager): string {
-    if (!settings.installDirectory) {
-      throw new Error('installDirectory is not defined');
-    }
-
-    const src = `${settings.installDirectory}textures/skyboxConstellations8k.jpg`;
-
-    return src;
-  }
 
   static getSrcGraySkybox(settings: SettingsManager): string {
     if (!settings.installDirectory) {
@@ -95,7 +71,7 @@ export class SkyBoxSphere {
     }
 
     // Make sure there is something to draw
-    if (!this.settings_.isDrawMilkyWay && !this.settings_.isDrawConstellationBoundaries && !this.settings_.isDrawNasaConstellations && !this.settings_.isGraySkybox) {
+    if (!this.settings_.isDrawMilkyWay) {
       return;
     }
 
@@ -127,7 +103,7 @@ export class SkyBoxSphere {
     gl.uniformMatrix4fv(this.mesh.material.uniforms.projectionMatrix, false, ServiceLocator.getRenderer().projectionCameraMatrix);
     gl.uniform3fv(this.mesh.material.uniforms.worldOffset, ServiceLocator.getMainCamera().getCamPos());
 
-    if (!this.settings_.isDrawMilkyWay && !this.settings_.isDrawConstellationBoundaries && !this.settings_.isDrawNasaConstellations) {
+    if (!this.settings_.isDrawMilkyWay) {
       gl.uniform1i(this.mesh.material.uniforms.u_texMilkyWay, 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.textureGraySkybox_);
@@ -139,45 +115,20 @@ export class SkyBoxSphere {
         gl.bindTexture(gl.TEXTURE_2D, this.textureMilkyWay[settingsManager.milkyWayTextureQuality]);
       }
 
-      if (this.settings_.isDrawConstellationBoundaries) {
-        gl.uniform1i(this.mesh.material.uniforms.u_texBoundaries, 1);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.textureBoundaries_);
-      } else {
-        gl.uniform1i(this.mesh.material.uniforms.u_texMilkyWay, 1);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.textureMilkyWay[settingsManager.milkyWayTextureQuality]);
-      }
 
-      if (this.settings_.isDrawNasaConstellations) {
-        gl.uniform1i(this.mesh.material.uniforms.u_texConstellations, 2);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, this.textureConstellations_);
-      } else {
-        gl.uniform1i(this.mesh.material.uniforms.u_texMilkyWay, 2);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, this.textureMilkyWay[settingsManager.milkyWayTextureQuality]);
-      }
+      gl.uniform1i(this.mesh.material.uniforms.u_texMilkyWay, 1);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, this.textureMilkyWay[settingsManager.milkyWayTextureQuality]);
+
+      gl.uniform1i(this.mesh.material.uniforms.u_texMilkyWay, 2);
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, this.textureMilkyWay[settingsManager.milkyWayTextureQuality]);
 
       /*
        * Figure out how bright the milky way should be to make the blending consistent
        * The more textures that are on the brighter the milky way needs to be
        */
-      let milkyWayMul: 6 | 4 | 2 | 0;
-      const factor1 = this.settings_.isDrawMilkyWay ? 1 : 0;
-      const factor2 = this.settings_.isDrawConstellationBoundaries ? 1 : 0;
-      const factor3 = this.settings_.isDrawNasaConstellations ? 1 : 0;
-      const sum = factor1 + factor2 + factor3;
-
-      if (sum === 3) {
-        milkyWayMul = 6;
-      } else if (sum === 2) {
-        milkyWayMul = 4;
-      } else if (sum === 1) {
-        milkyWayMul = 2;
-      } else {
-        milkyWayMul = 0;
-      }
+      const milkyWayMul = this.settings_.isDrawMilkyWay ? 2 : 0;
 
       gl.uniform1f(this.mesh.material.uniforms.u_fMilkyWay, milkyWayMul);
     }
@@ -197,8 +148,6 @@ export class SkyBoxSphere {
     const material = new ShaderMaterial(gl, {
       uniforms: {
         u_texMilkyWay: null as unknown as WebGLUniformLocation,
-        u_texBoundaries: null as unknown as WebGLUniformLocation,
-        u_texConstellations: null as unknown as WebGLUniformLocation,
         u_fMilkyWay: null as unknown as WebGLUniformLocation,
       },
       vertexShader: this.shaders_.vert,
@@ -240,20 +189,6 @@ export class SkyBoxSphere {
         this.isTexturesReady_ = true;
       });
     }
-    if (sm.isDrawConstellationBoundaries && !this.isReadyBoundaries_) {
-      GlUtils.initTexture(this.gl_, SkyBoxSphere.getSrcBoundaries(sm)).then((texture) => {
-        this.textureBoundaries_ = texture;
-        this.isReadyBoundaries_ = true;
-        this.isTexturesReady_ = true;
-      });
-    }
-    if (sm.isDrawNasaConstellations && !this.isReadyConstellations_) {
-      GlUtils.initTexture(this.gl_, SkyBoxSphere.getSrcConstellations(sm)).then((texture) => {
-        this.textureConstellations_ = texture;
-        this.isReadyConstellations_ = true;
-        this.isTexturesReady_ = true;
-      });
-    }
     if (sm.isGraySkybox && !this.isReadyGraySkybox_) {
       GlUtils.initTexture(this.gl_, SkyBoxSphere.getSrcGraySkybox(sm)).then((texture) => {
         this.textureGraySkybox_ = texture;
@@ -271,8 +206,6 @@ export class SkyBoxSphere {
   private shaders_ = {
     frag: glsl`
         uniform sampler2D u_texMilkyWay;
-        uniform sampler2D u_texBoundaries;
-        uniform sampler2D u_texConstellations;
 
         uniform float u_fMilkyWay;
 
@@ -287,13 +220,7 @@ export class SkyBoxSphere {
               discard;
             }
 
-            // 20% goes to the boundaries
-            vec4 vecBoundaries = texture(u_texBoundaries, v_texcoord) * 0.2;
-            // 20% goes to the constellations
-            vec4 vecConstellations = texture(u_texConstellations, v_texcoord) * 0.2;
-            // 60% goes to the milky way no matter what
-            vec4 vecMilkyWay = texture(u_texMilkyWay, v_texcoord) * u_fMilkyWay * 0.1;
-            fragColor = vecMilkyWay + vecConstellations + vecBoundaries;
+            fragColor = texture(u_texMilkyWay, v_texcoord) * u_fMilkyWay * 0.1;
 
             ${DepthManager.getLogDepthFragCode()}
         }

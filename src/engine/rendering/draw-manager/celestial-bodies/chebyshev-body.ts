@@ -104,6 +104,10 @@ export abstract class ChebyshevBody extends CelestialBody {
   minimumUpdateInterval: number = 7 * 24 * 3600 * 1000;
 
   drawFullOrbitPath(): void {
+    if (!this.interpolator_) {
+      return;
+    }
+
     const nowMs = ServiceLocator.getTimeManager().simulationTimeObj.getTime();
     const isDataOld = Math.abs(nowMs - this.lastUpdateTime) > this.minimumUpdateInterval;
 

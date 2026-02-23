@@ -55,9 +55,6 @@ export class DotsManager {
   private settings_: SettingsManager;
   // Array for which colors go to which ids
   private isSizeBufferOneTime_ = false;
-  // Sprite atlas texture for symbology
-  private symbologyTexture_: WebGLTexture | null = null;
-  private symbologyTextureLoaded_ = false;
 
   buffers = {
     position: <WebGLBuffer><unknown>null,
@@ -132,9 +129,6 @@ export class DotsManager {
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
         u_symbologyEnabled: <WebGLUniformLocation><unknown>null,
-        u_symbologyAtlas: <WebGLUniformLocation><unknown>null,
-        u_iconMinSize: <WebGLUniformLocation><unknown>null,
-        u_iconFadeRange: <WebGLUniformLocation><unknown>null,
         u_flatMapMode: <WebGLUniformLocation><unknown>null,
         u_gmst: <WebGLUniformLocation><unknown>null,
         u_currentGmst: <WebGLUniformLocation><unknown>null,
@@ -336,18 +330,6 @@ export class DotsManager {
         }
       }
 
-      // Bind sprite atlas texture if available
-      if (this.symbologyTextureLoaded_ && this.symbologyTexture_) {
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.symbologyTexture_);
-        gl.uniform1i(this.programs.dots.uniforms.u_symbologyAtlas, 0);
-        gl.uniform1f(this.programs.dots.uniforms.u_iconMinSize, 16.0);
-        gl.uniform1f(this.programs.dots.uniforms.u_iconFadeRange, 4.0);
-      } else {
-        // No atlas available - set iconMinSize to 0 to trigger SDF fallback
-        gl.uniform1f(this.programs.dots.uniforms.u_iconMinSize, 0.0);
-        gl.uniform1f(this.programs.dots.uniforms.u_iconFadeRange, 0.0);
-      }
     }
 
     /*
@@ -559,8 +541,6 @@ export class DotsManager {
     this.initStalenessBuffer();
     this.initVao(); // Needs ColorBuffer first
 
-    // Load symbology texture asynchronously (non-blocking)
-    this.loadSymbologyTexture();
   }
 
   /**
@@ -590,31 +570,6 @@ export class DotsManager {
     this.buffers.staleness = gl.createBuffer();
   }
 
-  /**
-   * Load the symbology sprite atlas texture.
-   * This should be called after the WebGL context is available.
-   */
-  async loadSymbologyTexture(): Promise<void> {
-    const gl = ServiceLocator.getRenderer().gl;
-
-    try {
-      this.symbologyTexture_ = await GlUtils.initTexture(
-        gl,
-        `${settingsManager.installDirectory}textures/symbology-atlas.png`,
-      );
-      this.symbologyTextureLoaded_ = true;
-    } catch (e) {
-      console.warn('Failed to load symbology atlas texture:', e);
-      this.symbologyTextureLoaded_ = false;
-    }
-  }
-
-  /**
-   * Check if symbology texture is loaded and ready
-   */
-  get isSymbologyTextureLoaded(): boolean {
-    return this.symbologyTextureLoaded_;
-  }
 
   /**
    * We need to share the color buffer between the color manager and the dots manager
@@ -1030,9 +985,6 @@ export class DotsManager {
 
             uniform float logDepthBufFC;
             uniform bool u_symbologyEnabled;
-            uniform sampler2D u_symbologyAtlas;
-            uniform float u_iconMinSize;
-            uniform float u_iconFadeRange;
 
             in vec4 vColor;
             in float vSize;
@@ -1114,21 +1066,6 @@ export class DotsManager {
               }
             }
 
-            // Sample from sprite atlas (8x8 grid, 16 icons per affiliation)
-            vec4 sampleSpriteAtlas(vec2 uv, float affiliation, float objectType) {
-              // Map new affiliations to parent affiliation for atlas lookup
-              // ASSUMED_FRIEND (4) -> FRIEND (0), SUSPECT (5) -> HOSTILE (1)
-              float atlasAffil = affiliation;
-              if (affiliation > 3.5 && affiliation < 4.5) atlasAffil = 0.0;
-              if (affiliation > 4.5) atlasAffil = 1.0;
-
-              float atlasIndex = atlasAffil * 16.0 + objectType;
-              float col = mod(atlasIndex, 8.0);
-              float row = floor(atlasIndex / 8.0);
-              vec2 cellUV = (uv + vec2(col, row)) / 8.0;
-              return texture(u_symbologyAtlas, cellUV);
-            }
-
             // Render simple colored dot (fallback)
             vec4 renderSimpleDot(vec2 ptCoord) {
               float r = (${settingsManager.satShader.blurFactor1} - min(abs(length(ptCoord)), 1.0));
@@ -1173,30 +1110,13 @@ export class DotsManager {
 
             void main(void) {
               vec2 ptCoord = gl_PointCoord * 2.0 - vec2(1.0, 1.0);
-              vec2 uv = gl_PointCoord;
 
               vec4 finalColor;
 
               if (u_symbologyEnabled && !(vObjectType > 5.5 && vObjectType < 6.5)) {
                 // Skip symbology for stars (type 6) - render as simple dots
-                // Check if sprite atlas is available and point is large enough
-                if (u_iconMinSize > 0.0 && vPointSize >= u_iconMinSize) {
-                  // Full sprite atlas rendering
-                  vec4 texColor = sampleSpriteAtlas(uv, vAffiliation, vObjectType);
-                  if (texColor.a < 0.1) discard;
-                  finalColor = texColor;
-                } else if (u_iconMinSize > 0.0 && vPointSize >= (u_iconMinSize - u_iconFadeRange)) {
-                  // Blend zone: crossfade between sprite and SDF
-                  float blendFactor = (vPointSize - (u_iconMinSize - u_iconFadeRange)) / u_iconFadeRange;
-                  vec4 iconColor = sampleSpriteAtlas(uv, vAffiliation, vObjectType);
-                  vec4 sdfColor = renderSdfShape(ptCoord);
-                  finalColor = mix(sdfColor, iconColor, blendFactor);
-                  if (finalColor.a < 0.01) discard;
-                } else {
-                  // SDF shape fallback (no atlas or too small)
-                  finalColor = renderSdfShape(ptCoord);
-                  if (finalColor.a < 0.01) discard;
-                }
+                finalColor = renderSdfShape(ptCoord);
+                if (finalColor.a < 0.01) discard;
               } else {
                 // Original circular dot rendering
                 finalColor = renderSimpleDot(ptCoord);
