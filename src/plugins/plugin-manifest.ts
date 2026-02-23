@@ -237,6 +237,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'LinkBudgetPlugin',
     proImport: () => import('../plugins-pro/link-budget/link-budget'),
     defaultConfig: { enabled: false, order: 94 },
+    isLoginRequired: true,
   },
   {
     configKey: 'MultiSiteLookAnglesPlugin',
@@ -263,6 +264,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/satellite-lists/satellite-lists'),
     proClassName: 'SatelliteListsPlugin',
     defaultConfig: { enabled: true, order: 40 },
+    isLoginRequired: true,
   },
   {
     configKey: 'WatchlistOverlay',
@@ -319,6 +321,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/find-sat/find-sat'),
     proClassName: 'FindSatPro',
     defaultConfig: { enabled: true, order: 80 },
+    isLoginRequired: true,
   },
   {
     configKey: 'ProximityOps',
@@ -346,6 +349,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'TocaPocaPlugin',
     proImport: () => import('../plugins-pro/toca-poca-plugin/toca-poca-plugin'),
     defaultConfig: { enabled: true, order: 82 },
+    isLoginRequired: true,
   },
   {
     configKey: 'NeighborhoodWatch',
@@ -353,6 +357,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'NeighborhoodWatch',
     proImport: () => import('../plugins-pro/neighborhood-watch/neighborhood-watch'),
     defaultConfig: { enabled: true, order: 83 },
+    isLoginRequired: true,
   },
   {
     configKey: 'OrbitGuardMenuPlugin',
@@ -390,6 +395,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'StkFileHandler',
     proImport: () => import('../plugins-pro/stk-file-handler/stk-file-handler'),
     defaultConfig: { enabled: true },
+    isLoginRequired: true,
   },
   {
     configKey: 'CreateSat',
@@ -398,6 +404,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/create-sat/create-sat'),
     proClassName: 'CreateSatPro',
     defaultConfig: { enabled: true, order: 70 },
+    isLoginRequired: true,
   },
   {
     configKey: 'OemReaderPlugin',
@@ -405,6 +412,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'OemReaderPlugin',
     proImport: () => import('../plugins-pro/oem-reader/oem-reader'),
     defaultConfig: { enabled: true, order: 71.5 },
+    isLoginRequired: true,
   },
   {
     configKey: 'ObservationReaderPlugin',
@@ -412,6 +420,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'ObservationReaderPlugin',
     proImport: () => import('../plugins-pro/observation-reader/observation-reader'),
     defaultConfig: { enabled: true, order: 71.7 },
+    isLoginRequired: true,
   },
   {
     configKey: 'NeighborhoodHistoryPlugin',
@@ -433,6 +442,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/new-launch/new-launch'),
     proClassName: 'NewLaunchPro',
     defaultConfig: { enabled: true, order: 72 },
+    isLoginRequired: true,
   },
   {
     configKey: 'MissilePlugin',
@@ -451,6 +461,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/flat-map-view/flat-map-view'),
     proClassName: 'FlatMapView',
     defaultConfig: { enabled: true, order: 150 },
+    isLoginRequired: true,
   },
   {
     configKey: 'SatelliteFixedView',
@@ -463,6 +474,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/polar-view/polar-view'),
     proClassName: 'PolarView',
     defaultConfig: { enabled: true, order: 152 },
+    isLoginRequired: true,
   },
   {
     configKey: 'SatelliteViewPlugin',
@@ -497,6 +509,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/satellite-fov/satellite-fov'),
     proClassName: 'SatelliteFovPro',
     defaultConfig: { enabled: true, order: 75 },
+    isLoginRequired: true,
   },
   {
     configKey: 'StereoMap',
@@ -519,22 +532,28 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 311 },
   },
   {
+    configKey: 'PoliticalMapToggle',
+    ossImport: () => import('./political-map-toggle/political-map-toggle'),
+    ossClassName: 'PoliticalMapToggle',
+    defaultConfig: { enabled: true, order: 312 },
+  },
+  {
     configKey: 'HideOtherSatellitesPlugin',
     ossImport: () => import('./hide-other-sats/hide-other-sats'),
     ossClassName: 'HideOtherSatellitesPlugin',
-    defaultConfig: { enabled: true, order: 312 },
+    defaultConfig: { enabled: true, order: 313 },
   },
   {
     configKey: 'SkipInterpolationToggle',
     ossImport: () => import('./skip-interpolation-toggle/skip-interpolation-toggle'),
     ossClassName: 'SkipInterpolationToggle',
-    defaultConfig: { enabled: true, order: 314 },
+    defaultConfig: { enabled: true, order: 315 },
   },
   {
     configKey: 'KeyboardShortcutsPlugin',
     proImport: () => import('../plugins-pro/keyboard-shortcuts/keyboard-shortcuts'),
     proClassName: 'KeyboardShortcutsPlugin',
-    defaultConfig: { enabled: true, order: 313 },
+    defaultConfig: { enabled: true, order: 314 },
   },
   {
     configKey: 'DopsPlugin',
@@ -543,6 +562,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/dops/dops'),
     proClassName: 'DopsPluginPro',
     defaultConfig: { enabled: true, order: 500 },
+    isLoginRequired: true,
   },
   {
     configKey: 'SatConstellations',
@@ -605,6 +625,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/catalog-management/catalog-management'),
     proClassName: 'CatalogManagementPro',
     defaultConfig: { enabled: true, order: 420 },
+    isLoginRequired: true,
   },
   {
     configKey: 'CloseObjectsPlugin',
@@ -613,6 +634,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/close-objects/close-objects'),
     proClassName: 'CloseObjectsPro',
     defaultConfig: { enabled: true, order: 421 },
+    isLoginRequired: true,
   },
   {
     configKey: 'BestPassPlugin',
@@ -621,18 +643,21 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/best-pass/best-pass'),
     proClassName: 'BestPassPro',
     defaultConfig: { enabled: true, order: 422 },
+    isLoginRequired: true,
   },
   {
     configKey: 'OverflightPlugin',
     proImport: () => import('../plugins-pro/overflight/overflight'),
     proClassName: 'OverflightPlugin',
     defaultConfig: { enabled: true, order: 423 },
+    isLoginRequired: true,
   },
   {
     configKey: 'OpticalSimulation',
     proImport: () => import('../plugins-pro/optical-simulation/optical-simulation'),
     proClassName: 'OpticalSimulation',
     defaultConfig: { enabled: true, order: 425 },
+    isLoginRequired: true,
   },
   {
     configKey: 'EclipseSolarAnalysis',
@@ -640,6 +665,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'EclipseSolarAnalysis',
     proImport: () => import('../plugins-pro/eclipse-solar-analysis/eclipse-solar-analysis'),
     defaultConfig: { enabled: true, order: 93 },
+    isLoginRequired: true,
   },
   {
     configKey: 'ManeuverPlugin',
@@ -654,6 +680,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'InitialOrbitDeterminationPlugin',
     proImport: () => import('../plugins-pro/initial-orbit/initial-orbit'),
     defaultConfig: { enabled: false, order: 410 },
+    isLoginRequired: true,
   },
   {
     configKey: 'Calculator',
@@ -688,6 +715,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/plot-analysis/time2lon'),
     proClassName: 'Time2LonPlotsPro',
     defaultConfig: { enabled: true, order: 263 },
+    isLoginRequired: true,
   },
   {
     configKey: 'Lat2LonPlots',
@@ -702,6 +730,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/plot-analysis/inc2alt'),
     proClassName: 'Inc2AltPlotsPro',
     defaultConfig: { enabled: true, order: 265 },
+    isLoginRequired: true,
   },
   {
     configKey: 'Inc2LonPlots',
@@ -710,6 +739,7 @@ export const pluginManifest: PluginDescriptor[] = [
     proImport: () => import('../plugins-pro/plot-analysis/inc2lon'),
     proClassName: 'Inc2LonPlotsPro',
     defaultConfig: { enabled: true, order: 266 },
+    isLoginRequired: true,
   },
 
   // ── Settings & Utility ─────────────────────────────────────────────────────
@@ -725,6 +755,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'SymbologyPlugin',
     proImport: () => import('../plugins-pro/symbology/symbology-plugin'),
     defaultConfig: { enabled: true, order: 593 },
+    isLoginRequired: true,
   },
   {
     configKey: 'SettingsMenuPlugin',

@@ -23,8 +23,12 @@ export class PluginManager {
           return;
         }
         const PluginClass = mod[className] as new () => KeepTrackPlugin;
+        const plugin = new PluginClass();
 
-        new PluginClass().init();
+        if (descriptor.isLoginRequired) {
+          plugin.isLoginRequired = true;
+        }
+        plugin.init();
 
         return;
       } catch { /* fall through to OSS */ }

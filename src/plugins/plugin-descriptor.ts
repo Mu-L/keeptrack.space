@@ -28,4 +28,7 @@ export interface PluginDescriptor {
 
   /** When true, the plugin is always enabled regardless of user config */
   alwaysEnabled?: boolean;
+
+  /** When true, this plugin requires login to use (shows PRO badge, gates access) */
+  isLoginRequired?: boolean;
 }
