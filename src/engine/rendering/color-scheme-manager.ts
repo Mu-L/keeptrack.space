@@ -438,6 +438,8 @@ export class ColorSchemeManager {
       } else {
         throw new Error('Color or pickable buffer is not initialized');
       }
+
+      EventBus.getInstance().emit(EventBusEvent.colorSchemeChanged, scheme);
     } catch (error) {
       // If we can't load the color scheme, just use the default
       errorManagerInstance.log(error);

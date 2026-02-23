@@ -78,6 +78,7 @@ export interface EngineEventMap {
   [EventBusEvent.catalogReloaded]: [];
   [EventBusEvent.connectivityChange]: [boolean]; // isOnline
   [EventBusEvent.loginGateStateChange]: [boolean]; // isAuthenticated
+  [EventBusEvent.colorSchemeChanged]: [unknown]; // scheme instance
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {

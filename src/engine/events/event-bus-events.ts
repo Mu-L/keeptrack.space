@@ -134,4 +134,9 @@ export enum EventBusEvent {
    * Parameters: (isAuthenticated: boolean)
    */
   loginGateStateChange = 'loginGateStateChange',
+  /**
+   * Emitted when the active color scheme changes via setColorScheme().
+   * Parameters: (scheme: ColorScheme)
+   */
+  colorSchemeChanged = 'colorSchemeChanged',
 }
