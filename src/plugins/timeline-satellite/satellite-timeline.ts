@@ -14,7 +14,7 @@ import { shake } from '@app/engine/utils/shake';
 import { BaseObject, Degrees, Hours, Kilometers, MILLISECONDS_PER_SECOND, Satellite, SatelliteRecord, Seconds } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { WatchlistPlugin } from '../satellite-lists/satellite-lists';
+import { WatchlistPlugin } from '../watchlist/watchlist';
 
 interface Pass {
   start: Date;
