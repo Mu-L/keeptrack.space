@@ -76,6 +76,8 @@ export interface EngineEventMap {
   [EventBusEvent.screenshotComposite]: [CanvasRenderingContext2D, number, number];
   [EventBusEvent.screenshotShouldCropSquare]: [];
   [EventBusEvent.catalogReloaded]: [];
+  [EventBusEvent.connectivityChange]: [boolean]; // isOnline
+  [EventBusEvent.loginGateStateChange]: [boolean]; // isAuthenticated
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {

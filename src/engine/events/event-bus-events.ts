@@ -124,4 +124,14 @@ export enum EventBusEvent {
    * Plugins should use this to clear stale caches and refresh UI.
    */
   catalogReloaded = 'catalogReloaded',
+  /**
+   * Emitted when browser internet connectivity changes.
+   * Parameters: (isOnline: boolean)
+   */
+  connectivityChange = 'connectivityChange',
+  /**
+   * Emitted when the login gate state changes (user logs in/out or token rotates).
+   * Parameters: (isAuthenticated: boolean)
+   */
+  loginGateStateChange = 'loginGateStateChange',
 }
