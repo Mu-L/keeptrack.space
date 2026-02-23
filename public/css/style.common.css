@@ -9,7 +9,7 @@
   --bottom-icon-width: 115px;
   --bottom-icon-img-size: 40px;
   --bottom-filter-width: 185px;
-  --bottom-utility-width: 260px;
+  --bottom-utility-width: 300px;
   --search-box-bottom: 0px;
   --nav-bar-height: 35px;
 
@@ -2515,6 +2515,15 @@ button.ui-button::-moz-focus-inner {
   filter: grayscale(1) !important;
 }
 
+/* Pro-locked icons — blue tint when user is NOT logged in */
+.bmenu-item-pro img {
+  filter: hue-rotate(227deg) brightness(1.2) !important;
+}
+
+.bmenu-item-pro:hover img {
+  filter: hue-rotate(227deg) brightness(1.8) !important;
+}
+
 .bmenu-item-error .status-icon {
   background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kTtIw1AUhv+mFUUqDmYQcchQnSyILxylikWwUNoKrTqY3PQFTRqSFBdHwbXg4GOx6uDirKuDqyAIPkBcXZwUXaTEc5NCixgvHO7Hf+//c+65gNCoMM0KjQOabpupeEzK5lal7leEIVJNIyQzy0ikFzPwXV/3CPD9Lsqz/O/9ufrUvMWAgEQ8xwzTJt4gntm0Dc77xCIrySrxOfGYSQ0SP3Jd8fiNc9FlgWeKZiY1TywSS8UOVjqYlUyNeIo4omo65QtZj1XOW5y1So21+uQvDOf1lTTXqYYRxxISSEKCghrKqMBGlHadFAspOo/5+Idcf5JcCrnKYORYQBUaZNcP/ge/Z2sVJie8pHAM6HpxnI8RoHsXaNYd5/vYcZonQPAZuNLb/moDmP0kvd7WIkdA/zZwcd3WlD3gcgcYfDJkU3alIJVQKADvZ/RNOWDgFuhd8+bWOsfpA5ChWS3fAAeHwGiRstd93t3TObd/77Tm9wOOiHKymlTPuAAAAAZiS0dEAM4AowCKeTVkwgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+cMFAw5JOaDPFwAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAA0UlEQVRYw+3WSw7DIAwEUKbppVi1R+vR0lWORbdVgj9jsKpKeImwo3kiJKWsWvXjwnmh1bqX1h45T8Mbx/H8XrpdNm3bKy1uZzZ6+1IUOun7AlkKwkxI+6cqCOllgdkKyixofVMUlPS6wCwFYwas/iEFI70tMKrg6IVnTkjBkd4nEFVw9sA7j1JwpvcLsArEXjCqLgUiPSfgTUaeF7BnS1Ug0/MCVsLA24LI/dJVCKSPCUhJgzdmSOCiEEwfFzgnzvyPtBRarfvIjHvmt37VX9QHmaFdkiJXncIAAAAASUVORK5CYII=');
 }
@@ -2795,24 +2804,24 @@ button.ui-button::-moz-focus-inner {
   gap: 10px;
 }
 
-/* Override Materialize teal with the app's theme color for all secondary menu controls */
-.side-menu-settings [type="checkbox"]:checked+span:not(.lever)::before {
+/* Override Materialize teal with the app's theme color for all checkboxes and radios */
+[type="checkbox"]:checked+span:not(.lever)::before {
   border-right-color: var(--color-primary) !important;
   border-bottom-color: var(--color-primary) !important;
 }
 
-.side-menu-settings [type="checkbox"].filled-in:checked+span:not(.lever)::after {
+[type="checkbox"].filled-in:checked+span:not(.lever)::after {
   border-color: var(--color-primary) !important;
   background-color: var(--color-primary) !important;
 }
 
-.side-menu-settings [type="radio"]:checked+span::after,
-.side-menu-settings [type="radio"].with-gap:checked+span::after {
+[type="radio"]:checked+span::after,
+[type="radio"].with-gap:checked+span::after {
   background-color: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
 }
 
-.side-menu-settings [type="radio"].with-gap:checked+span::before {
+[type="radio"].with-gap:checked+span::before {
   border-color: var(--color-primary) !important;
 }
 

@@ -7139,7 +7139,7 @@ textarea.materialize-textarea {
 
 [type='checkbox']+span:not(.lever) {
   position: relative;
-  padding-left: 35px;
+  padding-left: 25px;
   cursor: pointer;
   display: inline-block;
   height: 25px;
