@@ -27,7 +27,6 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { t7e } from '@app/locales/keys';
-import { Satellite } from '@ootk/src/main';
 import viewInAirPng from '@public/img/icons/view-in-air.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { IconPlacement, IKeyboardShortcut, UtilityGroup } from '../../engine/plugins/core/plugin-capabilities';
@@ -64,22 +63,11 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
   addJs(): void {
     super.addJs();
 
-    EventBus.getInstance().on(
-      EventBusEvent.selectSatData,
-      (obj) => {
-        if (obj instanceof Satellite) {
-          this.setBottomIconToEnabled();
-        } else {
-          this.setBottomIconToDisabled();
-        }
-      },
-    );
-
     // Keep icon state in sync with camera type
     EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
       const isSatelliteView = ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE;
 
-      if (isSatelliteView && !this.isMenuButtonActive) {
+      if (isSatelliteView && !this.isMenuButtonActive && !this.isIconDisabled) {
         this.setBottomIconToSelected();
       } else if (!isSatelliteView && this.isMenuButtonActive) {
         this.setBottomIconToUnselected();

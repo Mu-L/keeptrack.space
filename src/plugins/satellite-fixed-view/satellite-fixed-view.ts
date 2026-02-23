@@ -8,7 +8,6 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import { t7e } from '@app/locales/keys';
-import { Satellite } from '@ootk/src/main';
 import satelliteAltPng from '@public/img/icons/satellite-alt.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
@@ -60,22 +59,11 @@ export class SatelliteFixedView extends KeepTrackPlugin {
   addJs(): void {
     super.addJs();
 
-    EventBus.getInstance().on(
-      EventBusEvent.selectSatData,
-      (obj) => {
-        if (obj instanceof Satellite) {
-          this.setBottomIconToEnabled();
-        } else {
-          this.setBottomIconToDisabled();
-        }
-      },
-    );
-
     // Keep icon state in sync with camera type
     EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
       const isFixedToSat = ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT;
 
-      if (isFixedToSat && !this.isMenuButtonActive) {
+      if (isFixedToSat && !this.isMenuButtonActive && !this.isIconDisabled) {
         this.setBottomIconToSelected();
       } else if (!isFixedToSat && this.isMenuButtonActive) {
         this.setBottomIconToUnselected();
