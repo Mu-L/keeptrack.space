@@ -271,7 +271,6 @@ export enum Singletons {
   PersistenceManager = 'PersistenceManager',
   Scene = 'Scene',
   MeshManager = 'MeshManager',
-  SymbologyManager = 'SymbologyManager',
   SatLabelManager = 'SatLabelManager',
 }
 export enum SolarBody {
