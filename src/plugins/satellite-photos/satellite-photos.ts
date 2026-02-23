@@ -35,6 +35,7 @@ interface DiscvrResponse {
 
 export class SatellitePhotos extends KeepTrackPlugin {
   readonly id = 'SatellitePhotos';
+  requiresInternet = true;
   protected dependencies_: string[] = [SelectSatManager.name];
   protected discvrPhotos_: { imageUrl: string; lat: Degrees; lon: Degrees }[] = [];
 
@@ -47,7 +48,7 @@ export class SatellitePhotos extends KeepTrackPlugin {
       elementName: 'menu-sat-photo',
       label: t7e('plugins.SatellitePhotos.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: satellitePng,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.BASIC, MenuMode.ALL],
     };
   }
 

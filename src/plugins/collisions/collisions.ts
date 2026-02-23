@@ -42,6 +42,7 @@ export interface CollisionEvent {
 export class Collisions extends KeepTrackPlugin {
   readonly id = 'Collisions';
   dependencies_ = [];
+  requiresInternet = true;
   private readonly collisionDataSrc_ = 'https://api.keeptrack.space/v2/socrates/latest';
   private selectSatIdOnCruncher_: number | null = null;
   protected collisionList_: CollisionEvent[] = [];
@@ -57,7 +58,7 @@ export class Collisions extends KeepTrackPlugin {
       elementName: 'menu-satellite-collision',
       label: t7e('plugins.Collisions.bottomIconLabel'),
       image: CollisionsPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.BASIC, MenuMode.ALL],
     };
   }
 

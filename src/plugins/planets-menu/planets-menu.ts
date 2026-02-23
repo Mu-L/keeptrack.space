@@ -27,6 +27,8 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   readonly id = 'PlanetsMenuPlugin';
   dependencies_ = [];
 
+  private isPlanetsDisabled_ = false;
+
   PLANETS = [SolarBody.Mercury, SolarBody.Venus, SolarBody.Earth, SolarBody.Mars, SolarBody.Jupiter, SolarBody.Saturn, SolarBody.Uranus, SolarBody.Neptune];
   DWARF_PLANETS = [SolarBody.Pluto, SolarBody.Makemake, SolarBody.Eris, SolarBody.Haumea, SolarBody.Ceres, SolarBody.Sedna, SolarBody.Quaoar, SolarBody.Orcus, SolarBody.Gonggong, SolarBody.Charon];
   OTHER_CELESTIAL_BODIES = [
@@ -43,7 +45,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
       elementName: 'menu-planets',
       label: t7e('plugins.PlanetsMenuPlugin.bottomIconLabel'),
       image: planetPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.BASIC, MenuMode.ALL],
     };
   }
 
@@ -64,18 +66,24 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   }
 
   getContextMenuConfig(): IContextMenuConfig {
+    const visible = !settingsManager.isDisablePlanets;
+
     return {
       level1ElementName: 'planets-rmb',
       level1Html: html`<li class="rmb-menu-item" id="planets-rmb"><a href="#">${t7e('plugins.PlanetsMenuPlugin.bottomIconLabel')} &#x27A4;</a></li>`,
       level2ElementName: 'planets-rmb-menu',
       level2Html: html`<ul class='dropdown-contents'>${this.buildRmbL2Html_()}</ul>`,
       order: 70,
-      isVisibleOnEarth: true,
-      isVisibleOffEarth: true,
+      isVisibleOnEarth: visible,
+      isVisibleOffEarth: visible,
     };
   }
 
   onContextMenuAction(targetId: string): void {
+    if (settingsManager.isDisablePlanets) {
+      return;
+    }
+
     // Convert 'planets-Moon-rmb' to 'Moon'
     if (targetId.startsWith('planets-') && targetId.endsWith('-rmb')) {
       targetId = targetId.slice(8, -4);
@@ -94,12 +102,20 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
       {
         key: 'Home',
         shift: true,
-        callback: () => this.changePlanet(SolarBody.Earth),
+        callback: () => {
+          if (settingsManager.isDisablePlanets) {
+            return;
+          }
+          this.changePlanet(SolarBody.Earth);
+        },
       },
       {
         key: 'Home',
         shift: false,
         callback: () => {
+          if (settingsManager.isDisablePlanets) {
+            return;
+          }
           settingsManager.centerBody = SolarBody.Earth;
           settingsManager.minZoomDistance = RADIUS_OF_EARTH + 50 as Kilometers;
           settingsManager.maxZoomDistance = 1.2e6 as Kilometers; // 1.2 million km
@@ -232,15 +248,26 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
     }
   }
 
+  showBottomIcon(): void {
+    if (settingsManager.isDisablePlanets) {
+      return;
+    }
+    super.showBottomIcon();
+  }
+
   addHtml(): void {
     super.addHtml();
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      this.uiManagerFinal_.bind(this),
-    );
+    this.isPlanetsDisabled_ = settingsManager.isDisablePlanets;
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinal_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.endOfDraw, this.checkPlanetsDisabledState_.bind(this));
   }
 
   private uiManagerFinal_(): void {
+    if (this.isPlanetsDisabled_) {
+      this.setBottomIconToDisabled();
+      this.hideBottomIcon();
+    }
+
     getEl('planets-menu')
       ?.querySelectorAll('li')
       .forEach((element) => {
@@ -254,6 +281,47 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
           this.planetsMenuClick(planetName);
         });
       });
+  }
+
+  private checkPlanetsDisabledState_(): void {
+    const current = settingsManager.isDisablePlanets;
+
+    if (current === this.isPlanetsDisabled_) {
+      return;
+    }
+    this.isPlanetsDisabled_ = current;
+    if (current) {
+      this.runtimeDisableForPlanetsOff_();
+    } else {
+      this.runtimeEnableForPlanetsOn_();
+    }
+  }
+
+  private runtimeDisableForPlanetsOff_(): void {
+    if (this.isMenuButtonActive) {
+      ServiceLocator.getUiManager().hideSideMenus();
+    }
+    this.setBottomIconToDisabled();
+    this.setContextMenuVisibility_(false);
+  }
+
+  private runtimeEnableForPlanetsOn_(): void {
+    this.setBottomIconToEnabled();
+    if (this.menuMode.includes(settingsManager.activeMenuMode)) {
+      this.showBottomIcon();
+    }
+    this.setContextMenuVisibility_(true);
+  }
+
+  private setContextMenuVisibility_(visible: boolean): void {
+    const menuItem = ServiceLocator.getInputManager()?.rmbMenuItems.find(
+      (item) => item.elementIdL1 === 'planets-rmb',
+    );
+
+    if (menuItem) {
+      menuItem.isRmbOnEarth = visible;
+      menuItem.isRmbOffEarth = visible;
+    }
   }
 
   private drawOrbits_(planetName: SolarBody) {
@@ -389,6 +457,9 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   }
 
   onBottomIconClick(): void {
+    if (settingsManager.isDisablePlanets) {
+      return;
+    }
     this.addDeepSpaceProbesMenu_();
   }
 

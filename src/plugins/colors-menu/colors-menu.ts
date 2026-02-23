@@ -36,7 +36,7 @@ export class ColorMenu extends KeepTrackPlugin implements ICommandPaletteCapable
       elementName: 'menu-color-scheme',
       label: t7e('plugins.ColorMenu.bottomIconLabel'),
       image: palettePng,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.BASIC, MenuMode.ALL],
     };
   }
 

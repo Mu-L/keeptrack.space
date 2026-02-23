@@ -321,7 +321,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       elementName: 'filter-menu-icon',
       label: t7e('plugins.FilterMenuPlugin.bottomIconLabel'),
       image: filterPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.SETTINGS, MenuMode.ALL],
+      menuMode: [MenuMode.SETTINGS, MenuMode.ALL],
     };
   }
 

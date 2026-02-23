@@ -68,7 +68,7 @@ export class SatConstellations extends KeepTrackPlugin {
       elementName: 'menu-constellations',
       label: t7e('plugins.SatConstellations.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: categoryPng as unknown as string,
-      menuMode: [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.BASIC, MenuMode.ALL],
     };
   }
 

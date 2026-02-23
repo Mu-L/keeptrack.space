@@ -1,9 +1,9 @@
 import { GroupType } from '@app/app/data/object-group';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabilities';
 import historyPng from '@public/img/icons/history.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class TimeMachine extends KeepTrackPlugin {
   readonly id = 'TimeMachine';
@@ -45,7 +45,7 @@ export class TimeMachine extends KeepTrackPlugin {
   historyOfSatellitesRunCount = 0;
   isTimeMachineRunning = false;
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ALL];
 
   historyOfSatellitesPlay() {
     this.isTimeMachineRunning = true;
