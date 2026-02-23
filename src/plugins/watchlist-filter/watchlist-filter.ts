@@ -8,7 +8,7 @@ import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { IBottomIconConfig, ICommandPaletteCommand, IKeyboardShortcut, IconPlacement, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import { t7e } from '@app/locales/keys';
 import satellitePng from '@public/img/icons/satellite.png';
-import { WatchlistPlugin } from '../satellite-lists/satellite-lists';
+import { WatchlistPlugin } from '../watchlist/watchlist';
 
 export class WatchlistFilterPlugin extends KeepTrackPlugin {
   readonly id = 'WatchlistFilterPlugin';
@@ -33,7 +33,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'W',
+        key: 'w',
         callback: () => this.bottomMenuClicked(),
       },
     ];
@@ -45,7 +45,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
         id: 'WatchlistFilter.toggle',
         label: t7e('plugins.WatchlistFilter.bottomIconLabel' as Parameters<typeof t7e>[0]),
         category: 'Display',
-        shortcutHint: 'W',
+        shortcutHint: 'w',
         callback: () => this.bottomMenuClicked(),
       },
     ];
@@ -58,7 +58,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
 
     // Enable/disable icon based on watchlist contents.
     // OSS WatchlistPlugin emits onWatchlistAdd/onWatchlistRemove;
-    // Pro SatelliteListsPlugin only emits onWatchlistUpdated.
+    // Pro WatchlistProPlugin only emits onWatchlistUpdated.
     const updateIconState_ = (list: { id: number; inView: boolean }[]) => {
       if (list.length > 0) {
         this.setBottomIconToEnabled();
