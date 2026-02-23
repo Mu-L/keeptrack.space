@@ -50,6 +50,7 @@
     }
   },
   "errorMsgs": {
+    "LoginRequired": "이 기능은 로그인이 필요합니다. 계속하려면 로그인해 주세요.",
     "catalogNotFullyInitialized": "카탈로그가 아직 완전히 초기화되지 않았습니다. 몇 초 후에 다시 시도해 주세요.",
     "sensorGroupsApiEmpty": "API에서 센서 그룹을 찾을 수 없습니다. 기본 센서 그룹 데이터베이스로 되돌립니다.",
     "SelectSensorFirst": "먼저 센서를 선택하세요!",

@@ -50,6 +50,7 @@
     }
   },
   "errorMsgs": {
+    "LoginRequired": "Diese Funktion erfordert eine Anmeldung. Bitte melden Sie sich an, um fortzufahren.",
     "catalogNotFullyInitialized": "Der Katalog ist noch nicht vollständig initialisiert. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut.",
     "sensorGroupsApiEmpty": "Keine Sensorgruppen in der API gefunden, es wird auf die mitgelieferte Sensorgruppen-Datenbank zurückgegriffen.",
     "SelectSensorFirst": "Wählen Sie zuerst einen Sensor aus!",

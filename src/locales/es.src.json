@@ -50,6 +50,7 @@
     }
   },
   "errorMsgs": {
+    "LoginRequired": "Esta función requiere inicio de sesión. Por favor, inicie sesión para continuar.",
     "catalogNotFullyInitialized": "El catálogo no se ha inicializado completamente todavía. Por favor, espere unos segundos e intente de nuevo.",
     "sensorGroupsApiEmpty": "No se encontraron grupos de sensores en la API, volviendo a la base de datos de grupos de sensores incluida.",
     "SelectSensorFirst": "¡Seleccione un sensor primero!",

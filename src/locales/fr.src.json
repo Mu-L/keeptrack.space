@@ -50,6 +50,7 @@
     }
   },
   "errorMsgs": {
+    "LoginRequired": "Cette fonctionnalité nécessite une connexion. Veuillez vous connecter pour continuer.",
     "catalogNotFullyInitialized": "Le catalogue n'est pas encore entièrement initialisé. Veuillez patienter quelques secondes et réessayer.",
     "sensorGroupsApiEmpty": "Aucun groupe de capteurs trouvé dans l'API, retour à la base de données de groupes de capteurs incluse.",
     "SelectSensorFirst": "Veuillez d'abord sélectionner un capteur !",

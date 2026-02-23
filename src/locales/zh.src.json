@@ -50,6 +50,7 @@
     }
   },
   "errorMsgs": {
+    "LoginRequired": "此功能需要登录。请登录后继续。",
     "catalogNotFullyInitialized": "目录尚未完全初始化。请等待几秒钟再试。",
     "sensorGroupsApiEmpty": "API中未找到传感器组，恢复使用内置的传感器组数据库。",
     "SelectSensorFirst": "请先选择一个传感器！",

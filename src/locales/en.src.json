@@ -50,6 +50,7 @@
     }
   },
   "errorMsgs": {
+    "LoginRequired": "This feature requires login. Please sign in to continue.",
     "catalogNotFullyInitialized": "Catalog has not fully initialized yet. Please wait a few seconds and try again.",
     "sensorGroupsApiEmpty": "No sensor groups found in the API, reverting to the included sensor groups database.",
     "SelectSensorFirst": "Select a sensor first!",
