@@ -369,6 +369,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'Reentries',
     ossImport: () => import('./reentries/reentries'),
     ossClassName: 'Reentries',
+    proImport: () => import('../plugins-pro/reentries/reentries-pro'),
+    proClassName: 'ReentriesPro',
     defaultConfig: { enabled: true, order: 92 },
   },
   {
