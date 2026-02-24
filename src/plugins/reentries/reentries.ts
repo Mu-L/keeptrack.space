@@ -49,9 +49,9 @@ export class Reentries extends KeepTrackPlugin {
   readonly id = 'Reentries';
   dependencies_ = [];
   private readonly tipDataSrc_ = 'https://r2.keeptrack.space/spacetrack-tip.json';
-  private selectSatIdOnCruncher_: number | null = null;
-  private tipList_: TipMsg[] = [];
-  private reentryList_: Satellite[] = [];
+  protected selectSatIdOnCruncher_: number | null = null;
+  protected tipList_: TipMsg[] = [];
+  protected reentryList_: Satellite[] = [];
   private isLoggedIn_ = false;
   private isFetching_ = false;
 
@@ -332,7 +332,7 @@ export class Reentries extends KeepTrackPlugin {
     this.tipList_.sort((a, b) => new Date(b.DECAY_EPOCH).getTime() - new Date(a.DECAY_EPOCH).getTime());
   }
 
-  private tipEventClicked_(row: number) {
+  protected tipEventClicked_(row: number) {
     const sat = ServiceLocator.getCatalogManager().sccNum2Sat(parseInt(this.tipList_[row].NORAD_CAT_ID));
 
     if (!sat) {
@@ -361,7 +361,7 @@ export class Reentries extends KeepTrackPlugin {
     this.selectSatIdOnCruncher_ = sat.id;
   }
 
-  private createTipTable_(): void {
+  protected createTipTable_(): void {
     try {
       const tbl = <HTMLTableElement>getEl('reentries-tip-table');
 
@@ -491,7 +491,7 @@ export class Reentries extends KeepTrackPlugin {
     }, 0);
   }
 
-  private createReentryTable_() {
+  protected createReentryTable_() {
     const tbl = <HTMLTableElement>getEl('reentries-analysis-table');
 
     tbl.innerHTML = '';
@@ -582,7 +582,7 @@ export class Reentries extends KeepTrackPlugin {
     Reentries.createCell_(tr, rcsStr);
   }
 
-  private reentryEventClicked_(sccNum: string) {
+  protected reentryEventClicked_(sccNum: string) {
     const sat = ServiceLocator.getCatalogManager().sccNum2Sat(parseInt(sccNum));
 
     if (!sat) {
