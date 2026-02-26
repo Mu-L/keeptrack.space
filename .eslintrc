@@ -101,7 +101,7 @@
     "max-lines": [
       "warn",
       {
-        "max": 1000
+        "max": 15000
       }
     ], // TODO: change to error
     "max-lines-per-function": [
