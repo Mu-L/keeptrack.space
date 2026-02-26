@@ -95,7 +95,9 @@ export class CelestrakColorScheme extends ColorScheme {
       };
     }
 
-    if (((obj as OemSatellite).source ?? '') === 'OEM Import') {
+    const oemSource = (obj as OemSatellite).source ?? '';
+
+    if (oemSource === 'OEM Import' || oemSource === 'KeepTrack') {
       return {
         color: (obj as OemSatellite).dotColor,
         pickable: Pickable.Yes,

@@ -78,6 +78,9 @@ export class ColorSettings {
     SmallSatColorScheme: {
       enabled: true,
     },
+    CovarianceColorScheme: {
+      enabled: true,
+    },
   };
 
   /**

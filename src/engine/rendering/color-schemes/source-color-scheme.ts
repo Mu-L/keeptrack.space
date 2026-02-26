@@ -109,6 +109,7 @@ export class SourceColorScheme extends ColorScheme {
           };
 
         case 'OEM Import':
+        case 'KeepTrack':
           if (this.objectTypeFlags.sourceOemImport === false) {
             return {
               color: this.colorTheme.deselected,
