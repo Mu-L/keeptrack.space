@@ -9,6 +9,8 @@ declare global {
         modal: boolean;
       };
     };
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
   }
 }
 

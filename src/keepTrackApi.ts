@@ -1,4 +1,3 @@
-import type { AnalyticsInstance } from 'analytics';
 import type { SatMath } from './app/analysis/sat-math';
 import type { ToastMsgType } from './engine/core/interfaces';
 import type { SettingsManager } from './settings/settings';
@@ -35,7 +34,7 @@ declare global {
     randomizer: unknown;
     // eslint-disable-next-line no-use-before-define
     keepTrackApi: KeepTrackApi;
-    dataLayer: IArguments[]; // For Google Tag Manager
+    dataLayer?: unknown[]; // For Google Tag Manager / gtag
     _numeric: unknown;
     satellite: SatMath;
     M: {
@@ -63,34 +62,11 @@ declare global {
 }
 
 export class KeepTrackApi {
-  analytics: AnalyticsInstance = {
-    identify: () => {
-      // do nothing
-    },
+  analytics: { track: (event: string, params?: Record<string, unknown>) => void } = {
     track: () => {
-      // do nothing
+      // no-op when telemetry not initialized
     },
-    page: () => {
-      // do nothing
-    },
-    user: () => ({
-      anonymousId: '',
-      id: '',
-    }),
-    reset: () => {
-      // do nothing
-    },
-    ready: () => Promise.resolve(),
-    on: () => {
-      // do nothing
-    },
-    once: () => {
-      // do nothing
-    },
-    getState: () => ({
-      plugins: {},
-    }),
-  } as unknown as AnalyticsInstance;
+  };
 
   // UI related methods
   toast(toastText: string, type: ToastMsgType, isLong = false) {

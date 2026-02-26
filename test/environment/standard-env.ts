@@ -49,23 +49,6 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
   KeepTrack.getInstance().containerRoot = null as unknown as HTMLDivElement;
   keepTrackApi.analytics = {
     track: vi.fn(),
-    identify: vi.fn(),
-    page: vi.fn(),
-    user: vi.fn(),
-    reset: vi.fn(),
-    ready: vi.fn(),
-    on: vi.fn(),
-    once: vi.fn(),
-    getState: vi.fn(),
-    storage: {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-    },
-    plugins: {
-      enable: vi.fn(),
-      disable: vi.fn(),
-    },
   };
   EventBus.getInstance().unregisterAllEvents();
   PluginRegistry.unregisterAllPlugins();
