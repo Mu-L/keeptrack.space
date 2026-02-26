@@ -1,5 +1,6 @@
 import { SatMath } from '@app/app/analysis/sat-math';
 import { sensors } from '@app/app/data/catalogs/sensors';
+import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData } from '@app/app/sensors/sensor-math';
 import { SoundNames } from '@app/engine/audio/sounds';
@@ -239,32 +240,81 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     // Save Current Sensor as a new array
     const tempSensor = [...sensorManagerInstance.currentSensors];
 
-    const satrec = sat.satrec;
+    const isOemSat = sat instanceof OemSatellite;
+    const satrec = isOemSat ? null : sat.satrec;
 
-    if (!satrec) {
+    if (!isOemSat && !satrec) {
       errorManagerInstance.warn('Satellite record not found');
 
       return;
     }
 
-    const orbitalPeriod = MINUTES_PER_DAY / ((satrec.no * MINUTES_PER_DAY) / TAU); // Seconds in a day divided by mean motion
+    // Estimate orbital period for skip-ahead optimization
+    let orbitalPeriod: number;
+    let isHighOrbit: boolean;
+
+    if (satrec) {
+      orbitalPeriod = MINUTES_PER_DAY / ((satrec.no * MINUTES_PER_DAY) / TAU);
+      isHighOrbit = sat.semiMajorAxis > 30000;
+    } else {
+      // Estimate from current position magnitude
+      const pos = (sat as unknown as OemSatellite).position;
+      const r = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+
+      orbitalPeriod = (TAU * Math.sqrt(r * r * r / 398600.4418)) / 60; // minutes
+      isHighOrbit = r > 30000;
+    }
+
+    // Cap loop to OEM ephemeris end time so we don't propagate beyond available data
+    const maxSeconds = isOemSat
+      ? Math.max(0, ((sat as unknown as OemSatellite).header.STOP_TIME.getTime() - timeManagerInstance.simulationTimeObj.getTime()) / 1000)
+      : this.lengthOfLookAngles_ * 24 * 60 * 60;
 
     const multiSiteArray = <TearrData[]>[];
 
     for (const sensor of sensors) {
-      // Skip if satellite is above the max range of the sensor
-      if (sensor.maxRng < sat.perigee && (!sensor.maxRng2 || sensor.maxRng2 < sat.perigee)) {
+      // Skip if satellite is above the max range of the sensor (not applicable for OEM satellites without perigee)
+      if (!isOemSat && sensor.maxRng < sat.perigee && (!sensor.maxRng2 || sensor.maxRng2 < sat.perigee)) {
         continue;
       }
 
       SensorManager.updateSensorUiStyling([sensor]);
       let offset = 0;
 
-      for (let i = 0; i < this.lengthOfLookAngles_ * 24 * 60 * 60; i += this.angleCalculationInterval_) {
-        // 5second Looks
+      for (let i = 0; i < maxSeconds; i += this.angleCalculationInterval_) {
         offset = i * 1000; // Offset in seconds (msec * 1000)
         const now = timeManagerInstance.getOffsetTimeObj(offset);
-        const multiSitePass = MultiSiteLookAnglesPlugin.propagateMultiSite_(now, satrec, sensor);
+
+        let multiSitePass: TearrData;
+
+        if (isOemSat) {
+          const oemSat = sat as unknown as OemSatellite;
+          const rae = oemSat.getRae(now, sensor);
+
+          if (!rae) {
+            continue; // outside ephemeris range
+          }
+          if (SatMath.checkIsInView(sensor, rae)) {
+            multiSitePass = {
+              time: now.toISOString(),
+              el: rae.el,
+              az: rae.az,
+              rng: rae.rng,
+              objName: sensor.objName ?? '',
+            };
+          } else {
+            multiSitePass = {
+              time: '',
+              el: <Degrees>0,
+              az: <Degrees>0,
+              rng: <Kilometers>0,
+              objName: '',
+            };
+          }
+        } else {
+          multiSitePass = MultiSiteLookAnglesPlugin.propagateMultiSite_(now, satrec!, sensor);
+        }
+
         let canStationObserve = true;
 
         if (multiSitePass.time !== '') {
@@ -273,10 +323,10 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
             canStationObserve = SensorMath.checkIfVisibleForOptical(sat, sensor, now);
           }
           multiSitePass.visible = canStationObserve;
-          multiSiteArray.push(multiSitePass); // Update the table with looks for this 5 second chunk and then increase table counter by 1
+          multiSiteArray.push(multiSitePass);
 
-          // Jump 3/4th to the next orbit
-          if (sat.semiMajorAxis > 30000) {
+          // Jump ahead to avoid redundant calculations within the same pass
+          if (isHighOrbit) {
             i += orbitalPeriod * 60 * 0.1;
           } else {
             i += orbitalPeriod * 60 * 0.75;

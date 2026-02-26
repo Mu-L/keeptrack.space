@@ -1,3 +1,4 @@
+import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData, TearrType } from '@app/app/sensors/sensor-math';
 import { GetSatType, MenuMode } from '@app/engine/core/interfaces';
@@ -229,14 +230,23 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
      */
     const lookanglesInterval = this.isRiseSetOnly_ ? 1 : this.angleCalculationInterval_;
 
+    const isOemSat = sat instanceof OemSatellite;
+
+    // Cap loop to OEM ephemeris end time so we don't propagate beyond available data
+    const maxSeconds = isOemSat
+      ? Math.max(0, ((sat as unknown as OemSatellite).header.STOP_TIME.getTime() - timeManagerInstance.simulationTimeObj.getTime()) / 1000)
+      : this.lengthOfLookAngles_ * 24 * 60 * 60;
+
     const looksArray = <LookAngleData[]>[];
     let offset = 0;
     let isMaxElFound = false;
 
-    for (let i = 0; i < this.lengthOfLookAngles_ * 24 * 60 * 60; i += lookanglesInterval) {
+    for (let i = 0; i < maxSeconds; i += lookanglesInterval) {
       offset = i * 1000; // Offset in seconds (msec * 1000)
       const now = timeManagerInstance.getOffsetTimeObj(offset);
-      const tearrData = SensorMath.getTearData(now, sat.satrec, sensors, this.isRiseSetOnly_, isMaxElFound);
+      const tearrData = isOemSat
+        ? (sat as unknown as OemSatellite).getTearData(now, sensors, this.isRiseSetOnly_, isMaxElFound)
+        : SensorMath.getTearData(now, sat.satrec, sensors, this.isRiseSetOnly_, isMaxElFound);
       const canStationObserve = sensors[0].type === SpaceObjectType.OPTICAL ? SensorMath.checkIfVisibleForOptical(sat, sensors[0], now) : true;
       const looksPass = { ...tearrData, canStationObserve };
 

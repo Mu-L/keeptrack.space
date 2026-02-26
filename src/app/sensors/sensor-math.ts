@@ -452,7 +452,7 @@ export class SensorMath {
     return nextPassArray;
   }
 
-  static checkIfVisibleForOptical(sat: Satellite, sensor: DetailedSensor, now: Date): boolean {
+  static checkIfVisibleForOptical(sat: BaseObject, sensor: DetailedSensor, now: Date): boolean {
     const { gmst } = calcGmst(now);
     const sunPos = Sun.eci(now);
     const sensorPos = lla2eci(sensor.llaRad(), gmst);
