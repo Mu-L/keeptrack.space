@@ -27,13 +27,13 @@
 import { SoundNames } from '@app/engine/audio/sounds';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { EventBus } from '@app/engine/events/event-bus';
+import { EventBus, EngineEventMap } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { KeyboardComponent } from '@app/engine/plugins/components/keyboard/keyboard-component';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import '@materializecss/materialize';
-import { BaseObject, Milliseconds, MILLISECONDS_PER_SECOND, Satellite } from '@ootk/src/main';
+import { BaseObject, Milliseconds, MILLISECONDS_PER_SECOND } from '@ootk/src/main';
 import { ColorScheme } from '../../engine/rendering/color-schemes/color-scheme';
 import { clickAndDragHeight, clickAndDragWidth } from '../../engine/utils/click-and-drag';
 import { closeColorbox } from '../../engine/utils/colorbox';
@@ -477,10 +477,8 @@ export class UiManager {
       return;
     }
 
-    const sat = obj as Satellite;
-
     if (realTime * 1 > lastBoxUpdateTime * 1 + this.updateInterval) {
-      EventBus.getInstance().emit(EventBusEvent.updateSelectBox, sat);
+      EventBus.getInstance().emit(EventBusEvent.updateSelectBox, obj as EngineEventMap[EventBusEvent.updateSelectBox][0]);
       ServiceLocator.getTimeManager().lastBoxUpdateTime = realTime;
     }
   }

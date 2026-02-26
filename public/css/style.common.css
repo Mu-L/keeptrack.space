@@ -2701,7 +2701,7 @@ button.ui-button::-moz-focus-inner {
   transform: translateX(-100%);
   background: var(--color-dark-background);
   border-top: solid 5px var(--color-dark-border);
-
+  z-index: 5;
   border-width: 0px 5px 0px 0px;
   border-color: var(--color-dark-border);
   border-style: solid;
