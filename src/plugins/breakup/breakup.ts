@@ -23,11 +23,22 @@ import { BaseObject, eci2lla, Kilometers, OrbitFinder, Satellite, Tle, TleLine1,
 import streamPng from '@public/img/icons/stream.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
+export interface BreakupParams {
+  satId: number | null;
+  breakupCount: number;
+  rascVariation: number;
+  incVariation: number;
+  meanmoVariation: number;
+  startNum: number;
+}
+
 export class Breakup extends KeepTrackPlugin {
   readonly id = 'Breakup';
   dependencies_ = [SelectSatManager.name];
   private readonly selectSatManager_: SelectSatManager;
   private readonly maxDifApogeeVsPerigee_ = 1000;
+
+  lastBreakupParams: BreakupParams | null = null;
 
   isRequireSatelliteSelected = true;
   isIconDisabledOnLoad = true;
@@ -269,6 +280,9 @@ export class Breakup extends KeepTrackPlugin {
     const { simulationTimeObj } = timeManager;
 
     const { satId, breakupCount, rascVariation, incVariation, meanmoVariation, startNum } = Breakup.getFormData_(catalogManagerInstance);
+
+    this.lastBreakupParams = { satId, breakupCount, rascVariation, incVariation, meanmoVariation, startNum };
+
     const mainsat = catalogManagerInstance.getSat(satId ?? -1);
 
     if (!mainsat || satId === null) {

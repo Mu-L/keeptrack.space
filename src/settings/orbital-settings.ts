@@ -51,7 +51,7 @@ export class OrbitalSettings {
    */
   orbitSegments = 255;
   /** Number of segments to use when drawing OEM orbits */
-  oemOrbitSegments = 64;
+  oemOrbitSegments = 128;
 
   // Orbit Limits
   /**
@@ -100,7 +100,7 @@ export class OrbitalSettings {
    * 2 = 95.45% confidence
    * 3 = 99.73% confidence
    */
-  covarianceConfidenceLevel: number = 2;
+  covarianceConfidenceLevel: number = 1;
   /**
    * Flag to determine if the covariance ellipsoid should be drawn.
    */

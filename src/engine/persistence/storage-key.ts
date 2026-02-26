@@ -101,4 +101,7 @@ export enum StorageKey {
 
   // Doppler
   DOPPLER_REF_FREQUENCY = 'v2-keepTrack-dopplerRefFrequency',
+
+  // Color Scheme Editor
+  COLOR_SCHEME_OVERRIDES = 'v2-keepTrack-colorSchemeOverrides',
 }

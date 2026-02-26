@@ -43,6 +43,7 @@ export class DataSettings {
     vimpel: 'https://api.keeptrack.space/v3/r2/vimpel.json',
     stars: 'https://r2.keeptrack.space/data/star-catalog.json',
     constellations: 'https://r2.keeptrack.space/data/constellations.json',
+    covariance: 'https://r2.keeptrack.space/data/covariance.json',
     /** This determines if tle source is loaded to supplement externalTLEs  */
     isSupplementExternal: false,
   };

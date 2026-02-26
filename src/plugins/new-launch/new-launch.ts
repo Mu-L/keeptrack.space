@@ -32,10 +32,20 @@ import {
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
+export interface LaunchParams {
+  templateSccNum: string;
+  launchSiteKey: string;
+  launchDirection: 'N' | 'S';
+  tle1: string;
+  tle2: string;
+  name: string;
+}
+
 export class NewLaunch extends KeepTrackPlugin {
   readonly id = 'NewLaunch';
   dependencies_ = [SelectSatManager.name];
   protected readonly selectSatManager_: SelectSatManager;
+  lastLaunchParams: LaunchParams | null = null;
 
   constructor() {
     super();
@@ -318,6 +328,15 @@ export class NewLaunch extends KeepTrackPlugin {
       return;
     }
     if (SatMath.altitudeCheck(sat.satrec, simulationTimeObj) > 1) {
+      this.lastLaunchParams = {
+        templateSccNum: sat.sccNum,
+        launchSiteKey: launchFac,
+        launchDirection: upOrDown,
+        tle1,
+        tle2,
+        name: sat.name,
+      };
+
       catalogManagerInstance.satCruncher.postMessage({
         typ: CruncerMessageTypes.SAT_EDIT,
         id,

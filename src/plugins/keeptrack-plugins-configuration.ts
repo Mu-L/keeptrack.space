@@ -93,6 +93,8 @@ export type KeepTrackPluginsConfiguration = {
   HideOtherSatellitesPlugin?: PluginConfiguration;
   SkipInterpolationToggle?: PluginConfiguration;
   KeyboardShortcutsPlugin?: PluginConfiguration;
+  CovariancePlugin?: PluginConfiguration;
+  CovarianceStatsPlugin?: PluginConfiguration;
   DopsPlugin?: PluginConfiguration;
   SatConstellations?: PluginConfiguration;
   CountriesMenu?: PluginConfiguration;
@@ -120,6 +122,7 @@ export type KeepTrackPluginsConfiguration = {
   Inc2LonPlots?: PluginConfiguration;
   FilterMenuPlugin?: PluginConfiguration;
   SymbologyPlugin?: PluginConfiguration;
+  ColorSchemeEditorPlugin?: PluginConfiguration;
   SettingsMenuPlugin?: PluginConfiguration;
   GraphicsMenuPlugin?: PluginConfiguration;
   GamepadPlugin?: PluginConfiguration;

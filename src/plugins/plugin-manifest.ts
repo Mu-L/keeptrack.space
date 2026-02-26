@@ -558,6 +558,18 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 314 },
   },
   {
+    configKey: 'CovariancePlugin',
+    proImport: () => import('../plugins-pro/covariance/covariance'),
+    proClassName: 'CovariancePlugin',
+    defaultConfig: { enabled: true, order: 316 },
+  },
+  {
+    configKey: 'CovarianceStatsPlugin',
+    proImport: () => import('../plugins-pro/covariance/covariance-stats'),
+    proClassName: 'CovarianceStatsPlugin',
+    defaultConfig: { enabled: true, order: 317 },
+  },
+  {
     configKey: 'DopsPlugin',
     ossImport: () => import('./dops/dops'),
     ossClassName: 'DopsPlugin',
@@ -674,14 +686,14 @@ export const pluginManifest: PluginDescriptor[] = [
     ossImport: () => import('./maneuver/maneuver'),
     ossClassName: 'ManeuverPlugin',
     proImport: () => import('../plugins-pro/maneuver/maneuver'),
-    defaultConfig: { enabled: false, order: 409 },
+    defaultConfig: { enabled: true, order: 409 },
   },
   {
     configKey: 'InitialOrbitDeterminationPlugin',
     ossImport: () => import('./initial-orbit/initial-orbit'),
     ossClassName: 'InitialOrbitDeterminationPlugin',
     proImport: () => import('../plugins-pro/initial-orbit/initial-orbit'),
-    defaultConfig: { enabled: false, order: 410 },
+    defaultConfig: { enabled: true, order: 410 },
     isLoginRequired: true,
   },
   {
@@ -757,6 +769,15 @@ export const pluginManifest: PluginDescriptor[] = [
     ossClassName: 'SymbologyPlugin',
     proImport: () => import('../plugins-pro/symbology/symbology-plugin'),
     defaultConfig: { enabled: true, order: 593 },
+    isLoginRequired: true,
+  },
+  {
+    configKey: 'ColorSchemeEditorPlugin',
+    ossImport: () => import('./color-scheme-editor/color-scheme-editor'),
+    ossClassName: 'ColorSchemeEditorPlugin',
+    proImport: () => import('../plugins-pro/color-scheme-editor/color-scheme-editor'),
+    proClassName: 'ColorSchemeEditorPlugin',
+    defaultConfig: { enabled: true, order: 594 },
     isLoginRequired: true,
   },
   {
