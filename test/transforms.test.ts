@@ -259,13 +259,20 @@ describe('alt2zoom_function', () => {
 
   // Tests that function returns a number between 0 and 1 when alt is between minZoomDistance and maxZoomDistance
   it('test_happy_path_alt_between_min_and_max_zoom_distance', () => {
-    expect(alt2zoom(<Kilometers>50, minZoom, maxZoom, minDist)).toBeGreaterThan(0);
-    expect(alt2zoom(<Kilometers>50, minZoom, maxZoom, minDist)).toBeLessThan(1);
+    // alt must place satellite above minZoomDistance: 700 + 6371 + 30 = 7101 > 7000
+    expect(alt2zoom(<Kilometers>700, minZoom, maxZoom, minDist)).toBeGreaterThan(0);
+    expect(alt2zoom(<Kilometers>700, minZoom, maxZoom, minDist)).toBeLessThan(1);
   });
 
-  // Tests that function returns NaN when alt is less than minZoomDistance
+  // Tests that function returns 0 (minimum zoom) when alt is below minZoomDistance
   it('test_edge_case_alt_less_than_min_zoom_distance', () => {
-    expect(isNaN(alt2zoom(<Kilometers>-1, minZoom, maxZoom, minDist))).toBe(false);
+    expect(alt2zoom(<Kilometers>-1, minZoom, maxZoom, minDist)).toBe(0);
+  });
+
+  // Tests that low-altitude satellites return 0 instead of NaN
+  it('returns_0_for_low_altitude_satellite', () => {
+    // Satellite at 10km altitude: 10 + 6371 + 30 = 6411 < minZoom (7000)
+    expect(alt2zoom(<Kilometers>10, minZoom, maxZoom, minDist)).toBe(0);
   });
 
   // Tests that function returns a number greater than 1 when alt is greater than maxZoomDistance

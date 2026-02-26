@@ -64,11 +64,11 @@ export const alt2zoom = (alt: Kilometers, minZoomDistance: Kilometers, maxZoomDi
     throw new Error('minZoomDistance must be less than maxZoomDistance');
   }
 
-  const distanceFromCenter = alt + RADIUS_OF_EARTH + minDistanceFromSatellite;
+  // Clamp so low-altitude satellites (below minZoomDistance) return 0 instead of NaN
+  const distanceFromCenter = Math.max(alt + RADIUS_OF_EARTH + minDistanceFromSatellite, minZoomDistance);
   const zoomLevel = ((distanceFromCenter - minZoomDistance) / (maxZoomDistance - minZoomDistance)) ** (1 / ZOOM_EXP);
 
-
-  return Number.isNaN(zoomLevel) ? 0.5 : Math.min(Math.max(zoomLevel, 0), 1);
+  return Math.min(Math.max(zoomLevel, 0), 1);
 };
 
 const isLeapYear_ = (dateIn: Date) => {

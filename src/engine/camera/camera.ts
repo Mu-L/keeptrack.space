@@ -268,6 +268,8 @@ export class Camera {
         this.cameraType = CameraType.FIXED_TO_EARTH;
       }
     }
+
+    EventBus.getInstance().emit(EventBusEvent.cameraTypeChanged, CameraType[this.cameraType]);
   }
 
   zoomWheel(delta: number): void {
@@ -284,8 +286,17 @@ export class Camera {
 
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
 
+    // Compute effective near zoom level for low-altitude satellites
+    const selectedSat = selectSatManagerInstance?.getSelectedSat();
+    const satDist = selectedSat
+      ? Math.sqrt(selectedSat.position.x ** 2 + selectedSat.position.y ** 2 + selectedSat.position.z ** 2)
+      : 0;
+    const effectiveNearZoom = satDist > 0
+      ? Math.max(settingsManager.nearZoomLevel, settingsManager.minZoomDistance - satDist + 2) as Kilometers
+      : settingsManager.nearZoomLevel;
+
     // Updated zoom logic for satellite/covariance bubble proximity
-    const isCameraCloseToSatellite = this.state.camDistBuffer < settingsManager.nearZoomLevel;
+    const isCameraCloseToSatellite = this.state.camDistBuffer < effectiveNearZoom;
     const maxCovarianceDistance = Math.min((selectSatManagerInstance?.primarySatCovMatrix?.[2] ?? 0) * 10, 10000);
     const isCameraCloseToCovarianceBubble = settingsManager.isDrawCovarianceEllipsoid &&
       this.state.camDistBuffer < maxCovarianceDistance;
@@ -311,7 +322,7 @@ export class Camera {
       const scale = Math.max(0.01, (this.state.camDistBuffer / 100) ** 1.15); // Exponential factor > 1 for faster scaling as distance increases
 
       this.state.camDistBuffer = <Kilometers>(this.state.camDistBuffer + (delta / 5) * scale); // delta is +/- 100
-    } else if (this.state.camDistBuffer >= settingsManager.nearZoomLevel) {
+    } else if (this.state.camDistBuffer >= effectiveNearZoom) {
       // Outside camDistBuffer
       this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity; // delta is +/- 100
     }
