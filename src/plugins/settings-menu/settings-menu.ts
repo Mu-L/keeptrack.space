@@ -1,16 +1,12 @@
-import { LayersManager } from '@app/app/ui/layers-manager';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { ColorPick } from '@app/engine/utils/color-pick';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl } from '@app/engine/utils/get-el';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
-import { parseRgba } from '@app/engine/utils/rgba';
-import { rgbCss } from '@app/engine/utils/rgbCss';
 import { SettingsManager } from '@app/settings/settings';
 import { SatLabelMode } from '@app/settings/ui-settings';
 import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
@@ -118,13 +114,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
             </div>
             <div class="switch row">
               <label data-position="top" data-delay="50" data-tooltip="Draw lines from sensor to satellites when in FOV">
-                <input id="settings-isDrawCovarianceEllipsoid" type="checkbox" checked/>
-                <span class="lever"></span>
-                Draw Covariance Ellipsoid
-              </label>
-            </div>
-            <div class="switch row">
-              <label data-position="top" data-delay="50" data-tooltip="Draw lines from sensor to satellites when in FOV">
                 <input id="settings-isDrawInCoverageLines" type="checkbox" checked/>
                 <span class="lever"></span>
                 Draw FOV Lines
@@ -182,59 +171,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
             </div>
           </div>
           <div class="row light-blue darken-3" style="height:4px; display:block;"></div>
-          <div id="settings-colors" class="row">
-            <h5 class="center-align">Color Settings</h5>
-            <div class="row">
-              <div class="input-field col s6">
-                <center>
-                  <p>Payload</p>
-                  <button id="settings-color-payload" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-              <div class="input-field col s6">
-                <center>
-                  <p>Rocket Body</p>
-                  <button id="settings-color-rocketBody" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-            </div>
-            <div class="row">
-              <div class="input-field col s6">
-                <center>
-                  <p>Debris</p>
-                  <button id="settings-color-debris" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-              <div class="input-field col s6">
-                <center>
-                  <p>In View</p>
-                  <button id="settings-color-inview" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-            </div>
-            <div class="row">
-              <div class="input-field col s6">
-                <center>
-                  <p>Missile</p>
-                  <button id="settings-color-missile" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-              <div class="input-field col s6">
-                <center>
-                  <p>Missile (FOV)</p>
-                  <button id="settings-color-missileInview" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-            </div>
-            <div class="row">
-              <div class="input-field col s6">
-                <center>
-                  <p>Special Sats</p>
-                  <button id="settings-color-special" class="btn waves-effect waves-light"></button>
-                </center>
-              </div>
-            </div>
-          </div>
           <div id="settings-opt" class="row">
             <div class="row">
               <h5 class="center-align">Settings Overrides</h5>
@@ -267,8 +203,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     </div>
   </div>`;
 
-  isNotColorPickerInitialSetup = false;
-
   addHtml(): void {
     super.addHtml();
     EventBus.getInstance().on(
@@ -286,93 +220,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
         if (!settingsManager.plugins.TimeMachine) {
           hideEl(getEl('settings-time-machine-toasts')!.parentElement!.parentElement!);
         }
-
-        const colorPalette = [
-          // Reds
-          rgbCss([1.0, 0.0, 0.0, 1.0]), // Red
-          rgbCss([1.0, 0.4, 0.4, 1.0]), // Light Red
-          rgbCss([1.0, 0.0, 0.6, 1.0]), // Pink
-          rgbCss([1.0, 0.75, 0.8, 1.0]), // Light Pink
-          rgbCss([1.0, 0.0, 1.0, 1.0]), // Magenta
-
-          // Oranges
-          rgbCss([1.0, 0.65, 0.0, 1.0]), // Orange
-          rgbCss([0.85, 0.5, 0.0, 1.0]), // Dark Orange
-          rgbCss([1.0, 0.8, 0.6, 1.0]), // Peach
-
-          // Yellows
-          rgbCss([1.0, 1.0, 0.0, 1.0]), // Yellow
-          rgbCss([0.8, 0.4, 0.0, 1.0]), // Dark Yellow
-
-          // Greens
-          rgbCss([0.4, 0.8, 0.0, 1.0]), // Chartreuse
-          rgbCss([0.0, 1.0, 0.0, 1.0]), // Lime Green
-          rgbCss([0.2, 1.0, 0.0, 0.5]), // Dark Green (with transparency)
-          rgbCss([0.5, 1.0, 0.5, 1.0]), // Mint Green
-          rgbCss([0.6, 0.8, 0.2, 1.0]), // Olive Green
-
-          // Cyans
-          rgbCss([0.0, 1.0, 1.0, 1.0]), // Cyan
-          rgbCss([0.0, 0.8, 0.8, 1.0]), // Light Blue
-          rgbCss([0.0, 0.5, 0.5, 1.0]), // Teal
-          rgbCss([0.0, 0.2, 0.4, 1.0]), // Dark Teal
-
-          // Blues
-          rgbCss([0.2, 0.4, 1.0, 1.0]), // Dark Blue
-          rgbCss([0.0, 0.0, 0.5, 1.0]), // Navy Blue
-
-          // Purples
-          rgbCss([0.5, 0.0, 1.0, 1.0]), // Purple
-          rgbCss([0.5, 0.0, 0.5, 1.0]), // Dark Purple
-          rgbCss([0.8, 0.2, 0.8, 1.0]), // Violet
-
-          // Browns
-          rgbCss([0.5, 0.25, 0.0, 1.0]), // Brown
-          rgbCss([0.6, 0.4, 0.2, 1.0]), // Tan
-          rgbCss([0.9, 0.9, 0.5, 1.0]), // Beige
-
-          // Grays
-          rgbCss([0.9, 0.9, 0.9, 1.0]), // Light Gray
-          rgbCss([0.5, 0.5, 0.5, 1.0]), // Gray
-          rgbCss([0.1, 0.1, 0.1, 1.0]), // Dark Gray
-        ];
-
-        ColorPick.initColorPick('#settings-color-payload', {
-          initialColor: rgbCss(settingsManager.colors?.payload || [0.2, 1.0, 0.0, 0.5]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'payload'),
-        });
-        ColorPick.initColorPick('#settings-color-rocketBody', {
-          initialColor: rgbCss(settingsManager.colors?.rocketBody || [0.2, 0.4, 1.0, 1]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'rocketBody'),
-        });
-        ColorPick.initColorPick('#settings-color-debris', {
-          initialColor: rgbCss(settingsManager.colors?.debris || [0.5, 0.5, 0.5, 1]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'debris'),
-        });
-        ColorPick.initColorPick('#settings-color-inview', {
-          initialColor: rgbCss(settingsManager.colors?.inFOV || [0.85, 0.5, 0.0, 1.0]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'inview'),
-        });
-        ColorPick.initColorPick('#settings-color-missile', {
-          initialColor: rgbCss(settingsManager.colors?.missile || [1.0, 1.0, 0.0, 1.0]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'missile'),
-        });
-        ColorPick.initColorPick('#settings-color-missileInview', {
-          initialColor: rgbCss(settingsManager.colors?.missileInview || [1.0, 0.0, 0.0, 1.0]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'missileInview'),
-        });
-        ColorPick.initColorPick('#settings-color-special', {
-          initialColor: rgbCss(settingsManager.colors?.pink || [1.0, 0.0, 0.6, 1.0]),
-          palette: colorPalette,
-          onColorSelected: (colorpick: ColorPick) => this.onColorSelected_(colorpick, 'pink'),
-        });
-        this.isNotColorPickerInitialSetup = true;
       },
     );
   }
@@ -402,7 +249,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       { id: 'settings-isDrawInCoverageLines', setting: 'isDrawInCoverageLines' },
       { id: 'settings-enableHoverOverlay', setting: 'enableHoverOverlay' },
       { id: 'settings-focusOnSatelliteWhenSelected', setting: 'isFocusOnSatelliteWhenSelected' },
-      { id: 'settings-isDrawCovarianceEllipsoid', setting: 'isDrawCovarianceEllipsoid' },
       { id: 'settings-eciOnHover', setting: 'isEciOnHover' },
       { id: 'settings-confidence-levels', setting: 'isShowConfidenceLevels' },
       { id: 'settings-demo-mode', setting: 'isDemoModeOn' },
@@ -432,25 +278,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     }
   }
 
-  private onColorSelected_(context: ColorPick, colorStr: string) {
-    if (typeof context === 'undefined' || context === null) {
-      throw new Error('context is undefined');
-    }
-    if (typeof colorStr === 'undefined' || colorStr === null) {
-      throw new Error('colorStr is undefined');
-    }
-
-    context.element.style.cssText = `background-color: ${context.color} !important; color: ${context.color};`;
-    if (this.isNotColorPickerInitialSetup) {
-      settingsManager.colors[colorStr] = parseRgba(context.color);
-      LayersManager.layersColorsChange();
-      const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
-
-      colorSchemeManagerInstance.calculateColorBuffers(true);
-      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_MANAGER_COLORS, JSON.stringify(settingsManager.colors));
-    }
-  }
-
   // eslint-disable-next-line complexity
   private static onFormChange_(e: Event, isDMChecked?: boolean) {
     if (typeof e === 'undefined' || e === null) {
@@ -466,7 +293,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       case 'settings-isDrawInCoverageLines':
       case 'settings-enableHoverOverlay':
       case 'settings-focusOnSatelliteWhenSelected':
-      case 'settings-isDrawCovarianceEllipsoid':
       case 'settings-drawSun':
       case 'settings-drawBlackEarth':
       case 'settings-drawAtmosphere':
@@ -544,7 +370,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     settingsManager.isDrawInCoverageLines = (<HTMLInputElement>getEl('settings-isDrawInCoverageLines')).checked;
     settingsManager.enableHoverOverlay = (<HTMLInputElement>getEl('settings-enableHoverOverlay')).checked;
     settingsManager.isFocusOnSatelliteWhenSelected = (<HTMLInputElement>getEl('settings-focusOnSatelliteWhenSelected')).checked;
-    settingsManager.isDrawCovarianceEllipsoid = (<HTMLInputElement>getEl('settings-isDrawCovarianceEllipsoid')).checked;
     settingsManager.drawCameraWidget = (<HTMLInputElement>getEl('settings-drawCameraWidget')).checked;
     const ccWidgetCanvas = getEl('camera-control-widget');
 
