@@ -873,11 +873,12 @@ export abstract class KeepTrackPlugin {
         <img src="${this.downloadIconSrc}" alt="Download" class="icon-btn-img" />
       </button>
     ` : '';
+    const secondaryIconSrc = this.secondaryMenuIcon !== 'settings' ? this.secondaryMenuIcon : settingsPng;
     const settingsIconHtml = this.sideMenuSecondaryHtml ? html`
       <button id="${this.sideMenuElementName}-secondary-btn"
         class="center-align btn btn-ui waves-effect waves-light icon-btn"
         type="button">
-        <img src="${settingsPng}" alt="Settings" class="icon-btn-img" />
+        <img src="${secondaryIconSrc}" alt="Settings" class="icon-btn-img" />
       </button>` : '';
     const closeIconHtml = html`
       <button id="${this.sideMenuElementName}-close-btn"
