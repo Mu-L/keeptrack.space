@@ -139,4 +139,14 @@ export enum EventBusEvent {
    * Parameters: (scheme: ColorScheme)
    */
   colorSchemeChanged = 'colorSchemeChanged',
+  /**
+   * Emitted when scenario start/end time bounds change via updateScenario().
+   * Parameters: (scenario: ScenarioData)
+   */
+  scenarioBoundsChanged = 'scenarioBoundsChanged',
+  /**
+   * Emitted when the camera type changes via changeCameraType().
+   * Parameters: (cameraTypeName: string)
+   */
+  cameraTypeChanged = 'cameraTypeChanged',
 }

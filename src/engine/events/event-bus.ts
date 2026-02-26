@@ -1,4 +1,5 @@
 import type { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import type { OemSatellite } from '@app/app/objects/oem-satellite';
 import type { User } from '@supabase/supabase-js';
 import type { BaseObject, Satellite, Milliseconds } from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
@@ -47,7 +48,7 @@ export interface EngineEventMap {
   [EventBusEvent.setSecondarySat]: [Satellite | null, number];
   [EventBusEvent.uiManagerInit]: [];
   [EventBusEvent.uiManagerOnReady]: [];
-  [EventBusEvent.updateSelectBox]: [Satellite | MissileObject];
+  [EventBusEvent.updateSelectBox]: [Satellite | MissileObject | OemSatellite];
   [EventBusEvent.ConeMeshUpdate]: [];
   [EventBusEvent.FrustumMeshUpdate]: [];
   [EventBusEvent.bottomMenuModeChange]: [];
@@ -79,6 +80,8 @@ export interface EngineEventMap {
   [EventBusEvent.connectivityChange]: [boolean]; // isOnline
   [EventBusEvent.loginGateStateChange]: [boolean]; // isAuthenticated
   [EventBusEvent.colorSchemeChanged]: [unknown]; // scheme instance
+  [EventBusEvent.scenarioBoundsChanged]: [unknown]; // ScenarioData
+  [EventBusEvent.cameraTypeChanged]: [string]; // camera type name
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {
