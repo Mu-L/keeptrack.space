@@ -274,9 +274,26 @@ export class OrbitManager {
   private toggleEciToEcf_() {
     settingsManager.isOrbitCruncherInEcf = !settingsManager.isOrbitCruncherInEcf;
     if (settingsManager.isOrbitCruncherInEcf) {
-      ServiceLocator.getUiManager().toast('GEO Orbits displayed in ECF', ToastMsgType.normal);
+      ServiceLocator.getUiManager().toast('Orbits displayed in ECF', ToastMsgType.normal);
     } else {
-      ServiceLocator.getUiManager().toast('GEO Orbits displayed in ECI', ToastMsgType.standby);
+      ServiceLocator.getUiManager().toast('Orbits displayed in ECI', ToastMsgType.standby);
+    }
+
+    // Cache is in wrong reference frame — clear and re-request
+    this.orbitCache.clear();
+    this.inProgress_ = [];
+    this.reRequestActiveOrbits_();
+  }
+
+  private reRequestActiveOrbits_() {
+    if (this.currentSelectId_ !== -1) {
+      this.updateOrbitBuffer(this.currentSelectId_);
+    }
+    if (this.secondarySelectId_ !== -1) {
+      this.updateOrbitBuffer(this.secondarySelectId_);
+    }
+    for (const satId of this.currentInView_) {
+      this.updateOrbitBuffer(satId);
     }
   }
 
@@ -374,7 +391,7 @@ export class OrbitManager {
           latList: missileParams?.latList,
           lonList: missileParams?.lonList,
           altList: missileParams?.altList,
-          isEcfOutput: settingsManager.isOrbitCruncherInEcf,
+          isEcfOutput: false, // Missiles use their own GMST-based conversion; ECF toggle does not apply
           isPolarViewEcf: isPolarView,
         });
       } else if (obj instanceof OemSatellite) {
@@ -498,13 +515,7 @@ export class OrbitManager {
         return;
       }
       OrbitManager.checkColorBuffersValidity_(hoverId, colorSchemeManagerInstance.colorData);
-      const sat = ServiceLocator.getCatalogManager().getObject(hoverId, GetSatType.EXTRA_ONLY);
-
-      if (sat instanceof OemSatellite) {
-        this.lineManagerInstance_.setColorUniforms(sat.dotColor ?? settingsManager.orbitHoverColor);
-      } else {
-        this.lineManagerInstance_.setColorUniforms(settingsManager.orbitHoverColor);
-      }
+      this.lineManagerInstance_.setColorUniforms(settingsManager.orbitHoverColor);
       this.writePathToGpu_(hoverId);
     }
   }

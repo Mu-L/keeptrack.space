@@ -596,7 +596,9 @@ export class WebGLRenderer {
       }
 
       // If in satellite view the orbit buffer needs to be updated every time
+      // Skip alignment in ECF mode — the shader rotates ECEF data per-frame using GMST
       if (
+        !settingsManager.isOrbitCruncherInEcf &&
         !primarySat.isMissile() &&
         (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT)
       ) {

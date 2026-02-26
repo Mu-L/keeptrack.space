@@ -16,6 +16,7 @@ import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { getTemeToJ2000Matrix, ReferenceFrame } from '../math/reference-frames';
 import { CameraType } from '../camera/camera';
+import { settingsManager } from '@app/settings/settings';
 import { EARTH_OBLIQUITY_RADIANS, RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { DepthManager } from './depth-manager';
@@ -53,6 +54,7 @@ export class LineManager {
     u_gmst: null as unknown as WebGLUniformLocation,
     u_earthRadius: null as unknown as WebGLUniformLocation,
     u_flatMapCenterX: null as unknown as WebGLUniformLocation,
+    u_ecfMode: null as unknown as WebGLUniformLocation,
   };
 
   /** Polar view uniforms assigned separately — some ANGLE backends strip them from conditional branches. */
@@ -567,19 +569,21 @@ export class LineManager {
     const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
     const isPolarView = mainCamera.cameraType === CameraType.POLAR_VIEW;
 
+    // Always set u_gmst — needed by flat map, polar view, AND ECF mode
+    gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1i(this.uniforms_.u_ecfMode, settingsManager.isOrbitCruncherInEcf ? 1 : 0);
+
     gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMap ? 1 : 0);
     if (this.polarUniforms_.u_polarViewMode) {
       gl.uniform1i(this.polarUniforms_.u_polarViewMode, isPolarView ? 1 : 0);
     }
     if (isFlatMap) {
-      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
       gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
       gl.uniform1f(this.uniforms_.u_flatMapCenterX, mainCamera.flatMapPanX);
       gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
     } else if (isPolarView) {
       const dotsManager = ServiceLocator.getDotsManager();
 
-      gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
       gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
       if (this.polarUniforms_.u_sensorEcef) {
         gl.uniform3fv(this.polarUniforms_.u_sensorEcef, dotsManager.sensorEcef);
@@ -608,6 +612,7 @@ export class LineManager {
 
       uniform float logDepthBufFC;
       uniform bool u_flatMapMode;
+      uniform bool u_ecfMode;
       uniform float u_gmst;
       uniform float u_earthRadius;
       uniform float u_flatMapCenterX;
@@ -624,7 +629,12 @@ export class LineManager {
         if (u_flatMapMode) {
           float PI = 3.14159265359;
           float mapW = 2.0 * PI * u_earthRadius;
-          float recomputedLon = atan(v_eciPos.y, v_eciPos.x) - u_gmst;
+          float recomputedLon;
+          if (u_ecfMode) {
+            recomputedLon = atan(v_eciPos.y, v_eciPos.x);
+          } else {
+            recomputedLon = atan(v_eciPos.y, v_eciPos.x) - u_gmst;
+          }
           recomputedLon = mod(recomputedLon + PI, 2.0 * PI) - PI;
           float recomputedFlatX = recomputedLon * u_earthRadius;
           // Wrap to camera center to match vertex shader wrapping
@@ -648,6 +658,7 @@ export class LineManager {
       uniform vec3 worldOffset;
       uniform float logDepthBufFC;
       uniform bool u_flatMapMode;
+      uniform bool u_ecfMode;
       uniform float u_gmst;
       uniform float u_earthRadius;
       uniform float u_flatMapCenterX;
@@ -684,7 +695,12 @@ export class LineManager {
                   return;
               }
 
-              float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+              float lon;
+              if (u_ecfMode) {
+                  lon = atan(eciPos.y, eciPos.x);
+              } else {
+                  lon = atan(eciPos.y, eciPos.x) - u_gmst;
+              }
               lon = mod(lon + PI, 2.0 * PI) - PI;
               float lat = atan(eciPos.z, length(eciPos.xy));
               float alt = eciDist - u_earthRadius;
@@ -734,7 +750,20 @@ export class LineManager {
 
               position = u_pCamMatrix * vec4(polarPos, 1.0);
           } else {
-              position = u_pCamMatrix * vec4(eciPos, 1.0);
+              if (u_ecfMode) {
+                  // Rotate raw ECEF → ECI before adding worldOffset
+                  vec3 ecefPos = worldPosition.xyz;
+                  float c = cos(u_gmst);
+                  float s = sin(u_gmst);
+                  vec3 rotated = vec3(
+                      ecefPos.x * c - ecefPos.y * s,
+                      ecefPos.x * s + ecefPos.y * c,
+                      ecefPos.z
+                  );
+                  position = u_pCamMatrix * vec4(rotated + worldOffset, 1.0);
+              } else {
+                  position = u_pCamMatrix * vec4(eciPos, 1.0);
+              }
           }
 
           gl_Position = position;
