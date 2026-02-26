@@ -1,20 +1,33 @@
-import type { ClassicalElements } from '@app/engine/ootk/src/coordinate/ClassicalElements';
-import type { ITRF } from '@app/engine/ootk/src/coordinate/ITRF';
 import { rgbaArray, SolarBody, ToastMsgType } from '@app/engine/core/interfaces';
-import { t7e } from '@app/locales/keys';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import type { ClassicalElements } from '@app/engine/ootk/src/coordinate/ClassicalElements';
+import type { ITRF } from '@app/engine/ootk/src/coordinate/ITRF';
+import { Tle } from '@app/engine/ootk/src/coordinate/Tle';
 import { LagrangeInterpolator } from '@app/engine/ootk/src/interpolator/LagrangeInterpolator';
+import { StateInterpolator } from '@app/engine/ootk/src/interpolator/StateInterpolator';
 import { LineColors } from '@app/engine/rendering/line-manager/line';
 import { OrbitPathLine } from '@app/engine/rendering/line-manager/orbit-path';
+import { dateFormat } from '@app/engine/utils/dateFormat';
+import { t7e } from '@app/locales/keys';
 import {
-  SpaceObject, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, EpochUTC,
-  Degrees, EcefVec3, LlaVec3, PosVel, calcGmst, eci2ecef, eci2lla, TemeVec3,
+  calcGmst,
+  Degrees, EcefVec3,
+  eci2ecef, eci2lla, eci2rae,
+  EpochUTC,
+  J2000, Kilometers, KilometersPerSecond,
+  LlaVec3, PosVel, RaeVec3,
+  Seconds,
+  SpaceObject,
+  SpaceObjectType,
+  TemeVec3,
 } from '@ootk/src/main';
-import { Tle } from '@app/engine/ootk/src/coordinate/Tle';
 import { vec4 } from 'gl-matrix';
+import { SatMath } from '../analysis/sat-math';
 import { SatelliteModels } from '../rendering/mesh/model-resolver';
+import { DetailedSensor } from '../sensors/DetailedSensor';
+import { TearrData, TearrType } from '../sensors/sensor-math';
 
 export interface OemHeader {
   START_TIME: Date;
@@ -74,18 +87,20 @@ export class OemSatellite extends SpaceObject {
   stateVectorIdx_: number = 0;
   dataBlockIdx_: number = 0;
   orbitFullPathCache_: Float32Array | null = null;
+  /** Full-precision epoch timestamps (ms) parallel to orbitFullPathCache_ — avoids Float32 truncation for GMST calculations */
+  epochCache_: Float64Array | null = null;
   /** Cached points for drawing the full orbit path */
   pointsForOrbitPath: [number, number, number][] | null = null;
   orbitFullPathLine: OrbitPathLine | null = null;
   orbitHistoryLine: OrbitPathLine | null = null;
   isDrawOrbitHistory = true;
-  lagrangeInterpolator: LagrangeInterpolator | null = null;
+  lagrangeInterpolator: StateInterpolator | null = null;
   pointsTeme: [number, number, number, number][] = [];
-  pointsITRF: [number, number, number, number][] = [];
   private lastHistoryStateVectorIdx_: number = -1;
   private lastHistoryDataBlockIdx_: number = -1;
   private historyBuffer_: Float32Array | null = null;
-  useITRF = false;
+  private historyPointCount_ = 0;
+  private lastEcfMode_: boolean = false;
   moonPositionCache_: { [key: number]: { position: { x: number; y: number; z: number } } } = {};
 
   orbitColor: vec4 = LineColors.GREEN;
@@ -269,19 +284,141 @@ export class OemSatellite extends SpaceObject {
     return false;
   }
 
+  getRae(now: Date, sensor: DetailedSensor): RaeVec3<Kilometers, Degrees> | null {
+    const eciResult = this.eci(now);
+
+    if (!eciResult) {
+      return null;
+    }
+
+    return eci2rae(now, eciResult.position, sensor);
+  }
+
+  getTearData(now: Date, sensors: DetailedSensor[], isRiseSetOnly = false, isMaxElFound = false): TearrData {
+    const sensor = sensors[0];
+    const aer = this.getRae(now, sensor);
+
+    if (!aer) {
+      return { time: '', rng: null, az: null, el: null };
+    }
+
+    const isInFOV = SatMath.checkIsInView(sensor, aer);
+
+    if (aer.az && aer.el && aer.rng && isInFOV) {
+      if (isRiseSetOnly) {
+        const now1 = new Date();
+
+        now1.setTime(Number(now) - 1000);
+        const aerPrevious = this.getRae(now1, sensor);
+        const isInFOVPrevious = aerPrevious ? SatMath.checkIsInView(sensor, aerPrevious) : false;
+        let isRise = false;
+
+        if (!isInFOVPrevious) {
+          isRise = true;
+        }
+
+        now1.setTime(Number(now) + 1000);
+        const aerNext = this.getRae(now1, sensor);
+        const isInFOVNext = aerNext ? SatMath.checkIsInView(sensor, aerNext) : false;
+
+        if (!isMaxElFound && aerNext?.el && aerNext.el < aer.el) {
+          return {
+            time: dateFormat(now, 'isoDateTime', true),
+            rng: aer.rng,
+            az: aer.az,
+            el: aer.el,
+            type: isRise ? TearrType.RISE_AND_MAX_EL : TearrType.MAX_EL,
+            inView: isInFOV,
+            objName: sensor.objName,
+          };
+        } else if (isRise) {
+          return {
+            time: dateFormat(now, 'isoDateTime', true),
+            rng: aer.rng,
+            az: aer.az,
+            el: aer.el,
+            type: TearrType.RISE,
+            inView: isInFOV,
+            objName: sensor.objName,
+          };
+        }
+
+        if (!isInFOVNext) {
+          return {
+            time: dateFormat(now, 'isoDateTime', true),
+            rng: aer.rng,
+            az: aer.az,
+            el: aer.el,
+            type: !isMaxElFound ? TearrType.MAX_EL_AND_SET : TearrType.SET,
+            inView: isInFOV,
+            objName: sensor.objName,
+          };
+        }
+
+        return {
+          time: '',
+          rng: null,
+          az: null,
+          el: null,
+          inView: isInFOV,
+          objName: sensor.objName,
+        };
+      }
+
+      return {
+        time: dateFormat(now, 'isoDateTime', true),
+        rng: aer.rng,
+        az: aer.az,
+        el: aer.el,
+        inView: isInFOV,
+        objName: sensor.objName,
+      };
+    }
+
+    return {
+      time: '',
+      rng: aer.rng,
+      az: aer.az,
+      el: aer.el,
+      inView: isInFOV,
+      objName: sensor.objName,
+    };
+  }
+
   updatePosAndVel(simTime: Seconds): [number, number, number, number, number, number] | null {
     if (!this?.OemDataBlocks || this.OemDataBlocks.length === 0) {
       return null;
+    }
+
+    // Detect ECF mode toggle and regenerate orbit visualizations
+    const currentEcfMode = settingsManager.isOrbitCruncherInEcf;
+
+    if (currentEcfMode !== this.lastEcfMode_) {
+      this.lastEcfMode_ = currentEcfMode;
+      const hadFullPath = !!this.orbitFullPathLine;
+
+      this.removeFullOrbitPath();
+      this.removeOrbitHistory();
+      this.pointsForOrbitPath = null;
+      if (hadFullPath) {
+        this.drawFullOrbitPath();
+      }
+      if (this.isDrawOrbitHistory) {
+        this.drawOrbitHistory();
+      }
     }
 
     if (this.isDrawOrbitHistory) {
       const stateChanged = this.stateVectorIdx_ !== this.lastHistoryStateVectorIdx_ ||
         this.dataBlockIdx_ !== this.lastHistoryDataBlockIdx_;
 
-      if (stateChanged || this.useITRF) {
+      if (stateChanged) {
         this.lastHistoryStateVectorIdx_ = this.stateVectorIdx_;
         this.lastHistoryDataBlockIdx_ = this.dataBlockIdx_;
         this.drawOrbitHistory();
+      } else {
+        // Always update the trailing endpoint so the history line tracks the satellite smoothly
+        this.updateHistoryEndpoint_();
       }
     }
 
@@ -326,13 +463,6 @@ export class OemSatellite extends SpaceObject {
     this.position = { x: posAndVel[0] as Kilometers, y: posAndVel[1] as Kilometers, z: posAndVel[2] as Kilometers };
 
     return posAndVel;
-  }
-
-  /** Compute cos/sin of current GMST for rotating ITRF coordinates to TEME scene frame */
-  private getCurrentGmstRotation_(): { cos: number; sin: number } {
-    const { gmst } = calcGmst(ServiceLocator.getTimeManager().simulationTimeObj);
-
-    return { cos: Math.cos(gmst), sin: Math.sin(gmst) };
   }
 
   private findStateVectorTime_(simTime: number): void {
@@ -452,29 +582,62 @@ export class OemSatellite extends SpaceObject {
 
   private generateOrbitPath_(): Float32Array {
     this.pointsTeme = [];
-    this.pointsITRF = [];
+    const epochs: number[] = [];
 
     for (const block of this.OemDataBlocks) {
       for (const stateVector of block.ephemeris) {
-        if (this.useITRF) {
-          const itrf = stateVector.toITRF();
+        const teme = stateVector.toTEME();
+        const epochMs = teme.epoch.posix * 1000;
 
-          this.pointsITRF.push([itrf.position.x, itrf.position.y, itrf.position.z, itrf.epoch.posix * 1000]);
-        } else {
-          const teme = stateVector.toTEME();
-
-          this.pointsTeme.push([teme.position.x, teme.position.y, teme.position.z, teme.epoch.posix * 1000]);
-        }
+        this.pointsTeme.push([teme.position.x, teme.position.y, teme.position.z, epochMs]);
+        epochs.push(epochMs);
       }
     }
 
-    const sourcePoints = this.useITRF ? this.pointsITRF : this.pointsTeme;
-    const pointsOut = new Float32Array(sourcePoints.flat());
+    const pointsOut = new Float32Array(this.pointsTeme.flat());
 
     this.orbitPathCache_ = pointsOut;
     this.orbitFullPathCache_ = pointsOut;
+    this.epochCache_ = new Float64Array(epochs);
 
     return pointsOut;
+  }
+
+  /**
+   * Compute stride so `segments` points span ~one orbital period from `currentIndex`.
+   * Falls back to distributing across all remaining data when the period is unknown.
+   */
+  private computeOrbitStride_(currentIndex: number, totalPoints: number, segments: number): number {
+    const remainingCount = totalPoints - currentIndex;
+
+    if (remainingCount <= segments || !this.epochCache_) {
+      return 1;
+    }
+
+    let spanCount = remainingCount;
+
+    try {
+      const periodMin = this.toClassicalElements().period;
+
+      if (periodMin > 0 && isFinite(periodMin)) {
+        const endEpochMs = this.epochCache_[currentIndex] + periodMin * 60_000;
+        let left = currentIndex;
+        let right = totalPoints - 1;
+
+        while (left < right) {
+          const mid = (left + right) >>> 1;
+
+          if (this.epochCache_[mid] < endEpochMs) {
+            left = mid + 1;
+          } else {
+            right = mid;
+          }
+        }
+        spanCount = Math.max(1, left - currentIndex);
+      }
+    } catch { /* Classical elements unavailable */ }
+
+    return Math.max(1, Math.floor(spanCount / (segments - 1)));
   }
 
   private getSegmentsFromCache_(segments: number) {
@@ -498,9 +661,15 @@ export class OemSatellite extends SpaceObject {
       };
     }
 
-    const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
+    // Match orbit cruncher: output ECEF when ECF mode is on (Earth only)
+    const isEcf = settingsManager.isOrbitCruncherInEcf && this.centerBody === SolarBody.Earth;
 
     const currentIndex = this.computeGlobalIndex_();
+    const totalPoints = Math.floor(this.orbitFullPathCache_.length / 4);
+
+    // Compute stride to cover approximately one orbital period across `segments` slots.
+    // Without stride, dense ephemeris (e.g., 10s intervals) would only show a fraction of the orbit.
+    const stride = this.computeOrbitStride_(currentIndex, totalPoints, segments);
 
     const pointsOut = new Float32Array(segments * 4);
     let loopIdx = 0;
@@ -508,26 +677,39 @@ export class OemSatellite extends SpaceObject {
     // Fill pointsOut starting from currentIndex
     for (let i = 0; i < segments; i++) {
       if (i === 0) {
-        // First point is always the current position (already in TEME from updatePosAndVel)
-        if (settingsManager.centerBody !== SolarBody.Earth) {
-          pointsOut[i * 4] = this.position.x - offsetOrigin.position.x;
-          pointsOut[i * 4 + 1] = this.position.y - offsetOrigin.position.y;
-          pointsOut[i * 4 + 2] = this.position.z - offsetOrigin.position.z;
-        } else {
-          pointsOut[i * 4] = this.position.x;
-          pointsOut[i * 4 + 1] = this.position.y;
-          pointsOut[i * 4 + 2] = this.position.z;
-        }
-        pointsOut[i * 4 + 3] = 1.0; // Alpha channel
-      } else {
-        const idx = (currentIndex + i);
+        // First point is always the current position (in TEME from updatePosAndVel)
+        let px: number = this.position.x;
+        let py: number = this.position.y;
+        let pz: number = this.position.z;
 
-        if (idx < this.orbitFullPathCache_.length / 4) {
+        if (settingsManager.centerBody !== SolarBody.Earth) {
+          px = px - offsetOrigin.position.x as Kilometers;
+          py = py - offsetOrigin.position.y as Kilometers;
+          pz = pz - offsetOrigin.position.z as Kilometers;
+        }
+
+        if (isEcf) {
+          const { gmst } = calcGmst(ServiceLocator.getTimeManager().simulationTimeObj);
+          const ecef = eci2ecef({ x: px, y: py, z: pz } as TemeVec3, gmst);
+
+          px = ecef.x;
+          py = ecef.y;
+          pz = ecef.z;
+        }
+
+        pointsOut[i * 4] = px;
+        pointsOut[i * 4 + 1] = py;
+        pointsOut[i * 4 + 2] = pz;
+        pointsOut[i * 4 + 3] = 1.0;
+      } else {
+        const idx = currentIndex + i * stride;
+
+        if (idx < totalPoints) {
           let deltaOffsetPos = { x: 0, y: 0, z: 0 };
 
           if (this.isInertialMoonFrame) {
             if (!this.moonPositionCache_[idx]) {
-              this.moonPositionCache_[idx] = ServiceLocator.getScene().moons.Moon.getTeme(new Date(this.orbitFullPathCache_[idx * 4 + 3]));
+              this.moonPositionCache_[idx] = ServiceLocator.getScene().moons.Moon.getTeme(new Date(this.epochCache_![idx]));
             }
 
             const newOffsetPos = this.moonPositionCache_[idx];
@@ -541,21 +723,23 @@ export class OemSatellite extends SpaceObject {
 
           let x = this.orbitFullPathCache_[idx * 4] - deltaOffsetPos.x;
           let y = this.orbitFullPathCache_[idx * 4 + 1] - deltaOffsetPos.y;
-          const z = this.orbitFullPathCache_[idx * 4 + 2] - deltaOffsetPos.z;
+          let z = this.orbitFullPathCache_[idx * 4 + 2] - deltaOffsetPos.z;
 
-          // Rotate ITRF cache points to current TEME scene frame
-          if (itrfRotation) {
-            const rx = x * itrfRotation.cos - y * itrfRotation.sin;
-            const ry = x * itrfRotation.sin + y * itrfRotation.cos;
+          // Convert TEME→ECEF if in ECF mode (matching orbit cruncher approach)
+          if (isEcf) {
+            const epochMs = this.epochCache_![idx];
+            const { gmst } = calcGmst(new Date(epochMs));
+            const ecef = eci2ecef({ x, y, z } as TemeVec3, gmst);
 
-            x = rx;
-            y = ry;
+            x = ecef.x;
+            y = ecef.y;
+            z = ecef.z;
           }
 
           pointsOut[i * 4] = x;
           pointsOut[i * 4 + 1] = y;
           pointsOut[i * 4 + 2] = z;
-          pointsOut[i * 4 + 3] = 1.0; // Alpha channel
+          pointsOut[i * 4 + 3] = 1.0;
 
           loopIdx = i;
         } else {
@@ -563,7 +747,7 @@ export class OemSatellite extends SpaceObject {
           pointsOut[i * 4] = pointsOut[loopIdx * 4];
           pointsOut[i * 4 + 1] = pointsOut[loopIdx * 4 + 1];
           pointsOut[i * 4 + 2] = pointsOut[loopIdx * 4 + 2];
-          pointsOut[i * 4 + 3] = 1.0; // Alpha channel
+          pointsOut[i * 4 + 3] = 1.0;
         }
       }
     }
@@ -578,82 +762,98 @@ export class OemSatellite extends SpaceObject {
       this.generateOrbitPath_();
     }
 
-    const currentIndex = this.computeGlobalIndex_();
     const cache = this.orbitFullPathCache_!;
-    const cachePointCount = cache.length / 4;
-    const pointCount = Math.min(currentIndex + 1, cachePointCount);
-    const requiredSize = pointCount * 4;
+    const dataPointCount = Math.min(this.computeGlobalIndex_() + 1, cache.length / 4);
+    // +1 for the interpolated current-position endpoint
+    const totalPoints = dataPointCount + 1;
+    const requiredSize = totalPoints * 4;
 
-    // Lazily allocate the reusable Float32Array; only reallocate when history grows
     if (!this.historyBuffer_ || this.historyBuffer_.length < requiredSize) {
       this.historyBuffer_ = new Float32Array(requiredSize);
     }
 
-    const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
-
-    // Write directly into the pre-allocated buffer in forward order
-    // (oldest first) for LINE_STRIP rendering.
+    const isEcf = settingsManager.isOrbitCruncherInEcf && this.centerBody === SolarBody.Earth;
     let writeIdx = 0;
 
-    for (let i = 0; i <= currentIndex; i++) {
-      if (i < cachePointCount) {
-        const srcIdx = i * 4;
-        const x = cache[srcIdx];
-        const y = cache[srcIdx + 1];
-        const z = cache[srcIdx + 2];
+    for (let i = 0; i < dataPointCount; i++) {
+      const srcIdx = i * 4;
+      let x = cache[srcIdx];
+      let y = cache[srcIdx + 1];
+      let z = cache[srcIdx + 2];
 
-        if (itrfRotation) {
-          this.historyBuffer_[writeIdx] = x * itrfRotation.cos - y * itrfRotation.sin;
-          this.historyBuffer_[writeIdx + 1] = x * itrfRotation.sin + y * itrfRotation.cos;
-        } else {
-          this.historyBuffer_[writeIdx] = x;
-          this.historyBuffer_[writeIdx + 1] = y;
-        }
-        this.historyBuffer_[writeIdx + 2] = z;
-        this.historyBuffer_[writeIdx + 3] = 1.0;
-        writeIdx += 4;
+      if (isEcf) {
+        const { gmst } = calcGmst(new Date(this.epochCache_![i]));
+        const ecef = eci2ecef({ x, y, z } as TemeVec3, gmst);
+
+        x = ecef.x;
+        y = ecef.y;
+        z = ecef.z;
       }
+
+      this.historyBuffer_[writeIdx] = x;
+      this.historyBuffer_[writeIdx + 1] = y;
+      this.historyBuffer_[writeIdx + 2] = z;
+      this.historyBuffer_[writeIdx + 3] = 1.0;
+      writeIdx += 4;
     }
 
-    // Overwrite the last written point (newest/current position) with
-    // the interpolated position for smooth rendering
-    if (this.position && writeIdx >= 4) {
-      const lastPointIdx = writeIdx - 4;
+    // Append the interpolated current position as an extra trailing point
+    this.writeCurrentPositionToBuffer_(writeIdx, isEcf);
+    writeIdx += 4;
 
-      this.historyBuffer_[lastPointIdx] = this.position.x;
-      this.historyBuffer_[lastPointIdx + 1] = this.position.y;
-      this.historyBuffer_[lastPointIdx + 2] = this.position.z;
-      this.historyBuffer_[lastPointIdx + 3] = 1.0;
-    }
-
-    const actualPointCount = writeIdx / 4;
+    this.historyPointCount_ = totalPoints;
 
     if (this.orbitHistoryLine) {
-      // Reuse existing line — just upload new data to the same WebGLBuffer
-      this.orbitHistoryLine.updateData(
-        this.historyBuffer_.subarray(0, writeIdx),
-        actualPointCount,
-      );
+      this.orbitHistoryLine.updateData(this.historyBuffer_.subarray(0, writeIdx), totalPoints);
     } else {
-      // First frame: must create OrbitPathLine via the line manager
-      const lineManager = ServiceLocator.getLineManager();
       const tempPoints: [number, number, number][] = [];
 
-      for (let i = 0; i < actualPointCount; i++) {
+      for (let i = 0; i < totalPoints; i++) {
         const idx = i * 4;
 
-        tempPoints.push([
-          this.historyBuffer_[idx],
-          this.historyBuffer_[idx + 1],
-          this.historyBuffer_[idx + 2],
-        ]);
+        tempPoints.push([this.historyBuffer_[idx], this.historyBuffer_[idx + 1], this.historyBuffer_[idx + 2]]);
       }
-      this.orbitHistoryLine = lineManager.createOrbitPath(
-        tempPoints,
-        this.orbitColor ?? LineColors.GREEN,
-        SolarBody.Earth,
-      );
+      this.orbitHistoryLine = ServiceLocator.getLineManager().createOrbitPath(tempPoints, this.orbitColor ?? LineColors.GREEN, SolarBody.Earth);
     }
+  }
+
+  /** Write the current interpolated position into the history buffer at the given byte offset. */
+  private writeCurrentPositionToBuffer_(offset: number, isEcf: boolean): void {
+    if (!this.position || !this.historyBuffer_) {
+      return;
+    }
+
+    let { x, y, z } = this.position;
+
+    if (isEcf) {
+      const { gmst } = calcGmst(ServiceLocator.getTimeManager().simulationTimeObj);
+      const ecef = eci2ecef({ x, y, z } as TemeVec3, gmst);
+
+      x = ecef.x;
+      y = ecef.y;
+      z = ecef.z;
+    }
+
+    this.historyBuffer_[offset] = x;
+    this.historyBuffer_[offset + 1] = y;
+    this.historyBuffer_[offset + 2] = z;
+    this.historyBuffer_[offset + 3] = 1.0;
+  }
+
+  /** Lightweight per-frame update: move the trailing endpoint to the current interpolated position. */
+  private updateHistoryEndpoint_(): void {
+    if (!this.orbitHistoryLine || !this.historyBuffer_ || this.historyPointCount_ < 1) {
+      return;
+    }
+
+    const isEcf = settingsManager.isOrbitCruncherInEcf && this.centerBody === SolarBody.Earth;
+    const lastPointOffset = (this.historyPointCount_ - 1) * 4;
+
+    this.writeCurrentPositionToBuffer_(lastPointOffset, isEcf);
+    this.orbitHistoryLine.updateData(
+      this.historyBuffer_.subarray(0, this.historyPointCount_ * 4),
+      this.historyPointCount_,
+    );
   }
 
   private computeGlobalIndex_(): number {
@@ -672,6 +872,7 @@ export class OemSatellite extends SpaceObject {
       this.orbitHistoryLine = null;
     }
     this.historyBuffer_ = null;
+    this.historyPointCount_ = 0;
     this.lastHistoryStateVectorIdx_ = -1;
     this.lastHistoryDataBlockIdx_ = -1;
   }
@@ -681,74 +882,37 @@ export class OemSatellite extends SpaceObject {
       return;
     }
 
-    const lineManager = ServiceLocator.getLineManager();
-    const points: [number, number, number][] = [];
+    const isEcf = settingsManager.isOrbitCruncherInEcf && this.centerBody === SolarBody.Earth;
 
-    if (!this.pointsForOrbitPath) {
-      const itrfRotation = this.useITRF ? this.getCurrentGmstRotation_() : null;
+    // Reuse cached ECI points when not in ECF mode
+    if (!isEcf && this.pointsForOrbitPath) {
+      this.orbitFullPathLine = ServiceLocator.getLineManager().createOrbitPath(this.pointsForOrbitPath, this.orbitFullPathColor, SolarBody.Earth);
 
-      for (const block of this.OemDataBlocks) {
-        for (const stateVector of block.ephemeris) {
-          if (itrfRotation) {
-            const itrf = stateVector.toITRF();
-            const x = itrf.position.x;
-            const y = itrf.position.y;
-
-            points.push([
-              x * itrfRotation.cos - y * itrfRotation.sin,
-              x * itrfRotation.sin + y * itrfRotation.cos,
-              itrf.position.z,
-            ]);
-          } else {
-            const teme = stateVector.toTEME();
-
-            points.push([teme.position.x, teme.position.y, teme.position.z]);
-          }
-        }
-      }
-
-      // Don't cache in ITRF mode since the rotation changes with time
-      if (this.useITRF) {
-        this.orbitFullPathLine = lineManager.createOrbitPath(points, this.orbitFullPathColor, SolarBody.Earth);
-
-        return;
-      }
-
-      this.pointsForOrbitPath = points;
-    }
-
-    this.orbitFullPathLine = lineManager.createOrbitPath(this.pointsForOrbitPath, this.orbitFullPathColor, SolarBody.Earth);
-  }
-
-  setReferenceFrame(useITRF: boolean): void {
-    if (this.useITRF === useITRF) {
       return;
     }
 
-    const hadOrbitPath = !!this.orbitFullPathLine;
-    const hadOrbitHistory = this.isDrawOrbitHistory;
+    const points: [number, number, number][] = [];
 
-    this.useITRF = useITRF;
+    for (const block of this.OemDataBlocks) {
+      for (const stateVector of block.ephemeris) {
+        const teme = stateVector.toTEME();
 
-    // Clear all caches
-    this.orbitFullPathCache_ = null;
-    this.orbitPathCache_ = null;
-    this.pointsForOrbitPath = null;
+        if (isEcf) {
+          const { gmst } = calcGmst(new Date(teme.epoch.posix * 1000));
+          const ecef = eci2ecef({ x: teme.position.x, y: teme.position.y, z: teme.position.z } as TemeVec3, gmst);
 
-    // Remove existing orbit lines
-    this.removeFullOrbitPath();
-    this.removeOrbitHistory();
-
-    // Regenerate the orbit path cache with the new frame
-    this.generateOrbitPath_();
-
-    // Redraw orbit visualizations that were active
-    if (hadOrbitPath) {
-      this.drawFullOrbitPath();
+          points.push([ecef.x, ecef.y, ecef.z]);
+        } else {
+          points.push([teme.position.x, teme.position.y, teme.position.z]);
+        }
+      }
     }
-    if (hadOrbitHistory) {
-      this.drawOrbitHistory();
+
+    if (!isEcf) {
+      this.pointsForOrbitPath = points;
     }
+
+    this.orbitFullPathLine = ServiceLocator.getLineManager().createOrbitPath(points, this.orbitFullPathColor, SolarBody.Earth);
   }
 
   removeFullOrbitPath(): void {
@@ -814,8 +978,10 @@ export class OemSatellite extends SpaceObject {
     return this.toJ2000(date).toITRF();
   }
 
-  toClassicalElements(_date?: Date): ClassicalElements {
-    throw new Error('OemSatellite does not support classical orbital elements conversion. Use toJ2000() to get state vectors.');
+  toClassicalElements(date?: Date): ClassicalElements {
+    const j2000 = this.toJ2000(date);
+
+    return j2000.toClassicalElements();
   }
 
   clone(_options?: Record<string, unknown>): OemSatellite {
@@ -834,7 +1000,6 @@ export class OemSatellite extends SpaceObject {
     cloned.source = this.source;
     cloned.centerBody = this.centerBody;
     cloned.isInertialMoonFrame = this.isInertialMoonFrame;
-    cloned.useITRF = this.useITRF;
     cloned.orbitColor = vec4.clone(this.orbitColor);
     cloned.orbitFullPathColor = vec4.clone(this.orbitFullPathColor);
     cloned.dotColor = [...this.dotColor] as rgbaArray;
@@ -851,7 +1016,6 @@ export class OemSatellite extends SpaceObject {
       source: this.source,
       centerBody: this.centerBody,
       isInertialMoonFrame: this.isInertialMoonFrame,
-      useITRF: this.useITRF,
       orbitColor: Array.from(this.orbitColor),
       orbitFullPathColor: Array.from(this.orbitFullPathColor),
       dotColor: this.dotColor,
