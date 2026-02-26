@@ -90,6 +90,11 @@ export class TimeSlider extends KeepTrackPlugin {
     EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
       this.updateSliderPosition();
     });
+
+    EventBus.getInstance().on(EventBusEvent.scenarioBoundsChanged, () => {
+      this.scenario = PluginRegistry.getPlugin(ScenarioManagementPlugin)?.scenario ?? null;
+      this.updateSliderPosition();
+    });
   }
 
   private sliderWithoutBounds(value: number) {

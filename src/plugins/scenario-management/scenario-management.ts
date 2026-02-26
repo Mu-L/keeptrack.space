@@ -173,10 +173,20 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
       return false;
     }
 
+    const oldStart = this.scenario.startTime?.getTime() ?? null;
+    const oldEnd = this.scenario.endTime?.getTime() ?? null;
+
     this.scenario = {
       ...this.scenario,
       ...partialScenario,
     };
+
+    const newStart = this.scenario.startTime?.getTime() ?? null;
+    const newEnd = this.scenario.endTime?.getTime() ?? null;
+
+    if (oldStart !== newStart || oldEnd !== newEnd) {
+      EventBus.getInstance().emit(EventBusEvent.scenarioBoundsChanged, this.scenario);
+    }
 
     (getEl(`${this.formPrefix_}-name`) as HTMLInputElement).value = this.scenario.name;
     (getEl(`${this.formPrefix_}-description`) as HTMLInputElement).value = this.scenario.description;
