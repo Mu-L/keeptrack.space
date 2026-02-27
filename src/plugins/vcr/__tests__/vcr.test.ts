@@ -88,10 +88,6 @@ describe('VcrPlugin', () => {
 
       plugin.init();
 
-      const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
-
       expect(plugin.verifyTimeControl()).toBe(true);
     });
 
@@ -119,8 +115,6 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       timeManager.propRate = 1;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -137,8 +131,6 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       timeManager.propRate = 0;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -173,8 +165,6 @@ describe('VcrPlugin', () => {
 
       const timeManager = ServiceLocator.getTimeManager();
 
-      timeManager.isTimeChangingEnabled = true;
-
       const currentTime = timeManager.simulationTimeObj.getTime();
 
       // Set scenario end time to current simulation time
@@ -202,8 +192,6 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       plugin.isRewinding = false;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -221,8 +209,6 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       plugin.isRewinding = true;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -239,9 +225,6 @@ describe('VcrPlugin', () => {
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
-      const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       plugin.isFastForwarding = true;
       plugin.isRewinding = false;
 
@@ -259,8 +242,6 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       plugin.isFastForwarding = false;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -278,8 +259,6 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       plugin.isFastForwarding = true;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -296,9 +275,6 @@ describe('VcrPlugin', () => {
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
-      const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
       plugin.isRewinding = true;
       plugin.isFastForwarding = false;
 
@@ -374,10 +350,6 @@ describe('VcrPlugin', () => {
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
-      const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
-
       const rewindBtn = getEl('vcr-rewind-btn');
 
       rewindBtn?.click();
@@ -394,10 +366,6 @@ describe('VcrPlugin', () => {
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
-      const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
-
       const playPauseBtn = getEl('vcr-play-pause-btn');
 
       playPauseBtn?.click();
@@ -413,10 +381,6 @@ describe('VcrPlugin', () => {
 
       plugin.init();
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
-
-      const timeManager = ServiceLocator.getTimeManager();
-
-      timeManager.isTimeChangingEnabled = true;
 
       const fastForwardBtn = getEl('vcr-fast-forward-btn');
 
