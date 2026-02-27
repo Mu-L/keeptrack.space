@@ -86,7 +86,6 @@ coverage/
 
 # Build Folder
 dist
-embed
 /lib
 
 # nyc Output
@@ -136,6 +135,9 @@ cypress.config.ts
 # Generated Locale Files
 src/locales/keys.ts
 src/locales/*.json
+
+# Generated Version File (version is injected at build time via DefinePlugin)
+src/settings/version.js
 
 **/*.notes.md
 

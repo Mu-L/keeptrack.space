@@ -1,4 +1,5 @@
 /* eslint-disable no-use-before-define */
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { clickAndDragWidth } from '@app/engine/utils/click-and-drag';
@@ -9,7 +10,6 @@ import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
 import { dateFromJday } from '@app/engine/utils/transforms';
 import satChngPng from '@public/img/icons/sats.png';
 import './components/sat-changes.css';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 /**
  *  ////////////////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ export const satChng = (row: number, testOverride?: undefined): void => {
 
   if (row === -1 && satChngTable?.length === 0) {
     // Only generate the table if receiving the -1 argument for the first time
-    fetch(`./analysis/satchng.json?v=${settingsManager.versionNumber}`).then((resp) => {
+    fetch(`./analysis/satchng.json?v=${__VERSION__}`).then((resp) => {
       resp.json().then((json) => {
         ({ satChngTable } = getSatChngJson(json));
       });

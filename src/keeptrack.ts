@@ -45,19 +45,21 @@ import { Singletons } from './engine/core/interfaces';
 import { Engine } from './engine/engine';
 import { EventBus } from './engine/events/event-bus';
 import { EventBusEvent } from './engine/events/event-bus-events';
+import { PersistenceManager } from './engine/persistence/persistence-manager';
 import { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import { DotsManager } from './engine/rendering/dots-manager';
-import { SatLabelManager } from './engine/rendering/sat-label-manager';
 import { lineManagerInstance } from './engine/rendering/line-manager';
+import { SatLabelManager } from './engine/rendering/sat-label-manager';
 import { WebWorkerThreadManager } from './engine/threads/web-worker-thread';
 import { DemoManager } from './engine/utils/demo-mode';
-import { PersistenceManager } from './engine/persistence/persistence-manager';
 import { html } from './engine/utils/development/formatter';
 import { getEl } from './engine/utils/get-el';
 import { isThisNode } from './engine/utils/isThisNode';
 import { keepTrackApi } from './keepTrackApi';
 import { settingsManager, SettingsManagerOverride } from './settings/settings';
-import { VERSION } from './settings/version.js';
+
+import logoPrimaryPng from '@public/img/logo-primary.png';
+import logoSecondaryPng from '@public/img/logo-secondary.png';
 
 export class KeepTrack {
   private static instance: KeepTrack;
@@ -94,8 +96,6 @@ export class KeepTrack {
       throw new Error('KeepTrack is already started');
     }
 
-    // Update the version number
-    settingsManager.versionNumber = VERSION;
     this.settingsOverride_ = settingsOverride;
     Localization.getInstance(); // Initialize localization early
     this.engine = new Engine(this);
@@ -165,12 +165,12 @@ export class KeepTrack {
         <div id="canvas-holder">
         <div id="logo-primary" class="start-hidden">
             <a href="https://keeptrack.space" target="_blank">
-              <img src="${settingsManager.installDirectory}img/logo-primary.png" alt="KeepTrack">
+              <img src="${logoPrimaryPng}" alt="KeepTrack">
             </a>
           </div>
           <div id="logo-secondary" class="start-hidden">
             <a href="https://celestrak.org" target="_blank">
-              <img src="${settingsManager.installDirectory}img/logo-secondary.png" alt="Celestrak">
+              <img src="${logoSecondaryPng}" alt="Celestrak">
             </a>
           </div>
           <canvas id="keeptrack-canvas"></canvas>

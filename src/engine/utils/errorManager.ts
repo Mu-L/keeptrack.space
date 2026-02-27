@@ -149,7 +149,7 @@ export class ErrorManager {
       body: `#### User Description
 Type what you were trying to do here...\n\n\n
 #### Version
-${settingsManager.versionNumber} - ${settingsManager.versionDate}
+${__VERSION__} - ${new Date(__VERSION_DATE__).toLocaleString()}
 #### Error Title
 ${e.name}
 #### Error Message

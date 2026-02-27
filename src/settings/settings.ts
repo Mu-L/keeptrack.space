@@ -18,6 +18,7 @@
  */
 
 import { MobileManager } from '@app/app/ui/mobileManager';
+import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { UrlManager } from '@app/engine/input/url-manager';
 import { ColorSchemeColorMap } from '@app/engine/rendering/color-schemes/color-scheme';
@@ -37,7 +38,6 @@ import { PerformanceSettings, defaultPerformanceSettings } from './performance-s
 import { darkClouds } from './presets/darkClouds';
 import { SettingsPresets } from './presets/presets';
 import { SatLabelMode, UiSettings, defaultUiSettings } from './ui-settings';
-import { EventBus } from '@app/engine/events/event-bus';
 
 /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 /* eslint-disable max-lines */
@@ -335,8 +335,6 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isDisableKeyboard: 'core',
   isFreezePropRateOnDrag: 'core',
   isBlockPersistence: 'core',
-  versionDate: 'core',
-  versionNumber: 'core',
   videoBitsPerSecond: 'core',
   isMissionDataEnabled: 'core',
   pTime: 'core',
