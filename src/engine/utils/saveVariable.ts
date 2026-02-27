@@ -98,7 +98,7 @@ export const saveCsv = <T extends Record<string, unknown>>(items: Array<T>, name
  */
 export const saveXlsx = async <T extends Record<string, unknown>>(items: Array<T>, name?: string): Promise<void> => {
   try {
-    const XLSX = await import('xlsx');
+    const XLSX = await import('@e965/xlsx');
     const ws = XLSX.utils.json_to_sheet(items);
     const wb = XLSX.utils.book_new();
 
