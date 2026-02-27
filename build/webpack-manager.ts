@@ -113,7 +113,12 @@ export class WebpackManager {
           '@app': `${dirName}/../src`,
           '@engine': `${dirName}/../src/engine`,
           '@ootk': `${dirName}/../src/engine/ootk`,
+          // Specific aliases must come before @public so they match first
+          '@public/img/logo.png': `${dirName}/../${this.config.textLogoPath}`,
+          '@public/img/logo-primary.png': `${dirName}/../${this.config.primaryLogoPath}`,
+          '@public/img/logo-secondary.png': `${dirName}/../${this.config.secondaryLogoPath}`,
           '@public': `${dirName}/../public`,
+          // Specific aliases must come before @css so they match first
           '@css/style.css': `${dirName}/../${this.config.styleCssPath}`,
           '@css/loading-screen.css': `${dirName}/../${this.config.loadingScreenCssPath}`,
           '@css': `${dirName}/../public/css`,
@@ -127,7 +132,7 @@ export class WebpackManager {
         rules: [
           {
             test: /\.(?:png|svg|jpg|jpeg|gif)$/iu,
-            include: [/src/u, /public/u],
+            include: [/src/u, /public/u, /configs/u],
             type: 'asset/resource',
             generator: {
               filename: '../img/[name][ext]',
