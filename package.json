@@ -49,8 +49,9 @@
     "lcov": "npx tsx ./build/utils/open-lcov.ts",
     "lint": "eslint ./src --ext js,ts,tsx",
     "createtest": "npx tsx ./scripts/create-test-file.ts",
-    "start": "npx serve ./dist -l 5544",
-    "start:ci": "npx serve ./dist -l 5544",
+    "start": "npx tsx ./build/dev-server.ts",
+    "start:celestrak": "npx tsx ./build/dev-server.ts --profile=celestrak",
+    "start:ci": "npx tsx ./build/dev-server.ts --static",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
@@ -110,8 +111,8 @@
     "@types/opener": "^1.4.3",
     "@types/papaparse": "^5.3.14",
     "@types/webgl2": "^0.0.11",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "@typescript-eslint/typescript-estree": "^8.46.0",
     "@vitest/coverage-v8": "^4.0.18",
     "auto-changelog-thkruz": "^1.0.0",
@@ -132,7 +133,6 @@
     "mini-css-extract-plugin": "^2.7.6",
     "papaparse": "^5.4.1",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "serve": "^14.2.5",
     "source-map-loader": "^4.0.2",
     "style-loader": "^3.3.4",
     "ts-loader": "^9.4.4",
@@ -147,6 +147,7 @@
     "worker-loader": "^3.0.8"
   },
   "dependencies": {
+    "@e965/xlsx": "0.20.3",
     "@materializecss/materialize": "^1.2.2",
     "@supabase/supabase-js": "^2.55.0",
     "astronomy-engine": "^2.1.19",
@@ -168,8 +169,7 @@
     "requestidlecallback-polyfill": "^1.0.2",
     "resizable": "^1.2.1",
     "uuid": "^11.1.0",
-    "webgl-obj-loader": "^2.0.8",
-    "xlsx": "^0.18.5"
+    "webgl-obj-loader": "^2.0.8"
   },
   "volta": {
     "node": "25.0.0"
