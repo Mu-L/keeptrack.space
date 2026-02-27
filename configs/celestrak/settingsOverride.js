@@ -64,6 +64,9 @@ const settingsOverride = {
     WatchlistPlugin: {
       enabled: false,
     },
+    WatchlistFilterPlugin: {
+      enabled: false,
+    },
     WatchlistOverlay: {
       enabled: false,
     },
