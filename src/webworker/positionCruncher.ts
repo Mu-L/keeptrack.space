@@ -100,8 +100,6 @@ export enum MarkerMode {
 const EMPTY_FLOAT32_ARRAY = new Float32Array(0);
 const EMPTY_INT8_ARRAY = new Int8Array(0);
 
-let isResponseCount = 0;
-
 /** ARRAYS */
 let objCache = <PosCruncherCachedObject[]>[]; // Cache of Satellite Data from TLE.json and Static Data from variable.js
 
@@ -141,8 +139,6 @@ let isResetInView = false;
 
 let fieldOfViewSetLength = 0;
 let len: number;
-let MAX_DIFFERENCE_BETWEEN_POS = 50;
-
 /** OBSERVER VARIABLES */
 let sensors: DetailedSensor[] = [];
 
@@ -281,8 +277,6 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
       // Clear isInterupted so the first propagation after OBJ_DATA isn't skipped
       // (synchronize() sends OFFSET before OBJ_DATA, which sets isInterupted = true)
       isInterupted = false;
-      // Reset response count so early-cycle sanity checks work for the new catalog
-      isResponseCount = 0;
 
       if (m.data.isLowPerf) {
         isLowPerf = true;
@@ -610,19 +604,17 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
   const pv = Sgp4.propagate(satelliteData.satrec, m) as { position: TemeVec3; velocity: TemeVec3<KilometersPerSecond> };
 
   try {
-    if (isResponseCount < 5 && isResponseCount > 1 && !objCache[i].isUpdated) {
-      MAX_DIFFERENCE_BETWEEN_POS = Math.max(MAX_DIFFERENCE_BETWEEN_POS, MAX_DIFFERENCE_BETWEEN_POS * propRate);
-      if (
-        Math.abs(pv.position.x - satPos[i * 3]) > MAX_DIFFERENCE_BETWEEN_POS ||
-        Math.abs(pv.position.y - satPos[i * 3 + 1]) > MAX_DIFFERENCE_BETWEEN_POS ||
-        Math.abs(pv.position.z - satPos[i * 3 + 2]) > MAX_DIFFERENCE_BETWEEN_POS
-      ) {
-        throw new Error('Impossible orbit');
-      }
-    }
-
     if (isNaN(pv.position.x) || isNaN(pv.position.y) || isNaN(pv.position.z)) {
       return false;
+    }
+
+    // Specific orbital energy: E = v²/2 - μ/r. Positive = unbound (impossible for cataloged satellite).
+    // Also reject positions inside Earth (rMag < 6350 km, below polar radius).
+    const rMag = Math.sqrt(pv.position.x * pv.position.x + pv.position.y * pv.position.y + pv.position.z * pv.position.z);
+    const vMagSq = pv.velocity.x * pv.velocity.x + pv.velocity.y * pv.velocity.y + pv.velocity.z * pv.velocity.z;
+
+    if (0.5 * vMagSq - 398600.4418 / rMag > 0 || rMag < 6350) {
+      throw new Error('Impossible orbit');
     }
 
     satPos[i * 3] = pv.position.x;
@@ -632,10 +624,6 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
     satVel[i * 3] = pv.velocity.x;
     satVel[i * 3 + 1] = pv.velocity.y;
     satVel[i * 3 + 2] = pv.velocity.z;
-
-    if (objCache[i].isUpdated) {
-      objCache[i].isUpdated = false;
-    }
 
     /*
      * Make sure that objects with an imprecise orbit or an old elset
@@ -754,10 +742,6 @@ export const resetInactiveMarkers = (i: number) => {
 };
 
 export const sendDataToSatSet = () => {
-  if (isResponseCount < 5) {
-    isResponseCount++;
-  }
-
   const postMessageArray = <PositionCruncherOutgoingMsg>{
     satPos,
     gmst: lastGmst,
