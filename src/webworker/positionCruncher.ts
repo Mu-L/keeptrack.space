@@ -23,12 +23,11 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import {
   DEG2RAD,
   Degrees,
   EcefVec3,
-  Satellite,
-  TemeVec3,
   GreenwichMeanSiderealTime,
   Kilometers,
   KilometersPerSecond,
@@ -38,17 +37,18 @@ import {
   PI,
   Radians,
   RaeVec3,
+  Satellite,
   Sgp4,
   SpaceObjectType,
   Sun,
   TAU,
+  TemeVec3,
   Vector3D,
   ecefRad2rae,
   eci2ecef,
   eci2lla,
   lla2eci,
 } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { GROUND_BUFFER_DISTANCE, RADIUS_OF_EARTH, STAR_DISTANCE } from '../engine/utils/constants';
 import { PosCruncherCachedObject, PositionCruncherIncomingMsg, PositionCruncherOutgoingMsg } from './constants';
 import { setupTimeVariables } from './positionCruncher/calculations';
@@ -114,7 +114,7 @@ let satelliteSelected = [-1]; // Array used to determine which satellites are se
 let isInterupted = false; // Boolean used to determine if the worker is interupted
 
 /** TIME VARIABLES */
-const PROPAGATION_INTERVAL = 1000 as Milliseconds; // Limits how often the propagation loop runs
+const PROPAGATION_INTERVAL = 200 as Milliseconds; // Limits how often the propagation loop runs
 let propagationRunning = false; // Prevent Propagation From Running Twice
 // let timeSyncRunning = false; // Prevent Time Sync Loop From Running Twice
 let divisor = 1; // When running at high speeds, allow faster propagation
