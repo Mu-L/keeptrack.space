@@ -24,6 +24,8 @@ import rocket4Jpg from '@public/img/wallpaper/rocket4.jpg';
 import telescopeJpg from '@public/img/wallpaper/telescope.jpg';
 import thuleJpg from '@public/img/wallpaper/thule.jpg';
 
+import logoPng from '@public/img/logo.png';
+
 export abstract class SplashScreen {
   /** An image is picked at random and then if the screen is bigger than 1080p then it loads the next one in the list */
   private static splashScreenImgList_ =
@@ -60,7 +62,7 @@ export abstract class SplashScreen {
         <div id="logo-inner-container" class="valign">
           <div style="display: flex;">
           <!-- <span id="logo-text" class="logo-font">KEEP TRACK</span> -->
-          <img src="img/logo.png" alt="Keep Track" id="logo-text" class="logo-font">
+          <img src="${logoPng}" alt="Keep Track" id="logo-text" class="logo-font">
           <!-- <span id="logo-text-version" class="logo-font">10</span> -->
           </div>
           <div style="height: 50px; min-height: 50px; max-height: 50px; margin-top: 1rem; display: flex; align-items: center;">
@@ -78,7 +80,7 @@ export abstract class SplashScreen {
           </div>
         </div>
         <div id="loading-hint">Hint: ${this.showHint()}</div>
-        <div id="version-text">v${settingsManager.versionNumber}</div>
+        <div id="version-text">v${__VERSION__}-${__COMMIT_HASH__}</div>
         <div id="copyright-notice">
         ${settingsManager.isMobileModeEnabled ? t7e('copyright.noticeMobile') : t7e('copyright.notice')}
         </div>
