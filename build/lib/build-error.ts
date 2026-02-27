@@ -23,6 +23,7 @@ export const ErrorCodes = {
   PLUGIN_CONFIG: 'PLUGIN_CONFIG',
   ENV_CONFIG: 'ENV_CONFIG',
   FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  PROFILE_NOT_FOUND: 'PROFILE_NOT_FOUND',
 } as const;
 
 export enum ConsoleStyles {

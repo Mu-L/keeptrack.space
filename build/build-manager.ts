@@ -21,14 +21,16 @@ class BuildManager {
       const configManager = new ConfigManager();
       const versionManager = new VersionManager(fileManager);
 
-      // Check for .env file - if it is missing copy from .env.example
-      if (!fileManager.fileExists('./.env')) {
+      // In legacy .env mode, ensure .env exists before loading config
+      const isProfileMode = process.argv.some((arg) => arg.startsWith('--profile='));
+
+      if (!isProfileMode && !fileManager.fileExists('./.env')) {
         fileManager.copyFile('./.env.example', './.env', { force: false });
         logWithStyle('.env file not found, copied from .env.example', ConsoleStyles.WARNING);
       }
 
-      // Load configuration
-      const config = configManager.loadConfig(process.argv.slice(2));
+      // Load configuration (pass rootDir so ProfileLoader can find configs/)
+      const config = configManager.loadConfig(process.argv.slice(2), fileManager.rootDir);
 
       // Prepare build directory
       fileManager.prepareBuildDirectory('./dist');
@@ -89,7 +91,7 @@ class BuildManager {
       }
 
       // Update version information
-      versionManager.generateVersionFile('./package.json', 'src/settings/version.js');
+      versionManager.updateVersionReferences('./package.json');
 
       // Generate webpack configuration
       const webpackConfig = WebpackManager.createConfig(config) as MultiRspackOptions;

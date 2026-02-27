@@ -1,6 +1,7 @@
-import { Configuration, HtmlRspackPlugin, LightningCssMinimizerRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
+import { Configuration, DefinePlugin, HtmlRspackPlugin, LightningCssMinimizerRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
 import CleanTerminalPlugin from 'clean-terminal-webpack-plugin';
 import DotEnv from 'dotenv-webpack';
+import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import WebpackBar from 'webpackbar/rspack';
@@ -9,11 +10,18 @@ export class WebpackManager {
   static readonly DEFAULT_MODE = 'development';
   static readonly DEFAULT_WATCH = false;
   private static config: BuildConfig;
+  private static versionDefine_: DefinePlugin;
 
   static createConfig(config: BuildConfig, isWatch: boolean = false): Configuration[] {
     this.config = config;
     const fileName = fileURLToPath(import.meta.url);
     const dirName = dirname(fileName);
+    const appVersion = JSON.parse(readFileSync(resolve(dirName, '../package.json'), 'utf-8')).version;
+
+    this.versionDefine_ = new DefinePlugin({
+      __VERSION__: JSON.stringify(appVersion),
+      __VERSION_DATE__: JSON.stringify(new Date().toISOString()),
+    });
     const webpackConfig = [] as Configuration[];
     let baseConfig = this.createBaseConfig_(dirName);
     const mode: 'development' | 'production' | 'none' = config.mode ?? 'development';
@@ -143,7 +151,7 @@ export class WebpackManager {
           },
           {
             test: /\.css$/iu,
-            include: [/node_modules/u, /src/u, /public/u],
+            include: [/node_modules/u, /src/u, /public/u, /configs/u],
             use: ['style-loader', 'css-loader'],
             generator: {
               filename: './css/[name][ext]',
@@ -232,6 +240,7 @@ export class WebpackManager {
           publicPath: `./${pubPath}js/`,
         },
         plugins: [
+          this.versionDefine_,
           new CleanTerminalPlugin({
             beforeCompile: true,
           }),
@@ -241,7 +250,7 @@ export class WebpackManager {
           }),
           new DotEnv({
             systemvars: true,
-            path: '../.env',
+            path: `./${this.config.envFilePath}`,
             allowEmptyValues: true,
           }),
           new WebpackBar({
@@ -274,13 +283,14 @@ export class WebpackManager {
           publicPath: `../${pubPath}`,
         },
         plugins: [
+          this.versionDefine_,
           new HtmlRspackPlugin({
             filename: '../auth/callback.html',
             template: './src/plugins-pro/user-account/callback.html',
           }),
           new DotEnv({
             systemvars: true,
-            path: '../.env',
+            path: `./${this.config.envFilePath}`,
             allowEmptyValues: true,
           }),
           new WebpackBar({
