@@ -49,8 +49,7 @@ export class TimeManager {
   private dynamicOffset_: number;
   gmst: GreenwichMeanSiderealTime = 0 as GreenwichMeanSiderealTime;
   j: number;
-  readonly timeUntilChangingEnabled = 10000;
-  isTimeChangingEnabled = false;
+  isTimeChangingEnabled = true;
   isKeyboardBindingsInitialized_ = false;
   isInitialized = false;
 
@@ -189,10 +188,6 @@ export class TimeManager {
     this.calculateSimulationTime();
     this.setSelectedDate(this.simulationTimeObj);
     this.initializeKeyboardBindings_();
-
-    setTimeout(() => {
-      this.isTimeChangingEnabled = true;
-    }, this.timeUntilChangingEnabled);
 
     this.isInitialized = true;
   }
