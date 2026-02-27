@@ -1,6 +1,10 @@
 import { KeepTrack } from './keeptrack';
 
 declare global {
+  const __VERSION__: string;
+  const __VERSION_DATE__: string;
+  const __COMMIT_HASH__: string;
+
   interface Window {
     keepTrack: KeepTrack;
     zaraz?: {

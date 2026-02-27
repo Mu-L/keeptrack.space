@@ -1,6 +1,7 @@
 import { Configuration, DefinePlugin, HtmlRspackPlugin, LightningCssMinimizerRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
 import CleanTerminalPlugin from 'clean-terminal-webpack-plugin';
 import DotEnv from 'dotenv-webpack';
+import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -18,9 +19,12 @@ export class WebpackManager {
     const dirName = dirname(fileName);
     const appVersion = JSON.parse(readFileSync(resolve(dirName, '../package.json'), 'utf-8')).version;
 
+    const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+
     this.versionDefine_ = new DefinePlugin({
       __VERSION__: JSON.stringify(appVersion),
       __VERSION_DATE__: JSON.stringify(new Date().toISOString()),
+      __COMMIT_HASH__: JSON.stringify(commitHash),
     });
     const webpackConfig = [] as Configuration[];
     let baseConfig = this.createBaseConfig_(dirName);

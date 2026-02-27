@@ -1,7 +1,16 @@
+import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vitest/config';
 
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
+
 export default defineConfig({
+  define: {
+    __VERSION__: JSON.stringify(packageJson.version),
+    __VERSION_DATE__: JSON.stringify(new Date().toISOString()),
+    __COMMIT_HASH__: JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
+  },
   test: {
     environment: 'jsdom',
     globals: true,
