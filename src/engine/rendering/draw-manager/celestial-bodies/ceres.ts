@@ -26,6 +26,7 @@ import { KM_PER_AU } from 'astronomy-engine';
 import { PlanetColors } from './celestial-body';
 import { DwarfPlanet } from './dwarf-planet';
 import { ceresChebyshevCoeffs } from './ceres-chebyshev';
+import { settingsManager } from '@app/settings/settings';
 
 export enum CeresTextureQuality {
   POTATO = '512',
