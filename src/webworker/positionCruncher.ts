@@ -51,6 +51,7 @@ import {
 } from '@ootk/src/main';
 import { GROUND_BUFFER_DISTANCE, RADIUS_OF_EARTH, STAR_DISTANCE } from '../engine/utils/constants';
 import { PosCruncherCachedObject, PositionCruncherIncomingMsg, PositionCruncherOutgoingMsg } from './constants';
+import { MarkerMode, PosCruncherMsgType } from './position-cruncher-messages';
 import { setupTimeVariables } from './positionCruncher/calculations';
 import { resetPosition, resetVelocity } from './positionCruncher/satCache';
 
@@ -93,9 +94,6 @@ export enum CruncerMessageTypes {
   SUNLIGHT_VIEW = 'SUNLIGHT_VIEW',
 }
 
-export enum MarkerMode {
-  OFF,
-}
 
 const EMPTY_FLOAT32_ARRAY = new Float32Array(0);
 const EMPTY_INT8_ARRAY = new Int8Array(0);
@@ -109,19 +107,16 @@ let satInView = EMPTY_INT8_ARRAY; // Array of booleans showing if current Satell
 let satInSun = EMPTY_INT8_ARRAY; // Array of booleans showing if current Satellite is in sunlight
 const sensorMarkerArray = [0]; // Array of Markers used to show sensor fence and FOV
 
-let satelliteSelected = [-1]; // Array used to determine which satellites are selected
 
-let isInterupted = false; // Boolean used to determine if the worker is interupted
+let isInterrupted = false; // Boolean used to determine if the worker is interupted
 
 /** TIME VARIABLES */
 const PROPAGATION_INTERVAL = 200 as Milliseconds; // Limits how often the propagation loop runs
 let propagationRunning = false; // Prevent Propagation From Running Twice
-// let timeSyncRunning = false; // Prevent Time Sync Loop From Running Twice
 let divisor = 1; // When running at high speeds, allow faster propagation
 let dynamicOffsetEpoch = Date.now();
 let staticOffset = 0;
-let propRate = 1; // vars us run time faster (or slower) than normal
-// let propChangeTime = Date.now(); // vars us run time faster (or slower) than normal
+let propRate = 1;
 let lastGmst = 0; // GMST used for the last position computation
 
 /** Settings */
@@ -132,10 +127,10 @@ let isSunlightView = false;
 let isLowPerf = false;
 let markerMode = MarkerMode.OFF;
 
+let catalogSeqNum = 0; // Catalog version — echoed back in outgoing messages so main thread can discard stale data
+
 let isResetFOVBubble = false;
 let isResetSatOverfly = false;
-let isResetMarker = false;
-let isResetInView = false;
 
 let fieldOfViewSetLength = 0;
 let len: number;
@@ -143,6 +138,22 @@ let len: number;
 let sensors: DetailedSensor[] = [];
 
 const isThisJest = typeof process !== 'undefined' && process?.release?.name;
+
+/**
+ * Reset mutable state that can become stale during a catalog swap.
+ * Called from the OBJ_DATA handler before the first propagation of the new catalog.
+ */
+const resetForCatalogSwap = (newLen: number, fovSetLength: number, seqNum: number) => {
+  satPos = new Float32Array(newLen * 3);
+  satVel = new Float32Array(newLen * 3);
+  satInView = EMPTY_INT8_ARRAY;
+  satInSun = EMPTY_INT8_ARRAY;
+  catalogSeqNum = seqNum;
+  fieldOfViewSetLength = fovSetLength;
+  isInterrupted = false;
+  isResetFOVBubble = false;
+  isResetSatOverfly = false;
+};
 
 // Handles Incomming Messages to sat-cruncher from main thread
 try {
@@ -191,17 +202,17 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
   };
 
   switch (m.data.typ) {
-    case CruncerMessageTypes.OFFSET:
+    case PosCruncherMsgType.OFFSET:
       staticOffset = m.data.staticOffset ?? 0;
       dynamicOffsetEpoch = m.data.dynamicOffsetEpoch ?? Date.now();
       propRate = m.data.propRate ?? 1;
-      isInterupted = true;
+      isInterrupted = true;
 
       // Changing this to 0.1 caused issues...
       divisor = 1;
 
       return;
-    case CruncerMessageTypes.OBJ_DATA:
+    case PosCruncherMsgType.OBJ_DATA:
       satData = JSON.parse(m.data.dat);
       len = satData.length;
 
@@ -266,23 +277,13 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
         }
       }
 
-      satPos = new Float32Array(len * 3);
-      satVel = new Float32Array(len * 3);
-
-      // Reset stale state for catalog swap support
-      // fieldOfViewSetLength is sent in OBJ_DATA but was previously only read from UPDATE_MARKERS.
-      // A stale value from the old catalog can make len negative in propagationLoop, causing
-      // updateSatCache to process zero satellites and send all-zero position data.
-      fieldOfViewSetLength = m.data.fieldOfViewSetLength ?? 0;
-      // Clear isInterupted so the first propagation after OBJ_DATA isn't skipped
-      // (synchronize() sends OFFSET before OBJ_DATA, which sets isInterupted = true)
-      isInterupted = false;
+      resetForCatalogSwap(len, m.data.fieldOfViewSetLength ?? 0, m.data.seqNum ?? 0);
 
       if (m.data.isLowPerf) {
         isLowPerf = true;
       }
       break;
-    case CruncerMessageTypes.SAT_EDIT:
+    case PosCruncherMsgType.SAT_EDIT:
       {
         if (m.data.id === undefined) {
           break;
@@ -314,7 +315,7 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
         objCache[m.data.id].active = true;
         objCache[m.data.id].apogee = extra.apogee;
         objCache[m.data.id].perigee = extra.perigee;
-        objCache[i].isUpdated = true;
+        objCache[m.data.id].isUpdated = true;
 
         if (isThisJest) {
           return;
@@ -325,32 +326,29 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
           extraData: JSON.stringify(extraData),
           satId: m.data.id,
         });
-        isInterupted = true;
+        isInterrupted = true;
       }
       break;
-    case CruncerMessageTypes.NEW_MISSILE:
+    case PosCruncherMsgType.NEW_MISSILE:
       if (m.data.id !== undefined) {
         objCache[m.data.id] = <PosCruncherCachedObject>(<unknown>m.data);
       }
       break;
-    case CruncerMessageTypes.SATELLITE_SELECTED:
-      satelliteSelected = m.data.satelliteSelected ?? [-1];
-      if (satelliteSelected[0] === -1) {
-        isResetSatOverfly = true;
-        if (!isResetMarker) {
-          isResetMarker = true;
+    case PosCruncherMsgType.SATELLITE_SELECTED:
+      {
+        const ids = m.data.satelliteSelected ?? [-1];
+
+        if (ids[0] === -1) {
+          isResetSatOverfly = true;
         }
       }
       break;
-    case CruncerMessageTypes.SENSOR:
+    case PosCruncherMsgType.SENSOR:
       sensors = (m.data.sensor ?? []).filter((s) => s).map((s) => new DetailedSensor(s));
       isSensor = sensors.length > 0;
       isSensors = sensors.length > 1;
-      if (!isResetInView) {
-        isResetInView = true;
-      }
       break;
-    case CruncerMessageTypes.UPDATE_MARKERS:
+    case PosCruncherMsgType.UPDATE_MARKERS:
       if (m.data.fieldOfViewSetLength) {
         fieldOfViewSetLength = m.data.fieldOfViewSetLength;
       }
@@ -360,7 +358,7 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
       }
 
       break;
-    case CruncerMessageTypes.SUNLIGHT_VIEW:
+    case PosCruncherMsgType.SUNLIGHT_VIEW:
       if (m.data.isSunlightView) {
         isSunlightView = m.data.isSunlightView;
       }
@@ -374,7 +372,7 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
   }
 
   // Don't start before getting satData!
-  if (!propagationRunning && m.data.typ === CruncerMessageTypes.OBJ_DATA) {
+  if (!propagationRunning && m.data.typ === PosCruncherMsgType.OBJ_DATA) {
     len = -1; // propagteCruncher needs to start at -1 not 0
     propagationLoop();
     propagationRunning = true;
@@ -408,10 +406,10 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
 
   checkForNaN(satPos, satVel);
 
-  if (!isInterupted) {
+  if (!isInterrupted) {
     sendDataToSatSet();
   }
-  isInterupted = false;
+  isInterrupted = false;
 
   // Allow more time for propagation if there are multiple sensors
   const delay = isSensors ? 2 : 1;
@@ -439,7 +437,7 @@ export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSidereal
   // Using a while loop since some methods may update multiple cache objects
 
   while (i < len) {
-    if (isInterupted) {
+    if (isInterrupted) {
       break;
     }
     i++; // At the beginning so i starts at 0
@@ -745,6 +743,7 @@ export const sendDataToSatSet = () => {
   const postMessageArray = <PositionCruncherOutgoingMsg>{
     satPos,
     gmst: lastGmst,
+    seqNum: catalogSeqNum,
   };
   // Add In View Data if Sensor Selected
 

@@ -1,6 +1,6 @@
 import { Degrees, Kilometers, Radians, SatelliteRecord, ZoomValue } from '@ootk/src/main';
 import { SensorObjectCruncher } from '../engine/core/interfaces';
-import { CruncerMessageTypes, MarkerMode } from './positionCruncher';
+import { MarkerMode, PosCruncherMsgType } from './position-cruncher-messages';
 
 // Typing
 
@@ -38,6 +38,7 @@ export type PositionCruncherOutgoingMsg = {
   satPos?: Float32Array;
   satVel?: Float32Array;
   gmst?: number;
+  seqNum?: number;
 };
 export type oneOrZero = 0 | 1;
 
@@ -81,7 +82,7 @@ export interface PositionCruncherIncomingMsg {
     tle1: string;
     tle2: string;
     dat: string; // JSON string
-    typ: CruncerMessageTypes;
+    typ: PosCruncherMsgType;
     staticOffset?: number;
     dynamicOffsetEpoch?: number;
     propRate?: number;
@@ -93,5 +94,6 @@ export interface PositionCruncherIncomingMsg {
     fieldOfViewSetLength?: number;
     sensor?: SensorObjectCruncher[];
     markerMode?: MarkerMode;
+    seqNum?: number;
   };
 }
