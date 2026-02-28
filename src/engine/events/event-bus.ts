@@ -82,6 +82,7 @@ export interface EngineEventMap {
   [EventBusEvent.colorSchemeChanged]: [unknown]; // scheme instance
   [EventBusEvent.scenarioBoundsChanged]: [unknown]; // ScenarioData
   [EventBusEvent.cameraTypeChanged]: [string]; // camera type name
+  [EventBusEvent.onColorBufferReady]: [];
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {

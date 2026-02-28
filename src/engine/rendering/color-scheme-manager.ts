@@ -28,8 +28,10 @@ import { errorManagerInstance } from '../utils/errorManager';
 import { getEl, hideEl } from '../utils/get-el';
 
 import { DensityBin } from '@app/app/data/catalog-manager';
+import { ColorCruncherThreadManager } from '@app/app/threads/color-cruncher-thread-manager';
 import { LayersManager } from '@app/app/ui/layers-manager';
 import { UrlManager } from '@app/engine/input/url-manager';
+import { WebWorkerThreadManager } from '@app/engine/threads/web-worker-thread';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
@@ -41,6 +43,8 @@ import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { BaseObject } from '../ootk/src/objects';
 import { PersistenceManager, StorageKey } from '../utils/persistence-manager';
+import { buildColorDataArrays } from './color-worker/color-data-builder';
+import { FilterState, SettingsFlags } from './color-worker/color-worker-messages';
 import { CelestrakColorScheme } from './color-schemes/celestrak-color-scheme';
 import { ColorScheme, ColorSchemeColorMap, ColorSchemeParams } from './color-schemes/color-scheme';
 import { ConfidenceColorScheme } from './color-schemes/confidence-color-scheme';
@@ -109,6 +113,31 @@ export class ColorSchemeManager {
   pickableData = new Int8Array(0);
   private hasRegisteredOffsetListener_ = false;
 
+  // ─── Worker Mode ───────────────────────────────────────────────────────
+  private colorCruncher_: ColorCruncherThreadManager | null = null;
+  private useWorkerMode_ = false;
+  private workerReady_ = false; // true once worker has received catalog; useWorkerMode_ can be toggled per-scheme
+  private catalogSeqNum_ = 0;
+
+  /** Scheme IDs the color worker knows how to compute. Plugin schemes not in this set fall back to main-thread. */
+  private static readonly WORKER_SUPPORTED_SCHEMES_ = new Set([
+    'ObjectTypeColorScheme',
+    'CelestrakColorScheme',
+    'CountryColorScheme',
+    'VelocityColorScheme',
+    'SunlightColorScheme',
+    'RcsColorScheme',
+    'ConfidenceColorScheme',
+    'GpAgeColorScheme',
+    'MissionColorScheme',
+    'ReentryRiskColorScheme',
+    'SpatialDensityColorScheme',
+    'OrbitalPlaneDensityColorScheme',
+    'SourceColorScheme',
+    'StarlinkColorScheme',
+    'SmallSatColorScheme',
+  ]);
+
   /**
    * Resets buffer flags and color data so that the next onCruncherReady
    * event re-creates everything for a new catalog.
@@ -120,6 +149,9 @@ export class ColorSchemeManager {
     this.pickableData = new Int8Array(0);
     this.isReady = false;
     this.lastDotColored = 0;
+    // Worker will receive new catalog on next onCruncherReady
+    this.useWorkerMode_ = false;
+    this.workerReady_ = false;
   }
 
   calcColorBufsNextCruncher(): void {
@@ -142,6 +174,16 @@ export class ColorSchemeManager {
        * are loaded into catalogManagerInstance. Don't move the buffer data creation into the constructor!
        */
       if (this.pickableData.length === 0 || this.colorData.length === 0) {
+        return;
+      }
+
+      // In worker mode, delegate to the color worker instead of running main-thread loop
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        if (isForceRecolor) {
+          this.sendAllStateToWorker_();
+          this.colorCruncher_.sendForceRecolor();
+        }
+
         return;
       }
 
@@ -206,7 +248,7 @@ export class ColorSchemeManager {
     }
   }
 
-  init(renderer: WebGLRenderer): void {
+  init(renderer: WebGLRenderer, threadsRegistry?: WebWorkerThreadManager[]): void {
     this.gl_ = renderer.gl;
     this.colorTheme = settingsManager.colors ?? <ColorSchemeColorMap & ObjectTypeColorSchemeColorMap>{
       transparent: [0, 0, 0, 0] as rgbaArray,
@@ -231,6 +273,11 @@ export class ColorSchemeManager {
     this.colorBuffer = renderer.gl.createBuffer();
     this.pickableBuffer = renderer.gl.createBuffer();
 
+    // Initialize color worker if registry is provided
+    if (threadsRegistry) {
+      this.initColorWorker_(threadsRegistry);
+    }
+
     // Create the color buffers as soon as the position cruncher is ready
     EventBus.getInstance().on(
       EventBusEvent.onCruncherReady,
@@ -253,6 +300,15 @@ export class ColorSchemeManager {
         // Generate some buffers
         this.colorData = new Float32Array(catalogManagerInstance.numObjects * 4);
         this.pickableData = new Int8Array(catalogManagerInstance.numObjects);
+
+        // Send catalog data to color worker
+        if (this.colorCruncher_?.isReady) {
+          this.sendCatalogToWorker_();
+          this.sendAllStateToWorker_();
+          this.workerReady_ = true;
+          this.useWorkerMode_ = ColorSchemeManager.WORKER_SUPPORTED_SCHEMES_.has(this.currentColorScheme?.id);
+        }
+
         this.calculateColorBuffers(true);
         this.isReady = true;
 
@@ -261,13 +317,47 @@ export class ColorSchemeManager {
           this.hasRegisteredOffsetListener_ = true;
           EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
             setTimeout(() => {
-              this.calcColorBufsNextCruncher();
+              if (this.useWorkerMode_) {
+                this.colorCruncher_?.sendForceRecolor();
+              } else {
+                this.calcColorBufsNextCruncher();
+              }
             }, 1000);
           });
         }
 
       },
     );
+
+    // Handle color buffer results from worker
+    EventBus.getInstance().on(EventBusEvent.onColorBufferReady, () => {
+      if (!this.colorCruncher_) {
+        return;
+      }
+      const data = this.colorCruncher_.consumeColorData();
+
+      if (data && data.colorData.length === this.colorData.length) {
+        this.colorData.set(data.colorData);
+        this.pickableData.set(data.pickableData);
+        this.setSelectedAndHoverBuffer_();
+        this.sendColorBufferToGpu();
+      }
+    });
+
+    // Forward position cruncher data to color worker
+    EventBus.getInstance().on(EventBusEvent.onCruncherMessage, () => {
+      if (!this.useWorkerMode_ || !this.colorCruncher_) {
+        return;
+      }
+      const dotsManager = ServiceLocator.getDotsManager();
+
+      this.colorCruncher_.sendDynamicUpdate(
+        dotsManager.inViewData,
+        dotsManager.inSunData,
+        dotsManager.getSatVel(),
+        settingsManager.dotsOnScreen,
+      );
+    });
 
     EventBus.getInstance().on(EventBusEvent.layerUpdated, () => {
       if (settingsManager.isDisableSensors) {
@@ -290,9 +380,32 @@ export class ColorSchemeManager {
           hideEl(launchSiteBox);
         }
       }
+
+      // Forward updated layer/flag state to worker
+      this.forwardObjectTypeFlagsToWorker_();
+    });
+
+    // Forward sensor changes to worker so isSensorManagerLoaded/sensorType stay current
+    EventBus.getInstance().on(EventBusEvent.setSensor, () => {
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        this.forwardSettingsToWorker_();
+      }
+    });
+    EventBus.getInstance().on(EventBusEvent.resetSensor, () => {
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        this.forwardSettingsToWorker_();
+      }
     });
 
     EventBus.getInstance().on(EventBusEvent.update, () => {
+      // In worker mode, colors arrive asynchronously via onColorBufferReady
+      if (this.useWorkerMode_) {
+        // Still need to apply selected/hover overlay each frame for responsiveness
+        this.setSelectedAndHoverBuffer_();
+        this.sendColorBufferToGpu();
+
+        return;
+      }
       /*
        * Update Colors
        * NOTE: We used to skip this when isDragging was true, but its so efficient that doesn't seem necessary anymore
@@ -431,6 +544,20 @@ export class ColorSchemeManager {
         throw new Error('Color scheme is not a valid color scheme');
       }
 
+      // Toggle worker mode based on whether this scheme is worker-supported
+      if (this.workerReady_ && this.colorCruncher_) {
+        const isSupported = ColorSchemeManager.WORKER_SUPPORTED_SCHEMES_.has(scheme.id);
+
+        this.useWorkerMode_ = isSupported;
+        if (isSupported) {
+          this.colorCruncher_.sendSchemeChange(scheme.id, this.isUseGroupColorScheme);
+          this.forwardObjectTypeFlagsToWorker_();
+          this.forwardParamsToWorker_();
+          this.forwardColorThemeToWorker_();
+          this.forwardSettingsToWorker_();
+        }
+      }
+
       this.calculateColorBuffers(isForceRecolor);
       if (this.colorBuffer && this.pickableBuffer) {
         dotsManagerInstance.buffers.color = this.colorBuffer;
@@ -450,6 +577,11 @@ export class ColorSchemeManager {
 
   setToGroupColorScheme() {
     this.isUseGroupColorScheme = true;
+    // Forward to worker
+    if (this.useWorkerMode_ && this.colorCruncher_) {
+      this.colorCruncher_.sendSchemeChange(this.currentColorScheme.id, true);
+      this.forwardGroupToWorker_();
+    }
   }
 
   private getColorIfDisabledSat_(objectData: BaseObject[], i: number): ColorInformation | null {
@@ -811,5 +943,205 @@ export class ColorSchemeManager {
     this.colorData[hovSatNum * 4 + 1] = settingsManager.hoverColor[1]; // G
     this.colorData[hovSatNum * 4 + 2] = settingsManager.hoverColor[2]; // B
     this.colorData[hovSatNum * 4 + 3] = settingsManager.hoverColor[3];
+  }
+
+  // ─── Color Worker Integration ────────────────────────────────────────
+
+  private initColorWorker_(threadsRegistry: WebWorkerThreadManager[]): void {
+    try {
+      this.colorCruncher_ = new ColorCruncherThreadManager(threadsRegistry);
+      this.colorCruncher_.init();
+    } catch (e) {
+      errorManagerInstance.debug(e);
+      this.colorCruncher_ = null;
+      this.useWorkerMode_ = false;
+    }
+  }
+
+  private sendCatalogToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+    const catalogManager = ServiceLocator.getCatalogManager();
+
+    this.catalogSeqNum_++;
+    const data = buildColorDataArrays(catalogManager.objectCache);
+
+    this.colorCruncher_.sendCatalogData(data, this.catalogSeqNum_);
+  }
+
+  /** Send all current state to the worker — used after catalog init */
+  private sendAllStateToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    // Scheme
+    this.colorCruncher_.sendSchemeChange(this.currentColorScheme.id, this.isUseGroupColorScheme);
+
+    // Filters
+    this.forwardFiltersToWorker_();
+
+    // Settings
+    this.forwardSettingsToWorker_();
+
+    // Object type flags
+    this.forwardObjectTypeFlagsToWorker_();
+
+    // Color theme
+    this.forwardColorThemeToWorker_();
+
+    // Params (density, year/jday)
+    this.forwardParamsToWorker_();
+
+    // Group
+    this.forwardGroupToWorker_();
+
+    // Dynamic data (inView, inSun, velocity)
+    const dotsManager = ServiceLocator.getDotsManager();
+
+    this.colorCruncher_.sendDynamicUpdate(
+      dotsManager.inViewData,
+      dotsManager.inSunData,
+      dotsManager.getSatVel(),
+      settingsManager.dotsOnScreen,
+    );
+  }
+
+  private forwardFiltersToWorker_(): void {
+    if (!this.colorCruncher_ || !settingsManager.filter) {
+      return;
+    }
+
+    const f = settingsManager.filter;
+    const filter: FilterState = {
+      debris: f.debris ?? true,
+      operationalPayloads: f.operationalPayloads ?? true,
+      nonOperationalPayloads: f.nonOperationalPayloads ?? true,
+      rocketBodies: f.rocketBodies ?? true,
+      unknownType: f.unknownType ?? true,
+      notionalSatellites: f.notionalSatellites ?? true,
+      vLEOSatellites: f.vLEOSatellites ?? true,
+      lEOSatellites: f.lEOSatellites ?? true,
+      mEOSatellites: f.mEOSatellites ?? true,
+      hEOSatellites: f.hEOSatellites ?? true,
+      gEOSatellites: f.gEOSatellites ?? true,
+      xGEOSatellites: f.xGEOSatellites ?? true,
+      unitedStates: f.unitedStates ?? true,
+      unitedKingdom: f.unitedKingdom ?? true,
+      france: f.france ?? true,
+      germany: f.germany ?? true,
+      japan: f.japan ?? true,
+      china: f.china ?? true,
+      india: f.india ?? true,
+      russia: f.russia ?? true,
+      uSSR: f.uSSR ?? true,
+      southKorea: f.southKorea ?? true,
+      australia: f.australia ?? true,
+      otherCountries: f.otherCountries ?? true,
+      vimpelSatellites: f.vimpelSatellites ?? true,
+      celestrakSatellites: f.celestrakSatellites ?? true,
+      starlinkSatellites: f.starlinkSatellites ?? true,
+    };
+
+    this.colorCruncher_.sendFilterUpdate(filter);
+  }
+
+  private forwardSettingsToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    const sensorManager = ServiceLocator.getSensorManager();
+    const catalogManager = ServiceLocator.getCatalogManager();
+
+    const flags: SettingsFlags = {
+      cameraType: ServiceLocator.getMainCamera().cameraType,
+      isShowPayloads: settingsManager.isShowPayloads,
+      isShowRocketBodies: settingsManager.isShowRocketBodies,
+      isShowDebris: settingsManager.isShowDebris,
+      isShowAgencies: settingsManager.isShowAgencies,
+      isDisableLaunchSites: settingsManager.isDisableLaunchSites,
+      isDisableSensors: settingsManager.isDisableSensors,
+      isSensorManagerLoaded: catalogManager.isSensorManagerLoaded,
+      sensorType: sensorManager?.currentSensors?.[0]?.type ?? 0,
+      maxZoomDistance: settingsManager.maxZoomDistance,
+      isMissilePluginEnabled: !!settingsManager.plugins?.MissilePlugin?.enabled,
+    };
+
+    this.colorCruncher_.sendSettingsUpdate(flags);
+  }
+
+  private forwardObjectTypeFlagsToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    // Merge global objectTypeFlags with the current scheme's flags
+    const flags = {
+      ...this.objectTypeFlags,
+      ...this.currentColorScheme?.objectTypeFlags,
+    };
+
+    this.colorCruncher_.sendObjectTypeFlags(flags);
+  }
+
+  private forwardColorThemeToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    // Send only array-valued entries from colorTheme
+    const theme: Record<string, number[]> = {};
+
+    for (const key in this.colorTheme) {
+      if (Array.isArray(this.colorTheme[key])) {
+        theme[key] = this.colorTheme[key] as number[];
+      }
+    }
+
+    // Also include current scheme's unique color theme
+    if (this.currentColorScheme?.colorTheme) {
+      for (const key in this.currentColorScheme.colorTheme) {
+        if (Array.isArray(this.currentColorScheme.colorTheme[key])) {
+          theme[key] = this.currentColorScheme.colorTheme[key] as number[];
+        }
+      }
+    }
+
+    this.colorCruncher_.sendColorTheme(theme);
+  }
+
+  private forwardParamsToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    const params = this.calculateParams_();
+
+    this.colorCruncher_.sendParamsUpdate(params);
+  }
+
+  private forwardGroupToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    const groupsManager = ServiceLocator.getGroupsManager();
+    const group = groupsManager?.selectedGroup;
+
+    if (group) {
+      // Extract object ids from the group
+      const ids: number[] = [];
+
+      if (group.ids) {
+        for (const id of group.ids) {
+          ids.push(Number(id));
+        }
+      }
+      this.colorCruncher_.sendGroupUpdate(ids);
+    } else {
+      this.colorCruncher_.sendGroupUpdate(null);
+    }
   }
 }

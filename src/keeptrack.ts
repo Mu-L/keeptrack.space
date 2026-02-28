@@ -373,7 +373,7 @@ theodore.kruczek at gmail dot com.
       catalogManagerInstance.initObjects();
 
       catalogManagerInstance.init();
-      colorSchemeManagerInstance.init(renderer);
+      colorSchemeManagerInstance.init(renderer, this.threads);
 
       if (settingsManager.noCatalogOnLoad) {
         // Empty catalog — still adds stars, sensors, planets, etc.

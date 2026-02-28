@@ -149,4 +149,9 @@ export enum EventBusEvent {
    * Parameters: (cameraTypeName: string)
    */
   cameraTypeChanged = 'cameraTypeChanged',
+  /**
+   * Emitted when the color worker has new color/pickable buffers ready.
+   * ColorSchemeManager consumes the data and uploads to GPU.
+   */
+  onColorBufferReady = 'onColorBufferReady',
 }
