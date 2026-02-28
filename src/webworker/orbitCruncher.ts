@@ -6,15 +6,7 @@ import {
   OrbitCruncherInMsgs, OrbitCruncherInMsgSatelliteUpdate, OrbitCruncherInMsgSettingsUpdate,
   OrbitCruncherMissileObject,
   OrbitCruncherMsgType, OrbitCruncherOtherObject, OrbitCruncherSatelliteObject, OrbitDrawTypes,
-} from './orbit-cruncher-interfaces';
-import { propTime } from './positionCruncher/calculations';
-
-let dynamicOffsetEpoch: number;
-let staticOffset = 0;
-let propRate = 1.0;
-
-
-/** CONSTANTS */
+} from './orbit-cruncher-messages';
 
 const objCache = [] as OrbitCruncherCachedObject[];
 let numberOfSegments: number;
@@ -22,44 +14,31 @@ let orbitType = OrbitDrawTypes.ORBIT;
 let orbitFadeFactor = 1.0;
 let numberOfOrbitsToDraw = 1;
 
-const trapIfJest_ = (cb: () => void) => {
-  try {
-    cb();
-  } catch (e) {
-    // If Jest isn't running then throw the error
-    if (!process) {
-      throw e;
-    }
-  }
-};
-
 export const onMessage = (m: {
   data: OrbitCruncherInMsgs;
 }) => {
-  switch (m.data.type) {
-    case OrbitCruncherMsgType.INIT:
-      handleMsgInit_(m.data);
+  const msg = m.data;
 
-      return;
+  switch (msg.typ) {
+    case OrbitCruncherMsgType.INIT:
+      handleMsgInit_(msg);
+      break;
     case OrbitCruncherMsgType.SATELLITE_UPDATE:
-      handleMsgSatelliteUpdate_(m.data);
+      handleMsgSatelliteUpdate_(msg);
+      updateOrbitData_(msg);
       break;
     case OrbitCruncherMsgType.MISSILE_UPDATE:
-      handleMsgMissileUpdate_(m.data);
+      handleMsgMissileUpdate_(msg);
+      updateOrbitData_(msg);
       break;
     case OrbitCruncherMsgType.SETTINGS_UPDATE:
-      handleMsgSettingsUpdate_(m.data);
+      handleMsgSettingsUpdate_(msg);
       break;
     case OrbitCruncherMsgType.CHANGE_ORBIT_TYPE:
-      handleMsgChangeOrbitType(m.data);
-
-      return;
+      handleMsgChangeOrbitType(msg);
+      break;
     default:
-      return;
-  }
-
-  if (m.data.type === OrbitCruncherMsgType.SATELLITE_UPDATE || m.data.type === OrbitCruncherMsgType.MISSILE_UPDATE) {
-    updateOrbitData_(m.data);
+      break;
   }
 };
 
@@ -69,10 +48,7 @@ const updateOrbitData_ = (data: OrbitCruncherInMsgSatelliteUpdate | OrbitCrunche
   * position slices, not timeslices (ugly perigees on HEOs)
   */
 
-  dynamicOffsetEpoch = data.dynamicOffsetEpoch;
-  staticOffset = data.staticOffset;
-  propRate = data.propRate;
-
+  const nowDate = new Date(data.simulationTime);
   const id = data.id;
   const isEcfOutput = data.isEcfOutput || false;
   const isPolarViewEcf = data.isPolarViewEcf || false;
@@ -83,6 +59,12 @@ const updateOrbitData_ = (data: OrbitCruncherInMsgSatelliteUpdate | OrbitCrunche
   // Calculate Missile Orbits
 
   if ((objCache[id] as OrbitCruncherMissileObject).missile) {
+    // Compute GMST once for all missile segments (same time for all points)
+    const missileJ =
+      jday(nowDate.getUTCFullYear(), nowDate.getUTCMonth() + 1, nowDate.getUTCDate(), nowDate.getUTCHours(), nowDate.getUTCMinutes(), nowDate.getUTCSeconds()) +
+      nowDate.getUTCMilliseconds() * 1.15741e-8;
+    const missileGmst = Sgp4.gstime(missileJ);
+
     while (i < len) {
       const missile = objCache[id] as OrbitCruncherMissileObject;
 
@@ -93,23 +75,20 @@ const updateOrbitData_ = (data: OrbitCruncherInMsgSatelliteUpdate | OrbitCrunche
         pointsOut[i * 4 + 3] = 0;
         i++;
       } else {
-        drawMissileSegment_(missile, i, pointsOut, len);
+        drawMissileSegment_(missile, i, pointsOut, len, missileGmst);
         i++;
       }
     }
   } else if ((objCache[id] as OrbitCruncherOtherObject).ignore || !(objCache[id] as OrbitCruncherSatelliteObject).satrec) {
     // Invalid objects or OemSatellite with no TLEs
-    trapIfJest_(() => {
-      postMessage({
-        type: OrbitCruncherMsgType.RESPONSE_DATA,
-        pointsOut,
-        satId: id,
-      });
-    });
+    postMessage({
+      typ: OrbitCruncherMsgType.RESPONSE_DATA,
+      pointsOut,
+      satId: id,
+    }, { transfer: [pointsOut.buffer as ArrayBuffer] });
 
     return;
   } else {
-    const nowDate = propTime(dynamicOffsetEpoch, staticOffset, propRate);
     const nowJ =
       jday(nowDate.getUTCFullYear(), nowDate.getUTCMonth() + 1, nowDate.getUTCDate(), nowDate.getUTCHours(), nowDate.getUTCMinutes(), nowDate.getUTCSeconds()) +
       nowDate.getUTCMilliseconds() * 1.15741e-8; // days per millisecond
@@ -145,31 +124,15 @@ const updateOrbitData_ = (data: OrbitCruncherInMsgSatelliteUpdate | OrbitCrunche
     }
   }
 
-  // TODO: Explore SharedArrayBuffer Options
-  trapIfJest_(() => {
-    postMessage({
-      type: OrbitCruncherMsgType.RESPONSE_DATA,
-      pointsOut,
-      satId: id,
-    });
-  });
+  postMessage({
+    typ: OrbitCruncherMsgType.RESPONSE_DATA,
+    pointsOut,
+    satId: id,
+  }, { transfer: [pointsOut.buffer as ArrayBuffer] });
 };
 
-const drawMissileSegment_ = (missile: OrbitCruncherMissileObject, i: number, pointsOut: Float32Array, len: number) => {
+const drawMissileSegment_ = (missile: OrbitCruncherMissileObject, i: number, pointsOut: Float32Array, len: number, gmst: number) => {
   const x = Math.round(missile.altList.length * (i / numberOfSegments));
-
-  const missileTime = propTime(dynamicOffsetEpoch, staticOffset, propRate);
-  const j =
-    jday(
-      missileTime.getUTCFullYear(),
-      missileTime.getUTCMonth() + 1, // Note, this function requires months in range 1-12.
-      missileTime.getUTCDate(),
-      missileTime.getUTCHours(),
-      missileTime.getUTCMinutes(),
-      missileTime.getUTCSeconds(),
-    ) +
-    missileTime.getUTCMilliseconds() * 1.15741e-8; // days per millisecond
-  const gmst = Sgp4.gstime(j);
 
   const cosLat = Math.cos(missile.latList[x] * DEG2RAD);
   const sinLat = Math.sin(missile.latList[x] * DEG2RAD);
@@ -266,9 +229,7 @@ const handleMsgInit_ = (data: OrbitCruncherInMsgInit) => {
     }
   }
 
-  postMessage({
-    type: OrbitCruncherMsgType.RESPONSE_READY,
-  });
+  postMessage('ready');
 };
 
 const handleMsgSatelliteUpdate_ = (data: OrbitCruncherInMsgSatelliteUpdate) => {
@@ -299,6 +260,4 @@ const handleMsgChangeOrbitType = (data: OrbitCruncherInMsgChangeOrbitType) => {
 };
 
 // Set up the web worker
-onmessage = (m) => {
-  trapIfJest_(() => onMessage(m));
-};
+onmessage = onMessage;
