@@ -1,5 +1,8 @@
 import { country2flagIcon } from '@app/app/data/catalogs/countries';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { SolarBody } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -7,8 +10,7 @@ import { ColorSchemeManager } from '@app/engine/rendering/color-scheme-manager';
 import { html } from '@app/engine/utils/development/formatter';
 import { t7e } from '@app/locales/keys';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { CatalogSource, Satellite, KM_PER_AU, LandObject, SpaceObjectType, spaceObjType2Str, Star } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { CatalogSource, KM_PER_AU, LandObject, Satellite, SpaceObjectType, spaceObjType2Str, Star } from '@ootk/src/main';
 import i18next from 'i18next';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { getEl } from '../../engine/utils/get-el';
@@ -17,8 +19,6 @@ import { MissileObject } from '../data/catalog-manager/MissileObject';
 import { Planet as PlanetDot } from '../objects/planet';
 import { SensorMath } from '../sensors/sensor-math';
 import { StringExtractor } from './string-extractor';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { CameraType } from '@app/engine/camera/camera';
 
 export class HoverManager {
   /** The id of the object currently being hovered */

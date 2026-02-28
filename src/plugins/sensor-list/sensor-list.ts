@@ -1,26 +1,26 @@
 import { sensors } from '@app/app/data/catalogs/sensors';
-import { CameraType } from '@app/engine/camera/camera';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { SoundNames } from '@app/engine/audio/sounds';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { MenuMode } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { ICommandPaletteCapable, ICommandPaletteCommand, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getClass } from '@app/engine/utils/get-class';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { BaseObject, Satellite, ZoomValue } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import sensorPng from '@public/img/icons/sensor.png';
 import { SensorGroup, sensorGroups } from '../../app/data/catalogs/sensor-groups';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { DateTimeManager } from '../date-time-manager/date-time-manager';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
-import { ICommandPaletteCommand, ICommandPaletteCapable, IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { keepTrackApi } from './../../keepTrackApi';
 import './sensor-list.css';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 // TODO: Add a search bar and filter for sensors
 

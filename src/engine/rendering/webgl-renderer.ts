@@ -10,16 +10,17 @@ import { mat4, vec2, vec4 } from 'gl-matrix';
 import { GroupType } from '../../app/data/object-group';
 import { SettingsManager } from '../../settings/settings';
 import { SatLabelMode } from '../../settings/ui-settings';
-import { Camera, CameraType } from '../camera/camera';
+import { Camera } from '../camera/camera';
+import { CameraType } from '../camera/camera-type';
 import { GetSatType } from '../core/interfaces';
 import { PluginRegistry } from '../core/plugin-registry';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
+import { RADIUS_OF_EARTH } from '../utils/constants';
 import { errorManagerInstance } from '../utils/errorManager';
 import { getEl } from '../utils/get-el';
 import { isThisNode } from '../utils/isThisNode';
-import { RADIUS_OF_EARTH } from '../utils/constants';
 import { DepthManager } from './depth-manager';
 import { PostProcessingManager } from './draw-manager/post-processing';
 import { Sun } from './draw-manager/sun';
@@ -284,9 +285,9 @@ export class WebGLRenderer {
     const shouldClearLabels =
       labelMode === SatLabelMode.OFF ||
       (cameraType !== CameraType.PLANETARIUM &&
-       cameraType !== CameraType.FLAT_MAP &&
-       labelMode !== SatLabelMode.ALL &&
-       !watchlistPluginInstance?.hasAnyInView());
+        cameraType !== CameraType.FLAT_MAP &&
+        labelMode !== SatLabelMode.ALL &&
+        !watchlistPluginInstance?.hasAnyInView());
 
     if (shouldClearLabels) {
       ServiceLocator.getSatLabelManager()?.updateLabels([], []);

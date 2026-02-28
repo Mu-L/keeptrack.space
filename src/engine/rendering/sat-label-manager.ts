@@ -1,5 +1,5 @@
 import { mat4 } from 'gl-matrix';
-import { CameraType } from '../camera/camera';
+import { CameraType } from '../camera/camera-type';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { RADIUS_OF_EARTH } from '../utils/constants';

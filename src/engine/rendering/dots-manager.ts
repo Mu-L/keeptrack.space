@@ -9,7 +9,7 @@ import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-man
 import { BaseObject, Kilometers, KilometersPerSecond, Satellite, Seconds, SpaceObjectType, TemeVec3 } from '@ootk/src/main';
 import { mat4 } from 'gl-matrix';
 import { SettingsManager } from '../../settings/settings';
-import { CameraType } from '../camera/camera';
+import { CameraType } from '../camera/camera-type';
 import { PluginRegistry } from '../core/plugin-registry';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';

@@ -1,10 +1,11 @@
 import { ToastMsgType } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { errorManagerInstance } from '../utils/errorManager';
-import { Camera, CameraType } from './camera';
+import { Camera } from './camera';
+import { CameraType } from './camera-type';
 import { CameraState } from './state/camera-state';
-import { ServiceLocator } from '../core/service-locator';
 
 export class CameraInputHandler {
   private readonly camera: Camera;

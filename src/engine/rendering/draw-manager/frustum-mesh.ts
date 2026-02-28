@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { CameraType } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { Scene } from '@app/engine/core/scene';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { glsl } from '@app/engine/utils/development/formatter';

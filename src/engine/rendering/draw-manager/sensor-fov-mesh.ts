@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
-import { CameraType } from '@app/engine/camera/camera';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { Scene } from '@app/engine/core/scene';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -7,7 +8,6 @@ import { glsl } from '@app/engine/utils/development/formatter';
 import { SensorFov } from '@app/plugins/sensor-fov/sensor-fov';
 import { SensorSurvFence } from '@app/plugins/sensor-surv/sensor-surv-fence';
 import { Degrees, GreenwichMeanSiderealTime, Kilometers, RADIUS_OF_EARTH, rae2eci } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { mat4, vec3 } from 'gl-matrix';
 import { DepthManager } from '../depth-manager';
 import { CustomMesh } from './custom-mesh';

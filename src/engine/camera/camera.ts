@@ -48,27 +48,8 @@ import { Earth } from '../rendering/draw-manager/earth';
 import { errorManagerInstance } from '../utils/errorManager';
 import { alt2zoom, lat2pitch, lon2yaw, normalizeAngle } from '../utils/transforms';
 import { CameraInputHandler } from './camera-input-handler';
+import { CameraType } from './camera-type';
 import { CameraState } from './state/camera-state';
-
-/**
- * Represents the different types of cameras available.
- *
- * TODO: This should be replaced with different camera classes
- */
-export enum CameraType {
-  CURRENT = 0,
-  FIXED_TO_EARTH = 1,
-  FIXED_TO_SAT = 2,
-  FPS = 3,
-  PLANETARIUM = 4,
-  SATELLITE = 5,
-  ASTRONOMY = 6,
-  FLAT_MAP = 7,
-  POLAR_VIEW = 8,
-  MAX_CAMERA_TYPES = 9,
-  /** @deprecated */
-  OFFSET = 9,
-}
 
 /**
  * Interface for external camera mode implementations (e.g., Flat Map).

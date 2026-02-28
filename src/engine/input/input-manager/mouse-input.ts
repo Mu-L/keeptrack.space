@@ -1,4 +1,6 @@
-import { Camera, CameraType } from '@app/engine/camera/camera';
+import { SoundNames } from '@app/engine/audio/sounds';
+import { Camera } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { GetSatType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -6,8 +8,8 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { UrlManager } from '@app/engine/input/url-manager';
 import { lineManagerInstance } from '@app/engine/rendering/line-manager';
+import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { SoundNames } from '@app/engine/audio/sounds';
 import { TimeMachine } from '@app/plugins/time-machine/time-machine';
 import { Kilometers, eci2lla } from '@ootk/src/main';
 import { closeColorbox } from '../../utils/colorbox';
@@ -15,7 +17,6 @@ import { errorManagerInstance } from '../../utils/errorManager';
 import { getEl } from '../../utils/get-el';
 import { InputManager, LatLon } from '../input-manager';
 import { KeyboardInput } from './keyboard-input';
-import { KeepTrack } from '@app/keeptrack';
 
 export class MouseInput {
   private dragHasMoved = false;

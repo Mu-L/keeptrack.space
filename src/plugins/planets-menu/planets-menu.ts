@@ -1,4 +1,4 @@
-import { CameraType } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { MenuMode, SolarBody } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
