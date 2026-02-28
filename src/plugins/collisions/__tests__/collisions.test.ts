@@ -1,8 +1,8 @@
-import { vi } from 'vitest';
+import { Mock, vi } from 'vitest';
 /* eslint-disable max-lines-per-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable dot-notation */
-import { Collisions, CollisionEvent } from '@app/plugins/collisions/collisions';
+import { CollisionEvent, Collisions } from '@app/plugins/collisions/collisions';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from '@test/generic-tests';
 
@@ -50,7 +50,7 @@ describe('Collisions_class', () => {
       Promise.resolve({
         json: () => Promise.resolve(mockCollisionData),
       }),
-    ) as vi.Mock;
+    ) as Mock;
   });
 
   afterEach(() => {

@@ -82,10 +82,22 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
 
   const catalogManagerInstance = new CatalogManager();
 
-  catalogManagerInstance.satCruncher = {
+  catalogManagerInstance.satCruncherThread = {
     postMessage: vi.fn(),
-    addEventListener: vi.fn(),
-  } as unknown as Worker;
+    sendSatEdit: vi.fn(),
+    sendSensorUpdate: vi.fn(),
+    sendSunlightViewToggle: vi.fn(),
+    sendSatelliteSelected: vi.fn(),
+    sendMarkerUpdate: vi.fn(),
+    sendCatalogData: vi.fn(),
+    sendTimeSync: vi.fn(),
+    sendNewMissile: vi.fn(),
+    worker: {
+      addEventListener: vi.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+    },
+  } as any;
   catalogManagerInstance.objectCache = [defaultSat];
   // Set up sccIndex so sccNum2Id can find satellites by their catalog number
   catalogManagerInstance.sccIndex = { '00005': 0 };
@@ -121,11 +133,22 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
   mockUiManager.searchManager = new SearchManager();
   const soundManagerInstance = new SoundManager();
 
-  catalogManagerInstance.satCruncher = {
-    addEventListener: vi.fn(),
+  catalogManagerInstance.satCruncherThread = {
     postMessage: vi.fn(),
-    terminate: vi.fn(),
-  } as unknown as Worker;
+    sendSatEdit: vi.fn(),
+    sendSensorUpdate: vi.fn(),
+    sendSunlightViewToggle: vi.fn(),
+    sendSatelliteSelected: vi.fn(),
+    sendMarkerUpdate: vi.fn(),
+    sendCatalogData: vi.fn(),
+    sendTimeSync: vi.fn(),
+    sendNewMissile: vi.fn(),
+    worker: {
+      addEventListener: vi.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+    },
+  } as any;
 
   // Pretend webGl works
   renderer.gl = global.mocks.glMock;

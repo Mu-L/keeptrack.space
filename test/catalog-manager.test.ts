@@ -191,20 +191,20 @@ describe('calcSatrec', () => {
   // Should addAnalystSat
   it('process_insert_new_analyst_satellite', () => {
     catalogManagerInstance.objectCache = [defaultSat];
-    catalogManagerInstance.satCruncher = {
+    catalogManagerInstance.satCruncherThread = {
       postMessage: vi.fn(),
-      terminate: vi.fn(),
-    } as unknown as Worker;
+      sendSatEdit: vi.fn(),
+    } as any;
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, defaultSat.tle2, 0)).not.toThrow();
   });
 
   // Should error on bad addAnalystSat
   it('process_insert_new_analyst_satellite_bad', () => {
     catalogManagerInstance.objectCache = [defaultSat];
-    catalogManagerInstance.satCruncher = {
+    catalogManagerInstance.satCruncherThread = {
       postMessage: vi.fn(),
-      terminate: vi.fn(),
-    } as unknown as Worker;
+      sendSatEdit: vi.fn(),
+    } as any;
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1.slice(0, 68), defaultSat.tle2, 0)).toThrow();
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, `${defaultSat.tle2}0`, 0)).toThrow();
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, defaultSat.tle2, 1)).not.toThrow();

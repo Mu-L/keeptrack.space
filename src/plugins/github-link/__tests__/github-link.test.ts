@@ -1,9 +1,9 @@
-import { vi } from 'vitest';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { GithubLinkPlugin } from '@app/plugins/github-link/github-link';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
+import { vi, type MockInstance } from 'vitest';
 
 describe('GithubLinkPlugin', () => {
   let githubLinkPlugin: GithubLinkPlugin;
@@ -43,7 +43,7 @@ describe('GithubLinkPlugin', () => {
   });
 
   describe('onClick functionality', () => {
-    let windowOpenSpy: vi.SpyInstance;
+    let windowOpenSpy: MockInstance;
 
     beforeEach(() => {
       windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);

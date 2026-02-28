@@ -8,14 +8,14 @@ import { standardPluginMenuButtonTests, standardPluginRmbTests, standardPluginSu
 describe('ColorMenu_class', () => {
   beforeEach(() => {
     setupStandardEnvironment();
-    ServiceLocator.getCatalogManager().satCruncher = {
-      addEventListener: () => {
-        // Mock the addEventListener function
-      },
+    ServiceLocator.getCatalogManager().satCruncherThread = {
       postMessage: () => {
         // Mock the postMessage function
       },
-    } as unknown as Worker;
+      sendSunlightViewToggle: () => {
+        // Mock the sendSunlightViewToggle function
+      },
+    } as any;
   });
 
   standardPluginSuite(ColorMenu);

@@ -117,10 +117,21 @@ export const websiteInit = (plugin: KeepTrackPlugin) => {
   EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
   EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
   EventBus.getInstance().emit(EventBusEvent.uiManagerOnReady);
-  ServiceLocator.getCatalogManager().satCruncher = {
-    addEventListener: vi.fn(),
+  ServiceLocator.getCatalogManager().satCruncherThread = {
     postMessage: vi.fn(),
-  } as unknown as Worker;
+    sendSatEdit: vi.fn(),
+    sendSensorUpdate: vi.fn(),
+    sendSunlightViewToggle: vi.fn(),
+    sendSatelliteSelected: vi.fn(),
+    sendMarkerUpdate: vi.fn(),
+    sendCatalogData: vi.fn(),
+    sendTimeSync: vi.fn(),
+    sendNewMissile: vi.fn(),
+    worker: {
+      addEventListener: vi.fn(),
+      postMessage: vi.fn(),
+    },
+  } as any;
   // Set up sccIndex so sccNum2Id can find satellites by their catalog number
   ServiceLocator.getCatalogManager().objectCache = [defaultSat];
   ServiceLocator.getCatalogManager().sccIndex = { '00005': 0 };

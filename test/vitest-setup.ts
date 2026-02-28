@@ -51,7 +51,7 @@ global.createImageBitmap = vi.fn(() =>
   Promise.resolve({
     width: 1,
     height: 1,
-    close: () => {},
+    close: () => { },
   } as ImageBitmap),
 );
 
@@ -68,10 +68,10 @@ if (typeof global.window === 'undefined') {
 global.speechSynthesis = {
   speak: vi.fn(),
   cancel: vi.fn(),
-  paused: vi.fn(),
+  paused: false,
   resume: vi.fn(),
   getVoices: vi.fn(),
-};
+} as unknown as SpeechSynthesis;
 
 global.fetch = vi.fn(() =>
   Promise.resolve({
@@ -123,7 +123,7 @@ window.matchMedia = vi.fn().mockImplementation((query) => ({
 window.M = {
   AutoInit: vi.fn(),
   updateTextFields: vi.fn(),
-};
+} as unknown as typeof window.M;
 
 // Mock echarts to avoid noisy console warnings and side effects during tests
 vi.mock('echarts', () => {
@@ -183,7 +183,7 @@ global.console = {
   // Ignore console.log() type statements during test
   info: vi.fn(),
   debug: vi.fn(),
-};
+} as unknown as Console;
 
 // Note: echarts-gl warning filtered below during tests
 
@@ -200,14 +200,19 @@ global.console.warn = (message, ...optionalParams) => {
 window.HTMLMediaElement.prototype.load = () => {
   /* do nothing */
 };
-window.HTMLMediaElement.prototype.play = () => {
+window.HTMLMediaElement.prototype.play = async () => {
   /* do nothing */
 };
 window.HTMLMediaElement.prototype.pause = () => {
   /* do nothing */
 };
-window.HTMLMediaElement.prototype.addTextTrack = () => {
-  /* do nothing */
+window.HTMLMediaElement.prototype.addTextTrack = (kind, label, language) => {
+  return {
+    kind,
+    label,
+    language,
+    addCue: () => { },
+  } as unknown as TextTrack;
 };
 
 /*
@@ -308,6 +313,9 @@ global.mocks.glMock = {
 
 // mock_requestAnimationFrame.js
 class RequestAnimationFrameMockSession {
+  handleCounter: number;
+  queue: Map<any, any>;
+
   constructor() {
     this.handleCounter = 0;
     this.queue = new Map();

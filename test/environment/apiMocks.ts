@@ -476,10 +476,18 @@ export const keepTrackApiStubs = {
         starlink: [25544],
         sbirs: [25544],
       },
-      satCruncher: {
-        addEventListener: vi.fn(),
+      satCruncherThread: {
         postMessage: vi.fn(),
-        onmessage: vi.fn(),
+        sendSatEdit: vi.fn(),
+        sendSensorUpdate: vi.fn(),
+        sendSunlightViewToggle: vi.fn(),
+        sendSatelliteSelected: vi.fn(),
+        sendMarkerUpdate: vi.fn(),
+        worker: {
+          addEventListener: vi.fn(),
+          postMessage: vi.fn(),
+          onmessage: vi.fn(),
+        },
       },
       getIdFromEci: vi.fn(),
       selectSat: vi.fn(),

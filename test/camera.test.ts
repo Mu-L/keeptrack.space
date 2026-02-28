@@ -1,7 +1,8 @@
 import { SatMath } from '@app/app/analysis/sat-math';
-import { Camera, CameraType } from '@app/engine/camera/camera';
+import { Camera } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { PLANETARIUM_DIST, RADIUS_OF_EARTH } from '@app/engine/utils/constants';
-import { DEG2RAD, Satellite, GreenwichMeanSiderealTime, Kilometers, Milliseconds, Radians } from '@ootk/src/main';
+import { DEG2RAD, GreenwichMeanSiderealTime, Kilometers, Milliseconds, Radians, Satellite } from '@ootk/src/main';
 import { defaultSat, defaultSensor } from './environment/apiMocks';
 
 const testFuncWithAllCameraTypes = (testFunc: () => void, cameraInstance: Camera) => {

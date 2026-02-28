@@ -12,9 +12,10 @@ describe('SatelliteFov_class', () => {
     PluginRegistry.unregisterAllPlugins();
     setupStandardEnvironment([SelectSatManager]);
     ServiceLocator.getCatalogManager().getObject = () => defaultSat;
-    ServiceLocator.getCatalogManager().satCruncher = {
+    ServiceLocator.getCatalogManager().satCruncherThread = {
       postMessage: vi.fn(),
-    } as unknown as Worker;
+      sendMarkerUpdate: vi.fn(),
+    } as any;
   });
 
   standardPluginSuite(SatelliteFov);

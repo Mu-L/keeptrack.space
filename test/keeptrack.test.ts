@@ -54,10 +54,14 @@ const setupStandardEnvironment = () => {
   Image.prototype.decode = vi.fn();
 
   catalogManagerInstance.init = vi.fn();
-  catalogManagerInstance.satCruncher = {
+  catalogManagerInstance.satCruncherThread = {
     postMessage: vi.fn(),
-    terminate: vi.fn(),
-  } as unknown as Worker;
+    worker: {
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+      onmessage: null as ((ev: MessageEvent) => void) | null,
+    },
+  } as any;
 
   // eslint-disable-next-line require-await
   vi.spyOn(CatalogLoader, 'load').mockImplementation(async () => {
@@ -68,10 +72,14 @@ const setupStandardEnvironment = () => {
       new Satellite({ ...defaultSat, ...{ id: 0, type: 1 } }),
       new Satellite({ ...defaultSat, ...{ id: 1, type: 2 } }),
     ] as Satellite[];
-    catalogManagerInstance.satCruncher = {
+    catalogManagerInstance.satCruncherThread = {
       postMessage: vi.fn(),
-      terminate: vi.fn(),
-    } as unknown as Worker;
+      worker: {
+        postMessage: vi.fn(),
+        terminate: vi.fn(),
+        onmessage: null as ((ev: MessageEvent) => void) | null,
+      },
+    } as any;
 
     // Call the onmessage handler only if it is set to avoid "possibly null" invocation.
     catalogManagerInstance.satCruncher.onmessage?.({ data: { type: 'satData', data: [] } as unknown as SatCruncherMessageData } as unknown as MessageEvent);

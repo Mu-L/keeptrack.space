@@ -1,6 +1,6 @@
-import { vi } from 'vitest';
 import { UiManager } from '@app/app/ui/ui-manager';
-import { Camera, CameraType } from '@app/engine/camera/camera';
+import { Camera } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { Container } from '@app/engine/core/container';
 import { Singletons, ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -11,6 +11,7 @@ import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
 import { SatelliteViewPlugin } from '@app/plugins/satellite-view/satellite-view';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
+import { vi } from 'vitest';
 import { mockCameraManager, mockUiManager } from './environment/standard-env';
 import { standardPluginSuite } from './generic-tests';
 

@@ -9,7 +9,6 @@ import { GetSatType, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { TimeManager } from '@app/engine/core/time-manager';
 import { CreateSat } from '@app/plugins/create-sat/create-sat';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { FormatTle, Sgp4 } from '@ootk/src/main';
 
 describe('CreateSat', () => {
@@ -23,8 +22,8 @@ describe('CreateSat', () => {
         isSatellite: () => true,
       }),
       objectCache: [],
-      satCruncher: {
-        postMessage: vi.fn(),
+      satCruncherThread: {
+        sendSatEdit: vi.fn(),
       },
     };
 
@@ -92,13 +91,12 @@ describe('CreateSat', () => {
 
     expect(SatMath.altitudeCheck).toHaveBeenCalledWith(mockSatrec, mockTimeManager.simulationTimeObj);
     expect(Sgp4.propagate).toHaveBeenCalledWith(mockSatrec, 0);
-    expect(mockCatalogManager.satCruncher.postMessage).toHaveBeenCalledWith({
-      typ: CruncerMessageTypes.SAT_EDIT,
-      active: true,
-      id: 12345,
-      tle1: '1 39280U 13055R   15046.42575068  .30789804  00000-0  57707-2 0  9996',
-      tle2: '2 39280 080.8897 122.4763 0060411 007.5143 351.4794 16.26612222 73510',
-    });
+    expect(mockCatalogManager.satCruncherThread.sendSatEdit).toHaveBeenCalledWith(
+      12345,
+      '1 39280U 13055R   15046.42575068  .30789804  00000-0  57707-2 0  9996',
+      '2 39280 080.8897 122.4763 0060411 007.5143 351.4794 16.26612222 73510',
+      true,
+    );
     expect(mockOrbitManager.changeOrbitBufferData).toHaveBeenCalledWith(12345,
       '1 39280U 13055R   15046.42575068  .30789804  00000-0  57707-2 0  9996',
       '2 39280 080.8897 122.4763 0060411 007.5143 351.4794 16.26612222 73510',
@@ -116,8 +114,8 @@ describe('CreateSat', () => {
         isSatellite: () => true,
       }),
       objectCache: [],
-      satCruncher: {
-        postMessage: vi.fn(),
+      satCruncherThread: {
+        sendSatEdit: vi.fn(),
       },
     };
 
@@ -186,7 +184,7 @@ describe('CreateSat', () => {
     );
 
     // Verify that the satellite was not added to the catalog
-    expect(mockCatalogManager.satCruncher.postMessage).not.toHaveBeenCalled();
+    expect(mockCatalogManager.satCruncherThread.sendSatEdit).not.toHaveBeenCalled();
     expect(mockOrbitManager.changeOrbitBufferData).not.toHaveBeenCalled();
     expect(mockUiManager.doSearch).not.toHaveBeenCalled();
   });

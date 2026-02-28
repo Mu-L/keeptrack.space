@@ -1,13 +1,13 @@
-import { vi } from 'vitest';
 /**
  * @jest-environment jsdom
- */
+*/
 
-import { HelpComponent } from '@app/engine/plugins/components/help/help-component';
-import { IHelpConfig } from '@app/engine/plugins/core/plugin-capabilities';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { HelpComponent } from '@app/engine/plugins/components/help/help-component';
+import { IHelpConfig } from '@app/engine/plugins/core/plugin-capabilities';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
+import { Mock, vi } from 'vitest';
 
 // Mock adviceManager
 vi.mock('@app/engine/utils/adviceManager', () => ({
@@ -26,7 +26,7 @@ describe('HelpComponent', () => {
 
     // Clear all mocks including call counts
     vi.clearAllMocks();
-    (adviceManagerInstance.showAdvice as vi.Mock).mockClear();
+    (adviceManagerInstance.showAdvice as Mock).mockClear();
   });
 
   const createConfig = (overrides: Partial<IHelpConfig> = {}): IHelpConfig => ({
@@ -81,7 +81,7 @@ describe('HelpComponent', () => {
 
   describe('help handling', () => {
     it.skip('should show help when plugin is active', () => {
-      const showAdviceMock = adviceManagerInstance.showAdvice as vi.Mock;
+      const showAdviceMock = adviceManagerInstance.showAdvice as Mock;
       const callCountBefore = showAdviceMock.mock.calls.length;
 
       const isActive = vi.fn().mockReturnValue(true);
@@ -101,7 +101,7 @@ describe('HelpComponent', () => {
     });
 
     it('should not show help when plugin is not active', () => {
-      const showAdviceMock = adviceManagerInstance.showAdvice as vi.Mock;
+      const showAdviceMock = adviceManagerInstance.showAdvice as Mock;
 
       const isActive = vi.fn().mockReturnValue(false);
       const component = new HelpComponent('test-plugin', createConfig({
@@ -114,7 +114,7 @@ describe('HelpComponent', () => {
 
       // Verify our specific handler wasn't called by checking the mock wasn't called with our specific arguments
       const callsWithOurArgs = showAdviceMock.mock.calls.filter(
-        (call: [string, string]) => call[0] === 'Unique Inactive Title',
+        (call) => (call as [string, string])[0] === 'Unique Inactive Title',
       );
 
       expect(callsWithOurArgs.length).toBe(0);
@@ -201,7 +201,7 @@ describe('HelpComponent', () => {
     });
 
     it.skip('should respond to changing active state', () => {
-      const showAdviceMock = adviceManagerInstance.showAdvice as vi.Mock;
+      const showAdviceMock = adviceManagerInstance.showAdvice as Mock;
       const uniqueTitle = 'Changing State Test Title';
 
       let isActiveState = false;
@@ -218,7 +218,7 @@ describe('HelpComponent', () => {
 
       // Verify our specific help was not shown
       let callsWithOurTitle = showAdviceMock.mock.calls.filter(
-        (call: [string, string]) => call[0] === uniqueTitle,
+        (call) => (call as [string, string])[0] === uniqueTitle,
       );
 
       expect(callsWithOurTitle.length).toBe(0);
@@ -230,7 +230,7 @@ describe('HelpComponent', () => {
       eventBus.emit(EventBusEvent.onHelpMenuClick);
 
       callsWithOurTitle = showAdviceMock.mock.calls.filter(
-        (call: [string, string]) => call[0] === uniqueTitle,
+        (call) => (call as [string, string])[0] === uniqueTitle,
       );
       expect(callsWithOurTitle.length).toBe(1);
 
@@ -241,7 +241,7 @@ describe('HelpComponent', () => {
       eventBus.emit(EventBusEvent.onHelpMenuClick);
 
       callsWithOurTitle = showAdviceMock.mock.calls.filter(
-        (call: [string, string]) => call[0] === uniqueTitle,
+        (call) => (call as [string, string])[0] === uniqueTitle,
       );
       expect(callsWithOurTitle.length).toBe(1); // Still only 1 call with our title
     });
