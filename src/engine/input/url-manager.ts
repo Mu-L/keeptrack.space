@@ -2,7 +2,6 @@ import { ToastMsgType } from '@app/engine/core/interfaces';
 import { NightToggle } from '@app/plugins/night-toggle/night-toggle';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { SettingsManager, settingsManager } from '@app/settings/settings';
-import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
 import { DEG2RAD, Degrees, RAD2DEG, Radians, Satellite } from '@ootk/src/main';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
@@ -201,10 +200,7 @@ export abstract class UrlManager {
               settingsManager.numberOfEcfOrbitsToDraw = ecfValue;
 
               EventBus.getInstance().on(EventBusEvent.onKeepTrackReady, () => {
-                ServiceLocator.getOrbitManager().orbitThreadMgr.postMessage({
-                  type: OrbitCruncherMsgType.SETTINGS_UPDATE,
-                  numberOfOrbitsToDraw: settingsManager.numberOfEcfOrbitsToDraw,
-                });
+                ServiceLocator.getOrbitManager().orbitThreadMgr.sendSettingsUpdate(settingsManager.numberOfEcfOrbitsToDraw);
               });
             }
           }

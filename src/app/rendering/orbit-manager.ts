@@ -1,14 +1,15 @@
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { OrbitCruncherThreadManager } from '@app/app/threads/orbit-cruncher-thread-manager';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { SettingsMenuPlugin } from '@app/plugins/settings-menu/settings-menu';
 import { SettingsManager } from '@app/settings/settings';
-import { OrbitCruncherMsgType, OrbitDrawTypes } from '@app/webworker/orbit-cruncher-interfaces';
+import { OrbitDrawTypes } from '@app/webworker/orbit-cruncher-messages';
 import { BaseObject, Degrees, Kilometers, Satellite } from '@ootk/src/main';
 import { mat4 } from 'gl-matrix';
-import { Camera, CameraType } from '../../engine/camera/camera';
+import { Camera } from '../../engine/camera/camera';
 import { GetSatType } from '../../engine/core/interfaces';
 import { PluginRegistry } from '../../engine/core/plugin-registry';
 import { ServiceLocator } from '../../engine/core/service-locator';
@@ -20,6 +21,7 @@ import { LineManager } from '../../engine/rendering/line-manager';
 import { HoverManager } from '../ui/hover-manager';
 
 export class OrbitManager {
+  private currentHoverId_ = -1;
   private currentInView_ = <number[]>[];
   private currentSelectId_ = -1;
   readonly glBuffers_ = <WebGLBuffer[]>[];
@@ -72,12 +74,7 @@ export class OrbitManager {
     // Re-send object data to the orbit cruncher worker
     const objDataString = OrbitManager.getObjDataString(catalogManager.objectCache);
 
-    this.orbitThreadMgr.postMessage({
-      type: OrbitCruncherMsgType.INIT,
-      orbitFadeFactor: settingsManager.orbitFadeFactor,
-      objData: objDataString,
-      numSegs: settingsManager.orbitSegments,
-    });
+    this.orbitThreadMgr.sendInit(objDataString, settingsManager.orbitSegments, settingsManager.orbitFadeFactor);
   }
 
   addInViewOrbit(satId: number): void {
@@ -91,6 +88,7 @@ export class OrbitManager {
   }
 
   clearHoverOrbit(): void {
+    this.currentHoverId_ = -1;
     if (!settingsManager.isDrawOrbits) {
       return;
     }
@@ -227,12 +225,7 @@ export class OrbitManager {
 
     const objDataString = OrbitManager.getObjDataString(ServiceLocator.getCatalogManager().objectCache);
 
-    this.orbitThreadMgr.postMessage({
-      type: OrbitCruncherMsgType.INIT,
-      orbitFadeFactor: settingsManager.orbitFadeFactor,
-      objData: objDataString,
-      numSegs: settingsManager.orbitSegments,
-    });
+    this.orbitThreadMgr.sendInit(objDataString, settingsManager.orbitSegments, settingsManager.orbitFadeFactor);
 
     this.isInitialized_ = true;
 
@@ -257,6 +250,14 @@ export class OrbitManager {
 
     EventBus.getInstance().on(EventBusEvent.highPerformanceRender, () => {
       this.updateAllVisibleOrbits();
+    });
+
+    // Re-request active orbits when time jumps while in ECF mode,
+    // because ECF coordinates depend on GMST (Earth rotation)
+    EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
+      if (settingsManager.isOrbitCruncherInEcf) {
+        this.reRequestActiveOrbits_();
+      }
     });
 
     EventBus.getInstance().emit(EventBusEvent.orbitManagerInit);
@@ -292,6 +293,9 @@ export class OrbitManager {
     if (this.secondarySelectId_ !== -1) {
       this.updateOrbitBuffer(this.secondarySelectId_);
     }
+    if (this.currentHoverId_ !== -1 && this.currentHoverId_ !== this.currentSelectId_ && this.currentHoverId_ !== this.secondarySelectId_) {
+      this.updateOrbitBuffer(this.currentHoverId_);
+    }
     for (const satId of this.currentInView_) {
       this.updateOrbitBuffer(satId);
     }
@@ -313,6 +317,7 @@ export class OrbitManager {
   }
 
   setHoverOrbit(satId: number): void {
+    this.currentHoverId_ = satId;
     this.updateOrbitBuffer(satId);
   }
 
@@ -343,19 +348,11 @@ export class OrbitManager {
   }
 
   changeOrbitBufferData(id: number, tle1: string, tle2: string): void {
-    const timeManagerInstance = ServiceLocator.getTimeManager();
-
-    this.orbitThreadMgr.postMessage({
-      type: OrbitCruncherMsgType.SATELLITE_UPDATE,
-      id,
-      dynamicOffsetEpoch: timeManagerInstance.dynamicOffsetEpoch,
-      staticOffset: timeManagerInstance.staticOffset,
-      propRate: timeManagerInstance.propRate,
-      tle1,
-      tle2,
-      isEcfOutput: settingsManager.isOrbitCruncherInEcf,
-      isPolarViewEcf: ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW,
-    });
+    this.orbitThreadMgr.sendSatelliteUpdate(
+      id, ServiceLocator.getTimeManager().simulationTimeObj.getTime(),
+      settingsManager.isOrbitCruncherInEcf, ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW,
+      tle1, tle2,
+    );
   }
 
   updateOrbitBuffer(
@@ -367,7 +364,6 @@ export class OrbitManager {
     },
   ) {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
-    const timeManagerInstance = ServiceLocator.getTimeManager();
 
     const obj = catalogManagerInstance.getObject(id, GetSatType.EXTRA_ONLY);
 
@@ -380,33 +376,23 @@ export class OrbitManager {
 
     if (!this.inProgress_[id] && !obj.isStatic()) {
       const isPolarView = ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW;
+      const simTime = ServiceLocator.getTimeManager().simulationTimeObj.getTime();
 
       if (obj.isMissile()) {
-        this.orbitThreadMgr.postMessage({
-          type: OrbitCruncherMsgType.MISSILE_UPDATE,
-          id: Number(id),
-          dynamicOffsetEpoch: timeManagerInstance.dynamicOffsetEpoch,
-          staticOffset: timeManagerInstance.staticOffset,
-          propRate: timeManagerInstance.propRate,
-          latList: missileParams?.latList,
-          lonList: missileParams?.lonList,
-          altList: missileParams?.altList,
-          isEcfOutput: false, // Missiles use their own GMST-based conversion; ECF toggle does not apply
-          isPolarViewEcf: isPolarView,
-        });
+        this.orbitThreadMgr.sendMissileUpdate(
+          Number(id), simTime,
+          false, // Missiles use their own GMST-based conversion; ECF toggle does not apply
+          isPolarView,
+          missileParams?.latList, missileParams?.lonList, missileParams?.altList,
+        );
       } else if (obj instanceof OemSatellite) {
         this.setOemSatelliteOrbitBuffer_(id, obj.getOrbitPath(settingsManager.oemOrbitSegments));
       } else {
         // Then it is a satellite
-        this.orbitThreadMgr.postMessage({
-          type: OrbitCruncherMsgType.SATELLITE_UPDATE,
-          id: Number(id),
-          dynamicOffsetEpoch: timeManagerInstance.dynamicOffsetEpoch,
-          staticOffset: timeManagerInstance.staticOffset,
-          propRate: timeManagerInstance.propRate,
-          isEcfOutput: settingsManager.isOrbitCruncherInEcf,
-          isPolarViewEcf: isPolarView,
-        });
+        this.orbitThreadMgr.sendSatelliteUpdate(
+          Number(id), simTime,
+          settingsManager.isOrbitCruncherInEcf, isPolarView,
+        );
         this.inProgress_[id] = true;
       }
     }
@@ -660,6 +646,9 @@ export class OrbitManager {
     return out;
   }
 
+  /** Reusable buffer for ECF first-point correction to avoid per-frame allocation. */
+  private static ecfFirstPoint_ = new Float32Array(4);
+
   private writePathToGpu_(id: number) {
     if (id === -1) {
       return;
@@ -674,6 +663,27 @@ export class OrbitManager {
       return;
     }
 
+    // In ECF mode, patch the first orbit point with the satellite's current
+    // ECI position every frame. A negative alpha flags the shader to skip the
+    // ECEF→ECI rotation for this vertex, avoiding any CPU/GPU float32 roundtrip.
+    if (settingsManager.isOrbitCruncherInEcf && !obj.isStatic()) {
+      const eciPos = ServiceLocator.getDotsManager().getPositionArray(Number(id));
+
+      if (eciPos[0] !== 0 || eciPos[1] !== 0 || eciPos[2] !== 0) {
+        const buf = OrbitManager.ecfFirstPoint_;
+
+        buf[0] = eciPos[0];
+        buf[1] = eciPos[1];
+        buf[2] = eciPos[2];
+        buf[3] = -1.0; // negative alpha signals ECI vertex to shader
+
+        const gl = this.gl_ ?? ServiceLocator.getRenderer().gl;
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffers_[id]);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, buf);
+      }
+    }
+
     if (obj instanceof OemSatellite && obj.orbitPathCache_) {
       this.lineManagerInstance_.setAttribsAndDrawLineStrip(this.glBuffers_[id], settingsManager.oemOrbitSegments);
     } else {
@@ -682,16 +692,8 @@ export class OrbitManager {
   }
 
   updateOrbitType() {
-    if (settingsManager.isDrawTrailingOrbits) {
-      this.orbitThreadMgr.postMessage({
-        type: OrbitCruncherMsgType.CHANGE_ORBIT_TYPE,
-        orbitType: OrbitDrawTypes.TRAIL,
-      });
-    } else {
-      this.orbitThreadMgr.postMessage({
-        type: OrbitCruncherMsgType.CHANGE_ORBIT_TYPE,
-        orbitType: OrbitDrawTypes.ORBIT,
-      });
-    }
+    this.orbitThreadMgr.sendChangeOrbitType(
+      settingsManager.isDrawTrailingOrbits ? OrbitDrawTypes.TRAIL : OrbitDrawTypes.ORBIT,
+    );
   }
 }

@@ -3,20 +3,20 @@
 /* eslint-disable camelcase */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { Singletons, SolarBody } from '@app/engine/core/interfaces';
 import { BufferAttribute } from '@app/engine/rendering/buffer-attribute';
 import { WebGlProgramHelper } from '@app/engine/rendering/webgl-program';
-import { BaseObject, Degrees, Satellite, Kilometers, RaeVec3 } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { settingsManager } from '@app/settings/settings';
+import { BaseObject, Degrees, Kilometers, RaeVec3, Satellite } from '@ootk/src/main';
 import { mat4, vec3, vec4 } from 'gl-matrix';
+import { CameraType } from '../camera/camera-type';
 import { Container } from '../core/container';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { getTemeToJ2000Matrix, ReferenceFrame } from '../math/reference-frames';
-import { CameraType } from '../camera/camera';
-import { settingsManager } from '@app/settings/settings';
 import { EARTH_OBLIQUITY_RADIANS, RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { DepthManager } from './depth-manager';
@@ -751,16 +751,22 @@ export class LineManager {
               position = u_pCamMatrix * vec4(polarPos, 1.0);
           } else {
               if (u_ecfMode) {
-                  // Rotate raw ECEF → ECI before adding worldOffset
-                  vec3 ecefPos = worldPosition.xyz;
-                  float c = cos(u_gmst);
-                  float s = sin(u_gmst);
-                  vec3 rotated = vec3(
-                      ecefPos.x * c - ecefPos.y * s,
-                      ecefPos.x * s + ecefPos.y * c,
-                      ecefPos.z
-                  );
-                  position = u_pCamMatrix * vec4(rotated + worldOffset, 1.0);
+                  if (a_position.w < 0.0) {
+                      // First orbit point stored in ECI (negative alpha flag)
+                      // — skip ECEF→ECI rotation to avoid float32 roundtrip jitter
+                      position = u_pCamMatrix * vec4(eciPos, 1.0);
+                  } else {
+                      // Rotate raw ECEF → ECI before adding worldOffset
+                      vec3 ecefPos = worldPosition.xyz;
+                      float c = cos(u_gmst);
+                      float s = sin(u_gmst);
+                      vec3 rotated = vec3(
+                          ecefPos.x * c - ecefPos.y * s,
+                          ecefPos.x * s + ecefPos.y * c,
+                          ecefPos.z
+                      );
+                      position = u_pCamMatrix * vec4(rotated + worldOffset, 1.0);
+                  }
               } else {
                   position = u_pCamMatrix * vec4(eciPos, 1.0);
               }
@@ -771,7 +777,7 @@ export class LineManager {
           ${DepthManager.getLogDepthVertCode()}
 
           vColor = u_color;
-          vAlpha = a_position[3];
+          vAlpha = abs(a_position[3]);
       }
       `,
   };

@@ -9,7 +9,6 @@ import { getEl, hideEl } from '@app/engine/utils/get-el';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
 import { SettingsManager } from '@app/settings/settings';
 import { SatLabelMode } from '@app/settings/ui-settings';
-import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
 import settingsPng from '@public/img/icons/settings.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { TimeMachine } from '../time-machine/time-machine';
@@ -361,10 +360,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     const numberOfEcfOrbitsToDraw = parseInt((<HTMLInputElement>getEl('settings-numberOfEcfOrbitsToDraw')).value);
 
     if (numberOfEcfOrbitsToDraw !== settingsManager.numberOfEcfOrbitsToDraw) {
-      ServiceLocator.getOrbitManager().orbitThreadMgr.postMessage({
-        type: OrbitCruncherMsgType.SETTINGS_UPDATE,
-        numberOfOrbitsToDraw: numberOfEcfOrbitsToDraw,
-      });
+      ServiceLocator.getOrbitManager().orbitThreadMgr.sendSettingsUpdate(numberOfEcfOrbitsToDraw);
     }
     settingsManager.numberOfEcfOrbitsToDraw = numberOfEcfOrbitsToDraw;
     settingsManager.isDrawInCoverageLines = (<HTMLInputElement>getEl('settings-isDrawInCoverageLines')).checked;
