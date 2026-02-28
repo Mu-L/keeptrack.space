@@ -92,6 +92,7 @@ export enum CruncerMessageTypes {
   SENSOR = 'SENSOR',
   UPDATE_MARKERS = 'UPDATE_MARKERS',
   SUNLIGHT_VIEW = 'SUNLIGHT_VIEW',
+  CAMERA_DATA = 'CAMERA_DATA',
 }
 
 
@@ -111,7 +112,7 @@ const sensorMarkerArray = [0]; // Array of Markers used to show sensor fence and
 let isInterrupted = false; // Boolean used to determine if the worker is interupted
 
 /** TIME VARIABLES */
-const PROPAGATION_INTERVAL = 200 as Milliseconds; // Limits how often the propagation loop runs
+const PROPAGATION_INTERVAL = 1000 as Milliseconds; // Limits how often the propagation loop runs
 let propagationRunning = false; // Prevent Propagation From Running Twice
 let divisor = 1; // When running at high speeds, allow faster propagation
 let dynamicOffsetEpoch = Date.now();
@@ -134,6 +135,21 @@ let isResetSatOverfly = false;
 
 let fieldOfViewSetLength = 0;
 let len: number;
+
+/** TIERED UPDATE SYSTEM */
+let vpMatrix_: Float32Array | null = null;
+let camPosEci_: Float32Array | null = null;
+let isFrustumCullingEnabled_ = true;
+let tierCycleCounter_ = 0;
+let isOnScreen_ = new Uint8Array(0); // 1 = on-screen (update every cycle), 0 = off-screen or occluded
+let lastTierUpdateCycle_ = -1;
+let skipNextVisibilityUpdate_ = false; // Set on time change so fill(1) survives one full cycle
+let lastPropSimTime_ = 0; // ms — simulation time of the last propagation cycle
+const TIER_RECOMPUTE_INTERVAL_ = 5;
+const OFF_SCREEN_UPDATE_INTERVAL_ = 10; // Off-screen/occluded satellites update every 10th cycle (~2s)
+// Slightly larger than Earth radius to account for atmosphere and avoid popping
+const EARTH_OCCLUSION_RADIUS_SQ_ = 6471 * 6471;
+
 /** OBSERVER VARIABLES */
 let sensors: DetailedSensor[] = [];
 
@@ -153,6 +169,11 @@ const resetForCatalogSwap = (newLen: number, fovSetLength: number, seqNum: numbe
   isInterrupted = false;
   isResetFOVBubble = false;
   isResetSatOverfly = false;
+  // Reset tier state so all objects propagate on first cycle after swap
+  tierCycleCounter_ = 0;
+  lastTierUpdateCycle_ = -1;
+  lastPropSimTime_ = 0;
+  isOnScreen_ = new Uint8Array(0);
 };
 
 // Handles Incomming Messages to sat-cruncher from main thread
@@ -208,8 +229,15 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
       propRate = m.data.propRate ?? 1;
       isInterrupted = true;
 
-      // Changing this to 0.1 caused issues...
-      divisor = 1;
+      // Scale propagation frequency linearly with propRate
+      divisor = Math.max(1, Math.abs(propRate));
+
+      // Force all satellites to propagate on next cycle (time jump invalidates extrapolated positions)
+      if (isOnScreen_.length > 0) {
+        isOnScreen_.fill(1);
+      }
+      skipNextVisibilityUpdate_ = true;
+      lastPropSimTime_ = 0;
 
       return;
     case PosCruncherMsgType.OBJ_DATA:
@@ -363,6 +391,17 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
         isSunlightView = m.data.isSunlightView;
       }
       break;
+    case PosCruncherMsgType.CAMERA_DATA:
+      if (m.data.vpMatrix) {
+        vpMatrix_ = m.data.vpMatrix;
+      }
+      if (m.data.camPosEci) {
+        camPosEci_ = m.data.camPosEci;
+      }
+      if (typeof m.data.isFrustumCullingEnabled === 'boolean') {
+        isFrustumCullingEnabled_ = m.data.isFrustumCullingEnabled;
+      }
+      return;
     default:
       // NOTE: For debugging turn this on
 
@@ -379,12 +418,130 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
   }
 };
 
+/**
+ * Tests if a point is inside the view frustum by multiplying by the VP matrix
+ * and checking if NDC coordinates are in range.
+ * Uses a generous margin to account for satellite movement between tier recomputations.
+ *
+ * VP matrix is column-major (gl-matrix convention):
+ *   vp[0..3] = column 0, vp[4..7] = column 1, vp[8..11] = column 2, vp[12..15] = column 3
+ * For row-dot-column: clip.x = vp[0]*x + vp[4]*y + vp[8]*z + vp[12]
+ */
+const isInFrustum_ = (x: number, y: number, z: number, vp: Float32Array): boolean => {
+  const w = vp[3] * x + vp[7] * y + vp[11] * z + vp[15];
+
+  if (w <= 0) {
+    return false; // Behind camera
+  }
+
+  const invW = 1.0 / w;
+  const ndcX = (vp[0] * x + vp[4] * y + vp[8] * z + vp[12]) * invW;
+  const ndcY = (vp[1] * x + vp[5] * y + vp[9] * z + vp[13]) * invW;
+
+  // 1.3 margin accounts for satellites drifting into view between recomputation cycles
+  return ndcX >= -1.3 && ndcX <= 1.3 && ndcY >= -1.3 && ndcY <= 1.3;
+};
+
+/**
+ * Checks if a satellite is occluded by Earth from the camera's perspective.
+ * Uses closest-point-on-segment test: project Earth center (origin) onto
+ * the camera→satellite segment and check distance to Earth surface.
+ */
+const isOccludedByEarth_ = (
+  satX: number, satY: number, satZ: number,
+  camX: number, camY: number, camZ: number,
+): boolean => {
+  const dx = satX - camX;
+  const dy = satY - camY;
+  const dz = satZ - camZ;
+
+  const lenSq = dx * dx + dy * dy + dz * dz;
+
+  if (lenSq === 0) {
+    return false;
+  }
+
+  const dot = -(camX * dx + camY * dy + camZ * dz);
+  const t = dot / lenSq;
+
+  // Earth must be between camera and satellite (0 < t < 1)
+  if (t <= 0 || t >= 1) {
+    return false;
+  }
+
+  const closestX = camX + t * dx;
+  const closestY = camY + t * dy;
+  const closestZ = camZ + t * dz;
+
+  const distSq = closestX * closestX + closestY * closestY + closestZ * closestZ;
+
+  return distSq < EARTH_OCCLUSION_RADIUS_SQ_;
+};
+
+/**
+ * Marks each satellite as on-screen (1) or off-screen/occluded (0).
+ *
+ * On-screen satellites are propagated every cycle.
+ * Off-screen and occluded satellites are propagated every Nth cycle
+ * (staggered by index) and linearly extrapolated in between.
+ *
+ * Only TLE satellites are throttled; stars, land objects, and missiles are always on-screen.
+ */
+const computeScreenVisibility_ = (): void => {
+  if (isOnScreen_.length !== objCache.length) {
+    isOnScreen_ = new Uint8Array(objCache.length);
+    isOnScreen_.fill(1);
+  }
+
+  // If culling is disabled (flat map, polar view) or no camera data yet, mark everything on-screen
+  if (!isFrustumCullingEnabled_ || !vpMatrix_ || !camPosEci_) {
+    isOnScreen_.fill(1);
+
+    return;
+  }
+
+  const cx = camPosEci_[0];
+  const cy = camPosEci_[1];
+  const cz = camPosEci_[2];
+
+  for (let i = 0; i <= len; i++) {
+    // Non-TLE objects are cheap — always on-screen
+    if (!objCache[i]?.satrec) {
+      isOnScreen_[i] = 1;
+      continue;
+    }
+
+    const px = satPos[i * 3];
+    const py = satPos[i * 3 + 1];
+    const pz = satPos[i * 3 + 2];
+
+    // Objects at origin haven't been propagated yet — need initial propagation
+    if (px === 0 && py === 0 && pz === 0) {
+      isOnScreen_[i] = 1;
+      continue;
+    }
+
+    // Occluded by Earth or outside frustum → off-screen
+    // Skip occlusion at high prop rates — satellites move too fast for stale occlusion to be accurate
+    if (propRate <= 60 && isOccludedByEarth_(px, py, pz, cx, cy, cz)) {
+      isOnScreen_[i] = 0;
+    } else {
+      isOnScreen_[i] = isInFrustum_(px, py, pz, vpMatrix_) ? 1 : 0;
+    }
+  }
+};
+
 export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
   // Use mock satCache if we have one
   objCache = mockSatCache || objCache;
 
   const { now, j, gmst, gmstNext, isSunExclusion } = setupTimeVariables(dynamicOffsetEpoch, staticOffset, propRate, isSunlightView, sensors);
 
+  // Compute simulation-time delta for velocity extrapolation of tier-skipped satellites
+  const nowMs = now.getTime();
+  const cycleDtSec = lastPropSimTime_ > 0 ? (nowMs - lastPropSimTime_) / 1000 : 0;
+
+  lastPropSimTime_ = nowMs;
   lastGmst = gmst;
 
   len = isCanSkipMarkers() ? objCache.length - 1 - fieldOfViewSetLength : objCache.length - 1;
@@ -398,7 +555,17 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
     satInSun = isSunlightView && (!satInSun || satInSun === EMPTY_INT8_ARRAY) ? new Int8Array(objCache.length) : EMPTY_INT8_ARRAY;
   }
 
-  updateSatCache(now, j, gmst, gmstNext, isSunExclusion);
+  // Recompute screen visibility periodically (not every cycle to save CPU)
+  // Skip one cycle after a time change so the fill(1) survives and all sats get propagated
+  if (skipNextVisibilityUpdate_) {
+    skipNextVisibilityUpdate_ = false;
+    lastTierUpdateCycle_ = tierCycleCounter_;
+  } else if (tierCycleCounter_ - lastTierUpdateCycle_ >= TIER_RECOMPUTE_INTERVAL_ || lastTierUpdateCycle_ < 0) {
+    computeScreenVisibility_();
+    lastTierUpdateCycle_ = tierCycleCounter_;
+  }
+
+  updateSatCache(now, j, gmst, gmstNext, isSunExclusion, cycleDtSec);
   if (isResetFOVBubble) {
     isResetFOVBubble = false;
     len -= fieldOfViewSetLength;
@@ -410,6 +577,8 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
     sendDataToSatSet();
   }
   isInterrupted = false;
+
+  tierCycleCounter_++;
 
   // Allow more time for propagation if there are multiple sensors
   const delay = isSensors ? 2 : 1;
@@ -432,7 +601,7 @@ export const checkForNaN = (satPos: Float32Array, satVel: Float32Array): void =>
   }
 };
 
-export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSiderealTime, gmstNext: number, isSunExclusion: boolean) => {
+export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSiderealTime, gmstNext: number, isSunExclusion: boolean, cycleDtSec = 0) => {
   let i = -1;
   // Using a while loop since some methods may update multiple cache objects
 
@@ -445,6 +614,18 @@ export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSidereal
 
     // Don't use satnum because of VIMPEL objects
     if (objCache[i].satrec) {
+      // Off-screen satellites: skip SGP4 most cycles, extrapolate with velocity instead
+      // Stagger by satellite index so SGP4 corrections are spread across cycles
+      if (isOnScreen_.length > i && !isOnScreen_[i] && ((tierCycleCounter_ + i) % OFF_SCREEN_UPDATE_INTERVAL_) !== 0) {
+        if (cycleDtSec > 0) {
+          const i3 = i * 3;
+
+          satPos[i3] += satVel[i3] * cycleDtSec;
+          satPos[i3 + 1] += satVel[i3 + 1] * cycleDtSec;
+          satPos[i3 + 2] += satVel[i3 + 2] * cycleDtSec;
+        }
+        continue;
+      }
       isContinue = !updateSatellite(now, i, gmst, j, isSunExclusion);
     } else if (objCache[i].ra) {
       updateStar(i, now, gmst);

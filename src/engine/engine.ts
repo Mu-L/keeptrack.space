@@ -1,10 +1,13 @@
 import { Milliseconds } from '@ootk/src/main';
 import { PluginManager } from '../plugins/plugins';
+import { PosCruncherMsgType } from '../webworker/position-cruncher-messages';
 import { SoundManager } from './audio/sound-manager';
 import { Camera } from './camera/camera';
+import { CameraType } from './camera/camera-type';
 import { Container } from './core/container';
 import { Singletons } from './core/interfaces';
 import { Scene } from './core/scene';
+import { ServiceLocator } from './core/service-locator';
 import { TimeManager } from './core/time-manager';
 import { EventBus } from './events/event-bus';
 import { EventBusEvent } from './events/event-bus-events';
@@ -19,6 +22,8 @@ export interface Application {
 }
 
 export class Engine {
+  private static readonly CAMERA_DATA_SEND_INTERVAL_ = 200; // ms — matches worker propagation interval
+
   private isRunning_ = false;
   private isReady_ = false;
 
@@ -26,6 +31,7 @@ export class Engine {
   private isPaused: boolean = false;
   private isUpdateTimeThrottle_: boolean;
   private lastFrameTime_ = <Milliseconds>0;
+  private lastCameraDataSendTime_ = 0;
 
   // Core engine systems
   readonly renderer: WebGLRenderer;
@@ -137,11 +143,50 @@ export class Engine {
     this.camera.draw(this.renderer.sensorPos);
     this.renderer.render(this.scene, this.camera);
 
+    this.sendCameraDataToWorker_();
+
     if (Engine.isFpsAboveLimit(dt, 5) && !settingsManager.lowPerf && !settingsManager.isDragging && !settingsManager.isDemoModeOn) {
       this.eventBus.emit(EventBusEvent.highPerformanceRender, dt);
     }
 
     this.eventBus.emit(EventBusEvent.endOfDraw, dt);
+  }
+
+  /**
+   * Sends camera VP matrix and ECI position to the position cruncher worker
+   * for off-screen/occluded satellite throttling. Throttled to avoid flooding
+   * the worker message queue.
+   */
+  private sendCameraDataToWorker_(): void {
+    const now = performance.now();
+
+    if (now - this.lastCameraDataSendTime_ < Engine.CAMERA_DATA_SEND_INTERVAL_) {
+      return;
+    }
+    this.lastCameraDataSendTime_ = now;
+
+    let catalogManager;
+
+    try {
+      catalogManager = ServiceLocator.getCatalogManager();
+    } catch {
+      return; // CatalogManager not yet registered
+    }
+
+    if (!catalogManager?.satCruncher) {
+      return;
+    }
+
+    const mainCamera = ServiceLocator.getMainCamera();
+    const isFlatOrPolar = mainCamera.cameraType === CameraType.FLAT_MAP || mainCamera.cameraType === CameraType.POLAR_VIEW;
+    const camPos = mainCamera.getCamPosEarthCentered();
+
+    catalogManager.satCruncher.postMessage({
+      typ: PosCruncherMsgType.CAMERA_DATA,
+      vpMatrix: new Float32Array(this.renderer.projectionCameraMatrix),
+      camPosEci: new Float32Array([camPos[0], camPos[1], camPos[2]]),
+      isFrustumCullingEnabled: !isFlatOrPolar,
+    });
   }
 
   pause() {

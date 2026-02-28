@@ -95,5 +95,9 @@ export interface PositionCruncherIncomingMsg {
     sensor?: SensorObjectCruncher[];
     markerMode?: MarkerMode;
     seqNum?: number;
+    // Camera data for tiered update system
+    vpMatrix?: Float32Array;
+    camPosEci?: Float32Array;
+    isFrustumCullingEnabled?: boolean;
   };
 }

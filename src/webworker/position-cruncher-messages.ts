@@ -20,6 +20,7 @@ export const enum PosCruncherMsgType {
   UPDATE_MARKERS = 5,
   SUNLIGHT_VIEW = 6,
   SATELLITE_SELECTED = 7,
+  CAMERA_DATA = 8,
 }
 
 export enum MarkerMode {
@@ -83,6 +84,13 @@ export interface PosCruncherMsgSatSelected {
   satelliteSelected: number[];
 }
 
+export interface PosCruncherMsgCameraData {
+  typ: PosCruncherMsgType.CAMERA_DATA;
+  vpMatrix: Float32Array;
+  camPosEci: Float32Array;
+  isFrustumCullingEnabled: boolean;
+}
+
 export type PosCruncherInMsg =
   | PosCruncherMsgObjData
   | PosCruncherMsgOffset
@@ -91,7 +99,8 @@ export type PosCruncherInMsg =
   | PosCruncherMsgSensor
   | PosCruncherMsgUpdateMarkers
   | PosCruncherMsgSunlightView
-  | PosCruncherMsgSatSelected;
+  | PosCruncherMsgSatSelected
+  | PosCruncherMsgCameraData;
 
 // ─── Outgoing Messages (Worker → Main Thread) ──────────────────────────────
 
