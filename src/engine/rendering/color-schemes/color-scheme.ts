@@ -1,11 +1,10 @@
 import { DensityBin } from '@app/app/data/catalog-manager';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { BaseObject, Star } from '@app/engine/ootk/src/objects';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { SpaceObjectType } from '@ootk/src/main';
-import { CameraType } from '../../camera/camera';
 
 export interface ColorSchemeColorMap {
   version: string;
@@ -141,10 +140,7 @@ export abstract class ColorScheme {
   onSelected(): void {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
-    catalogManagerInstance.satCruncher.postMessage({
-      isSunlightView: false,
-      typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-    });
+    catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(false);
   }
 
   calculateParams(): {

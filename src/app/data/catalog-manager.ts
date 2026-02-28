@@ -34,7 +34,6 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import { KeepTrack } from '@app/keeptrack';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import {
   BaseObject, Degrees,
   KilometersPerSecond, Radians,
@@ -64,6 +63,8 @@ declare module '@app/engine/core/interfaces' {
     // JSON string
     satId?: number;
     sensorMarkerArray?: number[];
+    /** Catalog sequence number for discarding stale messages after catalog swap */
+    seqNum?: number;
   }
   interface UserSettings {
     installDirectory: string;
@@ -113,7 +114,12 @@ export class CatalogManager {
   orbitalPlaneDensity: number[][] = [];
   orbitalPlaneDensityMax = 0;
   orbitalSats: number;
-  satCruncher: Worker;
+  satCruncherThread: SatCruncherThreadManager;
+  /** @deprecated Use satCruncherThread instead */
+  get satCruncher(): Worker {
+    return this.satCruncherThread?.worker as Worker;
+  }
+
   objectCache: BaseObject[];
   satExtraData;
   satLinkManager: SatLinkManager;
@@ -333,18 +339,22 @@ export class CatalogManager {
 
   init(satCruncherOveride?: Worker): void {
     if (!satCruncherOveride) {
-      const satCruncherThreadManager = new SatCruncherThreadManager(KeepTrack.getInstance().threads);
+      const threadManager = new SatCruncherThreadManager(KeepTrack.getInstance().threads);
 
       SplashScreen.loadStr(SplashScreen.msg.elsets);
-      satCruncherThreadManager.init();
+      threadManager.init();
 
-      if (satCruncherThreadManager.worker === null) {
+      if (threadManager.worker === null) {
         throw new Error('satCruncher worker is null');
       }
 
-      this.satCruncher = satCruncherThreadManager.worker;
+      this.satCruncherThread = threadManager;
     } else {
-      this.satCruncher = satCruncherOveride;
+      // Test/override path: wrap the raw Worker in a minimal thread manager
+      const threadManager = new SatCruncherThreadManager(KeepTrack.getInstance().threads);
+
+      threadManager.init(satCruncherOveride);
+      this.satCruncherThread = threadManager;
     }
   }
 
@@ -506,15 +516,7 @@ export class CatalogManager {
         id,
       });
 
-      const m = {
-        typ: CruncerMessageTypes.SAT_EDIT,
-        id,
-        active: true,
-        tle1,
-        tle2,
-      };
-
-      this.satCruncher.postMessage(m);
+      this.satCruncherThread.sendSatEdit(id, tle1, tle2, true);
       ServiceLocator.getOrbitManager().changeOrbitBufferData(id, tle1, tle2);
       const sat = this.objectCache[id] as Satellite;
 

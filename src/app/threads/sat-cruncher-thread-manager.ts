@@ -1,17 +1,103 @@
-import { SatCruncherMessageData } from '@app/engine/core/interfaces';
+import { SatCruncherMessageData, SensorObjectCruncher } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { SpaceObjectType } from '@app/engine/ootk/src/main';
+import { Degrees, Kilometers, SpaceObjectType } from '@app/engine/ootk/src/main';
 import { Satellite } from '@app/engine/ootk/src/objects';
 import { WebWorkerThreadManager } from '@app/engine/threads/web-worker-thread';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
+import { MarkerMode, PosCruncherMsgType } from '@app/webworker/position-cruncher-messages';
 
 export class SatCruncherThreadManager extends WebWorkerThreadManager {
   readonly WEB_WORKER_CODE: string = 'js/positionCruncher.js';
 
+  private currentSeqNum_ = 0;
+
+  // ─── Typed Send Methods ─────────────────────────────────────────────
+
+  sendCatalogData(dat: string, fieldOfViewSetLength: number, isLowPerf?: boolean): void {
+    this.currentSeqNum_++;
+    this.postMessage({
+      typ: PosCruncherMsgType.OBJ_DATA,
+      dat,
+      fieldOfViewSetLength,
+      isLowPerf,
+      seqNum: this.currentSeqNum_,
+    });
+  }
+
+  sendTimeSync(staticOffset: number, dynamicOffsetEpoch: number, propRate: number): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.OFFSET,
+      staticOffset,
+      dynamicOffsetEpoch,
+      propRate,
+    });
+  }
+
+  sendSatEdit(id: number, tle1: string, tle2: string, active?: boolean): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.SAT_EDIT,
+      id,
+      tle1,
+      tle2,
+      active,
+    });
+  }
+
+  sendNewMissile(data: {
+    id: number;
+    active: boolean;
+    type?: number;
+    latList: Degrees[];
+    lonList: Degrees[];
+    altList: Kilometers[];
+    startTime: number;
+  }): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.NEW_MISSILE,
+      ...data,
+    });
+  }
+
+  sendSensorUpdate(sensors: Partial<SensorObjectCruncher>[]): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.SENSOR,
+      sensor: sensors,
+    });
+  }
+
+  sendSunlightViewToggle(enabled: boolean): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.SUNLIGHT_VIEW,
+      isSunlightView: enabled,
+    });
+  }
+
+  sendMarkerUpdate(fieldOfViewSetLength?: number, markerMode?: MarkerMode): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.UPDATE_MARKERS,
+      fieldOfViewSetLength,
+      markerMode,
+    });
+  }
+
+  sendSatelliteSelected(ids: number[]): void {
+    this.postMessage({
+      typ: PosCruncherMsgType.SATELLITE_SELECTED,
+      satelliteSelected: ids,
+    });
+  }
+
+  // ─── Incoming Message Handler ───────────────────────────────────────
+
   protected onMessage({ data: mData }: { data: SatCruncherMessageData }) {
     if (!mData) {
+      return;
+    }
+
+    // Discard stale messages from old catalog
+    if (typeof mData.seqNum === 'number' && mData.seqNum < this.currentSeqNum_) {
       return;
     }
 
@@ -80,6 +166,9 @@ export class SatCruncherThreadManager extends WebWorkerThreadManager {
    * array before propagation has filled it with real positions.  Accepting such data
    * would trigger onCruncherReady prematurely.  We sample a few entries to avoid the
    * cost of scanning the entire array.
+   *
+   * Note: sequence number tracking (seqNum) provides the primary guard against stale
+   * catalog data. This check remains as a secondary safeguard.
    */
   private static isPositionDataAllZeros_(positionData: Float32Array): boolean {
     if (positionData.length === 0) {

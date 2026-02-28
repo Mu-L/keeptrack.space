@@ -13,7 +13,6 @@ import { slideInRight } from '@app/engine/utils/slide';
 import { triggerSubmit } from '@app/engine/utils/trigger-submit';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { Degrees, Kilometers, SpaceObjectType, ZoomValue } from '@ootk/src/main';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import sensorAddPng from '@public/img/icons/sensor-add.png';
@@ -166,10 +165,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
         (<HTMLInputElement>getEl('cs-hei')).value = '0';
         (<HTMLInputElement>getEl('cs-type')).value = 'Observer';
         triggerSubmit(<HTMLFormElement>getEl('customSensor'));
-        catalogManagerInstance.satCruncher.postMessage({
-          isSunlightView: true,
-          typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-        });
+        catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(true);
         waitForCruncher({
           cruncher: catalogManagerInstance.satCruncher,
           cb: () => {
@@ -202,10 +198,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
             Object.values(colorSchemeManagerInstance.colorSchemeInstances)[0];
 
           colorSchemeManagerInstance.setColorScheme(defaultColorScheme, true);
-          catalogManagerInstance.satCruncher.postMessage({
-            isSunlightView: false,
-            typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-          });
+          catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(false);
         }
         break;
       case 'colors-confidence-rmb':

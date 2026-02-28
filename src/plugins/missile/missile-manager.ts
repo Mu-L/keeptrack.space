@@ -9,7 +9,6 @@ import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { MissileParams, ToastMsgType } from '@app/engine/core/interfaces';
 import { RADIUS_OF_EARTH } from '@app/engine/utils/constants';
 import { jday } from '@app/engine/utils/transforms';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { DEG2RAD, Degrees, TemeVec3, Kilometers, KilometersPerSecond, MILLISECONDS_TO_DAYS, RAD2DEG, Sgp4, SpaceObjectType, ecefRad2rae, eci2ecef, eci2lla } from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SettingsMenuPlugin } from '../settings-menu/settings-menu';
@@ -69,13 +68,8 @@ export const MassRaidPre = async (time: number, simFile: string) => {
 
         if (missileObj) {
           missileObj.id = satSetLen - 500 + i;
-          catalogManagerInstance.satCruncher.postMessage({
+          catalogManagerInstance.satCruncherThread.sendNewMissile({
             id: missileObj.id,
-            typ: CruncerMessageTypes.NEW_MISSILE,
-            name: `M00${missileObj.id}`,
-            satId: missileObj.id,
-            static: true,
-            missile: true,
             active: missileObj.active,
             type: missileObj.type,
             latList: missileObj.latList,
@@ -123,14 +117,10 @@ export const clearMissiles = () => {
     cachedMissile.velocity ??= { x: 0, y: 0, z: 0 } as TemeVec3<KilometersPerSecond>;
     cachedMissile.totalVelocity ??= 0;
 
-    catalogManagerInstance.satCruncher.postMessage({
+    catalogManagerInstance.satCruncherThread.sendNewMissile({
       id: missileObj.id,
-      typ: CruncerMessageTypes.NEW_MISSILE,
-      ON: `RV_${missileObj.id}`,
-      satId: missileObj.id,
       active: missileObj.active,
       type: missileObj.type,
-      name: missileObj.id,
       latList: missileObj.latList,
       lonList: missileObj.lonList,
       altList: missileObj.altList,
@@ -566,14 +556,10 @@ export const Missile = (
     missileArray.push(missileObj);
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
-    catalogManagerInstance.satCruncher.postMessage({
+    catalogManagerInstance.satCruncherThread.sendNewMissile({
       id: missileObj.id,
-      typ: CruncerMessageTypes.NEW_MISSILE,
-      ON: `RV_${missileObj.id}`, // Don't think catalogManagerInstance.satCruncher needs this
-      satId: missileObj.id,
       active: missileObj.active,
       type: missileObj.type,
-      name: missileObj.id,
       latList: missileObj.latList,
       lonList: missileObj.lonList,
       altList: missileObj.altList,

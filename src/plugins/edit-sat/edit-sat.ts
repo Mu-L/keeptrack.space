@@ -18,7 +18,6 @@ import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { StringPad } from '@app/engine/utils/stringPad';
 import { t7e } from '@app/locales/keys';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { BaseObject, FormatTle, OrbitFinder, Satellite, SatelliteRecord, Sgp4, TleLine1, ZoomValue, eci2lla } from '@ootk/src/main';
 import editSatellitePng from '@public/img/icons/edit-satellite.png';
 import { saveAs } from 'file-saver';
@@ -399,12 +398,7 @@ export class EditSat extends KeepTrackPlugin {
         return;
       }
 
-      catalogManagerInstance.satCruncher.postMessage({
-        typ: CruncerMessageTypes.SAT_EDIT,
-        id,
-        tle1,
-        tle2,
-      });
+      catalogManagerInstance.satCruncherThread.sendSatEdit(id, tle1, tle2);
       const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
       orbitManagerInstance.changeOrbitBufferData(id, tle1, tle2);
@@ -473,13 +467,7 @@ export class EditSat extends KeepTrackPlugin {
     }
 
     if (SatMath.altitudeCheck(satrec, ServiceLocator.getTimeManager().simulationTimeObj) > 1) {
-      catalogManagerInstance.satCruncher.postMessage({
-        typ: CruncerMessageTypes.SAT_EDIT,
-        id: satId,
-        active: true,
-        tle1,
-        tle2,
-      });
+      catalogManagerInstance.satCruncherThread.sendSatEdit(satId, tle1, tle2, true);
       const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
       orbitManagerInstance.changeOrbitBufferData(satId, tle1, tle2);
@@ -575,13 +563,7 @@ export class EditSat extends KeepTrackPlugin {
       return;
     }
     if (SatMath.altitudeCheck(satrec, timeManagerInstance.simulationTimeObj) > 1) {
-      catalogManagerInstance.satCruncher.postMessage({
-        typ: CruncerMessageTypes.SAT_EDIT,
-        id: sat.id,
-        active: true,
-        tle1: object.tle1,
-        tle2: object.tle2,
-      });
+      catalogManagerInstance.satCruncherThread.sendSatEdit(sat.id, object.tle1, object.tle2, true);
       orbitManagerInstance.changeOrbitBufferData(sat.id, object.tle1, object.tle2);
       sat.active = true;
     } else {

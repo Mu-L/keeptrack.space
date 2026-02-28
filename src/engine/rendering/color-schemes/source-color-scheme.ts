@@ -1,11 +1,11 @@
 /* eslint-disable complexity */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { html } from '@app/engine/utils/development/formatter';
 import { BaseObject, Satellite, Star } from '@ootk/src/main';
-import { CameraType } from '../../camera/camera';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
   sourceUssf: rgbaArray;

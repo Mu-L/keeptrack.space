@@ -1,8 +1,6 @@
 import { SatMath } from '@app/app/analysis/sat-math';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { t7e } from '@app/locales/keys';
-import { CruncherInMsgTimeSync } from '@app/webworker/orbit-cruncher-interfaces';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { getDayOfYear, GreenwichMeanSiderealTime, Milliseconds } from '@ootk/src/main';
 import { DateTimeManager } from '../../plugins/date-time-manager/date-time-manager';
 import { EventBus } from '../events/event-bus';
@@ -380,20 +378,10 @@ export class TimeManager {
 
   synchronize() {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
-    const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
     EventBus.getInstance().emit(EventBusEvent.updateDateTime, new Date(this.dynamicOffsetEpoch + this.staticOffset));
 
-    const message = {
-      typ: CruncerMessageTypes.OFFSET,
-      type: CruncerMessageTypes.OFFSET,
-      staticOffset: this.staticOffset,
-      dynamicOffsetEpoch: this.dynamicOffsetEpoch,
-      propRate: this.propRate,
-    } as CruncherInMsgTimeSync;
-
-    catalogManagerInstance.satCruncher.postMessage(message);
-    orbitManagerInstance.orbitThreadMgr.postMessage(message);
+    catalogManagerInstance.satCruncherThread.sendTimeSync(this.staticOffset, this.dynamicOffsetEpoch, this.propRate);
   }
 
   private isLeapYear(date: Date): boolean {

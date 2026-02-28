@@ -18,7 +18,6 @@ import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { t7e } from '@app/locales/keys';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { BaseObject, eci2lla, Kilometers, OrbitFinder, Satellite, Tle, TleLine1, TleLine2 } from '@ootk/src/main';
 import streamPng from '@public/img/icons/stream.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
@@ -340,12 +339,7 @@ export class Breakup extends KeepTrackPlugin {
     });
 
     catalogManagerInstance.objectCache[satId] = newSat;
-    catalogManagerInstance.satCruncher.postMessage({
-      typ: CruncerMessageTypes.SAT_EDIT,
-      id: satId,
-      tle1,
-      tle2,
-    });
+    catalogManagerInstance.satCruncherThread.sendSatEdit(satId, tle1, tle2);
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
     orbitManagerInstance.changeOrbitBufferData(satId, tle1, tle2);
@@ -457,13 +451,7 @@ export class Breakup extends KeepTrackPlugin {
 
         if (SatMath.altitudeCheck(newSat.satrec!, simulationTimeObj) > 1) {
           catalogManagerInstance.objectCache[satId] = newSat;
-          catalogManagerInstance.satCruncher.postMessage({
-            typ: CruncerMessageTypes.SAT_EDIT,
-            id: satId,
-            active: true,
-            tle1: iTle1,
-            tle2: iTle2,
-          });
+          catalogManagerInstance.satCruncherThread.sendSatEdit(satId, iTle1, iTle2, true);
           orbitManagerInstance.changeOrbitBufferData(satId, iTle1, iTle2);
         } else {
           errorManagerInstance.warn(t7e('plugins.Breakup.errorMsgs.BreakupGeneratorFailed'));

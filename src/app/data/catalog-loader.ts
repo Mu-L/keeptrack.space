@@ -5,7 +5,7 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { CelestialBody } from '@app/engine/rendering/draw-manager/celestial-bodies/celestial-body';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { StringPad } from '@app/engine/utils/stringPad';
-import { CruncerMessageTypes, CruncherSat } from '@app/webworker/positionCruncher';
+import { CruncherSat } from '@app/webworker/positionCruncher';
 import {
   BaseObject,
   CatalogSource,
@@ -330,12 +330,11 @@ export class CatalogLoader {
       const satDataString = CatalogLoader.getSatDataString_(catalogManagerInstance.objectCache);
 
       /** Send satDataString to satCruncher to begin propagation loop */
-      catalogManagerInstance.satCruncher.postMessage({
-        typ: CruncerMessageTypes.OBJ_DATA,
-        dat: satDataString,
-        fieldOfViewSetLength: catalogManagerInstance.fieldOfViewSet.length,
-        isLowPerf: settingsManager.lowPerf,
-      });
+      catalogManagerInstance.satCruncherThread.sendCatalogData(
+        satDataString,
+        catalogManagerInstance.fieldOfViewSet.length,
+        settingsManager.lowPerf,
+      );
     });
   }
 

@@ -19,7 +19,6 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { t7e } from '@app/locales/keys';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import {
   BaseObject, Degrees,
   FormatTle, KilometersPerSecond,
@@ -337,13 +336,7 @@ export class NewLaunch extends KeepTrackPlugin {
         name: sat.name,
       };
 
-      catalogManagerInstance.satCruncher.postMessage({
-        typ: CruncerMessageTypes.SAT_EDIT,
-        id,
-        active: true,
-        tle1,
-        tle2,
-      });
+      catalogManagerInstance.satCruncherThread.sendSatEdit(id, tle1, tle2, true);
 
       const orbitManagerInstance = ServiceLocator.getOrbitManager();
 

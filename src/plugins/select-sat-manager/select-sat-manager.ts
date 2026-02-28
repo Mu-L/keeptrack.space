@@ -1,4 +1,4 @@
-import { CameraType } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { GetSatType, SolarBody, ToastMsgType } from '@app/engine/core/interfaces';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 
@@ -14,7 +14,6 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { t7e } from '@app/locales/keys';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { createSampleCovarianceFromTle, Kilometers, LandObject, RADIUS_OF_EARTH, Satellite, SpaceObjectType, TemeVec3 } from '@ootk/src/main';
 import { vec3 } from 'gl-matrix';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
@@ -379,10 +378,7 @@ export class SelectSatManager extends KeepTrackPlugin {
   }
 
   private static updateCruncher_(i: number) {
-    ServiceLocator.getCatalogManager().satCruncher.postMessage({
-      typ: CruncerMessageTypes.SATELLITE_SELECTED,
-      satelliteSelected: [i],
-    });
+    ServiceLocator.getCatalogManager().satCruncherThread.sendSatelliteSelected([i]);
   }
 
   private updateDotSizeAndColor_(i: number) {

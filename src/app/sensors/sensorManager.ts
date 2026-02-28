@@ -41,7 +41,6 @@ import { lat2pitch, lon2yaw } from '@app/engine/utils/transforms';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { t7e } from '@app/locales/keys';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { DEG2RAD, GreenwichMeanSiderealTime, Radians, SpaceObjectType, Sun, ZoomValue, calcGmst, lla2eci, spaceObjType2Str } from '@ootk/src/main';
 import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
 import { SensorFov } from '../../plugins/sensor-fov/sensor-fov';
@@ -279,10 +278,7 @@ export class SensorManager {
     this.setSensor(null); // Pass sensorId to identify which sensor the user clicked
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
-    catalogManagerInstance.satCruncher.postMessage({
-      typ: CruncerMessageTypes.SENSOR,
-      sensor: [],
-    });
+    catalogManagerInstance.satCruncherThread.sendSensorUpdate([]);
 
     PluginRegistry.getPlugin(SensorFov)?.disableFovView();
     PluginRegistry.getPlugin(SensorSurvFence)?.disableSurvView();
@@ -645,9 +641,6 @@ export class SensorManager {
       ServiceLocator.getScene().sensorFovFactory.generateSensorFovMesh(sensor);
     }
 
-    catalogManagerInstance.satCruncher.postMessage({
-      typ: CruncerMessageTypes.SENSOR,
-      sensor: combinedSensors,
-    });
+    catalogManagerInstance.satCruncherThread.sendSensorUpdate(combinedSensors);
   }
 }

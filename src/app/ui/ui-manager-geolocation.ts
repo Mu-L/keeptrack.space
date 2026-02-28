@@ -2,7 +2,6 @@ import { GeolocationPosition, SensorGeolocation } from '@app/engine/core/interfa
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { Degrees, Kilometers, ZoomValue } from '@ootk/src/main';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
@@ -32,10 +31,7 @@ export class UiGeolocation {
       maxRng: maxrange,
     } as DetailedSensor;
 
-    catalogManagerInstance.satCruncher.postMessage({
-      typ: CruncerMessageTypes.SENSOR,
-      sensor: sensorInfo,
-    });
+    catalogManagerInstance.satCruncherThread.sendSensorUpdate([sensorInfo]);
 
     SensorManager.updateSensorUiStyling([sensorInfo]);
 

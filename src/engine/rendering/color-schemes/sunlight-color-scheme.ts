@@ -7,7 +7,6 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { BaseObject, Satellite, Star } from '@ootk/src/main';
 import { ColorScheme } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -46,10 +45,7 @@ export class SunlightColorScheme extends ColorScheme {
         const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
         if (colorSchemeManagerInstance.currentColorScheme === this) {
-          catalogManagerInstance.satCruncher.postMessage({
-            isSunlightView: true,
-            typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-          });
+          catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(true);
         }
       },
     );
@@ -70,10 +66,7 @@ export class SunlightColorScheme extends ColorScheme {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-    catalogManagerInstance.satCruncher.postMessage({
-      isSunlightView: true,
-      typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-    });
+    catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(true);
     waitForCruncher({
       cruncher: catalogManagerInstance.satCruncher,
       cb: () => {

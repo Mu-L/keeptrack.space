@@ -28,7 +28,6 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { saveAs } from 'file-saver';
 
 type T7eKey = Parameters<typeof t7e>[0];
@@ -921,13 +920,7 @@ export class CreateSat extends KeepTrackPlugin {
 
       // Update satellite cruncher
       try {
-        catalogManagerInstance.satCruncher.postMessage({
-          typ: CruncerMessageTypes.SAT_EDIT,
-          active: true,
-          id: satId,
-          tle1,
-          tle2,
-        });
+        catalogManagerInstance.satCruncherThread.sendSatEdit(satId, tle1, tle2, true);
       } catch (e) {
         errorManagerInstance.error(e as Error, 'create-sat.ts', 'Sat Cruncher message failed');
       }
