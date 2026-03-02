@@ -83,11 +83,10 @@ export class OrbitalSettings {
    */
   orbitFadeFactor = 0.6;
 
-  // ECF Orbits
   /**
-   * Show GEO Orbits in ECF vs ECI
+   * Show Orbits in ECF vs ECI
    */
-  isOrbitCruncherInEcf = true;
+  isOrbitCruncherInEcf = false;
   /**
    * If ECF Orbits are drawn, this is the number of orbits to draw.
    */

@@ -45,7 +45,7 @@ export const stemEnvironment = (settingsManager: SettingsManager) => {
 
   settingsManager.isShowLoadingHints = false; // Disable Loading Hints
 
-  settingsManager.splashScreenList = ['epfl-1', 'epfl-2', 'thule', 'rocket', 'cubesat'];
+  settingsManager.splashScreenList = ['epfl-1', 'epfl-2', 'thule', 'rocket'];
 
   settingsManager.isDisableAsciiCatalog = true;
   settingsManager.defaultColorScheme = 'CelestrakColorScheme';

@@ -155,16 +155,22 @@ export abstract class SplashScreen {
   }
 
   static loadImages() {
-    const allowedNames = new Set(settingsManager.splashScreenList);
+    const splashList = settingsManager.splashScreenList;
 
-    if (this.splashScreenImgList_ !== null && allowedNames.size > 0) {
-      // Filter images whose file name (without extension) matches an entry in splashScreenList
+    // null = show all (no filtering); non-null = filter to allowed names only
+    if (splashList !== null) {
+      const allowedNames = new Set(splashList);
+
       this.splashScreenImgList_ = this.splashScreenImgList_.filter((imgPath) => {
         const fileName = imgPath.split('/').pop()?.split('.')[0]?.toLowerCase();
 
-
         return fileName && allowedNames.has(fileName);
       });
+    }
+
+    // If no images remain, skip setting background
+    if (this.splashScreenImgList_.length === 0) {
+      return;
     }
 
     // Randomly load a splash screen - not a vulnerability

@@ -85,7 +85,6 @@ export class SatConstellations extends KeepTrackPlugin {
     return {
       html: this.buildSecondaryMenuHtml_(),
       width: 280,
-      icon: 'tune',
     };
   }
 
@@ -195,7 +194,6 @@ export class SatConstellations extends KeepTrackPlugin {
 
     return html`
       <ul id="sc-constellation-list">
-        <li class="divider"></li>
         <li class="menu-selectable" data-group="SpaceStations">${l('SpaceStations')}</li>
         <li class="menu-selectable" data-group="AmateurRadio">${l('AmateurRadio')}</li>
         <li class="menu-selectable" data-group="GPSGroup">${l('GPSGroup')}</li>

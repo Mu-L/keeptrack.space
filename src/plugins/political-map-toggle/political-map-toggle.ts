@@ -1,5 +1,7 @@
 import { SoundNames } from '@app/engine/audio/sounds';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { IBottomIconConfig, ICommandPaletteCommand, IconPlacement, IKeyboardShortcut, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import mapImage from '@public/img/icons/map.png';
@@ -20,6 +22,17 @@ export class PoliticalMapToggle extends KeepTrackPlugin {
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,
     };
+  }
+
+  addJs(): void {
+    super.addJs();
+
+    // Sync button state with the setting at launch — political map may already be on
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, () => {
+      if (settingsManager.isDrawPoliticalMap) {
+        this.setBottomIconToSelected();
+      }
+    });
   }
 
   getKeyboardShortcuts(): IKeyboardShortcut[] {

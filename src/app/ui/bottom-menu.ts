@@ -107,12 +107,58 @@ export class BottomMenu {
       showEl('nav-footer');
     }
 
+    BottomMenu.updateUtilitySectionVisibility_();
+
     const bottomContainer = getEl('bottom-icons-container');
 
     if (bottomContainer) {
       const bottomHeight = bottomContainer.offsetHeight;
 
       document.documentElement.style.setProperty('--bottom-menu-top', `${bottomHeight}px`);
+    }
+  }
+
+  /**
+   * Hides utility panel sections whose icon containers are empty.
+   * Each section consists of a header, an icons container, and an optional trailing divider.
+   */
+  private static updateUtilitySectionVisibility_() {
+    const containerIds = [
+      BottomMenu.utilityCameraContainerId,
+      BottomMenu.utilityLayerContainerId,
+      BottomMenu.utilitySettingsContainerId,
+    ];
+
+    let anyVisible = false;
+
+    for (const id of containerIds) {
+      const iconsEl = getEl(id);
+
+      if (!iconsEl) {
+        continue;
+      }
+
+      const isEmpty = iconsEl.children.length === 0;
+      const header = iconsEl.previousElementSibling as HTMLElement | null;
+      const divider = iconsEl.nextElementSibling as HTMLElement | null;
+
+      iconsEl.style.display = isEmpty ? 'none' : '';
+      if (header?.classList.contains('utility-section-header')) {
+        header.style.display = isEmpty ? 'none' : '';
+      }
+      if (divider?.classList.contains('utility-section-divider')) {
+        divider.style.display = isEmpty ? 'none' : '';
+      }
+
+      if (!isEmpty) {
+        anyVisible = true;
+      }
+    }
+
+    const utilityPanel = getEl(BottomMenu.utilityPanelId);
+
+    if (utilityPanel) {
+      utilityPanel.style.display = anyVisible ? '' : 'none';
     }
   }
 

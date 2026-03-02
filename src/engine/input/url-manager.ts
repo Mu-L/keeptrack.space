@@ -15,6 +15,7 @@ export abstract class UrlManager {
   private static selectedSat_: Satellite | null = null;
   private static searchString_: string = '';
   private static propRate_: number;
+  private static readonly MAX_URL_LENGTH_ = 2000;
   private static readonly colorSchemeDefinitions_ = {
     'type': 'ObjectTypeColorScheme',
     'celestrak': 'CelestrakColorScheme',
@@ -374,6 +375,28 @@ export abstract class UrlManager {
 
     if (paramSlices.length > 0) {
       url += `?${paramSlices.join('&')}`;
+    }
+
+    // Drop heavy params progressively to stay under the URL length limit and avoid 431 errors
+    if (url.length > UrlManager.MAX_URL_LENGTH_) {
+      const heavyKeys = ['tle', 'external-only', 'search', 'limitSats'];
+
+      for (const dropKey of heavyKeys) {
+        const idx = paramSlices.findIndex((s) => s.startsWith(`${dropKey}=`) || s.startsWith(`${dropKey}%`));
+
+        if (idx !== -1) {
+          paramSlices.splice(idx, 1);
+          url = paramSlices.length > 0 ? `${arr[0]}?${paramSlices.join('&')}` : arr[0];
+          if (url.length <= UrlManager.MAX_URL_LENGTH_) {
+            break;
+          }
+        }
+      }
+    }
+
+    // If still too long after dropping heavy params, skip the update entirely
+    if (url.length > UrlManager.MAX_URL_LENGTH_) {
+      return;
     }
 
     if (url !== window.location.href) {
