@@ -63,11 +63,11 @@ export class GraphicsSettings {
   /**
    * The number of latitude segments used to render the Earth object.
    */
-  earthNumLatSegs = 128;
+  earthNumLatSegs = 256;
   /**
    * The number of longitude segments used to render the Earth.
    */
-  earthNumLonSegs = 128;
+  earthNumLonSegs = 256;
 
   // Atmosphere and Aurora
   /**

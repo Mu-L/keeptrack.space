@@ -34,6 +34,7 @@ import { ShaderMaterial } from '@app/engine/rendering/shader-material';
 import { SphereGeometry } from '@app/engine/rendering/sphere-geometry';
 import { RADIUS_OF_EARTH } from '@app/engine/utils/constants';
 import { glsl } from '@app/engine/utils/development/formatter';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { EpochUTC, J2000, Kilometers, KilometersPerSecond, Seconds, Sun, TEME, Vector3D } from '@ootk/src/main';
 import { BackdatePosition as backdatePosition, Body, KM_PER_AU } from 'astronomy-engine';
@@ -105,7 +106,7 @@ export class Earth {
   surfaceMesh: Mesh;
   atmosphereMesh: Mesh | null = null;
   imageCache: Record<string, HTMLImageElement> = {};
-  cloudPosition_: number = Math.random() * 8192; // Randomize the cloud position
+  cloudPosition_: number = 0;
   RADIUS: number = RADIUS_OF_EARTH;
   position = <vec3>[0, 0, 0];
   planetObject: Planet | null = null;
@@ -176,7 +177,7 @@ export class Earth {
     occlusionPrgm.uniformSetup(this.modelViewMatrix_, pMatrix, camMatrix);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.surfaceMesh.geometry.getIndex());
-    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, this.surfaceMesh.geometry.indexType, 0);
 
     /*
      * DEBUG:
@@ -228,6 +229,7 @@ export class Earth {
             uSpecMap: <WebGLUniformLocation><unknown>null,
             uPoliticalMap: <WebGLUniformLocation><unknown>null,
             uCloudsMap: <WebGLUniformLocation><unknown>null,
+            uRawZoomLevel: <WebGLUniformLocation><unknown>null,
             uisDrawNightAsDay: <WebGLUniformLocation><unknown>null,
           },
           vertexShader: this.shaders.surfaceVert,
@@ -323,9 +325,11 @@ export class Earth {
     this.glowDirection_ = this.glowNumber_ > 1 ? -1 : this.glowDirection_;
     this.glowDirection_ = this.glowNumber_ < 0 ? 1 : this.glowDirection_;
 
-    // Update the cloud position
-    this.cloudPosition_ += 0.00000025 * ServiceLocator.getTimeManager().propRate; // Slowly drift the clouds, but enough to see the effect
-    this.cloudPosition_ = this.cloudPosition_ > 8192 ? 0 : this.cloudPosition_; // Reset the cloud position when it reaches 8192 - the width of the texture
+    const timeManager = ServiceLocator.getTimeManager();
+    // Derive cloud position from simulation time so clouds move correctly during time changes
+    const msPerFullRotation = 5 * 24 * 60 * 60 * 1000; // ~10 days for a full texture cycle
+
+    this.cloudPosition_ = (timeManager.simulationTimeObj.getTime() % msPerFullRotation) / msPerFullRotation;
   }
 
   private getSrc_(base: string, resolution: string | undefined, extension = 'jpg'): string {
@@ -426,7 +430,7 @@ export class Earth {
       );
     }
 
-    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, this.surfaceMesh.geometry.indexType, 0);
 
     if (!settingsManager.isMobileModeEnabled) {
       gl.disable(gl.SCISSOR_TEST);
@@ -452,12 +456,15 @@ export class Earth {
     this.setSurfaceUniforms_(gl);
     this.setTextures_(gl);
 
-    gl.disable(gl.BLEND);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.depthMask(true);
 
     gl.bindVertexArray(this.surfaceMesh.geometry.vao);
-    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, this.surfaceMesh.geometry.indexType, 0);
     gl.bindVertexArray(null);
+
+    gl.disable(gl.BLEND);
   }
 
   private drawEarthAtmosphere_(tgtBuffer: WebGLFramebuffer | null) {
@@ -488,7 +495,7 @@ export class Earth {
     gl.polygonOffset(0.0, -RADIUS_OF_EARTH * 50 * (1 - ServiceLocator.getMainCamera().zoomLevel()));
 
     gl.bindVertexArray(this.atmosphereMesh.geometry.vao);
-    gl.drawElements(gl.TRIANGLES, this.atmosphereMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.atmosphereMesh.geometry.indexLength, this.atmosphereMesh.geometry.indexType, 0);
     gl.bindVertexArray(null);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -513,6 +520,10 @@ export class Earth {
     const isEarthCenterBody = settingsManager.centerBody === SolarBody.Earth;
 
     gl.uniform1f(this.surfaceMesh.material.uniforms.uZoomLevel, isEarthCenterBody ? (ServiceLocator.getMainCamera().zoomLevel() / 2) ** (1 / 2) : 1.0);
+    const camType = ServiceLocator.getMainCamera().cameraType;
+    const isSatMode = camType === CameraType.FIXED_TO_SAT_LVLH || camType === CameraType.FIXED_TO_SAT_ECI;
+
+    gl.uniform1f(this.surfaceMesh.material.uniforms.uRawZoomLevel, !isEarthCenterBody || isSatMode ? 1.0 : ServiceLocator.getMainCamera().zoomLevel());
     gl.uniform1f(this.surfaceMesh.material.uniforms.uisGrayScale, settingsManager.isEarthGrayScale ? 1.0 : 0.0);
     gl.uniform1f(this.surfaceMesh.material.uniforms.uCloudPosition, this.cloudPosition_);
     gl.uniform3fv(this.surfaceMesh.material.uniforms.uLightDirection, this.lightDirection);
@@ -740,6 +751,7 @@ export class Earth {
     uniform float uIsDrawAurora;
     uniform float uShowGraticule;
     uniform float uZoomLevel;
+    uniform float uRawZoomLevel;
     uniform float uisGrayScale;
     uniform float uisDrawNightAsDay;
 
@@ -774,10 +786,17 @@ export class Earth {
     void main(void) {
       float fragToLightAngle = dot( vNormal, uLightDirection ) * 0.5 + 0.5; //Remake -1 > 1 to 0 > 1
       vec3 fragToCamera = normalize(vVertToCamera);
-      // Use fragToCamera to determine if the fragment should be culled
-      if (dot(fragToCamera, vNormal) < 0.0) {
+      float NdotV = dot(fragToCamera, vNormal);
+
+      // Discard clearly backfacing fragments
+      float edgeWidth = fwidth(NdotV);
+      if (NdotV < -edgeWidth) {
         discard;
       }
+
+      // Smooth horizon fade — alpha blends the limb with the sky/atmosphere
+      // The wide range (0.06) creates a soft multi-pixel transition at the limb
+      float horizonAlpha = smoothstep(0.0, max(edgeWidth * 4.0, 0.06), NdotV);
 
       // .................................................
       // Diffuse lighting
@@ -807,24 +826,32 @@ export class Earth {
         nightColor = textureLod(uDayMap, vUv, -1.0).rgb * pow(1.0 - diffuse, 2.0);
       }
 
-      fragColor = vec4(dayTexColor + nightColor + bumpTexColor + specLightColor, 1.0);
+      vec3 surfaceColor = dayTexColor + nightColor + bumpTexColor + specLightColor;
 
-      // Political map (Draw before clouds and atmosphere)
+      // ................................................
+      // Clouds — alpha-blend over surface (clouds occlude what's beneath)
+      // Cloud texture luminance is used as opacity: white = dense cloud, black = clear sky
+      vec2 cloudUv = vUv;
+      cloudUv.x -= uCloudPosition;
+      float cloudDensity = textureLod(uCloudsMap, cloudUv, -1.0).r;
+
+      // Clouds fade out when camera is near the surface (raw zoom 0 = close, 1 = far)
+      float cloudOpacity = cloudDensity * smoothstep(0.2, 0.35, uRawZoomLevel);
+
+      // Clouds are white when sunlit, dark on the night side
+      float cloudLight = (uisDrawNightAsDay > 0.5) ? 1.0 : max(diffuse, 0.02);
+      vec3 litCloudColor = vec3(cloudLight);
+
+      // Alpha blend: clouds replace surface proportionally to opacity
+      // This naturally masks specular under clouds without double-counting
+      fragColor = vec4(mix(surfaceColor, litCloudColor, cloudOpacity), horizonAlpha);
+
+      // Political map — drawn after clouds so boundaries are always visible
       // Use full resolution (LOD -1) and don't multiply by diffuse so
       // boundaries remain visible on the night side and when ambient
       // lighting is off.
       vec4 politicalColor = textureLod(uPoliticalMap, vUv, -1.0);
       fragColor.rgb += politicalColor.rgb * politicalColor.a;
-
-      // ................................................
-      // Clouds
-      // Add the clouds to the fragColor
-      // Slowly drift the clouds to the left
-        vec2 uv = vUv;
-        uv.x -= uCloudPosition;
-
-        vec3 cloudsColor = textureLod(uCloudsMap, uv, -1.0).rgb * diffuse;
-        fragColor.rgb += cloudsColor * 2.0 * pow(uZoomLevel, 2.0);
 
       // ...............................................
 

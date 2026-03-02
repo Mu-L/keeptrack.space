@@ -601,7 +601,7 @@ export class WebGLRenderer {
       if (
         !settingsManager.isOrbitCruncherInEcf &&
         !primarySat.isMissile() &&
-        (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT)
+        (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE_FIRST_PERSON || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_LVLH || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_ECI)
       ) {
         /*
          * Force an update so that the orbit is always using recent data - this
@@ -652,7 +652,14 @@ export class WebGLRenderer {
   }
 
   private updateSecondarySatellite_() {
-    const secondarySat = PluginRegistry.getPlugin(SelectSatManager)?.secondarySatObj;
+    const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+    if (!selectSatManager || selectSatManager.secondarySat === -1) {
+      return;
+    }
+
+    // Fetch with POSITION_ONLY so the position is current (same as primary)
+    const secondarySat = ServiceLocator.getCatalogManager().getObject(selectSatManager.secondarySat, GetSatType.POSITION_ONLY);
 
     if (!secondarySat) {
       return;

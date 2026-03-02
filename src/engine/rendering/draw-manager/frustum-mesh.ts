@@ -246,15 +246,50 @@ export class FrustumMesh extends CustomMesh {
     originX: number, originY: number, originZ: number,
     nearDist: number, farDist: number,
   ) {
-    // Build orthonormal basis perpendicular to the boresight direction
+    // Build orthonormal basis perpendicular to the boresight direction.
+    // Use the satellite velocity vector so that 0° roll aligns the frustum's
+    // "up" with the velocity direction (direction of travel).
     let refX = 0;
     let refY = 1;
     let refZ = 0;
+    let hasVelocityRef = false;
 
-    if (Math.abs(dy) > 0.9) {
-      refX = 1;
-      refY = 0;
+    const velocityData = ServiceLocator.getDotsManager()?.velocityData;
+
+    if (velocityData) {
+      const id = Number(this.obj.id);
+      const vx = velocityData[id * 3];
+      const vy = velocityData[id * 3 + 1];
+      const vz = velocityData[id * 3 + 2];
+
+      // Use -velocity as reference so cross-product math yields up = velocity projection.
+      // Verify the cross product has sufficient magnitude (fails when velocity is
+      // parallel to boresight or zero).
+      const nvx = -vx;
+      const nvy = -vy;
+      const nvz = -vz;
+      const cx = dy * nvz - dz * nvy;
+      const cy = dz * nvx - dx * nvz;
+      const cz = dx * nvy - dy * nvx;
+
+      if (cx * cx + cy * cy + cz * cz > 1e-12) {
+        refX = nvx;
+        refY = nvy;
+        refZ = nvz;
+        hasVelocityRef = true;
+      }
+    }
+
+    if (!hasVelocityRef) {
+      // Fallback: arbitrary reference when velocity is unavailable or degenerate
+      refX = 0;
+      refY = 1;
       refZ = 0;
+      if (Math.abs(dy) > 0.9) {
+        refX = 1;
+        refY = 0;
+        refZ = 0;
+      }
     }
 
     // right = normalize(cross(d, ref))
