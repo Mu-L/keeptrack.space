@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "SoundToggle": {
+      "tooltip": "Ton ein-/ausschalten"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "plugins": {
+    "ViewInfoRmbPlugin": {
+      "rmbMenu": {
+        "title": "View",
+        "earthInfo": "Earth Info",
+        "sensorInfo": "Sensor Info",
+        "launchSiteInfo": "Launch Site Info",
+        "satelliteInfo": "Satellite Info",
+        "relatedSatellites": "Related Satellites"
+      }
+    }
+  }
+}

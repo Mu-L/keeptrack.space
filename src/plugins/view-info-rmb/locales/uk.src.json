@@ -1,0 +1,14 @@
+{
+  "plugins": {
+    "ViewInfoRmbPlugin": {
+      "rmbMenu": {
+        "title": "Перегляд",
+        "earthInfo": "Інформація про Землю",
+        "sensorInfo": "Інформація про датчик",
+        "launchSiteInfo": "Інформація про стартовий майданчик",
+        "satelliteInfo": "Інформація про супутник",
+        "relatedSatellites": "Пов'язані супутники"
+      }
+    }
+  }
+}

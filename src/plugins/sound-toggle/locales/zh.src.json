@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "SoundToggle": {
+      "tooltip": "开启/关闭声音"
+    }
+  }
+}
