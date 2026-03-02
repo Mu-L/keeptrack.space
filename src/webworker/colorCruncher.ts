@@ -1082,9 +1082,28 @@ function sunlightScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   const inView = inViewData ? inViewData[i] === 1 : false;
   const sunStatus = inSunData[i];
 
-  // In FOV + sunlight
-  if (inView && sunStatus > 0 && objectTypeFlags.sunlightFov) {
-    writeColorArr(cd, pd, i, colorTheme.sunlightInview ?? [1, 1, 0, 1], PICKABLE_YES);
+  // In FOV
+  if (inView) {
+    if (objectTypeFlags.sunlightFov === false) {
+      writeDeselected(cd, pd, i);
+
+      return;
+    }
+
+    if (sunStatus > 0) {
+      writeColorArr(cd, pd, i, colorTheme.sunlightInview ?? [1, 1, 0, 1], PICKABLE_YES);
+
+      return;
+    }
+
+    // In FOV but in umbral
+    if (objectTypeFlags.satLow) {
+      writeColorArr(cd, pd, i, colorTheme.umbral ?? [0.2, 0.2, 0, 1], PICKABLE_NO);
+
+      return;
+    }
+
+    writeDeselected(cd, pd, i);
 
     return;
   }

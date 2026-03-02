@@ -53,6 +53,7 @@ export interface EngineEventMap {
   [EventBusEvent.FrustumMeshUpdate]: [];
   [EventBusEvent.bottomMenuModeChange]: [];
   [EventBusEvent.saveSettings]: [];
+  [EventBusEvent.filterChanged]: [];
   [EventBusEvent.loadSettings]: [];
   [EventBusEvent.KeyDown]: [string, string, boolean, boolean, boolean]; // key, code, isRepeat, isShiftKey, isCtrlKey
   [EventBusEvent.KeyUp]: [string, string, boolean, boolean, boolean]; // key, code, isRepeat, isShiftKey, isCtrlKey

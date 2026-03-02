@@ -119,26 +119,33 @@ export class SunlightColorScheme extends ColorScheme {
     }
 
     // In FOV
-    if (dotsManagerInstance.inViewData?.[obj.id] === 1 && dotsManagerInstance.inSunData[obj.id] > 0 && this.objectTypeFlags.sunlightFov) {
-      if (dotsManagerInstance.inSunData[obj.id] === 0) {
-        if (this.objectTypeFlags.satLow) {
-          return {
-            color: this.colorTheme.umbral,
-            pickable: Pickable.No,
-          };
-        }
-
+    if (dotsManagerInstance.inViewData?.[obj.id] === 1) {
+      if (this.objectTypeFlags.sunlightFov === false) {
         return {
           color: this.colorTheme.deselected,
           pickable: Pickable.No,
         };
-
       }
 
-      // TODO: Work out a system for vmag filtering
+      if (dotsManagerInstance.inSunData[obj.id] > 0) {
+        // TODO: Work out a system for vmag filtering
+        return {
+          color: this.colorTheme.sunlightInview,
+          pickable: Pickable.Yes,
+        };
+      }
+
+      // In FOV but in umbral
+      if (this.objectTypeFlags.satLow) {
+        return {
+          color: this.colorTheme.umbral,
+          pickable: Pickable.No,
+        };
+      }
+
       return {
-        color: this.colorTheme.sunlightInview,
-        pickable: Pickable.Yes,
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
       };
     }
 

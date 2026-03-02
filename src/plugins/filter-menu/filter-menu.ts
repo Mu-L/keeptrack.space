@@ -145,14 +145,12 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
         name: t7e('filterMenu.groundSensors.name' as Parameters<typeof t7e>[0]),
         category: t7e('filterMenu.groundSensors.category' as Parameters<typeof t7e>[0]),
         tooltip: t7e('filterMenu.groundSensors.tooltip' as Parameters<typeof t7e>[0]),
-        checked: !settingsManager.isDisableSensors,
       },
       {
         id: 'launchFacilities',
         name: t7e('filterMenu.launchFacilities.name' as Parameters<typeof t7e>[0]),
         category: t7e('filterMenu.launchFacilities.category' as Parameters<typeof t7e>[0]),
         tooltip: t7e('filterMenu.launchFacilities.tooltip' as Parameters<typeof t7e>[0]),
-        checked: !settingsManager.isDisableLaunchSites,
       },
       {
         id: 'vLEOSatellites',
@@ -190,12 +188,12 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
         category: t7e('filterMenu.xgeoSatellites.category'),
         tooltip: t7e('filterMenu.xgeoSatellites.tooltip'),
       },
-      {
+      ...(settingsManager.isEnableJscCatalog ? [{
         id: 'vimpelSatellites',
         name: t7e('filterMenu.vimpelSatellites.name'),
         category: t7e('filterMenu.source.category'),
         tooltip: t7e('filterMenu.vimpelSatellites.tooltip'),
-      },
+      }] : []),
       {
         id: 'celestrakSatellites',
         name: t7e('filterMenu.celestrakSatellites.name'),
@@ -644,6 +642,8 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       (getEl('filter-reset') as HTMLDivElement).removeAttribute('disabled');
       showEl('top-menu-filter-li');
     }
+
+    EventBus.getInstance().emit(EventBusEvent.filterChanged);
   }
 
   private static generateFilterId_(name: string): string {

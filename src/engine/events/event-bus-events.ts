@@ -71,6 +71,11 @@ export enum EventBusEvent {
   FrustumMeshUpdate = 'FrustumMeshUpdate',
   bottomMenuModeChange = 'bottomMenuModeChange',
   saveSettings = 'saveSettings',
+  /**
+   * Emitted when filter menu toggles change. ColorSchemeManager listens to
+   * forward the updated filter state to the color worker.
+   */
+  filterChanged = 'filterChanged',
   loadSettings = 'loadSettings',
   update = 'update',
   parseGetVariables = 'parseGetVariables',

@@ -385,6 +385,13 @@ export class ColorSchemeManager {
       this.forwardObjectTypeFlagsToWorker_();
     });
 
+    // Forward filter changes (from FilterMenuPlugin) to worker
+    EventBus.getInstance().on(EventBusEvent.filterChanged, () => {
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        this.forwardFiltersToWorker_();
+      }
+    });
+
     // Forward sensor changes to worker so isSensorManagerLoaded/sensorType stay current
     EventBus.getInstance().on(EventBusEvent.setSensor, () => {
       if (this.useWorkerMode_ && this.colorCruncher_) {
