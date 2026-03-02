@@ -8,6 +8,7 @@ import { Planet } from '@app/app/objects/planet';
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { Scene } from '@app/engine/core/scene';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -44,6 +45,7 @@ export class SelectSatManager extends KeepTrackPlugin {
   /** Ellipsoid radii for the secondary satellite in RCI coordinates */
   secondarySatCovMatrix: vec3;
   private lastSelectedSat_ = -1;
+  lastSatCameraType: CameraType = CameraType.FIXED_TO_SAT_ECI;
 
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
@@ -276,6 +278,18 @@ export class SelectSatManager extends KeepTrackPlugin {
     }
   }
 
+  private beginCameraTransition_(): void {
+    if (!settingsManager.isSmoothCameraTransitions) {
+      return;
+    }
+
+    const cam = ServiceLocator.getMainCamera();
+    const scene = Scene.getInstance();
+
+    cam.transition.duration = settingsManager.cameraTransitionDuration;
+    cam.transition.begin(cam.matrixWorldInverse, scene.worldShift);
+  }
+
   private selectSatReset_() {
     if (this.lastSelectedSat() !== -1) {
       this.selectSatChange_(null);
@@ -283,7 +297,13 @@ export class SelectSatManager extends KeepTrackPlugin {
 
     // Run this ONCE when clicking empty space
     if (this.lastSelectedSat() !== -1) {
-      ServiceLocator.getMainCamera().exitFixedToSat();
+      const cam = ServiceLocator.getMainCamera();
+
+      if (cam.cameraType === CameraType.FIXED_TO_SAT_ECI || cam.cameraType === CameraType.FIXED_TO_SAT_LVLH) {
+        this.lastSatCameraType = cam.cameraType;
+      }
+      this.beginCameraTransition_();
+      cam.exitFixedToSat();
 
       document.documentElement.style.setProperty('--search-box-bottom', '0px');
       PluginRegistry.getPlugin(SatInfoBox)?.hide();
@@ -328,6 +348,7 @@ export class SelectSatManager extends KeepTrackPlugin {
       z: 0,
     };
 
+    this.beginCameraTransition_();
     this.switchToSatCenteredCamera_();
     this.setSelectedSat_(sat.id);
   }
@@ -337,15 +358,25 @@ export class SelectSatManager extends KeepTrackPlugin {
       return;
     }
 
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_EARTH) {
-      ServiceLocator.getMainCamera().state.earthCenteredLastZoom = ServiceLocator.getMainCamera().zoomLevel();
-      ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT;
+    const cam = ServiceLocator.getMainCamera();
+
+    if (cam.cameraType === CameraType.FIXED_TO_EARTH) {
+      cam.state.earthCenteredLastZoom = cam.zoomLevel();
+      cam.cameraType = this.lastSatCameraType;
     }
 
-    // If we deselect an object but had previously selected one then disable/hide stuff
-    ServiceLocator.getMainCamera().state.camZoomSnappedOnSat = true;
-    ServiceLocator.getMainCamera().state.camDistBuffer = settingsManager.minDistanceFromSatellite;
-    ServiceLocator.getMainCamera().state.camAngleSnappedOnSat = true;
+    cam.state.camZoomSnappedOnSat = true;
+    cam.state.camDistBuffer = settingsManager.minDistanceFromSatellite;
+
+    if (cam.cameraType === CameraType.FIXED_TO_SAT_LVLH || cam.cameraType === CameraType.FIXED_TO_SAT_ECI) {
+      // In satellite modes the LVLH/ECI frame already tracks the satellite.
+      // Reset orientation to in-track alignment (ftsPitch=0, ftsYaw=0).
+      cam.state.ftsRotateReset = true;
+      cam.state.camAngleSnappedOnSat = false;
+      cam.state.isAutoPitchYawToTarget = false;
+    } else {
+      cam.state.camAngleSnappedOnSat = true;
+    }
   }
 
   private static selectOwnerManufacturer_(obj: LandObject) {

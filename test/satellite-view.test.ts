@@ -105,7 +105,7 @@ describe('SatelliteViewPlugin_class', () => {
     plugin.init();
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
-    const tempMockCamera = { ...mockCameraManager, cameraType: CameraType.SATELLITE } as Camera;
+    const tempMockCamera = { ...mockCameraManager, cameraType: CameraType.SATELLITE_FIRST_PERSON } as Camera;
 
     Container.getInstance().registerSingleton<Camera>(Singletons.MainCamera, tempMockCamera);
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, plugin.bottomIconElementName);

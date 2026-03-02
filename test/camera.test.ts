@@ -8,17 +8,17 @@ import { defaultSat, defaultSensor } from './environment/apiMocks';
 const testFuncWithAllCameraTypes = (testFunc: () => void, cameraInstance: Camera) => {
   cameraInstance.cameraType = CameraType.FIXED_TO_EARTH;
   expect(testFunc).not.toThrow();
-  cameraInstance.cameraType = CameraType.OFFSET;
-  expect(testFunc).not.toThrow();
   cameraInstance.cameraType = CameraType.FPS;
   expect(testFunc).not.toThrow();
-  cameraInstance.cameraType = CameraType.SATELLITE;
+  cameraInstance.cameraType = CameraType.SATELLITE_FIRST_PERSON;
   expect(testFunc).not.toThrow();
   cameraInstance.cameraType = CameraType.ASTRONOMY;
   expect(testFunc).not.toThrow();
   cameraInstance.cameraType = CameraType.PLANETARIUM;
   expect(testFunc).not.toThrow();
-  cameraInstance.cameraType = CameraType.FIXED_TO_SAT;
+  cameraInstance.cameraType = CameraType.FIXED_TO_SAT_LVLH;
+  expect(testFunc).not.toThrow();
+  cameraInstance.cameraType = CameraType.FIXED_TO_SAT_ECI;
   expect(testFunc).not.toThrow();
 };
 
@@ -36,7 +36,7 @@ describe('Camera Key Input', () => {
     }
 
     cameraInstance.changeCameraType = () => {
-      cameraInstance.cameraType = CameraType.SATELLITE;
+      cameraInstance.cameraType = CameraType.SATELLITE_FIRST_PERSON;
     };
     for (let i = 0; i < 5; i++) {
       expect(testFunc).not.toThrow();

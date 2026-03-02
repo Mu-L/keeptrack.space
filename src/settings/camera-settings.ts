@@ -143,6 +143,10 @@ export class CameraSettings {
   // Camera Focus
   /** Center on a satellite when it is selected. */
   isFocusOnSatelliteWhenSelected = true;
+  /** Enable smooth camera transitions when selecting/deselecting satellites. */
+  isSmoothCameraTransitions = true;
+  /** Duration of camera transition animations in milliseconds (100-2000). */
+  cameraTransitionDuration = 1500;
 
   // Offset Camera Mode
   /**

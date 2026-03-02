@@ -61,7 +61,7 @@ export class SatelliteFixedView extends KeepTrackPlugin {
 
     // Keep icon state in sync with camera type
     EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
-      const isFixedToSat = ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT;
+      const isFixedToSat = ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_LVLH;
 
       if (isFixedToSat && !this.isMenuButtonActive && !this.isIconDisabled) {
         this.setBottomIconToSelected();
@@ -80,7 +80,7 @@ export class SatelliteFixedView extends KeepTrackPlugin {
     }
 
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
-    ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT;
+    ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT_LVLH;
     this.setBottomIconToSelected();
   };
 }

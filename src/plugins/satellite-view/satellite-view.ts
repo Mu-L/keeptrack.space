@@ -63,9 +63,14 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
   addJs(): void {
     super.addJs();
 
+    const camera = ServiceLocator.getMainCamera();
+
+    // Disable satellite mesh rendering in satellite-first-person view
+    EventBus.getInstance().on(EventBusEvent.shouldSkipSatelliteModels, () => camera.cameraType === CameraType.SATELLITE_FIRST_PERSON);
+
     // Keep icon state in sync with camera type
     EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
-      const isSatelliteView = ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE;
+      const isSatelliteView = ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE_FIRST_PERSON;
 
       if (isSatelliteView && !this.isMenuButtonActive && !this.isIconDisabled) {
         this.setBottomIconToSelected();
@@ -84,7 +89,7 @@ export class SatelliteViewPlugin extends KeepTrackPlugin {
     }
 
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
-    ServiceLocator.getMainCamera().cameraType = CameraType.SATELLITE;
+    ServiceLocator.getMainCamera().cameraType = CameraType.SATELLITE_FIRST_PERSON;
     this.setBottomIconToSelected();
   };
 }

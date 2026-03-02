@@ -298,7 +298,7 @@ export class MouseInput {
         const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
         // Left Mouse Button Clicked
-        if (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE) {
+        if (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE_FIRST_PERSON) {
           if (this.clickedSat !== -1 && !catalogManagerInstance.getObject(this.clickedSat, GetSatType.EXTRA_ONLY)?.isStatic()) {
             PluginRegistry.getPlugin(SelectSatManager)?.selectSat(this.clickedSat);
           }
