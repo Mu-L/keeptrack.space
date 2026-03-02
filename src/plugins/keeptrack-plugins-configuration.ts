@@ -79,6 +79,7 @@ export type KeepTrackPluginsConfiguration = {
   EarthCenteredView?: PluginConfiguration;
   SatelliteViewPlugin?: PluginConfiguration;
   SatelliteFixedView?: PluginConfiguration;
+  SatelliteEciView?: PluginConfiguration;
   FpsView?: PluginConfiguration;
   FlatMapView?: PluginConfiguration;
   PolarView?: PluginConfiguration;
@@ -89,6 +90,7 @@ export type KeepTrackPluginsConfiguration = {
   NightToggle?: PluginConfiguration;
   OpticalSimulation?: PluginConfiguration;
   GraticuleToggle?: PluginConfiguration;
+  CloudsToggle?: PluginConfiguration;
   PoliticalMapToggle?: PluginConfiguration;
   HideOtherSatellitesPlugin?: PluginConfiguration;
   SkipInterpolationToggle?: PluginConfiguration;
@@ -106,6 +108,7 @@ export type KeepTrackPluginsConfiguration = {
   SatellitePhotos?: PluginConfiguration;
   ScreenRecorder?: PluginConfiguration;
   CatalogManagementPlugin?: PluginConfiguration;
+  CatalogBrowserPlugin?: PluginConfiguration;
   CloseObjectsPlugin?: PluginConfiguration;
   BestPassPlugin?: PluginConfiguration;
   OverflightPlugin?: PluginConfiguration;
@@ -124,6 +127,7 @@ export type KeepTrackPluginsConfiguration = {
   SymbologyPlugin?: PluginConfiguration;
   ColorSchemeEditorPlugin?: PluginConfiguration;
   SettingsMenuPlugin?: PluginConfiguration;
+  SearchSettingsPlugin?: PluginConfiguration;
   GraphicsMenuPlugin?: PluginConfiguration;
   GamepadPlugin?: PluginConfiguration;
   VideoDirectorPlugin?: PluginConfiguration;

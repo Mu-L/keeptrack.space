@@ -43,12 +43,12 @@ export class DebrisScreening extends KeepTrackPlugin {
   readonly id = 'DebrisScreening';
   dependencies_ = [SelectSatManager.name];
   private readonly selectSatManager_: SelectSatManager;
-  private readonly formPrefix_ = 'ds';
-  private readonly sideMenuName_ = 'debris-screening-menu';
-  private readonly secondaryMenuName_ = 'debris-screening-results';
+  protected readonly formPrefix_ = 'ds';
+  protected readonly sideMenuName_ = 'debris-screening-menu';
+  protected readonly secondaryMenuName_ = 'debris-screening-results';
 
   // Screening results storage
-  private screeningResults_: ScreeningResult[] = [];
+  protected screeningResults_: ScreeningResult[] = [];
 
   isRequireSatelliteSelected = true;
   isIconDisabledOnLoad = true;
@@ -375,7 +375,7 @@ export class DebrisScreening extends KeepTrackPlugin {
     }, 500);
   }
 
-  private calculateCovarianceFromSatellite(sat: Satellite) {
+  protected calculateCovarianceFromSatellite(sat: Satellite) {
     let covMatrix = createSampleCovarianceFromTle(sat.tle1, sat.tle2).matrix.elements;
 
     // Cap radii at 1200 km (radial), 1000 km (cross-track), and 5000 km (in-track) to avoid huge bubbles
@@ -443,7 +443,7 @@ export class DebrisScreening extends KeepTrackPlugin {
     }
   }
 
-  private displayResults_(): void {
+  protected displayResults_(): void {
     const tbody = getEl(`${this.formPrefix_}-results-body`);
     const countEl = getEl(`${this.formPrefix_}-results-count`);
 
@@ -478,7 +478,7 @@ export class DebrisScreening extends KeepTrackPlugin {
     });
   }
 
-  private getRiskLevel_(pc?: number): RiskLevel {
+  protected getRiskLevel_(pc?: number): RiskLevel {
     if (typeof pc !== 'number') {
       return { label: 'N/A', className: 'risk-unknown' };
     }
@@ -496,11 +496,11 @@ export class DebrisScreening extends KeepTrackPlugin {
     return { label: 'Low', className: 'risk-low' };
   }
 
-  private formatTca_(tca: EpochUTC): string {
+  protected formatTca_(tca: EpochUTC): string {
     return tca.toDateTime().toISOString().slice(0, 19).replace('T', ' ');
   }
 
-  private formatPc_(pc?: number): string {
+  protected formatPc_(pc?: number): string {
     if (typeof pc !== 'number') {
       return 'N/A';
     }

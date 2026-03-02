@@ -389,6 +389,8 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'DebrisScreening',
     ossImport: () => import('./debris-screening/debris-screening'),
     ossClassName: 'DebrisScreening',
+    proImport: () => import('../plugins-pro/debris-screening-pro/debris-screening-pro'),
+    proClassName: 'DebrisScreeningPro',
     defaultConfig: { enabled: true, order: 280 },
   },
   {
@@ -475,6 +477,12 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'SatelliteFixedView',
     ossImport: () => import('./satellite-fixed-view/satellite-fixed-view'),
     ossClassName: 'SatelliteFixedView',
+    defaultConfig: { enabled: true, order: 152 },
+  },
+  {
+    configKey: 'SatelliteEciView',
+    ossImport: () => import('./satellite-eci-view/satellite-eci-view'),
+    ossClassName: 'SatelliteEciView',
     defaultConfig: { enabled: true, order: 151 },
   },
   {
@@ -546,10 +554,16 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 312 },
   },
   {
+    configKey: 'CloudsToggle',
+    ossImport: () => import('./clouds-toggle/clouds-toggle'),
+    ossClassName: 'CloudsToggle',
+    defaultConfig: { enabled: true, order: 313 },
+  },
+  {
     configKey: 'HideOtherSatellitesPlugin',
     ossImport: () => import('./hide-other-sats/hide-other-sats'),
     ossClassName: 'HideOtherSatellitesPlugin',
-    defaultConfig: { enabled: true, order: 313 },
+    defaultConfig: { enabled: true, order: 314 },
   },
   {
     configKey: 'SkipInterpolationToggle',
@@ -648,6 +662,12 @@ export const pluginManifest: PluginDescriptor[] = [
     isLoginRequired: true,
   },
   {
+    configKey: 'CatalogBrowserPlugin',
+    ossImport: () => import('./catalog-browser/catalog-browser'),
+    ossClassName: 'CatalogBrowserPlugin',
+    defaultConfig: { enabled: true, order: 424 },
+  },
+  {
     configKey: 'CloseObjectsPlugin',
     ossImport: () => import('./close-objects/close-objects'),
     ossClassName: 'CloseObjectsPlugin',
@@ -699,7 +719,7 @@ export const pluginManifest: PluginDescriptor[] = [
     ossImport: () => import('./initial-orbit/initial-orbit'),
     ossClassName: 'InitialOrbitDeterminationPlugin',
     proImport: () => import('../plugins-pro/initial-orbit/initial-orbit'),
-    defaultConfig: { enabled: true, order: 410 },
+    defaultConfig: { enabled: false, order: 410 },
     isLoginRequired: true,
   },
   {
@@ -791,6 +811,12 @@ export const pluginManifest: PluginDescriptor[] = [
     ossImport: () => import('./settings-menu/settings-menu'),
     ossClassName: 'SettingsMenuPlugin',
     defaultConfig: { enabled: true, order: 590 },
+  },
+  {
+    configKey: 'SearchSettingsPlugin',
+    ossImport: () => import('./search-settings/search-settings'),
+    ossClassName: 'SearchSettingsPlugin',
+    defaultConfig: { enabled: true, order: 589 },
   },
   {
     configKey: 'GraphicsMenuPlugin',

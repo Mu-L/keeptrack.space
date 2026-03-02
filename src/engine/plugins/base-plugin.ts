@@ -350,6 +350,10 @@ export abstract class KeepTrackPlugin {
       return true;
     }
 
+    if (settingsManager.isDisableLoginGate) {
+      return true;
+    }
+
     const expectedToken = KeepTrackPlugin.loginGateTokenProvider?.() ?? null;
 
     if (!expectedToken) {
@@ -1091,7 +1095,7 @@ export abstract class KeepTrackPlugin {
         if (isDisabled) {
           button.classList.add('bmenu-item-disabled');
         }
-        if (this.isLoginRequired) {
+        if (this.isLoginRequired && !settingsManager.isDisableLoginGate) {
           button.classList.add('bmenu-item-pro');
           button.setAttribute('data-pro-gated', '');
         }
@@ -1132,7 +1136,7 @@ export abstract class KeepTrackPlugin {
         if (isDisabled) {
           item.classList.add('bmenu-item-disabled');
         }
-        if (this.isLoginRequired) {
+        if (this.isLoginRequired && !settingsManager.isDisableLoginGate) {
           item.classList.add('bmenu-item-pro');
           item.setAttribute('data-pro-gated', '');
         }

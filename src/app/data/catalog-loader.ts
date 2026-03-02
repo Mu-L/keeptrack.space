@@ -572,7 +572,7 @@ export class CatalogLoader {
           launchVehicle: sat.launchVehicle,
           length: sat.length,
           diameter: sat.diameter,
-          rcs: sat.rcs !== null ? sat.rcs.toString() : null,
+          rcs: typeof sat.rcs === 'number' ? sat.rcs.toString() : null,
           vmag: sat.vmag ?? null,
           status: sat.status,
           altId: sat.altId,
@@ -614,6 +614,76 @@ export class CatalogLoader {
       orbitManager.resetForCatalogSwap();
 
       // Clear stale position/velocity data after parse returns
+      dotsManager.positionData = null as unknown as Float32Array;
+      dotsManager.velocityData = null as unknown as Float32Array;
+      dotsManager.isReady = false;
+
+      settingsManager.cruncherReady = false;
+
+      const eventBus = EventBus.getInstance();
+      const onReady = () => {
+        eventBus.unregister(EventBusEvent.onCruncherReady, onReady);
+        eventBus.emit(EventBusEvent.catalogReloaded);
+        hideLoading();
+      };
+
+      eventBus.on(EventBusEvent.onCruncherReady, onReady);
+    } catch (error) {
+      hideLoading();
+      throw error;
+    }
+  }
+
+  /**
+   * Reloads the catalog from pre-built KeepTrackTLEFile data (with full metadata).
+   * Use this when merging has already been done externally (e.g., against a cached catalog).
+   */
+  static async reloadCatalogFromData(data: KeepTrackTLEFile[]): Promise<void> {
+    const { showLoadingSticky, hideLoading } = await import('../../engine/utils/showLoading');
+    const { SelectSatManager } = await import('../../plugins/select-sat-manager/select-sat-manager');
+    const { EventBus } = await import('../../engine/events/event-bus');
+    const { EventBusEvent } = await import('../../engine/events/event-bus-events');
+    const { PluginRegistry } = await import('../../engine/core/plugin-registry');
+
+    showLoadingSticky();
+
+    try {
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (selectSatManager) {
+        selectSatManager.selectSat(-1);
+      }
+
+      const orbitManager = ServiceLocator.getOrbitManager();
+
+      orbitManager.clearSelectOrbit(false);
+      orbitManager.clearSelectOrbit(true);
+      orbitManager.clearHoverOrbit();
+      orbitManager.clearInViewOrbit();
+      orbitManager.orbitCache.clear();
+
+      ServiceLocator.getHoverManager().setHoverId(-1);
+      settingsManager.lastSearchResults = [];
+
+      const dotsManager = ServiceLocator.getDotsManager();
+      const colorSchemeManager = ServiceLocator.getColorSchemeManager();
+
+      dotsManager.resetForCatalogSwap();
+      colorSchemeManager.resetForCatalogSwap();
+
+      const catalogManager = ServiceLocator.getCatalogManager();
+
+      catalogManager.staticSet = catalogManager.staticSet.filter(
+        (obj: { type?: SpaceObjectType }) => obj.type !== SpaceObjectType.STAR,
+      );
+
+      await CatalogLoader.parse({
+        keepTrackTle: data,
+      });
+
+      dotsManager.initBuffers(colorSchemeManager.colorBuffer!);
+      orbitManager.resetForCatalogSwap();
+
       dotsManager.positionData = null as unknown as Float32Array;
       dotsManager.velocityData = null as unknown as Float32Array;
       dotsManager.isReady = false;
