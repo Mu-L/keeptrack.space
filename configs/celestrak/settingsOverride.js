@@ -71,8 +71,7 @@ const settingsOverride = {
       enabled: false,
     },
     ReportsPlugin: {
-      enabled: true,
-      menuMode: [1],
+      enabled: false,
     },
     PolarPlotPlugin: {
       enabled: false,
@@ -99,7 +98,7 @@ const settingsOverride = {
       enabled: false,
     },
     FindSatPlugin: {
-      enabled: true,
+      enabled: false,
     },
     ProximityOps: {
       enabled: false,
@@ -117,7 +116,7 @@ const settingsOverride = {
       enabled: false,
     },
     Planetarium: {
-      enabled: true,
+      enabled: false,
     },
     Astronomy: {
       enabled: false,
@@ -222,6 +221,69 @@ const settingsOverride = {
     VcrPlugin: {
       enabled: true,
     },
+    // Plugins not in original override — explicitly disabled to prevent
+    // manifest defaults from adding unwanted UI to the CelesTrak deployment.
+    SeismicActivityPlugin: {
+      enabled: false,
+    },
+    AuroraPlugin: {
+      enabled: false,
+    },
+    NaturalEventsPlugin: {
+      enabled: false,
+    },
+    NeighborhoodHistoryPlugin: {
+      enabled: false,
+    },
+    SatelliteEciView: {
+      enabled: true,
+    },
+    SatelliteFixedView: {
+      enabled: false,
+    },
+    FpsView: {
+      enabled: false,
+    },
+    SkipInterpolationToggle: {
+      enabled: false,
+    },
+    SearchSettingsPlugin: {
+      enabled: false,
+    },
+    FavoritesMenuPlugin: {
+      enabled: false,
+    },
+    CommandPalettePlugin: {
+      enabled: false,
+    },
+    CovariancePlugin: {
+      enabled: false,
+    },
+    CovarianceStatsPlugin: {
+      enabled: false,
+    },
+    KeyboardShortcutsPlugin: {
+      enabled: false,
+    },
+    PolarView: {
+      enabled: false,
+    },
+    // Educational visualization toggles — explicitly enabled
+    GraticuleToggle: {
+      enabled: true,
+    },
+    PoliticalMapToggle: {
+      enabled: true,
+    },
+    CloudsToggle: {
+      enabled: true,
+    },
+    HideOtherSatellitesPlugin: {
+      enabled: true,
+    },
+    EarthAtmosphere: {
+      enabled: true,
+    },
     // Non-Menu plugins
     SatInfoBoxCore: {
       enabled: true,
@@ -236,11 +298,17 @@ const settingsOverride = {
       enabled: true,
     },
     SatInfoBoxMission: {
-      enabled: false,
+      enabled: true,
     },
     SatInfoBoxOrbital: {
       enabled: true,
       isShowCovariance: false,
+    },
+    SatInfoBoxSponsor: {
+      enabled: false,
+    },
+    SatInfoBoxDoppler: {
+      enabled: false,
     },
     SatInfoBoxSensor: {
       enabled: false,
@@ -260,7 +328,7 @@ const settingsOverride = {
     OrbitReferences: {
       enabled: false,
     },
-    SoundManager: {
+    SoundToggle: {
       enabled: true,
     },
     GamepadPlugin: {
@@ -275,6 +343,13 @@ const settingsOverride = {
     },
     ViewInfoRmbPlugin: {
       enabled: true,
+    },
+    StarsPlugin: {
+      enabled: false,
+    },
+    CatalogBrowserPlugin: {
+      enabled: true,
+      order: 10,
     }
   },
   dataSources: {
@@ -285,6 +360,8 @@ const settingsOverride = {
     /** This determines if tle source is loaded to supplement externalTLEs  */
     isSupplementExternal: false,
   },
+  splashScreenList: ['cspoc', 'cspoc2', 'ops', 'ops2', 'ops3', 'ops4'],
+  isDisableLoginGate: true,
   isBlockPersistence: true,
   isShowSecondaryLogo: true,
   isUseJdayOnTopMenu: false,

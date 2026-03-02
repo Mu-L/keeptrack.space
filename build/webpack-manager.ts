@@ -326,6 +326,7 @@ export class WebpackManager {
           positionCruncher: ['./src/webworker/positionCruncher.ts'],
           orbitCruncher: ['./src/webworker/orbitCruncher.ts'],
           colorCruncher: ['./src/webworker/colorCruncher.ts'],
+          debrisScreeningWorker: ['./src/webworker/debrisScreeningWorker.ts'],
         },
         output: {
           filename: '[name].js',
