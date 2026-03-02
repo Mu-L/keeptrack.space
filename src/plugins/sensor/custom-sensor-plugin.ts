@@ -2,7 +2,6 @@ import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { UiGeolocation } from '@app/app/ui/ui-manager-geolocation';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -17,9 +16,6 @@ import { Degrees, Kilometers, SpaceObjectType, ZoomValue } from '@ootk/src/main'
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import sensorAddPng from '@public/img/icons/sensor-add.png';
 import { ClickDragOptions, KeepTrackPlugin, SideMenuSettingsOptions } from '../../engine/plugins/base-plugin';
-import { SensorFov } from '../sensor-fov/sensor-fov';
-import { SensorSurvFence } from '../sensor-surv/sensor-surv-fence';
-import { SensorInfoPlugin } from './sensor-info-plugin';
 
 export class CustomSensorPlugin extends KeepTrackPlugin {
   readonly id = 'CustomSensorPlugin';
@@ -276,22 +272,23 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
   }
 
   private static processCustomSensorSubmit_(isReplaceSensor = false) {
-    PluginRegistry.getPlugin(SensorInfoPlugin)?.setBottomIconToUnselected();
-    PluginRegistry.getPlugin(SensorFov)?.setBottomIconToUnselected();
-    PluginRegistry.getPlugin(SensorSurvFence)?.setBottomIconToUnselected();
-    PluginRegistry.getPluginByName('Planetarium')?.setBottomIconToUnselected();
-    PluginRegistry.getPluginByName('Astronomy')?.setBottomIconToUnselected();
-
     (<HTMLInputElement>getEl('sensor-type')).value = (<HTMLInputElement>getEl('cs-type')).value.replace(/</gu, '&lt;').replace(/>/gu, '&gt;');
-    const sensorInfoTitleDom = getEl('sensor-info-title', true);
 
-    if (sensorInfoTitleDom) {
-      sensorInfoTitleDom.innerHTML = 'Custom Sensor';
-    }
-    const sensorCountryDom = getEl('sensor-country', true);
+    // Only update sensor info DOM if this will become the primary sensor
+    // (no existing primary or replacing). addSecondarySensor → setSensor handles this for primary sensors.
+    const sensorManagerInstance = ServiceLocator.getSensorManager();
 
-    if (sensorCountryDom) {
-      sensorCountryDom.innerHTML = 'Custom Sensor';
+    if (!sensorManagerInstance.isSensorSelected() || isReplaceSensor) {
+      const sensorInfoTitleDom = getEl('sensor-info-title', true);
+
+      if (sensorInfoTitleDom) {
+        sensorInfoTitleDom.innerHTML = 'Custom Sensor';
+      }
+      const sensorCountryDom = getEl('sensor-country', true);
+
+      if (sensorCountryDom) {
+        sensorCountryDom.innerHTML = 'Custom Sensor';
+      }
     }
 
     const uiName = (<HTMLInputElement>getEl('cs-uiName')).value;

@@ -51,6 +51,7 @@ import { sensorGroups } from '../data/catalogs/sensor-groups';
 
 export class SensorManager {
   lastMultiSiteArray: TearrData[];
+  private resetTimeoutId_: ReturnType<typeof setTimeout> | null = null;
 
   // TODO: There is a better way to handle this.
   currentTEARR = <TearrData>{
@@ -109,19 +110,33 @@ export class SensorManager {
   }
 
   addSecondarySensor(sensor: DetailedSensor, isReplaceSensor = false): void {
-    // If there is no primary sensor, make this the primary sensor
     const primarySensor = this.currentSensors[0];
 
     if (!primarySensor?.isSensor() || isReplaceSensor) {
+      // No primary sensor or replacing — make this the primary
       this.currentSensors = [sensor];
       this.setSensor(sensor);
+      // setSensor already handles updatePositionCruncher_, FOV meshes, and waitForCruncher
+      this.cameraToCurrentSensor_();
     } else {
+      // Primary exists — add as secondary
       this.secondarySensors.push(sensor);
+      this.updatePositionCruncher_();
+      // Camera to the newly added sensor, not the existing primary
+      this.cameraToCurrentSensor_(sensor);
+
+      // Wait for position cruncher to process new sensor data, then force full recolor
+      waitForCruncher({
+        cruncher: ServiceLocator.getCatalogManager().satCruncher,
+        cb: () => {
+          ServiceLocator.getColorSchemeManager().calculateColorBuffers(true);
+        },
+        validationFunc: (m: PositionCruncherOutgoingMsg) => !!((m.satInView?.length && m.satInView.length > 0)),
+        skipNumber: 2,
+        isRunCbOnFailure: true,
+        maxRetries: 5,
+      });
     }
-    this.updatePositionCruncher_();
-    this.cameraToCurrentSensor_();
-    // Force a recalculation of the color buffers on next cruncher
-    ServiceLocator.getColorSchemeManager().calcColorBufsNextCruncher();
   }
 
   /** Sensors that are currently selected/active */
@@ -300,7 +315,12 @@ export class SensorManager {
     PluginRegistry.getPluginByName('Astronomy')?.setBottomIconToUnselected();
     PluginRegistry.getPluginByName('Astronomy')?.setBottomIconToDisabled();
 
-    setTimeout(() => {
+    this.resetTimeoutId_ = setTimeout(() => {
+      this.resetTimeoutId_ = null;
+      // Guard: if a new sensor was selected before this fired, skip the reset
+      if (this.isSensorSelected()) {
+        return;
+      }
       const dotsManagerInstance = ServiceLocator.getDotsManager();
 
       dotsManagerInstance.resetSatInView();
@@ -337,6 +357,12 @@ export class SensorManager {
   }
 
   setSensor(selectedSensor: DetailedSensor | string | null, sensorId: number | null = null): void {
+    // Cancel any pending reset timeout from resetSensorSelected to prevent stale resets
+    if (this.resetTimeoutId_) {
+      clearTimeout(this.resetTimeoutId_);
+      this.resetTimeoutId_ = null;
+    }
+
     selectedSensor ??= SensorManager.getSensorFromsensorId(sensorId);
 
     if (selectedSensor === null && sensorId === null) {
@@ -453,7 +479,7 @@ export class SensorManager {
       EventBus.getInstance().emit(EventBusEvent.selectSatData, selectSatManager.primarySatObj, selectSatManager.selectedSat);
     }
 
-    for (const sensor of this.currentSensors) {
+    for (const sensor of this.getAllActiveSensors()) {
       ServiceLocator.getScene().sensorFovFactory.generateSensorFovMesh(sensor);
     }
 
@@ -620,16 +646,20 @@ export class SensorManager {
     };
   }
 
-  private cameraToCurrentSensor_() {
+  private cameraToCurrentSensor_(sensor?: DetailedSensor) {
     const timeManagerInstance = ServiceLocator.getTimeManager();
-    const primarySensor = this.currentSensors[0];
+    const targetSensor = sensor ?? this.currentSensors[0];
 
-    if (primarySensor.maxRng > 6000) {
+    if (!targetSensor) {
+      return;
+    }
+
+    if (targetSensor.maxRng > 6000) {
       ServiceLocator.getMainCamera().changeZoom(ZoomValue.GEO);
     } else {
       ServiceLocator.getMainCamera().changeZoom(ZoomValue.LEO);
     }
-    ServiceLocator.getMainCamera().camSnap(lat2pitch(primarySensor.lat), lon2yaw(primarySensor.lon, timeManagerInstance.selectedDate));
+    ServiceLocator.getMainCamera().camSnap(lat2pitch(targetSensor.lat), lon2yaw(targetSensor.lon, timeManagerInstance.selectedDate));
   }
 
   private updatePositionCruncher_(): void {
