@@ -11,6 +11,7 @@ describe('ScreenRecorder_class', () => {
 
   beforeEach(() => {
     setupDefaultHtml();
+    Object.defineProperty(window, 'isSecureContext', { value: true, writable: true, configurable: true });
     screenRecorderPlugin = new ScreenRecorder();
   });
 

@@ -36,6 +36,7 @@ describe('StreamManager', () => {
     } as unknown as MediaRecorder;
 
     global.window = {
+      isSecureContext: true,
       location: { protocol: 'https:' },
       MediaRecorder: vi.fn().mockImplementation(() => mockMediaRecorder),
       URL: {
@@ -85,8 +86,8 @@ describe('StreamManager', () => {
   });
 
   describe('getStream', () => {
-    it('should return false if protocol is not https', () => {
-      (global.window as any).location.protocol = 'http:';
+    it('should return false if not in a secure context', () => {
+      (global.window as any).isSecureContext = false;
       (global as any).settingsManager = { offlineMode: false };
 
       const result = streamManager.getStream();
@@ -186,7 +187,7 @@ describe('StreamManager', () => {
 
   describe('start', () => {
     it('should not start if getStream returns false', () => {
-      (global.window as any).location.protocol = 'http:';
+      (global.window as any).isSecureContext = false;
       (global as any).settingsManager = { offlineMode: false };
 
       streamManager.start();

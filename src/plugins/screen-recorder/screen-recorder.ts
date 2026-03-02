@@ -72,10 +72,19 @@ export class ScreenRecorder extends KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerOnReady,
       () => {
+        if (!window.isSecureContext && !settingsManager.offlineMode) {
+          this.isCompatibilityIssue_ = true;
+          this.setBottomIconToDisabled();
+
+          return;
+        }
+
         try {
           this.streamManagerInstance_ = new StreamManager(settingsManager.videoBitsPerSecond, this.onStop_.bind(this), this.onMinorError_.bind(this), this.onError_.bind(this));
         } catch (e) {
           errorManagerInstance.warn(`Compatibility Error with Recording: ${e}`);
+          this.isCompatibilityIssue_ = true;
+          this.setBottomIconToDisabled();
         }
       },
     );
