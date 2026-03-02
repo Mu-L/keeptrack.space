@@ -179,6 +179,10 @@ export class CoreSettings {
    */
   searchLimit = 600;
   /**
+   * Whether to show decayed satellites (position 0,0,0) in search results.
+   */
+  isShowDecayedInSearch = true;
+  /**
    * String to limit which satellites are loaded from the catalog
    */
   limitSats = '';
@@ -303,6 +307,12 @@ export class CoreSettings {
   lkVerify = 0;
   settingsManager: unknown = null;
   isAutoStart = false;
+
+  /**
+   * When true, pro plugins are usable without logging in.
+   * Useful for self-hosted or branded deployments (e.g., celestrak).
+   */
+  isDisableLoginGate = false;
 
   /**
    * Callback function that is called when the settings are loaded.

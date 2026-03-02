@@ -51,6 +51,12 @@ export class UiSettings {
    * The text and version number still appear.
    */
   isShowSplashScreen = true;
+  /**
+   * Whitelist of splash screen image filenames (without extension).
+   * - `null` (default): Show all bundled images.
+   * - `string[]`: Show only images whose filename matches an entry.
+   * - `[]`: Show no splash screen background image.
+   */
   splashScreenList: string[] | null = null;
   /** Flag to determine if loading hints are shown on splash screen*/
   isShowLoadingHints = true;

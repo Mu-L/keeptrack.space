@@ -191,6 +191,8 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   disableCameraControls: 'camera',
   isDragging: 'camera',
   isFocusOnSatelliteWhenSelected: 'camera',
+  isSmoothCameraTransitions: 'camera',
+  cameraTransitionDuration: 'camera',
   offsetCameraModeX: 'camera',
   offsetCameraModeZ: 'camera',
   fpsForwardSpeed: 'camera',
@@ -310,6 +312,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   lastSearchResults: 'core',
   minimumSearchCharacters: 'core',
   searchLimit: 'core',
+  isShowDecayedInSearch: 'core',
   limitSats: 'core',
   isDisableSelectSat: 'core',
   daysUntilObjectLost: 'core',
@@ -341,6 +344,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   lkVerify: 'core',
   settingsManager: 'core',
   isAutoStart: 'core',
+  isDisableLoginGate: 'core',
   onLoadCb: 'core',
 };
 
@@ -440,6 +444,7 @@ export class SettingsManager {
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_FREEZE_PROP_RATE_ON_DRAG, settingsManager.isFreezePropRateOnDrag.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DISABLE_TIME_MACHINE_TOASTS, settingsManager.isDisableTimeMachineToasts.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SEARCH_LIMIT, settingsManager.searchLimit.toString());
+      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SHOW_DECAYED_IN_SEARCH, settingsManager.isShowDecayedInSearch.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.GRAPHICS_SETTINGS_GODRAYS_SAMPLES, settingsManager.godraysSamples.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.GRAPHICS_SETTINGS_GODRAYS_DECAY, settingsManager.godraysDecay.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.GRAPHICS_SETTINGS_GODRAYS_EXPOSURE, settingsManager.godraysExposure.toString());
@@ -508,6 +513,12 @@ export class SettingsManager {
 
     if (searchLimitString !== null) {
       this.searchLimit = parseInt(searchLimitString);
+    }
+
+    const showDecayedString = PersistenceManager.getInstance().getItem(StorageKey.SETTINGS_SHOW_DECAYED_IN_SEARCH);
+
+    if (showDecayedString !== null) {
+      this.isShowDecayedInSearch = showDecayedString === 'true';
     }
   }
 

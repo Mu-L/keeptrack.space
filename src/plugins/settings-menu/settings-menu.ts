@@ -176,12 +176,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
             </div>
             <div class="row">
               <div class="input-field col s12">
-                <input value="150" id="maxSearchSats" type="text" data-position="top" data-delay="50" data-tooltip="Maximum satellites to display in search" />
-                <label for="maxSearchSats" class="active">Maximum Satellites in Search</label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="input-field col s12">
                 <input value="30" id="satFieldOfView" type="text" data-position="top" data-delay="50" data-tooltip="What is the satellite's field of view in degrees" />
                 <label for="satFieldOfView" class="active">Satellite Field of View</label>
               </div>
@@ -270,11 +264,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       satLabelModeEl.value = settingsManager.satLabelMode.toString();
     }
 
-    const maxSearchSatsEl = <HTMLInputElement>getEl('maxSearchSats');
-
-    if (maxSearchSatsEl) {
-      maxSearchSatsEl.value = settingsManager.searchLimit.toString();
-    }
   }
 
   // eslint-disable-next-line complexity
@@ -339,7 +328,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     settingsManager.satLabelMode = SatLabelMode.FOV_ONLY;
     settingsManager.isFreezePropRateOnDrag = false;
     settingsManager.isDisableTimeMachineToasts = false;
-    settingsManager.searchLimit = 600;
     PersistenceManager.getInstance().removeItem(StorageKey.SETTINGS_DOT_COLORS);
     SettingsManager.preserveSettings();
     SettingsMenuPlugin.syncOnLoad();
@@ -423,16 +411,6 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     if (isNaN(newFieldOfView)) {
       (<HTMLInputElement>getEl('satFieldOfView')).value = '30';
       uiManagerInstance.toast('Invalid field of view value!', ToastMsgType.critical);
-    }
-
-    const maxSearchSats = parseInt((<HTMLInputElement>getEl('maxSearchSats')).value);
-
-    if (isNaN(maxSearchSats)) {
-      (<HTMLInputElement>getEl('maxSearchSats')).value = settingsManager.searchLimit.toString();
-      uiManagerInstance.toast('Invalid max search sats value!', ToastMsgType.critical);
-    } else {
-      settingsManager.searchLimit = maxSearchSats;
-      uiManagerInstance.searchManager.doSearch(ServiceLocator.getUiManager().searchManager.getCurrentSearch());
     }
 
     colorSchemeManagerInstance.calculateColorBuffers(true);

@@ -2722,6 +2722,8 @@ button.ui-button::-moz-focus-inner {
   z-index: 5;
   background: var(--color-dark-background);
   margin-bottom: 1rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
 }
 
 .side-menu-title-left,
@@ -3028,6 +3030,31 @@ nav a.sidenav-trigger i {
 .search-result:hover {
   background: rgba(0, 0, 0, 0.2);
   cursor: pointer;
+}
+
+.search-result-limit {
+  padding: 4px 10px;
+  font-size: 0.8em;
+  color: var(--color-dark-text-accent);
+  text-align: center;
+  border-bottom: 1px solid var(--color-dark-border);
+}
+
+.search-result-decayed {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.search-result-decayed:hover {
+  background: none;
+  cursor: default;
+}
+
+.search-result-decayed-badge {
+  font-size: 0.75em;
+  color: #ff6b6b;
+  margin-left: 8px;
+  white-space: nowrap;
 }
 
 .search-slide-down {

@@ -91,6 +91,14 @@ export class SearchManager {
 
   private addListeners_() {
     getEl('search-results')?.addEventListener('click', (evt: Event) => {
+      // Don't allow clicking on decayed results
+      const targetEl = evt.target as HTMLElement;
+      const resultEl = targetEl.closest('.search-result');
+
+      if (resultEl?.classList.contains('search-result-decayed')) {
+        return;
+      }
+
       const satId = SearchManager.getSatIdFromSearchResults_(evt);
 
       if (satId === -1) {
@@ -107,6 +115,12 @@ export class SearchManager {
       }
     });
     getEl('search-results')?.addEventListener('mouseover', (evt) => {
+      const targetEl = evt.target as HTMLElement;
+
+      if (targetEl.closest('.search-result-decayed')) {
+        return;
+      }
+
       const satId = SearchManager.getSatIdFromSearchResults_(evt);
 
       if (satId === -1) {
@@ -268,20 +282,19 @@ export class SearchManager {
      * let searchList = searchString.split(/(?![0-9]+)\s(?=[0-9]+)|,/u);
      */
 
-    let results = <SearchResult[]>[];
-    // If so, then do a number only search
+    let searchResult: { results: SearchResult[]; totalFound: number };
 
+    // If so, then do a number only search
     if ((/^[0-9,]+$/u).test(searchString)) {
-      results = SearchManager.doNumOnlySearch_(searchString);
+      searchResult = SearchManager.doNumOnlySearch_(searchString);
     } else {
       // If not, then do a regular search
-      results = SearchManager.doRegularSearch_(searchString);
+      searchResult = SearchManager.doRegularSearch_(searchString);
     }
 
-    EventBus.getInstance().emit(EventBusEvent.searchUpdated, searchString_, results.length, settingsManager.searchLimit);
+    const { results, totalFound } = searchResult;
 
-    // Remove any results greater than the maximum allowed
-    results = results.splice(0, settingsManager.searchLimit);
+    EventBus.getInstance().emit(EventBusEvent.searchUpdated, searchString_, totalFound, settingsManager.searchLimit);
 
     // Make a group to hilight results
     const idList = results.map((sat) => Number(sat.id));
@@ -299,7 +312,7 @@ export class SearchManager {
     groupManagerInstance.selectGroup(dispGroup);
 
     if (!isPreventDropDown && idList.length > 0) {
-      this.fillResultBox(results, catalogManagerInstance);
+      this.fillResultBox(results, catalogManagerInstance, totalFound);
     }
 
     if (idList.length === 0) {
@@ -310,8 +323,17 @@ export class SearchManager {
     }
   }
 
-  private static doRegularSearch_(searchString: string) {
+  private static doRegularSearch_(searchString: string): { results: SearchResult[]; totalFound: number } {
     const results: SearchResult[] = [];
+    let totalFound = 0;
+    const limit = settingsManager.searchLimit;
+
+    const addResult_ = (result: SearchResult) => {
+      totalFound++;
+      if (results.length < limit) {
+        results.push(result);
+      }
+    };
 
     // Split string into array using comma
     const searchList = searchString.split(/,/u);
@@ -324,9 +346,6 @@ export class SearchManager {
 
     searchList.forEach((searchStringIn) => {
       satData.every((sat) => {
-        if (results.length >= settingsManager.searchLimit) {
-          return false;
-        }
         const len = searchStringIn.length;
 
         if (len === 0) {
@@ -339,7 +358,7 @@ export class SearchManager {
 
         // TODO: Vimpel additions may slow things down - perhaps make it a setting?
         if ((sat.name.toUpperCase().indexOf(searchStringIn) !== -1 && !sat.name.includes('Vimpel'))) { // || sat.name.toUpperCase() === searchStringIn) {
-          results.push({
+          addResult_({
             strIndex: sat.name.indexOf(searchStringIn),
             searchType: SearchResultType.OBJECT_NAME,
             patlen: len,
@@ -350,7 +369,7 @@ export class SearchManager {
         }
 
         if (sat.altName && sat.altName.toUpperCase().indexOf(searchStringIn) !== -1) {
-          results.push({
+          addResult_({
             strIndex: sat.altName.toUpperCase().indexOf(searchStringIn),
             searchType: SearchResultType.ALT_NAME,
             patlen: len,
@@ -361,7 +380,7 @@ export class SearchManager {
         }
 
         if (typeof sat.bus !== 'undefined' && sat.bus.toUpperCase().indexOf(searchStringIn) !== -1) {
-          results.push({
+          addResult_({
             strIndex: sat.bus.toUpperCase().indexOf(searchStringIn),
             searchType: SearchResultType.BUS,
             patlen: len,
@@ -374,7 +393,7 @@ export class SearchManager {
         if (!sat.desc) {
           // Do nothing there is no description property
         } else if (sat.desc.toUpperCase().indexOf(searchStringIn) !== -1) {
-          results.push({
+          addResult_({
             strIndex: sat.desc.toUpperCase().indexOf(searchStringIn),
             searchType: SearchResultType.MISSILE,
             patlen: len,
@@ -392,7 +411,7 @@ export class SearchManager {
             return true;
           }
 
-          results.push({
+          addResult_({
             strIndex: sat.sccNum.indexOf(searchStringIn),
             searchType: SearchResultType.NORAD_ID,
             patlen: len,
@@ -408,7 +427,7 @@ export class SearchManager {
             return true;
           }
 
-          results.push({
+          addResult_({
             strIndex: sat.intlDes.indexOf(searchStringIn),
             searchType: SearchResultType.INTLDES,
             patlen: len,
@@ -419,7 +438,7 @@ export class SearchManager {
         }
 
         if (sat.launchVehicle && sat.launchVehicle.toUpperCase().indexOf(searchStringIn) !== -1) {
-          results.push({
+          addResult_({
             strIndex: sat.launchVehicle.toUpperCase().indexOf(searchStringIn),
             searchType: SearchResultType.LAUNCH_VEHICLE,
             patlen: len,
@@ -433,11 +452,13 @@ export class SearchManager {
       });
     });
 
-    return results;
+    return { results, totalFound };
   }
 
-  private static doNumOnlySearch_(searchString: string) {
-    let results: SearchResult[] = [];
+  private static doNumOnlySearch_(searchString: string): { results: SearchResult[]; totalFound: number } {
+    const results: SearchResult[] = [];
+    let totalFound = 0;
+    const limit = settingsManager.searchLimit;
 
     // Split string into array using comma
     let searchList = searchString.split(/,/u).filter((str) => str.length > 0);
@@ -453,6 +474,7 @@ export class SearchManager {
 
     let i = 0;
     let lastFoundI = 0;
+    const seenIds = new Set<number>();
 
     searchList.forEach((searchStringIn) => {
       // Don't search for things until at least the minimum characters
@@ -465,25 +487,27 @@ export class SearchManager {
       }
 
       for (; i < satData.length; i++) {
-        if (results.length >= settingsManager.searchLimit) {
-          break;
-        }
-
         const sat = satData[i];
-        // Ignore Notional Satellites unless all 6 characters are entered
 
+        // Ignore Notional Satellites unless all 6 characters are entered
         if (sat.type === SpaceObjectType.NOTIONAL && searchStringIn.length < 6) {
           continue;
         }
 
         // Check if matches 6Digit
         if (sat.sccNum6 && sat.sccNum6.indexOf(searchStringIn) !== -1) {
-          results.push({
-            strIndex: sat.sccNum.indexOf(searchStringIn),
-            patlen: searchStringIn.length,
-            id: sat.id,
-            searchType: SearchResultType.NORAD_ID,
-          });
+          if (!seenIds.has(sat.id)) {
+            seenIds.add(sat.id);
+            totalFound++;
+            if (results.length < limit) {
+              results.push({
+                strIndex: sat.sccNum.indexOf(searchStringIn),
+                patlen: searchStringIn.length,
+                id: sat.id,
+                searchType: SearchResultType.NORAD_ID,
+              });
+            }
+          }
           lastFoundI = i;
 
           if (searchStringIn.length === 6) {
@@ -493,10 +517,7 @@ export class SearchManager {
       }
     });
 
-    // Remove any duplicates in results
-    results = results.filter((result, index, self) => index === self.findIndex((t) => t.id === result.id));
-
-    return results;
+    return { results, totalFound };
   }
 
   private static getSearchableObjects_(isIncludeMissiles = true): (Satellite | MissileObject)[] | Satellite[] {
@@ -521,6 +542,15 @@ export class SearchManager {
           return false;
         } // Everything has a name. If it doesn't then assume it isn't what we are searching for.
 
+        // Skip decayed satellites (position 0,0,0) if setting is disabled
+        if (!settingsManager.isShowDecayedInSearch) {
+          const pos = (obj as unknown as { position?: { x: number; y: number; z: number } }).position;
+
+          if (pos && pos.x === 0 && pos.y === 0 && pos.z === 0) {
+            return false;
+          }
+        }
+
         return true;
       }) as (Satellite & MissileObject)[]
     ).sort((a, b) => {
@@ -536,16 +566,25 @@ export class SearchManager {
     return isIncludeMissiles ? (searchableObjects as (Satellite | MissileObject)[]) : (searchableObjects as Satellite[]);
   }
 
-  fillResultBox(results: SearchResult[], catalogManagerInstance: CatalogManager) {
+  fillResultBox(results: SearchResult[], catalogManagerInstance: CatalogManager, totalFound?: number) {
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
     const satData = catalogManagerInstance.objectCache;
 
     const resultsBox = getEl('search-results', true);
-    const htmlStr = results.reduce((html, result) => {
-      const obj = <Satellite | OemSatellite | MissileObject>satData[result.id];
+    let htmlStr = '';
 
-      html += `<div class="search-result" data-obj-id="${obj.id}">`;
+    if (totalFound && totalFound > results.length) {
+      htmlStr += `<div class="search-result-limit">Showing ${results.length} results of ${totalFound} found</div>`;
+    }
+
+    htmlStr += results.reduce((html, result) => {
+      const obj = <Satellite | OemSatellite | MissileObject>satData[result.id];
+      const pos = (obj as unknown as { position?: { x: number; y: number; z: number } }).position;
+      const isDecayed = pos && pos.x === 0 && pos.y === 0 && pos.z === 0;
+      const decayedClass = isDecayed ? ' search-result-decayed' : '';
+
+      html += `<div class="search-result${decayedClass}" data-obj-id="${obj.id}">`;
       html += '<div class="truncate-search">';
 
       // Left half of search results
@@ -658,7 +697,11 @@ export class SearchManager {
           break;
       }
 
-      html += '</div></div>';
+      html += '</div>';
+      if (isDecayed) {
+        html += '<div class="search-result-decayed-badge">Decayed</div>';
+      }
+      html += '</div>';
 
       return html;
     }, '');
@@ -673,7 +716,7 @@ export class SearchManager {
       satInfoBoxPlugin.initPosition(satInfoboxDom, false);
     }
 
-    if (!settingsManager.isEmbedMode) {
+    if (!settingsManager.isEmbedMode && !this.isResultsOpen) {
       const searchResultsEl = getEl('search-results', true);
 
       if (searchResultsEl) {
