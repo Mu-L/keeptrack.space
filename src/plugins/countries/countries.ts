@@ -1,3 +1,4 @@
+import { countryFlagIconMap } from '@app/app/data/catalogs/countries';
 import { GroupType } from '@app/app/data/object-group';
 import { SearchResult } from '@app/app/ui/search-manager';
 import { StringExtractor } from '@app/app/ui/string-extractor';
@@ -24,6 +25,7 @@ import { settingsManager } from '@app/settings/settings';
 import flagPng from '@public/img/icons/flag.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { TopMenu } from '../top-menu/top-menu';
+import './countries.css';
 
 /**
  * Countries Menu Plugin
@@ -171,16 +173,20 @@ export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCap
   }
 
   private generateCountryList_(): string {
-    const countryCodeList = [] as string[];
+    const uniqueCodes = [] as string[];
+    const countByCode: Record<string, number> = {};
     const catalogManager = ServiceLocator.getCatalogManager();
 
     catalogManager.getSats().forEach((sat) => {
-      if (sat.country && !countryCodeList.includes(sat.country) && sat.country !== 'ANALSAT') {
-        countryCodeList.push(sat.country);
+      if (sat.country && sat.country !== 'ANALSAT') {
+        countByCode[sat.country] = (countByCode[sat.country] ?? 0) + 1;
+        if (!uniqueCodes.includes(sat.country)) {
+          uniqueCodes.push(sat.country);
+        }
       }
     });
 
-    const countries = countryCodeList.map((countryCode) => {
+    const countries = uniqueCodes.map((countryCode) => {
       const country = StringExtractor.extractCountry(countryCode);
 
       return { country, countryCode };
@@ -202,8 +208,15 @@ export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCap
     // Create a single <li> per country, with all codes merged by '|'
     const mergedList = Object.entries(countryGroups).reduce((acc, [country, codes]) => {
       const dataGroup = codes.join('|');
+      const flagCode = countryFlagIconMap[codes[0]] ?? 'unknown';
+      const flagClass = `fi fi-${flagCode.toLowerCase()}`;
+      const satCount = codes.reduce((sum, code) => sum + (countByCode[code] ?? 0), 0);
 
-      return `${acc}<li class="menu-selectable country-option" data-group="${dataGroup}">${country}</li>`;
+      return `${acc}<li class="menu-selectable country-option" data-group="${dataGroup}">` +
+        `<span class="${flagClass} country-flag"></span>` +
+        `<span class="country-name">${country}</span>` +
+        `<span class="country-count">${satCount.toLocaleString()}</span>` +
+        `</li>`;
     }, '');
 
     return `${mergedList}<br/>`;
