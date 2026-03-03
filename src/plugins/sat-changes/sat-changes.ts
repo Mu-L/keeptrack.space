@@ -37,7 +37,7 @@ export const uiManagerInit = () => {
   getEl('left-menus')?.insertAdjacentHTML(
     'beforeend',
     html`
-        <div id="satChng-menu" class="side-menu-parent start-hidden text-select">
+        <div id="satChng-menu" class="side-menu-parent start-hidden">
           <div id="satChng-content" class="side-menu">
             <div class="row">
               <h5 class="center-align">${sc('title')}</h5>

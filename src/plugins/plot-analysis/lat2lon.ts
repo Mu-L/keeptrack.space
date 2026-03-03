@@ -1,4 +1,6 @@
 import { EChartsData, GetSatType } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { SatMathApi } from '@app/engine/math/sat-math-api';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
@@ -8,8 +10,6 @@ import * as echarts from 'echarts';
 import 'echarts-gl';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class Lat2LonPlots extends KeepTrackPlugin {
   readonly id = 'Lat2LonPlots';
@@ -39,7 +39,7 @@ export class Lat2LonPlots extends KeepTrackPlugin {
 
   sideMenuElementName = 'lat2lon-plots-menu';
   sideMenuElementHtml: string = html`
-  <div id="lat2lon-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal">
+  <div id="lat2lon-plots-menu" class="side-menu-parent start-hidden plot-analysis-menu-normal">
     <div id="plot-analysis-content" class="side-menu" style="height: 80%">
       <div id="${this.plotCanvasId}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
     </div>

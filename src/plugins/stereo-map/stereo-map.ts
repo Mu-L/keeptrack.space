@@ -165,7 +165,7 @@ export class StereoMap extends KeepTrackPlugin {
     }
 
     return html`
-      <div id="map-menu" class="side-menu-parent start-hidden text-select">
+      <div id="map-menu" class="side-menu-parent start-hidden">
         <div id="map-menu-content" class="side-menu">
           ${innerHtml}
         </div>

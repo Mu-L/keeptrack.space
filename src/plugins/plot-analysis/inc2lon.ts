@@ -143,7 +143,7 @@ export class Inc2LonPlots extends KeepTrackPlugin {
     }
 
     return html`
-      <div id="inc2lon-plots-menu" class="side-menu-parent start-hidden text-select">
+      <div id="inc2lon-plots-menu" class="side-menu-parent start-hidden">
         <div id="inc2lon-plots-menu-content" class="side-menu">
           ${innerHtml}
         </div>

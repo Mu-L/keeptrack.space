@@ -118,7 +118,7 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
     ]);
 
     return html`
-      <div id="catalog-management-menu" class="side-menu-parent start-hidden text-select">
+      <div id="catalog-management-menu" class="side-menu-parent start-hidden">
         <div class="side-menu" style="scrollbar-gutter: stable;">
           <div id="cm-dropzone" class="cm-dropzone">
             Drop .tce, .tle, or .txt file to load catalog

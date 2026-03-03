@@ -151,7 +151,7 @@ export class Inc2AltPlots extends KeepTrackPlugin {
     }
 
     return html`
-      <div id="inc2alt-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal">
+      <div id="inc2alt-plots-menu" class="side-menu-parent start-hidden plot-analysis-menu-normal">
         <div id="plot-analysis-content" class="side-menu">
           ${innerHtml}
         </div>

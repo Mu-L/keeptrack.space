@@ -48,7 +48,7 @@ export class MissilePlugin extends KeepTrackPlugin {
 
   private buildSideMenuHtml_(): string {
     return html`
-    <div id="${this.id}-menu" class="side-menu-parent start-hidden text-select">
+    <div id="${this.id}-menu" class="side-menu-parent start-hidden">
       <div id="${this.id}-content" class="side-menu">
         <div class="row">
           <form id="${this.id}-menu-form" class="col s12">

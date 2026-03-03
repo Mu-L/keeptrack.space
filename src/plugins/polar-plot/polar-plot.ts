@@ -3,16 +3,16 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import polarPlotPng from '@public/img/icons/polar-plot.png';
 
 
-import { EventBus } from '@app/engine/events/event-bus';
-import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { html } from '@app/engine/utils/development/formatter';
-import { BaseObject, Degrees, Satellite, MILLISECONDS_PER_SECOND, secondsPerDay } from '@ootk/src/main';
-import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { html } from '@app/engine/utils/development/formatter';
+import { BaseObject, Degrees, MILLISECONDS_PER_SECOND, Satellite, secondsPerDay } from '@ootk/src/main';
+import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 type PolarPlotData = Array<[Degrees, Degrees]>
 
@@ -60,7 +60,7 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
   }
   sideMenuElementName: string = 'polar-plot-menu';
   sideMenuElementHtml: string = html`
-  <div id="polar-plot-menu" class="side-menu-parent start-hidden text-select">
+  <div id="polar-plot-menu" class="side-menu-parent start-hidden">
     <div id="polar-plot-content" class="side-menu" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
       <span id="polar-plot-warning" class="text-center">Satellite is not in view for the next ${(this.plotDuration_ * 24).toFixed(0)} hours</span>
       <canvas id="polar-plot" class="w-96" width="1000" height="1000"></canvas>

@@ -57,7 +57,7 @@ export class SensorListPlugin extends KeepTrackPlugin implements ICommandPalette
   sideMenuElementName: string = 'sensor-list-menu';
   sideMenuElementHtml: string =
     html`
-    <div id="sensor-list-menu" class="side-menu-parent start-hidden text-select">
+    <div id="sensor-list-menu" class="side-menu-parent start-hidden">
         <div id="sensor-list-content" class="side-menu">
         <div class="row">
           <ul id="reset-sensor-text" class="sensor-reset-menu">

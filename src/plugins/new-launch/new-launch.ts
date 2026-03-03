@@ -128,7 +128,7 @@ export class NewLaunch extends KeepTrackPlugin {
     const optionsHtml = NewLaunch.buildFacilityOptionsHtml();
 
     return html`
-      <div id="newLaunch-menu" class="side-menu-parent start-hidden text-select">
+      <div id="newLaunch-menu" class="side-menu-parent start-hidden">
         <div id="newLaunch-content" class="side-menu">
           <div class="row">
             <h5 class="center-align">New Launch</h5>

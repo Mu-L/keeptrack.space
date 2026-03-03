@@ -91,7 +91,7 @@ test('keepTrackApi Unit Testing', () => {
 
 describe('html', () => {
   test('html Good HTML', () => {
-    expect(() => html`<div id="about-menu" class="side-menu-parent start-hidden text-select">`).not.toThrow(Error);
+    expect(() => html`<div id="about-menu" class="side-menu-parent start-hidden">`).not.toThrow(Error);
   });
 
   test('html Bad HTML', () => {

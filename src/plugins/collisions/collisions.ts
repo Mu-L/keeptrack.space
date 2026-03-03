@@ -101,7 +101,7 @@ export class Collisions extends KeepTrackPlugin {
 
   protected buildSideMenuHtml_(): string {
     return html`
-      <div id="Collisions-menu" class="side-menu-parent start-hidden text-select">
+      <div id="Collisions-menu" class="side-menu-parent start-hidden">
         <div id="Collisions-content" class="side-menu">
           <div class="row">
             <div class="col-toolbar">

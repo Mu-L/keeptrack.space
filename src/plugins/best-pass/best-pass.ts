@@ -105,7 +105,7 @@ export class BestPassPlugin extends KeepTrackPlugin {
 
   protected buildSideMenuHtml_(): string {
     return html`
-      <div id="best-pass-menu" class="side-menu-parent start-hidden text-select">
+      <div id="best-pass-menu" class="side-menu-parent start-hidden">
         <div class="side-menu">
           ${this.buildFormHtml_()}
         </div>

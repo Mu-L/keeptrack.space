@@ -86,7 +86,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
 
   isWatchlistChanged: boolean | null = null;
   sideMenuElementHtml = html`
-    <div id="watchlist-menu" class="side-menu-parent start-hidden text-select">
+    <div id="watchlist-menu" class="side-menu-parent start-hidden">
       <div id="watchlist-content" class="side-menu">
         <div class="row">
           <h5 class="center-align">Watchlist</h5>

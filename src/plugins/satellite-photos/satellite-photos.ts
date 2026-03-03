@@ -71,7 +71,7 @@ export class SatellitePhotos extends KeepTrackPlugin {
 
   private buildSideMenuHtml_(): string {
     return html`
-      <div id="sat-photo-menu" class="side-menu-parent start-hidden text-select">
+      <div id="sat-photo-menu" class="side-menu-parent start-hidden">
         <div id="sat-photo-menu-content" class="side-menu">
           <ul id="sat-photo-menu-list">
             <li id="meteosat9-link" class="menu-selectable">MeteoSat 9</li>

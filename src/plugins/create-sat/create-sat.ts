@@ -293,7 +293,7 @@ export class CreateSat extends KeepTrackPlugin {
     ]);
 
     return html`
-    <div id="createSat-menu" class="side-menu-parent start-hidden text-select">
+    <div id="createSat-menu" class="side-menu-parent start-hidden">
       <div id="createSat-content" class="side-menu" style="scrollbar-gutter: stable;">
         <div class="row">
           ${tabsHtml}

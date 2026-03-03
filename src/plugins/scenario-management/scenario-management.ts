@@ -61,7 +61,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
   protected formPrefix_ = 'scenario-management-form';
   sideMenuElementName: string = 'scenario-management-menu';
   sideMenuElementHtml: string = html`
-  <div id="scenario-management-menu" class="side-menu-parent start-hidden text-select">
+  <div id="scenario-management-menu" class="side-menu-parent start-hidden">
     <div id="scenario-management-content" class="side-menu">
       <div class="row">
         <form id="${this.formPrefix_}-form">

@@ -41,7 +41,7 @@ export class ShortTermFences extends KeepTrackPlugin {
 
   sideMenuElementName = 'stf-menu';
   sideMenuElementHtml: string = html`
-  <div id="stf-menu" class="side-menu-parent start-hidden text-select">
+  <div id="stf-menu" class="side-menu-parent start-hidden">
     <div id="stf-content" class="side-menu">
       <div class="row">
         <h5 class="center-align">Short Term Fence</h5>

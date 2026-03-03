@@ -77,7 +77,7 @@ export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCap
 
   private buildSideMenuHtml_(): string {
     return html`
-      <div id="countries-menu" class="side-menu-parent start-hidden text-select">
+      <div id="countries-menu" class="side-menu-parent start-hidden">
         <div id="country-menu" class="side-menu">
           <ul id="country-list">
           </ul>

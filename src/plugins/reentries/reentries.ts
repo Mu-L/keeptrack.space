@@ -136,7 +136,7 @@ export class Reentries extends KeepTrackPlugin {
     ]);
 
     return html`
-      <div id="reentries-menu" class="side-menu-parent start-hidden text-select">
+      <div id="reentries-menu" class="side-menu-parent start-hidden">
         <div id="reentries-content" class="side-menu">
           ${tabsHtml}
         </div>

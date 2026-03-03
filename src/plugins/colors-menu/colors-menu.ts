@@ -57,7 +57,7 @@ export class ColorMenu extends KeepTrackPlugin implements ICommandPaletteCapable
 
   private buildSideMenuHtml_(): string {
     return html`
-      <div id="color-scheme-menu" class="side-menu-parent start-hidden text-select">
+      <div id="color-scheme-menu" class="side-menu-parent start-hidden">
         <div id="colors-menu" class="side-menu">
           <ul>
             ${this.buildColorSchemeList_()}

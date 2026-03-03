@@ -82,7 +82,7 @@ export class DopsPlugin extends KeepTrackPlugin {
 
   protected buildSideMenuHtml_(): string {
     return html`
-    <div id="dops-menu" class="side-menu-parent start-hidden text-select">
+    <div id="dops-menu" class="side-menu-parent start-hidden">
       <div id="dops-content" class="side-menu">
         <div class="row">
           <h5 class="center-align">${t7e('plugins.DopsPlugin.title')}</h5>

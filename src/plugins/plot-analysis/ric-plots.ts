@@ -1,4 +1,6 @@
 import { EChartsData, MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { SatMathApi } from '@app/engine/math/sat-math-api';
@@ -12,8 +14,6 @@ import * as echarts from 'echarts';
 import 'echarts-gl';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 type EChartsOption = echarts.EChartsOption;
 
@@ -56,7 +56,7 @@ export class RicPlot extends KeepTrackPlugin {
 
   sideMenuElementName = 'ric-plots-menu';
   sideMenuElementHtml: string = html`
-  <div id="ric-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal">
+  <div id="ric-plots-menu" class="side-menu-parent start-hidden plot-analysis-menu-normal">
     <div id="plot-analysis-content" class="side-menu">
       <div id="${this.plotCanvasId}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
     </div>

@@ -308,7 +308,7 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
 
   private buildSideMenuHtml_(): string {
     return html`
-      <div id="catalog-browser-menu" class="side-menu-parent start-hidden text-select">
+      <div id="catalog-browser-menu" class="side-menu-parent start-hidden">
         <div class="side-menu">
           <div class="cb-toggle-row">
             <div class="switch">

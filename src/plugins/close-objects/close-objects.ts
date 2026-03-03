@@ -108,7 +108,7 @@ export class CloseObjectsPlugin extends KeepTrackPlugin {
     const title = t7e('plugins.CloseObjectsPlugin.title' as Parameters<typeof t7e>[0]);
 
     return html`
-      <div id="close-objects-menu" class="side-menu-parent start-hidden text-select">
+      <div id="close-objects-menu" class="side-menu-parent start-hidden">
         <div class="side-menu">
           <div class="row" style="margin: 5px 1rem 0; display: flex; justify-content: center; align-items: center;">
             <h5 class="center-align" style="margin: 0px auto">${title}</h5>

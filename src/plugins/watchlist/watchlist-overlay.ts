@@ -11,7 +11,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl, setInnerHtml } from '@app/engine/utils/get-el';
 import { shake } from '@app/engine/utils/shake';
 import { showLoading } from '@app/engine/utils/showLoading';
-import { Satellite, MILLISECONDS_PER_DAY } from '@ootk/src/main';
+import { MILLISECONDS_PER_DAY, Satellite } from '@ootk/src/main';
 import pictureInPicturePng from '@public/img/icons/picture-in-picture.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
@@ -67,7 +67,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
 
   lastOverlayUpdateTime = 0;
   sideMenuElementHtml = html`
-    <div id="info-overlay-menu" class="side-menu-parent start-hidden text-select">
+    <div id="info-overlay-menu" class="side-menu-parent start-hidden">
       <div id="info-overlay-content"></div>
     </div>`;
 

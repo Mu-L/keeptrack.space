@@ -90,7 +90,7 @@ export class NextLaunchesPlugin extends KeepTrackPlugin {
 
   sideMenuElementName: string = 'nextLaunch-menu';
   sideMenuElementHtml: string = html`
-  <div id="nextLaunch-menu" class="side-menu-parent start-hidden text-select">
+  <div id="nextLaunch-menu" class="side-menu-parent start-hidden">
     <div id="nextLaunch-content" class="side-menu">
       <div class="row">
         <h5 class="center-align">Next Launches</h5>

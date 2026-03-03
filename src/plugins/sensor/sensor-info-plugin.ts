@@ -1,4 +1,7 @@
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { LineManager } from '@app/engine/rendering/line-manager';
@@ -8,11 +11,8 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { keepTrackApi } from '@app/keepTrackApi';
 import { SpaceObjectType } from '@ootk/src/main';
-import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import sensorInfoPng from '@public/img/icons/sensor-info.png';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '@app/engine/audio/sounds';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class SensorInfoPlugin extends KeepTrackPlugin {
   readonly id = 'SensorInfoPlugin';
@@ -33,7 +33,7 @@ export class SensorInfoPlugin extends KeepTrackPlugin {
 
   sideMenuElementName: string = 'sensor-info-menu';
   sideMenuElementHtml: string = html`
-    <div id="sensor-info-menu" class="side-menu-parent start-hidden text-select">
+    <div id="sensor-info-menu" class="side-menu-parent start-hidden">
     <div id="sensor-content" class="side-menu">
         <div class="row">
         <h5 id="sensor-info-title" class="center-align">Sensor Name</h5>

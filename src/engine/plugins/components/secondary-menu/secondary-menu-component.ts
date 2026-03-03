@@ -19,6 +19,7 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { SoundNames } from '@app/engine/audio/sounds';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -26,7 +27,6 @@ import { clickAndDragWidth } from '@app/engine/utils/click-and-drag';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
-import { SoundNames } from '@app/engine/audio/sounds';
 import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
 import { ISecondaryMenuConfig } from '../../core/plugin-capabilities';
 import { SideMenuComponent } from '../side-menu/side-menu-component';
@@ -185,7 +185,7 @@ export class SecondaryMenuComponent {
   generateHtml(): string {
     return html`
       <div id="${this.elementName}"
-        class="side-menu-parent start-hidden text-select"
+        class="side-menu-parent start-hidden"
         style="z-index: ${this.config.zIndex.toString()};
         width: ${this.config.width.toString()}px;"
       >

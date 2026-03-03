@@ -51,7 +51,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
   bottomIconImg = settingsPng;
   sideMenuElementName: string = 'settings-menu';
   sideMenuElementHtml: string = html`
-  <div id="settings-menu" class="side-menu-parent start-hidden text-select">
+  <div id="settings-menu" class="side-menu-parent start-hidden">
     <div id="settings-content" class="side-menu">
       <div class="row">
         <form id="settings-form">

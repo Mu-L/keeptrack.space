@@ -42,7 +42,7 @@ export class OrbitGuardMenuPlugin extends KeepTrackPlugin {
   bottomIconImg = orbitguardPng;
   sideMenuElementName: string = 'maneuver-detection-menu';
   sideMenuElementHtml = html`
-    <div id="maneuver-detection-menu" class="side-menu-parent start-hidden text-select">
+    <div id="maneuver-detection-menu" class="side-menu-parent start-hidden">
       <div id="maneuver-detection-content" class="side-menu">
         <div class="row">
           <h1 class="center-align">OrbitGuard</h1>
