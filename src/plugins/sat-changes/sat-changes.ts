@@ -8,8 +8,11 @@ import { getEl } from '@app/engine/utils/get-el';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
 import { dateFromJday } from '@app/engine/utils/transforms';
+import { t7e } from '@app/locales/keys';
 import satChngPng from '@public/img/icons/sats.png';
 import './components/sat-changes.css';
+
+const sc = (key: string) => t7e(`plugins.SatChanges.${key}` as Parameters<typeof t7e>[0]);
 
 /**
  *  ////////////////////////////////////////////////////////////////////////////
@@ -37,7 +40,7 @@ export const uiManagerInit = () => {
         <div id="satChng-menu" class="side-menu-parent start-hidden text-select">
           <div id="satChng-content" class="side-menu">
             <div class="row">
-              <h5 class="center-align">Interesting Movements</h5>
+              <h5 class="center-align">${sc('title')}</h5>
               <table id="satChng-table" class="center-align"></table>
             </div>
           </div>
@@ -53,7 +56,7 @@ export const uiManagerInit = () => {
           <div class="bmenu-item-inner">
             <img alt="satchng" src="" delayedsrc="${satChngPng}" />
           </div>
-          <span class="bmenu-title">Satellite Changes</span>
+          <span class="bmenu-title">${sc('bottomIconLabel')}</span>
         </div>
         `,
   );
@@ -176,19 +179,19 @@ export const getSatChngJson = (json) => {
   let tr = tbl.insertRow();
   let tdT = tr.insertCell();
 
-  tdT.appendChild(document.createTextNode('Time'));
+  tdT.appendChild(document.createTextNode(sc('tableHeaders.time')));
   tdT.setAttribute('style', 'text-decoration: underline');
   let tdSat = tr.insertCell();
 
-  tdSat.appendChild(document.createTextNode('Sat'));
+  tdSat.appendChild(document.createTextNode(sc('tableHeaders.satellite')));
   tdSat.setAttribute('style', 'text-decoration: underline');
   let tdInc = tr.insertCell();
 
-  tdInc.appendChild(document.createTextNode('Inc'));
+  tdInc.appendChild(document.createTextNode(sc('tableHeaders.inclination')));
   tdInc.setAttribute('style', 'text-decoration: underline');
   let tdPer = tr.insertCell();
 
-  tdPer.appendChild(document.createTextNode('Per'));
+  tdPer.appendChild(document.createTextNode(sc('tableHeaders.period')));
   tdPer.setAttribute('style', 'text-decoration: underline');
 
   // 20 rows max
