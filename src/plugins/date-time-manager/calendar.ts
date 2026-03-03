@@ -7,6 +7,8 @@ import { setInnerHtml } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
 import { WatchlistOverlay } from '../watchlist/watchlist-overlay';
 
+const dt = (key: string) => t7e(`plugins.DateTimeManager.${key}` as Parameters<typeof t7e>[0]);
+
 export class Calendar {
   private readonly containerId: string;
   private calendarDate: Date;
@@ -50,11 +52,11 @@ export class Calendar {
 
     newDatepickerDiv.innerHTML = `
       <div class="ui-datepicker-header ui-widget-header ui-helper-clearfix ui-corner-all">
-        <a class="ui-datepicker-prev ui-corner-all" data-handler="prev" data-event="click" title="Prev">
-          <span class="ui-icon ui-icon-circle-triangle-w">Prev</span>
+        <a class="ui-datepicker-prev ui-corner-all" data-handler="prev" data-event="click" title="${dt('prev')}">
+          <span class="ui-icon ui-icon-circle-triangle-w">${dt('prev')}</span>
         </a>
-        <a class="ui-datepicker-next ui-corner-all" data-handler="next" data-event="click" title="Next">
-          <span class="ui-icon ui-icon-circle-triangle-e">Next</span>
+        <a class="ui-datepicker-next ui-corner-all" data-handler="next" data-event="click" title="${dt('next')}">
+          <span class="ui-icon ui-icon-circle-triangle-e">${dt('next')}</span>
         </a>
         <div class="ui-datepicker-title">
           <span class="ui-datepicker-month">${this.getUTCMonthName(this.calendarDate.getUTCMonth())}</span>&nbsp;
@@ -72,13 +74,13 @@ export class Calendar {
       ${this.renderTimePicker()}
       <div class="ui-datepicker-buttonpane ui-widget-content">
         <button type="button" class="ui-datepicker-current ui-state-default ui-priority-secondary ui-corner-all" data-handler="today" data-event="click">
-          ${t7e('time.calendar.now')}
+          ${dt('calendar.now')}
         </button>
         <button type="button" class="ui-datepicker-pause ui-state-default ui-priority-secondary ui-corner-all" data-handler="pause" data-event="click">
-          ${t7e('time.calendar.pause')}
+          ${dt('calendar.pause')}
         </button>
         <button type="button" class="ui-datepicker-close ui-state-default ui-priority-primary ui-corner-all" data-handler="hide" data-event="click">
-          ${t7e('time.calendar.done')}
+          ${dt('calendar.done')}
         </button>
       </div>
     `;
@@ -266,13 +268,13 @@ export class Calendar {
 
   private renderDayHeaders(): string {
     const daysOfWeek = [
-      t7e('time.days-short.1'),
-      t7e('time.days-short.2'),
-      t7e('time.days-short.3'),
-      t7e('time.days-short.4'),
-      t7e('time.days-short.5'),
-      t7e('time.days-short.6'),
-      t7e('time.days-short.0'),
+      dt('days-short.1'),
+      dt('days-short.2'),
+      dt('days-short.3'),
+      dt('days-short.4'),
+      dt('days-short.5'),
+      dt('days-short.6'),
+      dt('days-short.0'),
     ];
 
     return daysOfWeek
@@ -346,12 +348,12 @@ export class Calendar {
     return html`
       <div class="ui-timepicker-div">
         <dl>
-          <dt class="ui_tpicker_time_label">${t7e('time.calendar.time')}</dt>
+          <dt class="ui_tpicker_time_label">${dt('calendar.time')}</dt>
           <dd class="ui_tpicker_time">
             <input id="calendar-time-input" class="ui_tpicker_time_input keyboard-priority" value="${this.formatTime(hours, minutes, seconds)}">
             <span id="calendar-time-prop-rate">(x${propRate.toString()})</span>
           </dd>
-          <dt class="ui_tpicker_hour_label">${t7e('time.calendar.hour')}</dt>
+          <dt class="ui_tpicker_hour_label">${dt('calendar.hour')}</dt>
           <dd class="ui_tpicker_hour">
             <div id="ui_tpicker_hour_slider" class="ui_tpicker_hour_slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"
             style="display: inline-block; width: 100px;" data-min="0" data-max="23" data-step="1">
@@ -369,7 +371,7 @@ export class Calendar {
               </button>
             </span>
           </dd>
-          <dt class="ui_tpicker_minute_label">${t7e('time.calendar.minute')}</dt>
+          <dt class="ui_tpicker_minute_label">${dt('calendar.minute')}</dt>
           <dd class="ui_tpicker_minute">
             <div id="ui_tpicker_minute_slider" class="ui_tpicker_minute_slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"
             style="display: inline-block; width: 100px;" data-min="0" data-max="59" data-step="1">
@@ -387,7 +389,7 @@ export class Calendar {
               </button>
             </span>
           </dd>
-          <dt class="ui_tpicker_second_label">${t7e('time.calendar.second')}</dt>
+          <dt class="ui_tpicker_second_label">${dt('calendar.second')}</dt>
           <dd class="ui_tpicker_second">
             <div id="ui_tpicker_second_slider" class="ui_tpicker_second_slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"
             style="display: inline-block; width: 100px;" data-min="0" data-max="59" data-step="1">
@@ -405,7 +407,7 @@ export class Calendar {
               </button>
             </span>
           </dd>
-          <dt class="ui_tpicker_proprate_label">${t7e('time.calendar.propagation')}</dt>
+          <dt class="ui_tpicker_proprate_label">${dt('calendar.propagation')}</dt>
           <dd class="ui_tpicker_proprate">
             <div id="ui_tpicker_proprate_slider" class="ui_tpicker_proprate_slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"
             style="display: inline-block; width: 100px;" data-min="${this.propRateLimitMin.toString()}" data-max="${this.propRateLimitMax.toString()}" data-step="1">
@@ -430,25 +432,25 @@ export class Calendar {
 
   private getUTCMonthName(monthIndex: number): string {
     const monthNames = [
-      t7e('time.months.1'),
-      t7e('time.months.2'),
-      t7e('time.months.3'),
-      t7e('time.months.4'),
-      t7e('time.months.5'),
-      t7e('time.months.6'),
-      t7e('time.months.7'),
-      t7e('time.months.8'),
-      t7e('time.months.9'),
-      t7e('time.months.10'),
-      t7e('time.months.11'),
-      t7e('time.months.12'),
+      dt('months.1'),
+      dt('months.2'),
+      dt('months.3'),
+      dt('months.4'),
+      dt('months.5'),
+      dt('months.6'),
+      dt('months.7'),
+      dt('months.8'),
+      dt('months.9'),
+      dt('months.10'),
+      dt('months.11'),
+      dt('months.12'),
     ];
 
     return monthNames[monthIndex];
   }
 
   private getUTCDayFullName(dayIndex: number): string {
-    const dayNames = [t7e('time.days.0'), t7e('time.days.1'), t7e('time.days.2'), t7e('time.days.3'), t7e('time.days.4'), t7e('time.days.5'), t7e('time.days.6')];
+    const dayNames = [dt('days.0'), dt('days.1'), dt('days.2'), dt('days.3'), dt('days.4'), dt('days.5'), dt('days.6')];
 
     return dayNames[dayIndex];
   }
