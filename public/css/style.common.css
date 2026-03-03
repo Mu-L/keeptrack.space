@@ -4164,8 +4164,8 @@ input:focus {
 #version-text {
   font-family: var(--font-family);
   position: absolute;
-  left: 12px;
-  bottom: 12px;
+  left: 1rem;
+  top: 1rem;
   width: 100%;
   text-align: left;
   font-size: 14px;

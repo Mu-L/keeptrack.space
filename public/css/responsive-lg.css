@@ -141,4 +141,10 @@
   .truncate-search {
     width: 200px;
   }
+
+  #version-text {
+    top: unset;
+    bottom: 2rem;
+    left: 3rem;
+  }
 }
