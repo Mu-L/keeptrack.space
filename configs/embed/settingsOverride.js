@@ -290,6 +290,9 @@ const settingsOverride = {
       enabled: false,
       order: 1001,
     },
+    StarsPlugin: {
+      enabled: false,
+    },
     // Non-Menu plugins
     TooltipsPlugin: {
       enabled: false,
@@ -366,7 +369,7 @@ const settingsOverride = {
     isSupplementExternal: false,
   },
   isShowSecondaryLogo: false,
-  isEnableJscCatalog: true,
+  isEnableJscCatalog: false,
   noMeshManager: true,
   isShowSplashScreen: false,
   isDisableSensors: true,
@@ -396,12 +399,16 @@ const settingsOverride = {
   earthTextureStyle: 'earthmap', // 'earthmap' or 'flat'
   isEmbedMode: true,
   isDisableToasts: true,
+  isDisableUrlBar: true,
   isAutoStart: true,
+
+  initZoomLevel: 0.71,
 
   isDisableSkybox: true,
   isDisablePlanets: true,
 
   maxZoomDistance: 170_000,
+  isLocalRotateEnabled: false,
 };
 
 // Expose these to the console

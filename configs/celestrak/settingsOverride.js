@@ -195,7 +195,7 @@ const settingsOverride = {
       enabled: true,
     },
     ScreenRecorder: {
-      enabled: false,
+      enabled: true,
     },
     DopsPlugin: {
       enabled: false,
@@ -350,7 +350,7 @@ const settingsOverride = {
     CatalogBrowserPlugin: {
       enabled: true,
       order: 10,
-    }
+    },
   },
   dataSources: {
     tle: 'https://api.keeptrack.space/v2/sats/celestrak',
