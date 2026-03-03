@@ -138,6 +138,13 @@ export class CameraState {
   speedModifier = 1;
   isHoldingDownAKey = 1;
 
+  // Velocity tracking for touch momentum (EMA-filtered)
+  prevDragX = 0;
+  prevDragY = 0;
+  dragVelocityX = 0;
+  dragVelocityY = 0;
+  hasPrevDragPos = false;
+
   // ============ Auto Behaviors ============
   isAutoPitchYawToTarget = false;
   private isAutoRotate_ = true;
@@ -420,6 +427,13 @@ export class CameraState {
     this.startMouseY = 0;
     this.speedModifier = 1;
     this.isHoldingDownAKey = 1;
+    // Reset velocity tracking
+    this.prevDragX = 0;
+    this.prevDragY = 0;
+    this.dragVelocityX = 0;
+    this.dragVelocityY = 0;
+    this.hasPrevDragPos = false;
+
     this.isAutoPitchYawToTarget = !!isHardReset;
   }
 

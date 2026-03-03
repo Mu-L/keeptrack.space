@@ -62,7 +62,7 @@ export class CameraInputHandler {
   }
 
   touchStart_() {
-    settingsManager.cameraMovementSpeed = Math.max(0.005 * this.state.zoomLevel, settingsManager.cameraMovementSpeedMin);
+    settingsManager.cameraMovementSpeed = Math.max(settingsManager.touchCameraMovementSpeed * this.state.zoomLevel, settingsManager.cameraMovementSpeedMin);
     this.state.screenDragPoint = [this.state.mouseX, this.state.mouseY];
     this.state.dragStartPitch = this.state.camPitch;
     this.state.dragStartYaw = this.state.camYaw;

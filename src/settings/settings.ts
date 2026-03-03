@@ -201,6 +201,11 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   fpsSideSpeed: 'camera',
   fpsVertSpeed: 'camera',
   fpsYawRate: 'camera',
+  touchCameraDecayFactor: 'camera',
+  touchCameraMovementSpeed: 'camera',
+  momentumDamping: 'camera',
+  touchMomentumDamping: 'camera',
+  isLocalRotateEnabled: 'camera',
   drawCameraWidget: 'camera',
 
   // Orbital

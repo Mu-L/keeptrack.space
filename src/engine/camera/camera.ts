@@ -78,6 +78,7 @@ export class Camera {
   readonly transition = new CameraTransition();
 
   private chaseSpeed_ = 0.0005;
+  private wasDragging_ = false;
   private fpsLastTime_ = <Milliseconds>0;
   private isRayCastingEarth_ = false;
   private panMovementSpeed_ = 0.5;
@@ -834,7 +835,7 @@ export class Camera {
     this.updatePitchYawSpeeds_(dt);
     this.updateFtsRotation_(dt);
 
-    this.state.camRotateSpeed -= this.state.camRotateSpeed * dt * settingsManager.cameraMovementSpeed;
+    this.state.camRotateSpeed *= settingsManager.momentumDamping ** dt;
 
     if (this.cameraType === CameraType.ASTRONOMY || this.cameraType === CameraType.PLANETARIUM) {
       this.updateAstronomyLookAround_(dt);
@@ -1347,7 +1348,6 @@ export class Camera {
   }
 
 
-
   private resetFpsPos_(): void {
     this.state.fpsPitch = <Degrees>0;
     this.state.fpsYaw = <Degrees>0;
@@ -1505,9 +1505,9 @@ export class Camera {
   }
 
   private isSatelliteCameraMode_(): boolean {
-    return this.cameraType === CameraType.FIXED_TO_SAT_LVLH
-      || this.cameraType === CameraType.FIXED_TO_SAT_ECI
-      || this.cameraType === CameraType.SATELLITE_FIRST_PERSON;
+    return this.cameraType === CameraType.FIXED_TO_SAT_LVLH ||
+      this.cameraType === CameraType.FIXED_TO_SAT_ECI ||
+      this.cameraType === CameraType.SATELLITE_FIRST_PERSON;
   }
 
   private updateFtsRotation_(dt: number) {
@@ -1585,6 +1585,10 @@ export class Camera {
   }
 
   private updateLocalRotation_(dt: number) {
+    if (!settingsManager.isLocalRotateEnabled) {
+      return;
+    }
+
     if (this.state.isLocalRotateRoll || this.state.isLocalRotateYaw || this.state.isLocalRotateReset || this.state.isLocalRotateOverride) {
       this.state.localRotateTarget.pitch = normalizeAngle(this.state.localRotateTarget.pitch);
       this.state.localRotateTarget.yaw = normalizeAngle(this.state.localRotateTarget.yaw);
@@ -1758,8 +1762,7 @@ export class Camera {
   }
 
   private updatePitchYawSpeeds_(dt: Milliseconds) {
-    if ((this.state.isDragging && !settingsManager.isMobileModeEnabled) ||
-      (this.state.isDragging && settingsManager.isMobileModeEnabled && (this.state.mouseX !== 0 || this.state.mouseY !== 0))) {
+    if (this.state.isDragging) {
 
       // Delegate to plugin camera mode (e.g. flat map, polar view) if registered
       if (this.cameraModeDelegates_.get(this.cameraType)?.handleDrag(this)) {
@@ -1814,20 +1817,42 @@ export class Camera {
          * // this.camYawSpeed = yawDif * settingsManager.cameraMovementSpeed;
          */
       }
+      // Track frame-to-frame velocity (EMA) for momentum on release
+      if (this.state.hasPrevDragPos && dt > 0) {
+        const dx = (this.state.prevDragX - this.state.mouseX) / dt;
+        const dy = (this.state.prevDragY - this.state.mouseY) / dt;
+        const alpha = 1 - Math.exp(-dt / 60); // ~60ms time constant
+
+        this.state.dragVelocityX += (dx - this.state.dragVelocityX) * alpha;
+        this.state.dragVelocityY += (dy - this.state.dragVelocityY) * alpha;
+      }
+      this.state.prevDragX = this.state.mouseX;
+      this.state.prevDragY = this.state.mouseY;
+      this.state.hasPrevDragPos = true;
+      this.wasDragging_ = true;
+
       this.state.isAutoPitchYawToTarget = false;
     } else {
-      /*
-       * this block of code is what causes the momentum effect when moving the camera
-       * Most applications like Goolge Earth or STK do not have this effect as pronounced
-       * It makes KeepTrack feel more like a game and less like a toolkit
-       */
-      this.state.camPitchSpeed -= this.state.camPitchSpeed * dt * settingsManager.cameraMovementSpeed * settingsManager.cameraDecayFactor; // decay speeds when globe is "thrown"
-      this.state.camYawSpeed -= this.state.camYawSpeed * dt * settingsManager.cameraMovementSpeed * settingsManager.cameraDecayFactor;
-      /*
-       * NOTE: this could be used for motion blur
-       * this.camPitchAccel *= 0.95;
-       * this.camYawAccel *= 0.95;
-       */
+      // On first frame after drag release, override momentum with EMA velocity (touch only)
+      if (this.wasDragging_) {
+        this.wasDragging_ = false;
+        if (settingsManager.isMobileModeEnabled) {
+          this.state.camYawSpeed = this.state.dragVelocityX * settingsManager.cameraMovementSpeed;
+          this.state.camPitchSpeed = -this.state.dragVelocityY * settingsManager.cameraMovementSpeed;
+        }
+        this.state.hasPrevDragPos = false;
+        this.state.dragVelocityX = 0;
+        this.state.dragVelocityY = 0;
+      }
+
+      // Frame-rate independent exponential decay for momentum
+      const damping = settingsManager.isMobileModeEnabled
+        ? settingsManager.touchMomentumDamping
+        : settingsManager.momentumDamping;
+      const decayMultiplier = damping ** dt;
+
+      this.state.camPitchSpeed *= decayMultiplier;
+      this.state.camYawSpeed *= decayMultiplier;
     }
   }
 
@@ -1871,13 +1896,13 @@ export class Camera {
       }
     }
 
-    if (this.state.isAutoPitchYawToTarget) {
-      this.state.zoomLevel += (this.state.zoomTarget - this.state.zoomLevel) * dt * settingsManager.zoomSpeed; // Just keep zooming
-    } else {
-      const inOrOut = this.state.zoomLevel > this.state.zoomTarget ? -1 : 1;
+    // Frame-rate independent exponential zoom interpolation
+    // Exact solution to dz/dt = -rate * (z - target)
+    const remaining = this.state.zoomTarget - this.state.zoomLevel;
 
-      this.state.zoomLevel += inOrOut * dt * settingsManager.zoomSpeed * Math.abs(this.state.zoomTarget - this.state.zoomLevel);
+    this.state.zoomLevel += remaining * (1 - Math.exp(-settingsManager.zoomSpeed * dt));
 
+    if (!this.state.isAutoPitchYawToTarget) {
       // Snap when close enough to prevent floating-point oscillation
       if (Math.abs(this.state.zoomLevel - this.state.zoomTarget) < 0.0001) {
         this.state.zoomLevel = this.state.zoomTarget;

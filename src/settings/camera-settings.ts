@@ -128,6 +128,32 @@ export class CameraSettings {
    */
   initZoomLevel: number;
 
+  // Touch-specific settings
+  /**
+   * @deprecated Use momentumDamping / touchMomentumDamping instead.
+   */
+  touchCameraDecayFactor = 2;
+  /**
+   * Base speed for touch camera rotation. Higher than mouse because
+   * touch movements are coarser.
+   */
+  touchCameraMovementSpeed = 0.005;
+
+  // Frame-rate independent momentum damping
+  /**
+   * Per-millisecond damping base for desktop momentum decay.
+   * Applied as `speed *= Math.pow(momentumDamping, dt)`.
+   * Range (0, 1). Closer to 1 = longer coast.
+   * 0.983 matches the prior 60fps desktop feel (~40ms half-life).
+   */
+  momentumDamping = 0.983;
+  /**
+   * Per-millisecond damping base for touch momentum decay.
+   * 0.996 gives ~173ms half-life — between current touch feel and three.js OrbitControls.
+   * Tune: 0.989 = short coast, 0.996 = medium, 0.9969 = three.js default.
+   */
+  touchMomentumDamping = 0.996;
+
   // Camera Controls
   /**
    * Currently only disables panning.
@@ -183,6 +209,9 @@ export class CameraSettings {
    * Speed at which the camera twists (yaws) when in FPS mode.
    */
   fpsYawRate = 0.02;
+
+  /** Allows local rotation of the camera (roll, yaw, pitch) when in satellite view. */
+  isLocalRotateEnabled = true;
 
   /** Enables the camera widget */
   drawCameraWidget = false;
