@@ -56,6 +56,8 @@ export class DotsManager {
   private extraBuffers_: Record<string, WebGLBuffer> = {};
   // Array for which colors go to which ids
   private isSizeBufferOneTime_ = false;
+  /** When true, renders the picking shader to the screen instead of visual dots */
+  debugShowPicking = false;
 
   buffers = {
     position: <WebGLBuffer><unknown>null,
@@ -302,6 +304,11 @@ export class DotsManager {
     gl.drawArrays(gl.POINTS, 0, drawCount);
     gl.bindVertexArray(null);
 
+    // Debug: draw picking dots to screen using the same GL state as visual dots
+    if (this.debugShowPicking) {
+      this.drawPickingToScreen_(gl, projectionCameraMatrix, drawCount);
+    }
+
     gl.depthMask(true);
     gl.disable(gl.BLEND);
 
@@ -372,6 +379,49 @@ export class DotsManager {
     if (!settingsManager.isMobileModeEnabled) {
       gl.disable(gl.SCISSOR_TEST);
     }
+  }
+
+  /**
+   * Renders picking dots to the same framebuffer as visual dots for debugging.
+   * Called inline during draw() while blend/depthMask state is still active,
+   * so the picking overlay goes through the exact same GL pipeline as visual dots.
+   */
+  private drawPickingToScreen_(gl: WebGL2RenderingContext, pMvCamMatrix: mat4, drawCount: number): void {
+    // Switch to picking program — framebuffer and blend/depth state are inherited from draw()
+    gl.useProgram(this.programs.picking.program);
+
+    gl.uniformMatrix4fv(this.programs.picking.uniforms.u_pMvCamMatrix, false, pMvCamMatrix);
+    gl.uniform3fv(this.programs.picking.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const mainCam = ServiceLocator.getMainCamera();
+    const isFlatMap = mainCam.cameraType === CameraType.FLAT_MAP;
+    const isPolarView = mainCam.cameraType === CameraType.POLAR_VIEW;
+
+    gl.uniform1i(this.programs.picking.uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1i(this.programs.picking.uniforms.u_polarViewMode, isPolarView ? 1 : 0);
+    gl.uniform1f(this.programs.picking.uniforms.u_gmst, this.cruncherGmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
+    if (isFlatMap) {
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, mainCam.flatMapPanX);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, mainCam.flatMapZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else if (isPolarView) {
+      gl.uniform3fv(this.programs.picking.uniforms.u_sensorEcef, this.sensorEcef);
+      gl.uniformMatrix3fv(this.programs.picking.uniforms.u_ecefToEnu, false, this.ecefToEnu);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarZoom, mainCam.polarViewZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
+
+    gl.bindVertexArray(this.programs.picking.vao);
+    gl.drawArrays(gl.POINTS, 0, drawCount);
+    gl.bindVertexArray(null);
+
+    // Restore visual dots program so subsequent code (if any) doesn't break
+    gl.useProgram(this.programs.dots.program);
   }
 
   /**
@@ -918,7 +968,7 @@ export class DotsManager {
 
     this.shaders_.picking = {
       vert: glsl`#version 300 es
-                precision mediump float;
+                precision highp float;
                 in vec3 a_position;
                 in vec3 a_color;
                 in float a_pickable;
@@ -941,6 +991,17 @@ export class DotsManager {
                 out vec3 vColor;
 
                 void main(void) {
+                // Skip objects with invalid positions:
+                // - NaN from failed propagation (NaN comparisons always false)
+                // - Positions inside Earth (< 100 km from center)
+                float posLen = length(a_position);
+                if (posLen < 100.0 || posLen != posLen) {
+                    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                    gl_PointSize = 0.0;
+                    vColor = vec3(0.0);
+                    return;
+                }
+
                 vec3 eciPos = a_position + worldOffset;
                 vec4 position;
 
@@ -1015,14 +1076,25 @@ export class DotsManager {
 
                 gl_Position = position;
                 ${DepthManager.getLogDepthVertCode()}
-                float pickZoomScale = u_polarViewMode ? sqrt(u_polarZoom) : (u_flatMapMode ? sqrt(u_flatMapZoom) : 1.0);
-                gl_PointSize = ${settingsManager.pickingDotSize} * a_pickable * pickZoomScale;
+
+                float pickSize;
+                if (u_polarViewMode) {
+                    pickSize = ${settingsManager.pickingDotSize} * sqrt(u_polarZoom);
+                } else if (u_flatMapMode) {
+                    pickSize = ${settingsManager.pickingDotSize} * sqrt(u_flatMapZoom);
+                } else {
+                    // Scale picking size with camera distance via position.w (eye-space depth)
+                    float camDist = max(position.w, 1.0);
+                    float depthRatio = clamp(${settingsManager.satShader.distanceBeforeGrow} / camDist, 0.5, 1.0);
+                    pickSize = ${settingsManager.pickingDotSize} * depthRatio;
+                }
+                gl_PointSize = pickSize * a_pickable;
                 vColor = a_color * a_pickable;
                 }
             `,
       frag: glsl`#version 300 es
                 #extension GL_EXT_frag_depth : enable
-                precision mediump float;
+                precision highp float;
 
                 in vec3 vColor;
 

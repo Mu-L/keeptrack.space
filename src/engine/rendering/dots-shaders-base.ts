@@ -69,6 +69,20 @@ export const createBaseVertShader = (settings: SettingsManager): string => (
     }
 
     void main(void) {
+        // Skip objects with invalid positions:
+        // - NaN from failed propagation (NaN comparisons always false)
+        // - Positions inside Earth (< 100 km from center)
+        float posLen = length(a_position);
+        if (posLen < 100.0 || posLen != posLen) {
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            gl_PointSize = 0.0;
+            vColor = vec4(0.0);
+            vSize = 0.0;
+            vDist = 0.0;
+            vPointSize = 0.0;
+            return;
+        }
+
         vec3 eciPos = a_position + worldOffset;
         vec4 position;
 

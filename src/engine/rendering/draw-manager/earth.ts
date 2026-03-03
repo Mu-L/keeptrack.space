@@ -417,7 +417,36 @@ export class Earth {
 
     gl.bindVertexArray(this.vaoOcclusion_);
 
-    gl.uniformMatrix4fv(dotsManagerInstance.programs.picking.uniforms.u_pMvCamMatrix, false, ServiceLocator.getRenderer().projectionCameraMatrix);
+    // Set ALL picking uniforms — stale values from the previous frame's satellite picking
+    // draw caused incorrect occlusion during view transitions and on mobile (no scissor).
+    const uniforms = dotsManagerInstance.programs.picking.uniforms;
+    const mainCam = ServiceLocator.getMainCamera();
+
+    gl.uniformMatrix4fv(uniforms.u_pMvCamMatrix, false, ServiceLocator.getRenderer().projectionCameraMatrix);
+    gl.uniform3fv(uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const isFlatMap = mainCam.cameraType === CameraType.FLAT_MAP;
+    const isPolarView = mainCam.cameraType === CameraType.POLAR_VIEW;
+
+    gl.uniform1i(uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1i(uniforms.u_polarViewMode, isPolarView ? 1 : 0);
+    gl.uniform1f(uniforms.u_gmst, dotsManagerInstance.cruncherGmst);
+    gl.uniform1f(uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(uniforms.u_earthRadius, RADIUS_OF_EARTH);
+
+    if (isFlatMap) {
+      gl.uniform1f(uniforms.u_flatMapCenterX, mainCam.flatMapPanX);
+      gl.uniform1f(uniforms.u_flatMapZoom, mainCam.flatMapZoom);
+      gl.uniform1f(uniforms.logDepthBufFC, 0.0);
+    } else if (isPolarView) {
+      gl.uniform3fv(uniforms.u_sensorEcef, dotsManagerInstance.sensorEcef);
+      gl.uniformMatrix3fv(uniforms.u_ecefToEnu, false, dotsManagerInstance.ecefToEnu);
+      gl.uniform1f(uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(uniforms.u_polarZoom, mainCam.polarViewZoom);
+      gl.uniform1f(uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
 
     /*
      * no reason to render 100000s of pixels when
@@ -426,8 +455,8 @@ export class Earth {
     if (!settingsManager.isMobileModeEnabled) {
       gl.enable(gl.SCISSOR_TEST);
       gl.scissor(
-        ServiceLocator.getMainCamera().state.mouseX,
-        gl.drawingBufferHeight - ServiceLocator.getMainCamera().state.mouseY,
+        mainCam.state.mouseX,
+        gl.drawingBufferHeight - mainCam.state.mouseY,
         ServiceLocator.getDotsManager().PICKING_READ_PIXEL_BUFFER_SIZE,
         ServiceLocator.getDotsManager().PICKING_READ_PIXEL_BUFFER_SIZE,
       );
@@ -440,11 +469,6 @@ export class Earth {
     }
 
     gl.bindVertexArray(null);
-    /*
-     * Disable attributes to avoid conflict with other shaders
-     * NOTE: This breaks satellite gpu picking.
-     * gl.disableVertexAttribArray(dotsManagerInstance.pickingProgram.aPos);
-     */
   }
 
   /**
