@@ -738,6 +738,11 @@ export class SearchManager {
   }
 
   closeSearch(isForce = false) {
+    // On mobile the search bar is always visible — never close it
+    if (settingsManager.isMobileModeEnabled) {
+      return;
+    }
+
     if (!this.isSearchOpen && !isForce) {
       return;
     }

@@ -47,7 +47,7 @@ export class MobileManager {
           settingsManager.plugins.DateTimeManager = cachePlugins.DateTimeManager;
           settingsManager.plugins.SatInfoBoxOrbital = cachePlugins.SatInfoBoxOrbital;
           settingsManager.plugins.SatInfoBoxMission = cachePlugins.SatInfoBoxMission;
-          settingsManager.plugins.SatInfoBoxSensor = cachePlugins.SatInfoBoxSensor;
+          settingsManager.plugins.SatInfoBoxSponsor = cachePlugins.SatInfoBoxSponsor;
 
           settingsManager.plugins.CountriesMenu = cachePlugins.CountriesMenu;
           settingsManager.plugins.FilterMenuPlugin = cachePlugins.FilterMenuPlugin;

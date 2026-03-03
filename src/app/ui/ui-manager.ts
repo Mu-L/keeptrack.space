@@ -40,6 +40,7 @@ import { closeColorbox } from '../../engine/utils/colorbox';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { getEl, hideEl, setInnerHtml, showEl } from '../../engine/utils/get-el';
 import { LayersManager } from './layers-manager';
+import { MobileDrawer } from './mobile-drawer';
 import { MobileManager } from './mobileManager';
 import { SearchManager } from './search-manager';
 import { UiValidation } from './ui-validation';
@@ -65,6 +66,7 @@ export class UiManager {
   updateNextPassOverlay: (arg0: boolean) => void;
   searchHoverSatId = -1;
   layersManager: LayersManager;
+  mobileDrawer: MobileDrawer;
 
   static fullscreenToggle() {
     if (!document.fullscreenElement) {
@@ -254,6 +256,9 @@ export class UiManager {
 
     this.layersManager = new LayersManager();
     this.layersManager.init();
+
+    this.mobileDrawer = new MobileDrawer();
+    this.mobileDrawer.init();
 
     if (settingsManager.isShowPrimaryLogo) {
       getEl('logo-primary')?.classList.remove('start-hidden');
