@@ -92,6 +92,7 @@ class BuildManager {
 
       // Update version information
       versionManager.updateVersionReferences('./package.json');
+      versionManager.updateServiceWorkerVersion('./package.json');
 
       // Generate webpack configuration
       const webpackConfig = WebpackManager.createConfig(config) as MultiRspackOptions;

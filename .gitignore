@@ -81,6 +81,9 @@ public/audio/samples
 public/img/wallpaper/.archive
 public/img/*.xcf
 
+# TypeDoc Output
+docs/api
+
 # Jest Coverage
 coverage/
 

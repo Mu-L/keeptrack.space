@@ -70,6 +70,23 @@ export class VersionManager {
   }
 
   /**
+   * Patches the service worker cache name with the current version.
+   * Must be called after static files are copied to dist.
+   */
+  public updateServiceWorkerVersion(packageJsonPath: string): void {
+    const version = this.readVersionFromPackageJson_(packageJsonPath);
+    const swPath = './dist/serviceWorker.js';
+    const swContent = this.fileManager.readFile(swPath);
+    const updated = swContent.replace(
+      /currentCacheName = 'KeepTrack-v[^']*'/u,
+      `currentCacheName = 'KeepTrack-v${version}'`,
+    );
+
+    this.fileManager.writeFile(swPath, updated);
+    logWithStyle(`Updated service worker cache name to KeepTrack-v${version}`, ConsoleStyles.SUCCESS);
+  }
+
+  /**
    * Updates the version badge in README.md
    */
   private updateReadmeVersion_(version: string): void {
