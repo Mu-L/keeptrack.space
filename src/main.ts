@@ -21,6 +21,7 @@
  */
 
 import { KeepTrack } from './keeptrack';
+import { registerServiceWorker } from './pwa/service-worker-registration';
 
 const keepTrackInstance = KeepTrack.getInstance();
 
@@ -34,3 +35,5 @@ window.keepTrack = keepTrackInstance;
 KeepTrack.initCss().then(() => {
   keepTrackInstance.run();
 });
+
+registerServiceWorker();
