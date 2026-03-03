@@ -119,7 +119,6 @@ export class Sun {
         u_sampler: null as unknown as WebGLUniformLocation,
         u_lightDirection: null as unknown as WebGLUniformLocation,
         u_sizeOfSun: null as unknown as WebGLUniformLocation,
-        u_sunDistance: null as unknown as WebGLUniformLocation,
         u_isTexture: null as unknown as WebGLUniformLocation,
         u_textureBlend: null as unknown as WebGLUniformLocation,
         u_time: null as unknown as WebGLUniformLocation,
@@ -267,7 +266,6 @@ export class Sun {
 
     gl.uniform3fv(this.mesh.material.uniforms.u_sizeOfSun, [adjustedSize, adjustedSize, adjustedSize]);
     gl.uniform3fv(this.mesh.material.uniforms.u_lightDirection, earthLightDirection);
-    gl.uniform1f(this.mesh.material.uniforms.u_sunDistance, Math.sqrt(this.position[0] ** 2 + this.position[1] ** 2 + this.position[2] ** 2));
     gl.uniform1i(this.mesh.material.uniforms.u_sampler, 0);
     gl.uniform1f(this.mesh.material.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform1i(this.mesh.material.uniforms.u_isTexture, settingsManager.isUseSunTexture ? 1 : 0);
@@ -290,7 +288,6 @@ export class Sun {
     uniform float u_time;
 
     in vec3 v_normal;
-    in float v_dist;
     in vec2 vUv;
 
     out vec4 fragColor;
@@ -333,18 +330,14 @@ export class Sun {
     }`,
     vert: glsl`
         uniform vec3 u_sizeOfSun;
-        uniform float u_sunDistance;
         uniform float u_time;
 
         out vec2 vUv;
         out vec3 v_normal;
-        out float v_dist;
 
         void main(void) {
             vec4 worldPosition = modelViewMatrix * vec4(position * u_sizeOfSun, 1.0);
             gl_Position = projectionMatrix * worldPosition;
-
-            v_dist = distance(worldPosition.xyz,vec3(0.0,0.0,0.0)) / u_sunDistance;
 
             vUv = uv;
             v_normal = normalMatrix * normal;

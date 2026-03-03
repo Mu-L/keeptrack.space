@@ -100,6 +100,8 @@ export class Earth {
     [EarthCloudTextureQuality.HIGH]: <WebGLTexture><unknown>null,
     [EarthCloudTextureQuality.ULTRA]: <WebGLTexture><unknown>null,
   };
+  /** 1x1 black transparent texture used as a placeholder for disabled texture units to suppress WebGL warnings. */
+  private placeholderTexture_: WebGLTexture | null = null;
   private vaoOcclusion_: WebGLVertexArrayObject;
   /** Normalized vector pointing to the sun. */
   lightDirection = <vec3>[0, 0, 0];
@@ -204,6 +206,7 @@ export class Earth {
         settingsManager.earthCloudTextureQuality ??= EarthCloudTextureQuality.OFF;
       }
 
+      this.initPlaceholderTexture_();
       this.initTextures_();
 
       // We only need to make the mesh once
@@ -546,6 +549,18 @@ export class Earth {
     gl.uniform3fv(this.atmosphereMesh.material.uniforms.uLightDirection, this.lightDirection);
   }
 
+  private initPlaceholderTexture_(): void {
+    if (this.placeholderTexture_) {
+      return;
+    }
+    const gl = this.gl_;
+
+    this.placeholderTexture_ = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
+
   private initTextures_(): void {
     const sm = settingsManager;
 
@@ -684,7 +699,7 @@ export class Earth {
     if (this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthDayTextureQuality] && !settingsManager.isBlackEarth) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthDayTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Night Map
@@ -693,7 +708,7 @@ export class Earth {
 
     if ((!this.textureNight[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality] &&
       !this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality]) || settingsManager.isBlackEarth) {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     } else if (!settingsManager.isDrawNightAsDay && this.textureNight[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureNight[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality]);
     } else if (this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality] && !settingsManager.isBlackEarth) {
@@ -706,7 +721,7 @@ export class Earth {
     if (settingsManager.isDrawBumpMap && this.textureBump[settingsManager.earthBumpTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureBump[settingsManager.earthBumpTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Specular Map
@@ -715,7 +730,7 @@ export class Earth {
     if (settingsManager.isDrawSpecMap && this.textureSpec[settingsManager.earthSpecTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureSpec[settingsManager.earthSpecTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Political Map
@@ -724,7 +739,7 @@ export class Earth {
     if (settingsManager.isDrawPoliticalMap && this.texturePolitical[settingsManager.earthPoliticalTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.texturePolitical[settingsManager.earthPoliticalTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Clouds Map
@@ -733,7 +748,7 @@ export class Earth {
     if (settingsManager.isDrawCloudsMap && this.textureClouds[settingsManager.earthCloudTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureClouds[settingsManager.earthCloudTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
   }
 

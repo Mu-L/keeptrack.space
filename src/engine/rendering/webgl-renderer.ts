@@ -25,6 +25,7 @@ import { DepthManager } from './depth-manager';
 import { PostProcessingManager } from './draw-manager/post-processing';
 import { Sun } from './draw-manager/sun';
 import { MeshManager } from './mesh-manager';
+import { showFatalError } from './show-fatal-error';
 
 export class WebGLRenderer {
   private isRotationEvent_: boolean;
@@ -135,7 +136,17 @@ export class WebGLRenderer {
     this.domElement = <HTMLCanvasElement>getEl('keeptrack-canvas');
 
     if (!this.domElement) {
-      throw new Error('The canvas DOM is missing. This could be due to a firewall (ex. Menlo). Contact your LAN Office or System Adminstrator.');
+      showFatalError({
+        title: 'Canvas Element Missing',
+        description:
+          'KeepTrack could not find its drawing surface. This usually means a browser extension, corporate firewall, or content-security policy is stripping elements from the page.',
+        recommendations: [
+          'Disable browser extensions (ad-blockers, privacy tools) and reload.',
+          'On a managed network? Contact your LAN Office or System Administrator to whitelist this site.',
+          'Try a different browser (Chrome, Edge, or Firefox recommended).',
+        ],
+        technicalDetail: 'document.getElementById("keeptrack-canvas") returned null.',
+      });
     }
 
     EventBus.getInstance().on(
@@ -175,7 +186,19 @@ export class WebGLRenderer {
 
     // Check for WebGL Issues
     if (gl === null) {
-      throw new Error('WebGL is not available. Contact your LAN Office or System Administrator.');
+      showFatalError({
+        title: 'WebGL 2 Not Available',
+        description:
+          'KeepTrack requires WebGL 2 to render the 3D scene. Your browser or device does not support it, or it has been disabled.',
+        recommendations: [
+          'Update your browser to the latest version.',
+          'Enable hardware acceleration in your browser settings.',
+          'Update your graphics drivers.',
+          'Try a different browser (Chrome, Edge, or Firefox recommended).',
+          'On a managed device? Contact your System Administrator.',
+        ],
+        technicalDetail: 'canvas.getContext("webgl2") returned null.',
+      });
     }
 
     this.gl = gl;
