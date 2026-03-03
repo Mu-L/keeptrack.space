@@ -314,6 +314,14 @@ function missileColor(colorData: Float32Array, pickableData: Int8Array, i: numbe
   }
 
   const isActive = catalogData.active[i] === 1;
+
+  // Inactive missiles should never be visible or pickable
+  if (!isActive) {
+    writeTransparent(colorData, pickableData, i);
+
+    return;
+  }
+
   const inView = inViewData ? inViewData[i] === 1 : false;
 
   if (!inView) {
@@ -326,7 +334,7 @@ function missileColor(colorData: Float32Array, pickableData: Int8Array, i: numbe
     return;
   }
 
-  if (objectTypeFlags.missileInview === false || !isActive) {
+  if (objectTypeFlags.missileInview === false) {
     writeDeselected(colorData, pickableData, i);
 
     return;
