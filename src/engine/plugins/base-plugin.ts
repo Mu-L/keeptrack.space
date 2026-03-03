@@ -2,10 +2,10 @@
 import { BottomMenu } from '@app/app/ui/bottom-menu';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, Singletons } from '@app/engine/core/interfaces';
-import { OfflineIconBehavior } from '@app/settings/core-settings';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
 import { KeepTrack } from '@app/keeptrack';
 import { t7e, TranslationKey } from '@app/locales/keys';
+import { OfflineIconBehavior } from '@app/settings/core-settings';
 import { BaseObject } from '@ootk/src/main';
 import Module from 'module';
 import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
@@ -694,11 +694,15 @@ export abstract class KeepTrackPlugin {
     }
 
     if (this.sideMenuSecondaryHtml) {
+      const secondaryWidthStyle = settingsManager.isMobileModeEnabled
+        ? ''
+        : `width: ${this.sideMenuSecondaryOptions.width.toString()}px;`;
+
       const sideMenuHtmlWrapped = html`
         <div id="${this.sideMenuElementName}-secondary"
-          class="side-menu-parent start-hidden text-select"
+          class="side-menu-parent start-hidden"
           style="z-index: ${this.sideMenuSecondaryOptions.zIndex.toString()};
-          width: ${this.sideMenuSecondaryOptions.width.toString()}px;"
+          ${secondaryWidthStyle}"
         >
           <div id="${this.sideMenuElementName}-secondary-content" class="side-menu-settings" style="padding: 0px 10px;">
             <div class="side-menu-title-bar secondary-title-bar">
@@ -904,11 +908,13 @@ export abstract class KeepTrackPlugin {
   }
 
   private generateSideMenuHtml_() {
-    const menuWidthStr = `${this.sideMenuSecondaryOptions.width.toString()} px !important`;
+    const widthStyle = settingsManager.isMobileModeEnabled
+      ? ''
+      : `width: ${this.sideMenuSecondaryOptions.width.toString()}px !important;`;
 
     return html`
-          <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden text-select"
-            style="z-index: 5; width: ${menuWidthStr};">
+          <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden"
+            style="z-index: 5; ${widthStyle}">
             <div id="${this.sideMenuElementName}-content" class="side-menu">
               ${this.generateTitleBarHtml_()}
               ${this.sideMenuElementHtml}
@@ -1266,11 +1272,11 @@ export abstract class KeepTrackPlugin {
    * Checks various conditions before re-enabling:
    * - If a sensor selection is required, verifies that a sensor is currently selected
    * - If a satellite selection is required, verifies that a satellite is currently selected
-   * 
+   *
    * Once prerequisites are met, the icon visibility depends on the offline icon behavior setting:
    * - If set to HIDE: Only shows the icon if it's relevant to the current menu mode
    * - Otherwise: Fully enables the icon
-   * 
+   *
    * @private
    */
   private setBottomIconToEnabledForOnline_(): void {
@@ -1559,6 +1565,11 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
+        // Skip drag-to-resize on mobile — side menus are forced to full-screen width
+        if (settingsManager.isMobileModeEnabled) {
+          return;
+        }
+
         if (this.sideMenuSecondaryHtml) {
           opts.attachedElement = getEl(`${this.sideMenuElementName}-secondary`);
         }
@@ -1574,6 +1585,11 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
+        // Skip drag-to-resize on mobile — side menus are forced to full-screen width
+        if (settingsManager.isMobileModeEnabled) {
+          return;
+        }
+
         const edgeEl = clickAndDragWidth(getEl(`${this.sideMenuElementName}-secondary`), opts);
 
         if (edgeEl) {
