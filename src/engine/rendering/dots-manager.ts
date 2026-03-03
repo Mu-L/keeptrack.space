@@ -670,6 +670,62 @@ export class DotsManager {
   }
 
   /**
+   * Diagnostic: reads the picking FB at center and corners, reports sizes and status.
+   * Call from browser console: ServiceLocator.getDotsManager().diagnosePicking()
+   */
+  diagnosePicking(): string {
+    const gl = ServiceLocator.getRenderer().gl;
+    const buf = new Uint8Array(4);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
+
+    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    const statusStr = status === gl.FRAMEBUFFER_COMPLETE ? 'COMPLETE' : `0x${status.toString(16)}`;
+
+    const w = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+
+    const readId = (px: number, py: number): string => {
+      gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      const id = ((buf[2] << 16) | (buf[1] << 8) | buf[0]) - 1;
+
+      return `id=${id} rgba=(${buf[0]},${buf[1]},${buf[2]},${buf[3]})`;
+    };
+
+    const canvas = ServiceLocator.getRenderer().domElement;
+    const rect = canvas.getBoundingClientRect();
+
+    const lines = [
+      '=== PICKING FB DIAGNOSIS ===',
+      `FB status: ${statusStr}`,
+      `drawingBuffer: ${w}x${h}`,
+      `canvas.width/height: ${canvas.width}x${canvas.height}`,
+      `canvas CSS size: ${canvas.clientWidth}x${canvas.clientHeight}`,
+      `canvas rect: L=${rect.left} T=${rect.top} W=${rect.width} H=${rect.height}`,
+      `devicePixelRatio: ${window.devicePixelRatio}`,
+      `pickingTexture exists: ${!!this.pickingTexture}`,
+      `pickReadPixelBuffer size: ${this.pickReadPixelBuffer?.length}`,
+      `isMobileModeEnabled: ${settingsManager.isMobileModeEnabled}`,
+      `isDisableAsyncReadPixels: ${settingsManager.isDisableAsyncReadPixels}`,
+      '---',
+      `center (${w >> 1},${h >> 1}): ${readId(w >> 1, h >> 1)}`,
+      `TL (0,${h - 1}): ${readId(0, h - 1)}`,
+      `TR (${w - 1},${h - 1}): ${readId(w - 1, h - 1)}`,
+      `BL (0,0): ${readId(0, 0)}`,
+      `BR (${w - 1},0): ${readId(w - 1, 0)}`,
+    ];
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    const result = lines.join('\n');
+
+    // eslint-disable-next-line no-console
+    console.log(result);
+
+    return result;
+  }
+
+  /**
    * Resets the inSunData array to all zeros.
    */
   resetSatInSun(): void {

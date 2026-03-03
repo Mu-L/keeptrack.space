@@ -265,6 +265,64 @@ export class InputManager {
     return ((dotsManagerInstance.pickReadPixelBuffer[2] << 16) | (dotsManagerInstance.pickReadPixelBuffer[1] << 8) | dotsManagerInstance.pickReadPixelBuffer[0]) - 1;
   }
 
+  /**
+   * Diagnostic: reads an NxN patch of the picking framebuffer centered on (x,y)
+   * and returns the nearest valid satellite ID with its pixel offset.
+   * Enable via settingsManager.debugMobilePicking = true.
+   */
+  public getSatIdFromCoordNeighborhood(x: number, y: number, patchSize = 21): { id: number; offsetX: number; offsetY: number; hitCount: number; patchData: string } {
+    const renderer = ServiceLocator.getRenderer();
+    const { gl } = renderer;
+
+    const half = Math.floor(patchSize / 2);
+    const startX = Math.max(0, Math.floor(x) - half);
+    const startY = Math.max(0, gl.drawingBufferHeight - Math.floor(y) - half);
+    const clampedW = Math.min(patchSize, gl.drawingBufferWidth - startX);
+    const clampedH = Math.min(patchSize, gl.drawingBufferHeight - startY);
+    const buf = new Uint8Array(4 * clampedW * clampedH);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
+    gl.readPixels(startX, startY, clampedW, clampedH, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+
+    let closestId = -1;
+    let closestDist = Infinity;
+    let closestOffX = 0;
+    let closestOffY = 0;
+    const hits: string[] = [];
+
+    for (let row = 0; row < clampedH; row++) {
+      for (let col = 0; col < clampedW; col++) {
+        const idx = (row * clampedW + col) * 4;
+        const id = ((buf[idx + 2] << 16) | (buf[idx + 1] << 8) | buf[idx]) - 1;
+
+        if (id >= 0) {
+          const offX = col - half;
+          // readPixels row 0 is bottom, so flip Y offset
+          const offY = -(row - half);
+          const dist = Math.sqrt(offX * offX + offY * offY);
+
+          if (hits.length < 20) {
+            hits.push(`id=${id} @(${offX},${offY}) d=${dist.toFixed(1)}`);
+          }
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestId = id;
+            closestOffX = offX;
+            closestOffY = offY;
+          }
+        }
+      }
+    }
+
+    return {
+      id: closestId,
+      offsetX: closestOffX,
+      offsetY: closestOffY,
+      hitCount: hits.length,
+      patchData: hits.length > 0 ? hits.join('\n') : '(no valid IDs in patch)',
+    };
+  }
+
   public init(): void {
     const rmbWrapperDom = getEl('rmb-wrapper');
 

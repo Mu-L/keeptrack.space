@@ -3,6 +3,7 @@ import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { MouseInput } from './mouse-input';
 
@@ -67,6 +68,50 @@ export class TouchInput {
 
   private touchMoveRafId_ = -1;
   private cachedTouches_: CachedTouch[] = [];
+  private debugOverlay_: HTMLDivElement | null = null;
+  private tapMarker_: HTMLDivElement | null = null;
+
+  private ensureDebugOverlay_(): HTMLDivElement {
+    if (!this.debugOverlay_) {
+      this.debugOverlay_ = document.createElement('div');
+      this.debugOverlay_.id = 'touch-debug-overlay';
+      this.debugOverlay_.style.cssText =
+        'position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,0.85);' +
+        'color:#0f0;font:11px monospace;padding:8px;pointer-events:none;white-space:pre;max-width:100vw;overflow:auto;max-height:60vh;';
+      document.body.appendChild(this.debugOverlay_);
+    }
+
+    return this.debugOverlay_;
+  }
+
+  private showTapMarker_(rawX: number, rawY: number, corrX: number, corrY: number): void {
+    if (!this.tapMarker_) {
+      this.tapMarker_ = document.createElement('div');
+      this.tapMarker_.style.cssText = 'position:fixed;z-index:99998;pointer-events:none;';
+      document.body.appendChild(this.tapMarker_);
+    }
+
+    this.tapMarker_.innerHTML =
+      // Red crosshair at raw clientX/Y
+      `<div style="position:fixed;left:${rawX - 10}px;top:${rawY - 10}px;width:20px;height:20px;border:2px solid red;border-radius:50%;"></div>` +
+      `<div style="position:fixed;left:${rawX}px;top:${rawY - 15}px;width:1px;height:30px;background:red;"></div>` +
+      `<div style="position:fixed;left:${rawX - 15}px;top:${rawY}px;width:30px;height:1px;background:red;"></div>` +
+      // Green crosshair at corrected coordinates
+      `<div style="position:fixed;left:${corrX - 8}px;top:${corrY - 8}px;width:16px;height:16px;border:2px solid lime;border-radius:50%;"></div>` +
+      `<div style="position:fixed;left:${corrX}px;top:${corrY - 12}px;width:1px;height:24px;background:lime;"></div>` +
+      `<div style="position:fixed;left:${corrX - 12}px;top:${corrY}px;width:24px;height:1px;background:lime;"></div>` +
+      // Labels
+      `<div style="position:fixed;left:${rawX + 15}px;top:${rawY - 25}px;color:red;font:10px monospace;background:rgba(0,0,0,0.7);padding:2px;">` +
+      `RAW (${rawX.toFixed(0)},${rawY.toFixed(0)})</div>` +
+      `<div style="position:fixed;left:${corrX + 15}px;top:${corrY + 10}px;color:lime;font:10px monospace;background:rgba(0,0,0,0.7);padding:2px;">` +
+      `CORR (${corrX.toFixed(0)},${corrY.toFixed(0)})</div>`;
+
+    setTimeout(() => {
+      if (this.tapMarker_) {
+        this.tapMarker_.innerHTML = '';
+      }
+    }, 3000);
+  }
 
   init(canvasDOM: HTMLCanvasElement) {
     this.canvasDOM = canvasDOM;
@@ -233,10 +278,75 @@ export class TouchInput {
     ServiceLocator.getMainCamera().state.isAutoPitchYawToTarget = false;
     ServiceLocator.getMainCamera().autoRotate(false);
 
+    const inputManager = ServiceLocator.getInputManager();
+
+    if (settingsManager.debugMobilePicking) {
+      this.tapDebug_(evt, inputManager);
+
+      return;
+    }
+
     // Try to select satellite
-    const satId = ServiceLocator.getInputManager().getSatIdFromCoord(evt.x, evt.y);
+    const satId = inputManager.getSatIdFromCoord(evt.x, evt.y);
 
     PluginRegistry.getPlugin(SelectSatManager)?.selectSat(satId);
+  }
+
+  private tapDebug_(evt: TapTouchEvent, inputManager: ReturnType<typeof ServiceLocator.getInputManager>): void {
+    const gl = ServiceLocator.getRenderer().gl;
+    const canvas = this.canvasDOM;
+    const rect = canvas.getBoundingClientRect();
+    const container = KeepTrack.getInstance().containerRoot;
+
+    // Compute corrected coordinates (matching mouse-input.ts offset logic)
+    const rectCorrX = evt.x - rect.left;
+    const rectCorrY = evt.y - rect.top;
+    const containerOffX = container.scrollLeft - window.scrollX + container.offsetLeft;
+    const containerOffY = container.scrollTop - window.scrollY + container.offsetTop;
+    const containerCorrX = evt.x - containerOffX;
+    const containerCorrY = evt.y - containerOffY;
+
+    // Read with raw coordinates (current behavior)
+    const rawId = inputManager.getSatIdFromCoord(evt.x, evt.y);
+    // Read with rect-corrected coordinates
+    const rectId = inputManager.getSatIdFromCoord(rectCorrX, rectCorrY);
+    // Read with container-corrected coordinates (desktop mouse-input style)
+    const containerId = inputManager.getSatIdFromCoord(containerCorrX, containerCorrY);
+
+    // Neighborhood scan around raw coordinates
+    const scan = inputManager.getSatIdFromCoordNeighborhood(evt.x, evt.y, 21);
+    // Neighborhood scan around rect-corrected coordinates
+    const scanCorr = inputManager.getSatIdFromCoordNeighborhood(rectCorrX, rectCorrY, 21);
+
+    const overlay = this.ensureDebugOverlay_();
+
+    overlay.textContent =
+      `=== MOBILE PICKING DEBUG ===\n` +
+      `raw clientXY:      (${evt.x.toFixed(1)}, ${evt.y.toFixed(1)})\n` +
+      `rect-corrected:    (${rectCorrX.toFixed(1)}, ${rectCorrY.toFixed(1)})\n` +
+      `container-corrected: (${containerCorrX.toFixed(1)}, ${containerCorrY.toFixed(1)})\n` +
+      `---\n` +
+      `canvas rect: L=${rect.left.toFixed(1)} T=${rect.top.toFixed(1)} W=${rect.width.toFixed(1)} H=${rect.height.toFixed(1)}\n` +
+      `container offset: (${container.offsetLeft}, ${container.offsetTop})\n` +
+      `drawingBuffer: ${gl.drawingBufferWidth}x${gl.drawingBufferHeight}\n` +
+      `canvas elem: ${canvas.width}x${canvas.height}\n` +
+      `canvas CSS: ${canvas.clientWidth}x${canvas.clientHeight}\n` +
+      `devicePixelRatio: ${window.devicePixelRatio}\n` +
+      `---\n` +
+      `raw ID:       ${rawId}\n` +
+      `rect ID:      ${rectId}\n` +
+      `container ID: ${containerId}\n` +
+      `---\n` +
+      `21x21 scan (raw): nearest=${scan.id} offset=(${scan.offsetX},${scan.offsetY}) hits=${scan.hitCount}\n` +
+      `21x21 scan (rect): nearest=${scanCorr.id} offset=(${scanCorr.offsetX},${scanCorr.offsetY}) hits=${scanCorr.hitCount}\n` +
+      (scan.hitCount > 0 ? `raw hits:\n${scan.patchData}\n` : '') +
+      (scanCorr.hitCount > 0 && scanCorr.patchData !== scan.patchData ? `rect hits:\n${scanCorr.patchData}\n` : '');
+
+    // Show visual crosshairs
+    this.showTapMarker_(evt.x, evt.y, rectCorrX, rectCorrY);
+
+    // Use rect-corrected ID for selection (fix probe)
+    PluginRegistry.getPlugin(SelectSatManager)?.selectSat(rectId);
   }
 
   pan(evt: PanTouchEvent) {
