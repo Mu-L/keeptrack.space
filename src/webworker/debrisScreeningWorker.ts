@@ -1,3 +1,4 @@
+/* eslint-disable max-params */
 /**
  * Web worker for debris screening conjunction assessment.
  *
@@ -59,6 +60,9 @@ function calculateCovariance_(tle1: string, tle2: string, confidenceLevel: numbe
   return new StateCovariance(new Matrix(covMatrix), CovarianceFrame.ECI);
 }
 
+/**
+ * Builds a fallback covariance matrix with safe default values when TLE-based computation fails.
+ */
 function buildFallbackCovariance_(): StateCovariance {
   const fallback = Array.from({ length: 6 }, () => new Array(6).fill(0) as number[]);
 
@@ -136,7 +140,7 @@ function assessCandidate_(
   const distanceRisk = Math.exp(-event.missDistance);
   let riskScore = distanceRisk;
 
-  if (event.probabilityOfCollision !== undefined && event.probabilityOfCollision > 0) {
+  if (typeof event.probabilityOfCollision !== 'undefined' && event.probabilityOfCollision > 0) {
     riskScore = Math.max(distanceRisk, event.probabilityOfCollision * 1000);
   }
 
@@ -155,6 +159,11 @@ function assessCandidate_(
 
 // ─── Message handler ────────────────────────────────────────────────────────
 
+/**
+ * Main handler for START_SCREENING message. Performs the two-phase screening process:
+ * @param msg The message containing screening parameters and TLE data for the primary and secondary objects. The worker will perform a two-phase screening process:
+ * @returns Posts progress updates, result chunks, and completion/error messages back to the main thread.
+ */
 function handleStartScreening_(msg: DsMsgStartScreening): void {
   const { runId, primary, secondaries, startTimeMs, endTimeMs, searchStepSize, uVal, vVal, wVal, batchSize, covarianceConfidenceLevel } = msg;
 
@@ -263,6 +272,10 @@ function handleStartScreening_(msg: DsMsgStartScreening): void {
   }
 }
 
+/**
+ * Main message handler for the worker. Routes messages to appropriate handlers based on type.
+ * @param m The incoming message event containing a DsWorkerInMsg.
+ */
 function onmessageProcessing_(m: MessageEvent<DsWorkerInMsg>): void {
   const msg = m.data;
 
