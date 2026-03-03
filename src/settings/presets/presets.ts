@@ -1,12 +1,19 @@
 import { GroupType } from '@app/app/data/object-group';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { EventBus } from '@app/engine/events/event-bus';
-import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { AtmosphereSettings, EarthCloudTextureQuality, EarthTextureStyle } from '@app/engine/rendering/draw-manager/earth-quality-enums';
+import {
+  AtmosphereSettings,
+  EarthBumpTextureQuality,
+  EarthCloudTextureQuality,
+  EarthDayTextureQuality,
+  EarthNightTextureQuality,
+  EarthPoliticalTextureQuality,
+  EarthSpecTextureQuality,
+  EarthTextureStyle,
+} from '@app/engine/rendering/draw-manager/earth-quality-enums';
+import { MilkyWayTextureQuality } from '@app/engine/rendering/draw-manager/skybox-sphere';
 import { getEl, setInnerHtml } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
-import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { TimeMachine } from '@app/plugins/time-machine/time-machine';
 import { Kilometers, Milliseconds } from '@ootk/src/main';
 import { SettingsManager } from '../settings';
@@ -342,40 +349,59 @@ export class SettingsPresets {
   }
 
   static loadPresetFacSat2(settings: SettingsManager) {
-    settings.isDisableKeyboard = true;
-    settings.isShowPrimaryLogo = true;
-    settings.isShowSplashScreen = false;
-    settings.maxAnalystSats = 1;
-    settings.maxMissiles = 1;
-    settings.maxFieldOfViewMarkers = 1;
-    settings.isEPFL = true;
+    // Disable all plugins
     settings.disableAllPlugins();
-    settings.isDrawCovarianceEllipsoid = false;
-    settings.isLoadLastMap = false;
-    settings.isShowRocketBodies = true;
-    settings.isShowDebris = true;
-    settings.isShowPayloads = true;
-    settings.isShowAgencies = false;
-    settings.earthTextureStyle = EarthTextureStyle.BLUE_MARBLE;
-    settings.isAllowRightClick = false;
-    settings.isDisableSensors = true;
+
+    // Data sources
+    settings.dataSources.tle = 'https://api.keeptrack.space/v3/sats';
+    settings.dataSources.externalTLEsOnly = false;
+    settings.dataSources.isSupplementExternal = false;
     settings.isEnableJscCatalog = false;
-    settings.isDisableControlSites = true;
+
+    // Disable UI chrome
+    settings.isShowSecondaryLogo = false;
+    settings.noMeshManager = true;
+    settings.isShowSplashScreen = false;
+    settings.isDisableSensors = true;
+    settings.isDisableSelectSat = true;
     settings.isDisableLaunchSites = true;
-    settings.isLoadLastSensor = false;
-    settings.colors.payload = [0.2, 1.0, 0.0, 0.1];
-    settings.colors.rocketBody = [0.5, 0.5, 0.5, 0.1];
-    settings.colors.debris = [0.5, 0.5, 0.5, 0.1];
-    settings.colors.unknown = [0.5, 0.5, 0.5, 0.1];
-    settings.colors.pink = [0.5, 0.5, 0.5, 0.1];
-    EventBus.getInstance().on(
-      EventBusEvent.onCruncherReady,
-      () => {
-        setTimeout(() => {
-          PluginRegistry.getPlugin(SelectSatManager)?.selectSat(ServiceLocator.getCatalogManager().sccNum2Id(43721) ?? -1);
-          settings.isDisableSelectSat = true;
-        }, 5000);
-      },
-    );
+    settings.isDisableKeyboard = true;
+    settings.isAllowRightClick = false;
+    settings.isShowLoadingHints = false;
+    settings.isBlockPersistence = true;
+    settings.isDisableBottomMenu = true;
+    settings.isDisableToasts = true;
+
+    // Graphics — minimal earth
+    settings.isDrawSun = true;
+    settings.isDrawMilkyWay = true;
+    settings.isDisableGodrays = false;
+    settings.earthDayTextureQuality = EarthDayTextureQuality.HIGH;
+    settings.earthNightTextureQuality = EarthNightTextureQuality.HIGH;
+    settings.isDrawNightAsDay = false;
+    settings.earthSpecTextureQuality = EarthSpecTextureQuality.HIGH;
+    settings.isDrawSpecMap = true;
+    settings.earthBumpTextureQuality = EarthBumpTextureQuality.HIGH;
+    settings.isDrawBumpMap = true;
+    settings.earthCloudTextureQuality = EarthCloudTextureQuality.HIGH;
+    settings.isDrawCloudsMap = true;
+    settings.earthPoliticalTextureQuality = EarthPoliticalTextureQuality.HIGH;
+    settings.isDrawPoliticalMap = true;
+    settings.earthTextureStyle = EarthTextureStyle.BLUE_MARBLE;
+    settings.isDisableSkybox = false;
+    settings.milkyWayTextureQuality = MilkyWayTextureQuality.HIGH;
+    settings.isDisablePlanets = true;
+
+    // Embed / camera
+    settings.isEmbedMode = true;
+    settings.isAutoStart = true;
+    settings.initZoomLevel = 0.71;
+    settings.maxZoomDistance = <Kilometers>170_000;
+    settings.isLocalRotateEnabled = false;
+
+    // Search for FacSat-2 satellites on load
+    settings.onLoadCb = () => {
+      ServiceLocator.getUiManager().searchManager.doSearch('31128,56205');
+    };
   }
 }
