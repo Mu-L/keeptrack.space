@@ -321,6 +321,9 @@ export class GraphicsSettings {
 
   // Advanced Graphics
   isDisableAsyncReadPixels = false;
+
+  // Debug
+  debugMobilePicking = false;
 }
 
 export const defaultGraphicsSettings = new GraphicsSettings();
