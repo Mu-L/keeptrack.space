@@ -44,10 +44,10 @@
     "build:epfl": "npx tsx ./build/generate-translation.ts && npx tsx ./build/build-manager.ts production --profile=epfl",
     "build:offline": "npx tsx ./build/generate-translation.ts && npx tsx ./build/build-manager.ts production --profile=offline",
     "changelog": "auto-changelog --tag-prefix v --commit-limit false -t ./changelog.hbs -o ./docs/CHANGELOG.md",
-    "cypress:open": "cypress open",
     "generate-t7e": "npx tsx ./build/generate-translation.ts",
     "lcov": "npx tsx ./build/utils/open-lcov.ts",
     "lint": "eslint ./src --ext js,ts,tsx",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
     "createtest": "npx tsx ./scripts/create-test-file.ts",
     "start": "npx tsx ./build/dev-server.ts",
     "start:celestrak": "npx tsx ./build/dev-server.ts --profile=celestrak",
@@ -55,35 +55,16 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --coverage",
-    "test:e2e-ci": "cypress run",
     "test:watch": "vitest",
     "test:watchCoverage": "vitest --coverage",
     "prepublishOnly": "npm run build:lib",
     "version:major": "npm version major && npm run changelog",
     "version:minor": "npm version minor && npm run changelog",
     "version:patch": "npm version patch && npm run changelog",
+    "docs": "typedoc",
     "husky": "husky install"
   },
   "chromium-args": "--enable-threaded-compositing",
-  "nyc": {
-    "report-dir": "coverage/integration",
-    "reporter": [
-      "text",
-      "json",
-      "lcov",
-      "html"
-    ],
-    "all": true,
-    "include": [
-      "src/**/*.js"
-    ],
-    "exclude": [
-      "**/*.test.js",
-      "**/test.js",
-      "**/*.stories.js",
-      "**/stories.js"
-    ]
-  },
   "directories": {
     "app": "src"
   },
@@ -122,7 +103,6 @@
     "coverage-istanbul-loader": "^3.0.5",
     "cross-env": "^7.0.3",
     "css-loader": "^6.8.1",
-    "cypress": "^15.4.0",
     "dotenv-webpack": "^8.1.1",
     "eslint": "^8.57.0",
     "happy-dom": "^20.5.0",
@@ -138,6 +118,8 @@
     "ts-loader": "^9.4.4",
     "tsup": "^8.5.1",
     "tsx": "^4.19.0",
+    "typedoc": "^0.28.17",
+    "typedoc-plugin-merge-modules": "^7.0.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "vitest-canvas-mock": "^0.3.3",
@@ -172,6 +154,6 @@
     "webgl-obj-loader": "^2.0.8"
   },
   "volta": {
-    "node": "25.0.0"
+    "node": "24.14.0"
   }
 }
