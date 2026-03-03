@@ -23,6 +23,13 @@ export interface PinchTouchEvent {
   pinchDistance: number;
 }
 
+interface CachedTouch {
+  clientX: number;
+  clientY: number;
+  pageX: number;
+  pageY: number;
+}
+
 export class TouchInput {
   mouse: MouseInput;
   canvasDOM: HTMLCanvasElement;
@@ -58,18 +65,33 @@ export class TouchInput {
    */
   pressMinTime = 150;
 
+  private touchMoveRafId_ = -1;
+  private cachedTouches_: CachedTouch[] = [];
+
   init(canvasDOM: HTMLCanvasElement) {
     this.canvasDOM = canvasDOM;
 
     if (settingsManager.isMobileModeEnabled) {
+      // Prevent browser gesture interpretation (scroll, bounce, back-swipe)
+      canvasDOM.style.touchAction = 'none';
+
       canvasDOM.addEventListener('touchstart', (e) => {
+        e.preventDefault();
         this.canvasTouchStart(e);
-      });
+      }, { passive: false });
+
       canvasDOM.addEventListener('touchend', (e) => {
         this.canvasTouchEnd(e, ServiceLocator.getMainCamera());
-      });
+      }, { passive: false });
+
       canvasDOM.addEventListener('touchmove', (e) => {
+        e.preventDefault();
         this.canvasTouchMove(e);
+      }, { passive: false });
+
+      // Recalculate max pinch size on orientation change or resize
+      window.addEventListener('resize', () => {
+        this.maxPinchSize = Math.hypot(window.innerWidth, window.innerHeight);
       });
     }
   }
@@ -88,49 +110,77 @@ export class TouchInput {
       }
     }
 
-    // Reset if last finger
+    // Transition from 2 fingers to 1: stop rotation to prevent jerk
+    if (evt.touches?.length === 1) {
+      this.isPinching = false;
+      this.isPanning = false;
+      mainCameraInstance.state.isDragging = false;
+      mainCameraInstance.state.camPitchSpeed = 0;
+      mainCameraInstance.state.camYawSpeed = 0;
+
+      // Record remaining finger position so a new single-finger drag
+      // can start cleanly from the next touchmove threshold check
+      const remaining = evt.touches[0];
+
+      this.touchStartX = remaining.clientX;
+      this.touchStartY = remaining.clientY;
+    }
+
+    // Reset if last finger — do NOT zero mouseX/mouseY so momentum uses last known position
     if (evt.touches?.length === 0) {
       this.isPinching = false;
       this.isPanning = false;
-      mainCameraInstance.state.mouseX = 0;
-      mainCameraInstance.state.mouseY = 0;
       this.dragHasMoved = false;
       mainCameraInstance.state.isDragging = false;
     }
   }
 
   public canvasTouchMove(evt: TouchEvent): void {
-    if (settingsManager.disableNormalEvents) {
-      evt.preventDefault();
-    }
-
     // Can't move if there is no touch
     if (!evt.touches || evt.touches.length < 1) {
       return;
     }
 
+    // Cache touch data synchronously (browser may recycle TouchEvent after handler returns)
     this.touchX = evt.touches[0].clientX;
     this.touchY = evt.touches[0].clientY;
+    this.cachedTouches_ = Array.from(evt.touches).map((t) => ({
+      clientX: t.clientX,
+      clientY: t.clientY,
+      pageX: t.pageX,
+      pageY: t.pageY,
+    }));
 
-    if (this.isPinching && evt.touches?.[0] && evt.touches?.[1]) {
-      const currentPinchDistance = Math.hypot(evt.touches[0].pageX - evt.touches[1].pageX, evt.touches[0].pageY - evt.touches[1].pageY);
+    // Throttle processing to once per animation frame (matches mouse-input pattern)
+    if (this.touchMoveRafId_ === -1) {
+      this.touchMoveRafId_ = requestAnimationFrame(() => {
+        this.processTouchMove_();
+        this.touchMoveRafId_ = -1;
+      });
+    }
+  }
 
-      if (isNaN(currentPinchDistance)) {
-        return;
-      }
+  private processTouchMove_(): void {
+    const touches = this.cachedTouches_;
 
-      if (currentPinchDistance > this.tapMovementThreshold) {
-        this.pinchMove({
-          pinchDistance: currentPinchDistance,
-        });
+    if (this.isPinching && touches.length >= 2) {
+      // Pinch zoom only — no rotation during pinch to prevent jerk on finger release
+      const dist = Math.hypot(
+        touches[0].pageX - touches[1].pageX,
+        touches[0].pageY - touches[1].pageY,
+      );
+
+      if (!isNaN(dist) && dist > this.tapMovementThreshold) {
+        this.pinchMove({ pinchDistance: dist });
       }
     } else if (!this.isPinching) {
-      if (Math.abs(this.touchStartX - this.touchX) > this.tapMovementThreshold || Math.abs(this.touchStartY - this.touchY) > this.tapMovementThreshold) {
+      // Single-finger pan
+      if (
+        Math.abs(this.touchStartX - this.touchX) > this.tapMovementThreshold ||
+        Math.abs(this.touchStartY - this.touchY) > this.tapMovementThreshold
+      ) {
         this.isPanning = true;
-        this.pan({
-          x: this.touchX,
-          y: this.touchY,
-        });
+        this.pan({ x: this.touchX, y: this.touchY });
       }
     }
   }
@@ -140,9 +190,17 @@ export class TouchInput {
 
     if (evt.touches.length > 1) {
       this.isPinching = true;
+      this.isPanning = false;
       this.pinchStart({
         pinchDistance: Math.hypot(evt.touches[0].pageX - evt.touches[1].pageX, evt.touches[0].pageY - evt.touches[1].pageY),
       });
+
+      // Stop rotation drag — pinch is zoom-only
+      const cam = ServiceLocator.getMainCamera();
+
+      cam.state.isDragging = false;
+      cam.state.camPitchSpeed = 0;
+      cam.state.camYawSpeed = 0;
     } else {
       this.touchStart({
         x: evt.touches[0].clientX,
@@ -159,8 +217,8 @@ export class TouchInput {
 
     this.touchStartX = evt.x;
     this.touchStartY = evt.y;
-    ServiceLocator.getMainCamera().state.mouseX = this.touchStartX; // Move this
-    ServiceLocator.getMainCamera().state.mouseY = this.touchStartY; // Move this
+    ServiceLocator.getMainCamera().state.mouseX = evt.x;
+    ServiceLocator.getMainCamera().state.mouseY = evt.y;
 
     // If you hit the canvas hide any popups
     ServiceLocator.getInputManager().hidePopUps();
@@ -215,11 +273,21 @@ export class TouchInput {
 
     const mainCameraInstance = ServiceLocator.getMainCamera();
 
-    this.deltaPinchDistance = (this.startPinchDistance - evt.pinchDistance) / this.maxPinchSize;
+    // Ratio-based zoom: spread fingers (ratio > 1) = zoom in, pinch (ratio < 1) = zoom out
+    const pinchRatio = evt.pinchDistance / this.startPinchDistance;
+
+    // Reset for next frame's incremental calculation (prevents quadratic accumulation)
+    this.startPinchDistance = evt.pinchDistance;
+
     let zoomTarget = mainCameraInstance.state.zoomTarget;
 
-    zoomTarget += this.deltaPinchDistance * settingsManager.zoomSpeed;
-    zoomTarget = Math.min(Math.max(zoomTarget, 0.0001), 1); // Force between 0 and 1
+    // Dampen ratio toward 1.0 to reduce pinch sensitivity (~50%)
+    const dampenedRatio = 1 + (pinchRatio - 1) * 0.5;
+
+    // Divide by ratio for logarithmic feel proportional to current zoom level
+    zoomTarget /= dampenedRatio;
+    zoomTarget = Math.min(Math.max(zoomTarget, 0.0001), 1);
+    mainCameraInstance.state.isZoomIn = pinchRatio > 1;
     mainCameraInstance.state.zoomTarget = zoomTarget;
   }
 
