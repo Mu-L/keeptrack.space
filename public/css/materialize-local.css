@@ -72,6 +72,14 @@ textarea.materialize-textarea {
     margin-bottom: 1rem;
 }
 
+/** non-desktop */
+@media (max-width: 1300px) {
+    .row {
+        margin-left: inherit;
+        margin-right: inherit;
+    }
+}
+
 .input-field {
     margin-top: 1rem 0 0 0;
     padding-left: 1rem;

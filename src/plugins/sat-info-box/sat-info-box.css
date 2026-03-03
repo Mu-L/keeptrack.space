@@ -149,7 +149,7 @@
   cursor: default;
   bottom: 0px;
   height: fit-content;
-  max-height: 30%;
+  max-height: 45%;
   width: 100%;
   border: 5px solid var(--color-dark-border);
   overflow: auto;

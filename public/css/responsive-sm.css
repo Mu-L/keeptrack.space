@@ -83,13 +83,6 @@
     text-align: unset;
   }
 
-  #sat-infobox {
-    bottom: var(--bottom-menu-height);
-    width: 70%;
-    max-width: 380px;
-    right: 0px;
-  }
-
   #polar-plot {
     width: 95%;
   }

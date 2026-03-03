@@ -11,13 +11,20 @@
   --bottom-filter-width: 185px;
   --bottom-utility-width: 300px;
   --search-box-bottom: 0px;
-  --nav-bar-height: 35px;
+  --nav-bar-height: 50px;
 
   --top-menu-height: calc(var(--nav-bar-height) + var(--classification-bar-height) + var(--time-slider-height));
 
   --classification-bar-height: 0px;
 
   --time-slider-height: 0px;
+
+  /* Breakpoints (for JS access — CSS @media can't use custom properties) */
+  --bp-mobile: 694px;
+  /* mobile: max-width 694px */
+  --bp-tablet: 1300px;
+  /* tablet: 695px–1300px */
+  /* desktop: min-width 1301px */
 }
 
 
@@ -29,6 +36,7 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  -webkit-tap-highlight-color: var(--color-dark-text-accent);
 }
 
 input,
@@ -2736,6 +2744,7 @@ button.ui-button::-moz-focus-inner {
 .side-menu-title-right {
   justify-content: flex-end;
   gap: 0.5rem;
+  margin-right: 1rem;
 }
 
 .side-menu-title-text {
@@ -4213,18 +4222,33 @@ input:focus {
   }
 }
 
+/* mobile */
 @media (max-width: 694px) {
   #nextLaunch-menu {
     width: 100%;
   }
 }
 
+/* desktop */
 @media (min-width: 1301px) {
   #nextLaunch-menu {
     width: 625px;
   }
 }
 
+/* non-desktop */
+@media (max-width: 1300px) {
+  .side-menu {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .side-menu::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* tablet */
 @media (min-width: 695px) and (max-width: 1300px) {
   #nextLaunch-menu {
     width: 625px;
