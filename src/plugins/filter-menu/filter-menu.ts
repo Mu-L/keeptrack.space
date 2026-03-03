@@ -188,12 +188,14 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
         category: t7e('filterMenu.xgeoSatellites.category'),
         tooltip: t7e('filterMenu.xgeoSatellites.tooltip'),
       },
-      ...(settingsManager.isEnableJscCatalog ? [{
-        id: 'vimpelSatellites',
-        name: t7e('filterMenu.vimpelSatellites.name'),
-        category: t7e('filterMenu.source.category'),
-        tooltip: t7e('filterMenu.vimpelSatellites.tooltip'),
-      }] : []),
+      ...(settingsManager.isEnableJscCatalog ? [
+        {
+          id: 'vimpelSatellites',
+          name: t7e('filterMenu.vimpelSatellites.name'),
+          category: t7e('filterMenu.source.category'),
+          tooltip: t7e('filterMenu.vimpelSatellites.tooltip'),
+        },
+      ] : []),
       {
         id: 'celestrakSatellites',
         name: t7e('filterMenu.celestrakSatellites.name'),

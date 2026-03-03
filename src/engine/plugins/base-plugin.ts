@@ -1191,8 +1191,8 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isMenuButtonActive = true;
-    getEl(this.bottomIconElementName)?.classList.add('bmenu-item-selected');
-    getEl(`${this.id}-utility-icon`)?.classList.add('bmenu-item-selected');
+    getEl(this.bottomIconElementName, true)?.classList.add('bmenu-item-selected');
+    getEl(`${this.id}-utility-icon`, true)?.classList.add('bmenu-item-selected');
   }
 
   setBottomIconToUnselected(isHideSideMenus = true): void {
@@ -1206,8 +1206,8 @@ export abstract class KeepTrackPlugin {
     if (isHideSideMenus) {
       EventBus.getInstance().emit(EventBusEvent.hideSideMenus);
     }
-    getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-selected');
-    getEl(`${this.id}-utility-icon`)?.classList.remove('bmenu-item-selected');
+    getEl(this.bottomIconElementName, true)?.classList.remove('bmenu-item-selected');
+    getEl(`${this.id}-utility-icon`, true)?.classList.remove('bmenu-item-selected');
   }
 
   setBottomIconToDisabled(isHideSideMenus = true): void {
@@ -1216,8 +1216,8 @@ export abstract class KeepTrackPlugin {
     }
     this.setBottomIconToUnselected(isHideSideMenus);
     this.isIconDisabled = true;
-    getEl(this.bottomIconElementName)?.classList.add('bmenu-item-disabled');
-    getEl(`${this.id}-utility-icon`)?.classList.add('bmenu-item-disabled');
+    getEl(this.bottomIconElementName, true)?.classList.add('bmenu-item-disabled');
+    getEl(`${this.id}-utility-icon`, true)?.classList.add('bmenu-item-disabled');
   }
 
   setBottomIconToEnabled(): void {
@@ -1225,8 +1225,8 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isIconDisabled = false;
-    getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-disabled');
-    getEl(`${this.id}-utility-icon`)?.classList.remove('bmenu-item-disabled');
+    getEl(this.bottomIconElementName, true)?.classList.remove('bmenu-item-disabled');
+    getEl(`${this.id}-utility-icon`, true)?.classList.remove('bmenu-item-disabled');
   }
 
   private registerConnectivityHandlers_(): void {

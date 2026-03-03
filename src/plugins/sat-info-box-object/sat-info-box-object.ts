@@ -265,8 +265,8 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     if (obj.isMissile()) {
       const misl = obj as MissileObject;
 
-      siteArr = misl.desc.split('(');
-      missileOrigin = siteArr[0].slice(0, siteArr[0].length - 1);
+      siteArr = misl.desc?.split('(') ?? [];
+      missileOrigin = siteArr[0]?.slice(0, -1)?.trim() || t7e('SatInfoBoxObject.unknown');
 
       site.site = missileOrigin;
       site.launchPad = t7e('SatInfoBoxObject.unknown');

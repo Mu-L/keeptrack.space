@@ -1,8 +1,8 @@
 /**
  * /////////////////////////////////////////////////////////////////////////////
  *
- * planetarium.ts is a plugin for showing the satellites above from the perspective
- * of a view on the earth.
+ * screenshots.ts is a plugin that allows users to take high-resolution screenshots
+ * of the canvas with optional logos and classification text overlaid.
  *
  * https://keeptrack.space
  *
@@ -150,6 +150,8 @@ export class Screenshot extends KeepTrackPlugin {
 
   addJs(): void {
     super.addJs();
+    // Re-assert after addHtml() resets it from isIconDisabledOnLoad
+    this.isIconDisabled = true;
     EventBus.getInstance().on(
       EventBusEvent.altCanvasResize,
       () => this.queuedScreenshot_,
