@@ -914,12 +914,8 @@ export class Camera {
       }
     }
 
-    if (this.state.camYaw > TAU) {
-      this.state.camYaw = <Radians>(this.state.camYaw - TAU);
-    }
-    if (this.state.camYaw < 0) {
-      this.state.camYaw = <Radians>(this.state.camYaw + TAU);
-    }
+    // Wrap camYaw to [0, TAU) — use modulo to handle multi-revolution overflow
+    this.state.camYaw = <Radians>(((this.state.camYaw % TAU) + TAU) % TAU);
 
     if (this.cameraType === CameraType.FIXED_TO_EARTH) {
       this.state.earthCenteredPitch = this.state.camPitch;
@@ -1553,20 +1549,25 @@ export class Camera {
         targetYaw = this.state.earthCenteredYaw;
       }
 
-      if (this.state.camPitch >= targetPitch - marginOfError && this.state.camPitch <= targetPitch + marginOfError) {
+      // Use shortest angular path to determine direction (handles ±π wrap-around)
+      const pitchDiff = normalizeAngle(<Radians>(targetPitch - this.state.camPitch));
+
+      if (Math.abs(pitchDiff) <= marginOfError) {
         this.state.camPitch = targetPitch;
         this.state.camPitchSpeed = 0;
       } else {
-        const upOrDown = this.state.camPitch - targetPitch > 0 ? -1 : 1;
+        const upOrDown = pitchDiff > 0 ? 1 : -1;
 
         this.state.camPitchSpeed = (dt * upOrDown * settingsManager.cameraMovementSpeed) / 50;
       }
 
-      if (this.state.camYaw >= targetYaw - marginOfError && this.state.camYaw <= targetYaw + marginOfError) {
+      const yawDiff = normalizeAngle(<Radians>(targetYaw - this.state.camYaw));
+
+      if (Math.abs(yawDiff) <= marginOfError) {
         this.state.camYaw = targetYaw;
         this.state.camYawSpeed = 0;
       } else {
-        const leftOrRight = this.state.camYaw - targetYaw > 0 ? -1 : 1;
+        const leftOrRight = yawDiff > 0 ? 1 : -1;
 
         this.state.camYawSpeed = (dt * leftOrRight * settingsManager.cameraMovementSpeed) / 50;
       }
@@ -1645,7 +1646,8 @@ export class Camera {
       }
 
       if (this.state.isLocalRotateYaw || this.state.isLocalRotateReset || this.state.isLocalRotateOverride) {
-        const leftOrRight = this.state.localRotateCurrent.yaw - this.state.localRotateTarget.yaw > 0 ? -1 : 1;
+        const localYawDiff = normalizeAngle(<Radians>(this.state.localRotateTarget.yaw - this.state.localRotateCurrent.yaw));
+        const leftOrRight = localYawDiff > 0 ? 1 : -1;
 
         this.state.localRotateSpeed.yaw += leftOrRight * this.state.localRotateSpeed.yaw * dt * this.localRotateMovementSpeed_;
         this.state.localRotateCurrent.yaw = <Radians>(this.state.localRotateCurrent.yaw + resetModifier * this.localRotateMovementSpeed_ * this.state.localRotateDif.yaw);
