@@ -32,7 +32,7 @@ describe('EditSat_capabilities', () => {
     const config = plugin.getBottomIconConfig();
 
     expect(config.elementName).toBe('edit-satellite-bottom-icon');
-    expect(config.menuMode).toContain(MenuMode.ADVANCED);
+    expect(config.menuMode).toContain(MenuMode.CREATE);
     expect(config.menuMode).toContain(MenuMode.ALL);
     expect(config.isDisabledOnLoad).toBe(true);
   });

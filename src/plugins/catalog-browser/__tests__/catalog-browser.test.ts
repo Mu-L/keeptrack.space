@@ -73,12 +73,12 @@ describe('CatalogBrowserPlugin_url', () => {
     expect(url).not.toContain('sup-gp.php');
   });
 
-  test('buildCelesTrackUrl_ uses supplemental endpoint for SPECIAL queries', () => {
+  test('buildCelesTrackUrl_ uses supplemental endpoint for FILE queries', () => {
     const plugin = new CatalogBrowserPlugin();
-    const url = (plugin as any).buildCelesTrackUrl_('SPECIAL=gpz');
+    const url = (plugin as any).buildCelesTrackUrl_('FILE=iss');
 
     expect(url).toContain('sup-gp.php');
-    expect(url).toContain('SPECIAL=gpz');
+    expect(url).toContain('FILE=iss');
     expect(url).toContain('FORMAT=3LE');
   });
 });
@@ -119,7 +119,7 @@ describe('CatalogBrowserData', () => {
   test('all entries have valid queryParam format', () => {
     for (const cat of CatalogBrowserData.categories) {
       for (const entry of cat.entries) {
-        expect(entry.queryParam).toMatch(/^(GROUP|SPECIAL)=/u);
+        expect(entry.queryParam).toMatch(/^(GROUP|SPECIAL|FILE)=/u);
       }
     }
   });

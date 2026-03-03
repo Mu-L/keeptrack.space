@@ -138,7 +138,7 @@ describe('code_snippet', () => {
 
   // Tests that saveXlsx generates and downloads an XLSX file with default name
   it('test_save_xlsx_default_name', async () => {
-    const { writeFile } = await import('xlsx');
+    const { writeFile } = await import('@e965/xlsx');
     const items = [
       { a: 1, b: 2 },
       { a: 3, b: 4 },
@@ -152,7 +152,7 @@ describe('code_snippet', () => {
 
   // Tests that saveXlsx uses provided name
   it('test_save_xlsx_provided_name', async () => {
-    const { writeFile } = await import('xlsx');
+    const { writeFile } = await import('@e965/xlsx');
     const items = [
       { a: 1, b: 2 },
       { a: 3, b: 4 },

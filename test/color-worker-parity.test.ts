@@ -536,7 +536,7 @@ describe('Color Worker Parity', () => {
   });
 
   describe('CelestrakColorScheme FOV parity', () => {
-    it('should color in-FOV payloads with inFOV color', () => {
+    it('should color in-FOV payloads with inFOVAlt color', () => {
       const inViewData = new Int8Array(testCatalog.length);
 
       inViewData[FOV_INDEX] = 1;
@@ -545,7 +545,8 @@ describe('Color Worker Parity', () => {
       const output = forceRecolorAndGetOutput();
 
       const scheme = colorSchemeManager.colorSchemeInstances.CelestrakColorScheme;
-      const expectedColor = scheme.colorTheme.inFOV;
+      // CelestrakColorScheme uses inFOVAlt (not inFOV) for FOV coloring
+      const expectedColor = scheme.colorTheme.inFOVAlt ?? scheme.colorTheme.celestrakDefaultFov;
       const workerColor = getWorkerColor(output, FOV_INDEX);
 
       expect(workerColor[0]).toBeCloseTo(expectedColor[0], 2);

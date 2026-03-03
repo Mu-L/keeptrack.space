@@ -388,6 +388,13 @@ export const mockCameraManager = <Camera>(<unknown>{
   drawFts: vi.fn(),
   drawPlanetarium_: vi.fn(),
   updateCameraSnapMode: vi.fn(),
+  transition: {
+    isActive: false,
+    duration: 500,
+    begin: vi.fn(),
+    cancel: vi.fn(),
+    apply: vi.fn(),
+  },
 });
 
 export const setupDefaultHtml = () => {

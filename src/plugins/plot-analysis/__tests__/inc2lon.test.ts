@@ -56,7 +56,7 @@ describe('Inc2LonPlots_class', () => {
       const shortcuts = plugin.getKeyboardShortcuts();
 
       expect(shortcuts).toHaveLength(1);
-      expect(shortcuts[0].key).toBe('G');
+      expect(shortcuts[0].key).toBe('g');
       expect(shortcuts[0].callback).toBeInstanceOf(Function);
     });
 

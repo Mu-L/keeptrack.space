@@ -104,15 +104,15 @@ describe('Breakup_class', () => {
 
     it('should build side menu HTML', () => {
       const breakupPlugin = new Breakup();
-      const html = breakupPlugin['buildSideMenuHtml_']();
+      const config = breakupPlugin.getSideMenuConfig();
 
-      expect(html).toContain('breakup-menu');
-      expect(html).toContain('Breakup Simulator');
-      expect(html).toContain('hc-scc');
-      expect(html).toContain('hc-inc');
-      expect(html).toContain('hc-per');
-      expect(html).toContain('hc-raan');
-      expect(html).toContain('hc-count');
+      expect(config.html).toContain('breakup-menu');
+      expect(config.title).toBe('Breakup Simulator');
+      expect(config.html).toContain('hc-scc');
+      expect(config.html).toContain('hc-inc');
+      expect(config.html).toContain('hc-per');
+      expect(config.html).toContain('hc-raan');
+      expect(config.html).toContain('hc-count');
     });
 
     it('should handle invalid start number in getFormData', () => {

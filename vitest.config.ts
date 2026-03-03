@@ -32,6 +32,13 @@ export default defineConfig({
         '**/*.stories.ts',
         '**/*.stories.js',
       ],
+      reportOnFailure: true,
+      thresholds: {
+        statements: 34,
+        branches: 25,
+        functions: 41,
+        lines: 34,
+      },
     },
     include: ['**/?(*.)+(spec|test).?(m)[jt]s?(x)'],
     exclude: [

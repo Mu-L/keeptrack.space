@@ -42,16 +42,16 @@ describe('ProximityOps_class', () => {
       const plugin = new ProximityOps();
 
       expect(plugin.dragOptions.isDraggable).toBe(true);
-      expect(plugin.dragOptions.minWidth).toBe(400);
-      expect(plugin.dragOptions.maxWidth).toBe(700);
+      expect(plugin.dragOptions.minWidth).toBe(480);
+      expect(plugin.dragOptions.maxWidth).toBe(650);
     });
 
     it('should have draggable secondary menu', () => {
       const plugin = new ProximityOps();
 
       expect(plugin.dragOptionsSecondary.isDraggable).toBe(true);
-      expect(plugin.dragOptionsSecondary.minWidth).toBe(500);
-      expect(plugin.dragOptionsSecondary.maxWidth).toBe(1300);
+      expect(plugin.dragOptionsSecondary.minWidth).toBe(600);
+      expect(plugin.dragOptionsSecondary.maxWidth).toBe(1000);
     });
 
     it('should have help content', () => {

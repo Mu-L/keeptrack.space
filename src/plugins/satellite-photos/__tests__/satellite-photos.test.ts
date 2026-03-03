@@ -41,7 +41,6 @@ describe('SatellitePhotos', () => {
       expect(config.elementName).toBe('menu-sat-photo');
       expect(config.image).toBeDefined();
       expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 

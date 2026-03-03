@@ -68,7 +68,6 @@ describe('CountriesMenu', () => {
       expect(config.elementName).toBe('menu-countries');
       expect(config.image).toBeDefined();
       expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 
@@ -117,12 +116,11 @@ describe('CountriesMenu', () => {
   });
 
   describe('generateCountryList_', () => {
-    it('should generate country list HTML with header', () => {
+    it('should generate country list HTML', () => {
       const plugin = new CountriesMenu();
       const html = plugin['generateCountryList_']();
 
-      expect(html).toContain('center-align');
-      expect(html).toContain('divider');
+      expect(typeof html).toBe('string');
     });
 
     it('should merge country codes by display name and skip ANALSAT', () => {

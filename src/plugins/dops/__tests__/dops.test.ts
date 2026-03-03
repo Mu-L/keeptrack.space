@@ -18,17 +18,18 @@ describe('DopsPlugin_class', () => {
   standardPluginMenuButtonTests(DopsPlugin, 'DopsPlugin');
   standardPluginRmbTests(DopsPlugin, 'DopsPlugin');
 
-  describe('sideMenuElementHtml', () => {
+  describe('getSideMenuConfig', () => {
     it('should contain expected form elements', () => {
       const plugin = new DopsPlugin();
+      const config = plugin.getSideMenuConfig();
 
-      expect(plugin.sideMenuElementHtml).toContain('dops-menu');
-      expect(plugin.sideMenuElementHtml).toContain('dops-form');
-      expect(plugin.sideMenuElementHtml).toContain('dops-lat');
-      expect(plugin.sideMenuElementHtml).toContain('dops-lon');
-      expect(plugin.sideMenuElementHtml).toContain('dops-alt');
-      expect(plugin.sideMenuElementHtml).toContain('dops-el');
-      expect(plugin.sideMenuElementHtml).toContain('dops-submit');
+      expect(config.html).toContain('dops-menu');
+      expect(config.html).toContain('dops-form');
+      expect(config.html).toContain('dops-lat');
+      expect(config.html).toContain('dops-lon');
+      expect(config.html).toContain('dops-alt');
+      expect(config.html).toContain('dops-el');
+      expect(config.html).toContain('dops-submit');
     });
   });
 

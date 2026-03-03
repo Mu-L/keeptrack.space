@@ -2,6 +2,7 @@ import { Mock, vi } from 'vitest';
 /* eslint-disable max-lines-per-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable dot-notation */
+import { MenuMode } from '@app/engine/core/interfaces';
 import { CollisionEvent, Collisions } from '@app/plugins/collisions/collisions';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from '@test/generic-tests';
@@ -67,7 +68,8 @@ describe('Collisions_class', () => {
 
       expect(config.elementName).toBe('menu-satellite-collision');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(1); // MenuMode.BASIC
+      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.ALL);
     });
 
     it('should return correct side menu config', () => {

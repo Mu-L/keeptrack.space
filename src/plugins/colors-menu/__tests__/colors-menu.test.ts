@@ -41,7 +41,6 @@ describe('ColorMenu_class', () => {
       expect(config.elementName).toBe('menu-color-scheme');
       expect(config.image).toBeDefined();
       expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 

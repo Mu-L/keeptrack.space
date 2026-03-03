@@ -42,7 +42,6 @@ describe('PlanetsMenuPlugin', () => {
       expect(config.elementName).toBe('menu-planets');
       expect(config.image).toBeDefined();
       expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 
@@ -52,7 +51,7 @@ describe('PlanetsMenuPlugin', () => {
 
       expect(config.elementName).toBe('planets-menu');
       expect(config.dragOptions?.isDraggable).toBe(true);
-      expect(config.dragOptions?.minWidth).toBe(200);
+      expect(config.dragOptions?.minWidth).toBe(320);
       expect(config.dragOptions?.maxWidth).toBe(400);
     });
 

@@ -34,8 +34,6 @@ describe('FilterMenuPlugin_class', () => {
 
       expect(config.elementName).toBe('filter-menu-icon');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.SETTINGS);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
@@ -62,7 +60,7 @@ describe('FilterMenuPlugin_class', () => {
       const shortcuts = plugin.getKeyboardShortcuts();
 
       expect(shortcuts).toHaveLength(1);
-      expect(shortcuts[0].key).toBe('F');
+      expect(shortcuts[0].key).toBe('f');
       expect(shortcuts[0].callback).toBeDefined();
     });
 
@@ -598,8 +596,6 @@ describe('FilterMenuPlugin_class', () => {
       const plugin = new FilterMenuPlugin();
       const config = plugin.getBottomIconConfig();
 
-      expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.SETTINGS);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });

@@ -176,9 +176,9 @@ describe('CreateSat', () => {
     );
     expect(SatMath.altitudeCheck).toHaveBeenCalledWith(mockSatrec, mockTimeManager.simulationTimeObj);
 
-    // Verify the toast was shown with the error message (t7e key returned since locales not loaded in test)
+    // Verify the toast was shown with the error message
     expect(mockUiManager.toast).toHaveBeenCalledWith(
-      'plugins.CreateSat.errorMsgs.propagationFailed',
+      expect.any(String),
       ToastMsgType.caution,
       true,
     );

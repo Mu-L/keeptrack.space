@@ -64,7 +64,6 @@ describe('StereoMapPlugin_class', () => {
       expect(config.elementName).toBe('stereo-map-bottom-icon');
       expect(config.image).toBeDefined();
       expect(config.menuMode).toContain(MenuMode.BASIC);
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
       expect(config.menuMode).toContain(MenuMode.ALL);
       expect(config.isDisabledOnLoad).toBe(true);
     });

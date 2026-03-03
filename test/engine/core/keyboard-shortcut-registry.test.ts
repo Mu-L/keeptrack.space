@@ -250,9 +250,9 @@ describe('KeyboardShortcutRegistry', () => {
       // src/plugins/select-sat-manager/select-sat-manager.ts
       { pluginId: 'SelectSatManager', shortcuts: [{ key: '[' }, { key: ']' }, { key: '{' }, { key: '}' }] },
       // src/plugins/find-sat/find-sat.ts
-      { pluginId: 'FindSatPlugin', shortcuts: [{ key: 'F', ctrl: true }] },
+      { pluginId: 'FindSatPlugin', shortcuts: [{ key: 'S' }] },
       // src/plugins/filter-menu/filter-menu.ts
-      { pluginId: 'FilterMenuPlugin', shortcuts: [{ key: 'F' }] },
+      { pluginId: 'FilterMenuPlugin', shortcuts: [{ key: 'f' }] },
       // src/plugins/sound-toggle/sound-toggle.ts
       { pluginId: 'SoundToggle', shortcuts: [{ key: 'M' }] },
       // src/plugins/night-toggle/night-toggle.ts
@@ -264,9 +264,7 @@ describe('KeyboardShortcutRegistry', () => {
       // src/plugins/plot-analysis/inc2alt.ts
       { pluginId: 'Inc2AltPlots', shortcuts: [{ key: 'I' }] },
       // src/plugins/plot-analysis/inc2lon.ts
-      { pluginId: 'Inc2LonPlots', shortcuts: [{ key: 'G' }] },
-      // src/plugins-pro/neighborhood-watch/neighborhood-watch.ts
-      { pluginId: 'NeighborhoodWatch', shortcuts: [{ key: 'W' }] },
+      { pluginId: 'Inc2LonPlots', shortcuts: [{ key: 'g' }] },
       // src/plugins-pro/symbology/symbology-plugin.ts
       { pluginId: 'SymbologyPlugin', shortcuts: [{ key: 'Y' }] },
     ];

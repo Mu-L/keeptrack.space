@@ -46,6 +46,46 @@ if (typeof global !== 'undefined') {
   global.HTMLFormElement = dom.window.HTMLFormElement;
 }
 
+// Mock OffscreenCanvas for ground-view cardinal labels and other WebGL texture generation
+global.OffscreenCanvas = class OffscreenCanvas {
+  width: number;
+  height: number;
+
+  constructor(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+  }
+
+  getContext() {
+    return {
+      fillStyle: '',
+      strokeStyle: '',
+      font: '',
+      textAlign: '',
+      textBaseline: '',
+      lineWidth: 1,
+      lineJoin: 'miter',
+      fillRect: vi.fn(),
+      fillText: vi.fn(),
+      strokeText: vi.fn(),
+      measureText: vi.fn(() => ({ width: 10 })),
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 })),
+      putImageData: vi.fn(),
+      canvas: { width: this.width, height: this.height },
+    };
+  }
+
+  transferToImageBitmap() {
+    return {
+      width: this.width,
+      height: this.height,
+      close: vi.fn(),
+    };
+  }
+} as unknown as typeof OffscreenCanvas;
+
 // Mock createImageBitmap for WebGL texture loading
 global.createImageBitmap = vi.fn(() =>
   Promise.resolve({
@@ -155,7 +195,7 @@ vi.mock('echarts', () => {
 vi.mock('echarts-gl', () => ({}));
 
 // Mock xlsx to prevent tests from writing real files to disk (e.g. channel-info.xlsx)
-vi.mock('xlsx', () => {
+vi.mock('@e965/xlsx', () => {
   const writeFile = vi.fn();
   const utils = {
     json_to_sheet: vi.fn(() => ({})),
@@ -309,6 +349,14 @@ global.mocks.glMock = {
   depthFunc: vi.fn(),
   clearDepth: vi.fn(),
   pixelStorei: vi.fn(),
+  vertexAttribDivisor: vi.fn(),
+  drawArraysInstanced: vi.fn(),
+  drawElementsInstanced: vi.fn(),
+  deleteVertexArray: vi.fn(),
+  deleteBuffer: vi.fn(),
+  deleteTexture: vi.fn(),
+  deleteProgram: vi.fn(),
+  deleteShader: vi.fn(),
 };
 
 // mock_requestAnimationFrame.js

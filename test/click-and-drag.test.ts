@@ -101,13 +101,14 @@ describe('clickAndDragWidth_function', () => {
     clickAndDragWidth(el);
     const edgeEl = <HTMLElement>el.querySelector('div');
 
-    edgeEl.dispatchEvent(new MouseEvent('mousedown', { clientX: 0 }));
-    edgeEl.dispatchEvent(new MouseEvent('mousemove', { clientX: -1000 }));
+    edgeEl.dispatchEvent(new MouseEvent('mousedown', { clientX: 0, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: -1000 }));
+    vi.advanceTimersByTime(16);
     expect(parseInt(el.style.width)).toBe(280);
-    edgeEl.dispatchEvent(new MouseEvent('mousemove', { clientX: 1000 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 1000 }));
     vi.advanceTimersByTime(16);
     expect(parseInt(el.style.width)).toBe(450);
-    edgeEl.dispatchEvent(new MouseEvent('mouseup'));
+    document.dispatchEvent(new MouseEvent('mouseup'));
     vi.advanceTimersByTime(16);
     expect(parseInt(el.style.width)).toBe(450);
   });
@@ -181,9 +182,10 @@ describe('clickAndDragHeight_function', () => {
     clickAndDragHeight(el, maxHeight);
     const edgeEl = el.children[0];
 
-    edgeEl.dispatchEvent(new MouseEvent('mousedown', { clientY: 150 }));
-    edgeEl.dispatchEvent(new MouseEvent('mousemove', { clientY: 50 }));
-    edgeEl.dispatchEvent(new MouseEvent('mouseup'));
+    edgeEl.dispatchEvent(new MouseEvent('mousedown', { clientY: 150, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientY: 50 }));
+    vi.advanceTimersByTime(16);
+    document.dispatchEvent(new MouseEvent('mouseup'));
     vi.advanceTimersByTime(16);
     expect(el.style.height).toBe(`${maxHeight}px`);
   });
