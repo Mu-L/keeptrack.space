@@ -8,6 +8,7 @@ import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { DraggableBox } from '@app/engine/ui/draggable-box';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl, setInnerHtml, showEl } from '@app/engine/utils/get-el';
@@ -15,7 +16,6 @@ import { KeepTrack } from '@app/keeptrack';
 import { BaseObject, CatalogSource, Satellite } from '@ootk/src/main';
 import bookmarkAddPng from '@public/img/icons/bookmark-add.png';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
-import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { CONTAINER_ID, EL, SECTIONS } from './sat-info-box-html';
@@ -149,7 +149,7 @@ export class SatInfoBox extends KeepTrackPlugin {
         document.documentElement.style.setProperty('--search-box-bottom', '0px');
         satInfoBoxElement.classList.remove('satinfo-fixed');
 
-        getEl('search-results')!.style.maxHeight = '80%';
+        getEl('search-results')!.style.maxHeight = '85%';
       });
 
       draggie.on('pointerDown', () => {
@@ -390,6 +390,12 @@ export class SatInfoBox extends KeepTrackPlugin {
     }
 
     if (obj.isSensor()) {
+      return;
+    }
+
+    if (!this.isHtmlReady_) {
+      setTimeout(() => this.selectSat_(satInfoBox, obj), 500);
+
       return;
     }
 
