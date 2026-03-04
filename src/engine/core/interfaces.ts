@@ -214,12 +214,15 @@ export enum Pickable {
 }
 
 export enum MenuMode {
-  BASIC,
+  CATALOG,
+  SENSORS,
+  EVENTS,
   CREATE,
-  ADVANCED,
   ANALYSIS,
-  EXPERIMENTAL,
+  DISPLAY,
+  TOOLS,
   SETTINGS,
+  EXPERIMENTAL,
   ALL,
 }
 
