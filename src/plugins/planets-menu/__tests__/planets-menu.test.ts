@@ -41,7 +41,7 @@ describe('PlanetsMenuPlugin', () => {
 
       expect(config.elementName).toBe('menu-planets');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.DISPLAY);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 

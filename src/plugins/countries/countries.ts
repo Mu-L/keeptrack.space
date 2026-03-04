@@ -54,7 +54,7 @@ export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCap
       elementName: 'menu-countries',
       label: t7e('plugins.CountriesMenu.bottomIconLabel'),
       image: flagPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
     };
   }
 

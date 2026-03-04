@@ -47,7 +47,7 @@ export class SensorSurvFence extends KeepTrackPlugin {
       elementName: 'sensor-surv-fence-bottom-icon',
       label: 'Surv Fence',
       image: fencePng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.SENSORS, MenuMode.ALL],
       isDisabledOnLoad: true,
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,

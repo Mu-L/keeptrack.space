@@ -41,7 +41,7 @@ export class ProximityOps extends KeepTrackPlugin {
   readonly id = 'ProximityOps';
   dependencies_ = [SelectSatManager.name];
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ANALYSIS, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.EVENTS, MenuMode.ALL];
 
   private readonly timeManagerInstance = ServiceLocator.getTimeManager()!;
   private readonly selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager)!;

@@ -23,7 +23,7 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
       elementName: 'watchlist-filter-icon',
       label: t7e('plugins.WatchlistFilter.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: satellitePng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,
       isDisabledOnLoad: true,

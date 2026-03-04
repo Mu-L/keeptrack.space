@@ -54,7 +54,7 @@ export class TransponderChannelData extends KeepTrackPlugin {
       elementName: 'menu-transponderChannelData',
       label: t7e('plugins.TransponderChannelData.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: transponderChannelDataPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.TOOLS, MenuMode.ALL],
       isDisabledOnLoad: true,
     };
   }

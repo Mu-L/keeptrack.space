@@ -67,7 +67,7 @@ describe('CountriesMenu', () => {
 
       expect(config.elementName).toBe('menu-countries');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.CATALOG);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 

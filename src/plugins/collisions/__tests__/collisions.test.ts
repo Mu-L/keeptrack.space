@@ -68,7 +68,7 @@ describe('Collisions_class', () => {
 
       expect(config.elementName).toBe('menu-satellite-collision');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.EVENTS);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 

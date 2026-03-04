@@ -64,7 +64,7 @@ export class Reentries extends KeepTrackPlugin {
       elementName: 'reentries-bottom-icon',
       label: t7e('plugins.Reentries.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: sputnickPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
     };
   }
 

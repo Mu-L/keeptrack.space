@@ -45,7 +45,7 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
       elementName: 'menu-planets',
       label: t7e('plugins.PlanetsMenuPlugin.bottomIconLabel'),
       image: planetPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.DISPLAY, MenuMode.ALL],
     };
   }
 

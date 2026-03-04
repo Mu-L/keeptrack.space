@@ -19,7 +19,7 @@ export class NightToggle extends KeepTrackPlugin {
       elementName: 'night-toggle-bottom-icon',
       label: 'Night Toggle',
       image: dayNightPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.DISPLAY, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,
     };

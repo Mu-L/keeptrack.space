@@ -122,7 +122,7 @@ export class StereoMap extends KeepTrackPlugin {
       elementName: 'stereo-map-bottom-icon',
       label: t7e('plugins.StereoMap.bottomIconLabel' as Parameters<typeof t7e>[0]) ?? 'Stereo Map',
       image: mapPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.DISPLAY, MenuMode.ALL],
       isDisabledOnLoad: true,
     };
   }

@@ -45,7 +45,7 @@ export class TimeMachine extends KeepTrackPlugin {
   historyOfSatellitesRunCount = 0;
   isTimeMachineRunning = false;
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.TOOLS, MenuMode.ALL];
 
   historyOfSatellitesPlay() {
     this.isTimeMachineRunning = true;

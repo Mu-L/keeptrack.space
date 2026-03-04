@@ -82,7 +82,7 @@ export class WatchlistPlugin extends KeepTrackPlugin {
   bottomIconElementName: string = 'menu-watchlist';
   bottomIconImg = bookmarksPng;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CATALOG, MenuMode.ALL];
 
   isWatchlistChanged: boolean | null = null;
   sideMenuElementHtml = html`

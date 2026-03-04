@@ -46,7 +46,7 @@ export class SensorFov extends KeepTrackPlugin {
       elementName: 'sensor-fov-bottom-icon',
       label: 'Sensor FOV',
       image: fovPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.SENSORS, MenuMode.ALL],
       isDisabledOnLoad: true,
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,

@@ -24,7 +24,7 @@ export class SensorInfoPlugin extends KeepTrackPlugin {
     this.checkIfLinesVisible_(ServiceLocator.getLineManager());
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   bottomIconLabel = 'Sensor Info';
   bottomIconImg = sensorInfoPng;

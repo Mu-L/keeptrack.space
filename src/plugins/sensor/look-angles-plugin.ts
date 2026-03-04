@@ -30,7 +30,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
   }
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   /**
    * Flag to determine if the look angles should only show rise and set times

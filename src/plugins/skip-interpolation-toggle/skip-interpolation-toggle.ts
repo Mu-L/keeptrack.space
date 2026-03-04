@@ -19,7 +19,7 @@ export class SkipInterpolationToggle extends KeepTrackPlugin {
       elementName: 'skip-interpolation-toggle-bottom-icon',
       label: 'Skip Interp',
       image: toasterPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.DISPLAY, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.SETTINGS_TOGGLE,
     };

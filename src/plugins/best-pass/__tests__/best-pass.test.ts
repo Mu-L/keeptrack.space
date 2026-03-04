@@ -33,7 +33,7 @@ describe('BestPassPlugin_capabilities', () => {
     const config = plugin.getBottomIconConfig();
 
     expect(config.elementName).toBe('best-pass-icon');
-    expect(config.menuMode).toContain(MenuMode.ANALYSIS);
+    expect(config.menuMode).toContain(MenuMode.EVENTS);
     expect(config.menuMode).toContain(MenuMode.ALL);
   });
 

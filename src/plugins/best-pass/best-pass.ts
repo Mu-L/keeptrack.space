@@ -60,7 +60,7 @@ export class BestPassPlugin extends KeepTrackPlugin {
       elementName: 'best-pass-icon',
       label: t7e('plugins.BestPassPlugin.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: eventNotePng,
-      menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
       isDisabledOnLoad: true,
     };
   }

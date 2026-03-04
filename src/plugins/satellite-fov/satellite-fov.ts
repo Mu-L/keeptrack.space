@@ -44,7 +44,7 @@ export class SatelliteFov extends KeepTrackPlugin {
   dependencies_ = [SelectSatManager.name];
   bottomIconImg = satelliteFovPng;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.DISPLAY, MenuMode.ALL];
 
   dragOptions: ClickDragOptions = {
     isDraggable: false,

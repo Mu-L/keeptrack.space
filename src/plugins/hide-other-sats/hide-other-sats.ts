@@ -21,7 +21,7 @@ export class HideOtherSatellitesPlugin extends KeepTrackPlugin {
       elementName: 'hide-other-sats-bottom-icon',
       label: 'Hide Others',
       image: disabledVisiblePng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
       placement: IconPlacement.UTILITY_ONLY,
       utilityGroup: UtilityGroup.LAYER_TOGGLE,
     };

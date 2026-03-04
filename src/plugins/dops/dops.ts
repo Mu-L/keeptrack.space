@@ -39,7 +39,7 @@ export class DopsPlugin extends KeepTrackPlugin {
       elementName: 'menu-dops',
       label: t7e('plugins.DopsPlugin.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: gpsPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.SENSORS, MenuMode.ALL],
     };
   }
 

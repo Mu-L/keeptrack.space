@@ -58,7 +58,7 @@ export class Collisions extends KeepTrackPlugin {
       elementName: 'menu-satellite-collision',
       label: t7e('plugins.Collisions.bottomIconLabel'),
       image: CollisionsPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
     };
   }
 

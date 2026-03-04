@@ -57,7 +57,7 @@ export class OrbitGuardMenuPlugin extends KeepTrackPlugin {
       </div>
     </div>`;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.EVENTS, MenuMode.ALL];
   dragOptions: ClickDragOptions = {
     isDraggable: true,
     minWidth: 1200,

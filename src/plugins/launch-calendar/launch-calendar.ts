@@ -40,7 +40,7 @@ export class LaunchCalendar extends KeepTrackPlugin {
       elementName: 'launch-calendar-bottom-icon',
       label: t7e('plugins.LaunchCalendar.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: calendarPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
     };
   }
 

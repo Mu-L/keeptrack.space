@@ -57,7 +57,7 @@ export class CloseObjectsPlugin extends KeepTrackPlugin {
       elementName: 'close-objects-icon',
       label: t7e('plugins.CloseObjectsPlugin.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: scatterPlotPng,
-      menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
     };
   }
 

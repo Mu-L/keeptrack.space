@@ -11,7 +11,7 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 
 // Mock settingsManager
 (global as any).settingsManager = {
-  activeMenuMode: MenuMode.BASIC,
+  activeMenuMode: MenuMode.CATALOG,
 };
 
 describe('BottomIconComponent', () => {
@@ -48,11 +48,11 @@ describe('BottomIconComponent', () => {
 
     it('should apply custom menuMode', () => {
       const component = new BottomIconComponent('test-plugin', createConfig({
-        menuMode: [MenuMode.BASIC, MenuMode.ADVANCED],
+        menuMode: [MenuMode.CATALOG, MenuMode.SENSORS],
       }));
 
-      expect(component.menuModes).toContain(MenuMode.BASIC);
-      expect(component.menuModes).toContain(MenuMode.ADVANCED);
+      expect(component.menuModes).toContain(MenuMode.CATALOG);
+      expect(component.menuModes).toContain(MenuMode.SENSORS);
     });
 
     it('should apply isDisabledOnLoad', () => {

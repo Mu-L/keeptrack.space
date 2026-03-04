@@ -31,7 +31,7 @@ describe('FindSatPlugin_class', () => {
       expect(config.elementName).toBe('find-satellite-bottom-icon');
       expect(config.label).toBe('Find Satellite');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(MenuMode.ADVANCED);
+      expect(config.menuMode).toContain(MenuMode.CATALOG);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
   });

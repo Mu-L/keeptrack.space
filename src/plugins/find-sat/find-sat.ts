@@ -64,7 +64,7 @@ export class FindSatPlugin extends KeepTrackPlugin {
       elementName: 'find-satellite-bottom-icon',
       label: 'Find Satellite',
       image: findSatPng,
-      menuMode: [MenuMode.ADVANCED, MenuMode.ALL],
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
     };
   }
 

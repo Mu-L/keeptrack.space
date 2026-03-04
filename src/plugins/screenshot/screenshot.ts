@@ -68,7 +68,7 @@ export class Screenshot extends KeepTrackPlugin {
   // This is 'disabled' since it does not turn green after being clicked like other buttons.
   isIconDisabled = true;
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.TOOLS, MenuMode.ALL];
 
   bottomIconImg = cameraPng;
   rmbCallback = (targetId: string): void => {

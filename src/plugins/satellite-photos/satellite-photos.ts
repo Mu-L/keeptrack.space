@@ -48,7 +48,7 @@ export class SatellitePhotos extends KeepTrackPlugin {
       elementName: 'menu-sat-photo',
       label: t7e('plugins.SatellitePhotos.bottomIconLabel' as Parameters<typeof t7e>[0]),
       image: satellitePng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.DISPLAY, MenuMode.ALL],
     };
   }
 

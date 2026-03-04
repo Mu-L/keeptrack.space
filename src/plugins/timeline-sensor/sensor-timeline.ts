@@ -115,7 +115,7 @@ export class SensorTimeline extends KeepTrackPlugin {
     );
   }
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.DISPLAY, MenuMode.ALL];
 
   isRequireSatelliteSelected = true;
   isIconDisabled = true;

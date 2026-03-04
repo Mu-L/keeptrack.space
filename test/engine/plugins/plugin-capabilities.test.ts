@@ -229,13 +229,13 @@ describe('Plugin Capability Interfaces', () => {
         elementName: 'test-bottom-icon',
         label: 'Test Plugin',
         image: 'test.png',
-        menuMode: [MenuMode.BASIC, MenuMode.ADVANCED],
+        menuMode: [MenuMode.CATALOG, MenuMode.SENSORS],
         order: 100,
         isDisabledOnLoad: false,
       };
 
       expect(config.elementName).toBe('test-bottom-icon');
-      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.CATALOG);
     });
 
     it('should accept minimal configuration', () => {

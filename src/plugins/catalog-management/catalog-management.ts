@@ -68,7 +68,7 @@ export class CatalogManagementPlugin extends KeepTrackPlugin {
       elementName: 'catalog-management-icon',
       label: t7e('plugins.CatalogManagementPlugin.bottomIconLabel' as T7eKey),
       image: folderCodePng,
-      menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
+      menuMode: [MenuMode.TOOLS, MenuMode.ALL],
     };
   }
 

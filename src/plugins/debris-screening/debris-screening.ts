@@ -68,7 +68,7 @@ export class DebrisScreening extends KeepTrackPlugin {
       elementName: 'debris-screening-bottom-icon',
       label: 'Debris Screening',
       image: frameInspectPng,
-      menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
       isDisabledOnLoad: true,
     };
   }

@@ -82,11 +82,11 @@ export class NextLaunchesPlugin extends KeepTrackPlugin {
 
   dragOptions: ClickDragOptions = {
     isDraggable: true,
-    maxWidth: 650,
-    minWidth: 450,
+    maxWidth: 1000,
+    minWidth: 500,
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.EVENTS, MenuMode.ALL];
 
   sideMenuElementName: string = 'nextLaunch-menu';
   sideMenuElementHtml: string = html`

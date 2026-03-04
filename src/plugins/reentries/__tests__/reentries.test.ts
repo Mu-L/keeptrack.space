@@ -69,7 +69,7 @@ describe('Reentries_class', () => {
 
       expect(config.elementName).toBe('reentries-bottom-icon');
       expect(config.image).toBeDefined();
-      expect(config.menuMode).toContain(MenuMode.BASIC);
+      expect(config.menuMode).toContain(MenuMode.EVENTS);
       expect(config.menuMode).toContain(MenuMode.ALL);
     });
 

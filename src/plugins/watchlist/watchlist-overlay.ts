@@ -27,7 +27,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     this.watchlistPlugin_ = PluginRegistry.getPlugin(WatchlistPlugin)!;
   }
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CATALOG, MenuMode.ALL];
 
   private readonly OVERLAY_CALC_LENGTH_IN_DAYS = 0.5;
   private infoOverlayDOMHtmlStrArr = [] as string[];

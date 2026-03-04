@@ -26,7 +26,7 @@ export class ScreenRecorder extends KeepTrackPlugin {
       elementName: 'screen-recorder-bottom-icon',
       label: 'Record',
       image: videocamPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.TOOLS, MenuMode.ALL],
     };
   }
 

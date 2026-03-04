@@ -43,7 +43,7 @@ export class SatelliteTimeline extends KeepTrackPlugin {
   isIconDisabled = true;
   isIconDisabledOnLoad = true;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.DISPLAY, MenuMode.ALL];
 
   bottomIconImg = viewTimelinePng;
   bottomIconCallback: () => void = () => {
