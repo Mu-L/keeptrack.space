@@ -1,4 +1,5 @@
 // Ensure imports are type only to avoid circular dependencies
+import type { CatalogBrowserConfiguration } from './catalog-browser/catalog-browser-settings';
 import type { SatInfoBoxOrbitalConfiguration } from './sat-info-box-orbital/sat-info-box-orbital-settings';
 
 export type PluginConfiguration = {
@@ -108,7 +109,7 @@ export type KeepTrackPluginsConfiguration = {
   SatellitePhotos?: PluginConfiguration;
   ScreenRecorder?: PluginConfiguration;
   CatalogManagementPlugin?: PluginConfiguration;
-  CatalogBrowserPlugin?: PluginConfiguration;
+  CatalogBrowserPlugin?: CatalogBrowserConfiguration;
   CloseObjectsPlugin?: PluginConfiguration;
   BestPassPlugin?: PluginConfiguration;
   OverflightPlugin?: PluginConfiguration;

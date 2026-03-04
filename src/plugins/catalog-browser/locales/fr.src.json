@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "Navigateur de Catalogues",
-      "title": "Navigateur de Catalogues CelesTrack",
-      "helpBody": "Parcourez et chargez des catalogues de satellites depuis CelesTrack. <br><br>Utilisez le commutateur pour choisir entre le remplacement de l'ensemble du catalogue (Toutes les Données) ou la mise à jour uniquement des éléments orbitaux pour les satellites existants (Données Orbitales Uniquement).",
+      "title": "Navigateur de Catalogues",
+      "helpBody": "Parcourez et chargez des catalogues de satellites. <br><br>Utilisez le commutateur pour choisir entre le remplacement de l'ensemble du catalogue (Toutes les Données) ou la mise à jour uniquement des éléments orbitaux pour les satellites existants (Données Orbitales Uniquement).",
       "labels": {
         "allData": "Toutes les Données",
         "orbitalOnly": "Orbital Uniquement",
-        "allDataDesc": "Remplace l'ensemble du catalogue par les données CelesTrack",
+        "allDataDesc": "Remplace l'ensemble du catalogue par les données sélectionnées",
         "orbitalOnlyDesc": "Met à jour les TLE tout en préservant les métadonnées satellite"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "Navigation (GNSS)",
         "weather": "Météo & Ressources Terrestres",
         "science": "Scientifique",
+        "keeptrack": "KeepTrack",
         "military": "Militaire & Divers"
       },
       "entries": {
+        "defaultCatalog": "Catalogue Par Défaut",
+        "celestrakOnly": "CelesTrack Uniquement",
+        "vimpelOnly": "JSC Vimpel Uniquement",
         "last30days": "Lancements des 30 Derniers Jours",
         "stations": "Stations Spatiales",
         "iss": "ISS",
@@ -81,13 +85,17 @@
         "other": "Autres Satellites"
       },
       "toasts": {
-        "loaded": "{catalog} chargé depuis CelesTrack"
+        "loaded": "{catalog} chargé",
+        "defaultLoaded": "Catalogue par défaut restauré",
+        "celestrakLoaded": "Catalogue CelesTrack chargé",
+        "vimpelLoaded": "Catalogue JSC Vimpel chargé"
       },
       "commands": {
         "category": "Navigateur de Catalogues"
       },
       "errorMsgs": {
-        "FetchFailed": "Échec du chargement du catalogue depuis CelesTrack"
+        "FetchFailed": "Échec du chargement du catalogue",
+        "DefaultFailed": "Échec de la restauration du catalogue par défaut"
       }
     }
   }

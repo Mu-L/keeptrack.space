@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "カタログブラウザ",
-      "title": "CelesTrack カタログブラウザ",
-      "helpBody": "CelesTrackから衛星カタログを閲覧・読み込みます。<br><br>トグルを使用して、カタログ全体を置換（全データ）するか、既存衛星の軌道要素のみを更新（軌道データのみ）するかを選択できます。",
+      "title": "カタログブラウザ",
+      "helpBody": "衛星カタログを閲覧・読み込みます。<br><br>トグルを使用して、カタログ全体を置換（全データ）するか、既存衛星の軌道要素のみを更新（軌道データのみ）するかを選択できます。",
       "labels": {
         "allData": "全データ",
         "orbitalOnly": "軌道のみ",
-        "allDataDesc": "CelesTrackデータでカタログ全体を置換",
+        "allDataDesc": "選択したデータでカタログ全体を置換",
         "orbitalOnlyDesc": "衛星メタデータを保持しながらTLEを更新"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "航法（GNSS）",
         "weather": "気象・地球観測",
         "science": "科学",
+        "keeptrack": "KeepTrack",
         "military": "軍事・その他"
       },
       "entries": {
+        "defaultCatalog": "デフォルトカタログ",
+        "celestrakOnly": "CelesTrack のみ",
+        "vimpelOnly": "JSC Vimpel のみ",
         "last30days": "過去30日間の打ち上げ",
         "stations": "宇宙ステーション",
         "iss": "ISS",
@@ -81,13 +85,17 @@
         "other": "その他の衛星"
       },
       "toasts": {
-        "loaded": "CelesTrackから{catalog}を読み込みました"
+        "loaded": "{catalog}を読み込みました",
+        "defaultLoaded": "デフォルトカタログを復元しました",
+        "celestrakLoaded": "CelesTrack カタログを読み込みました",
+        "vimpelLoaded": "JSC Vimpel カタログを読み込みました"
       },
       "commands": {
         "category": "カタログブラウザ"
       },
       "errorMsgs": {
-        "FetchFailed": "CelesTrackからのカタログ取得に失敗"
+        "FetchFailed": "カタログの取得に失敗",
+        "DefaultFailed": "デフォルトカタログの復元に失敗"
       }
     }
   }

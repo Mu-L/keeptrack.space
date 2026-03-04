@@ -665,7 +665,7 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'CatalogBrowserPlugin',
     ossImport: () => import('./catalog-browser/catalog-browser'),
     ossClassName: 'CatalogBrowserPlugin',
-    defaultConfig: { enabled: true, order: 424 },
+    defaultConfig: { enabled: true, order: 10 },
   },
   {
     configKey: 'CloseObjectsPlugin',

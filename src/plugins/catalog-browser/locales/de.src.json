@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "Katalog-Browser",
-      "title": "CelesTrack Katalog-Browser",
-      "helpBody": "Durchsuchen und laden Sie Satellitenkataloge von CelesTrack. <br><br>Verwenden Sie den Schalter, um zwischen dem Ersetzen des gesamten Katalogs (Alle Daten) oder der Aktualisierung nur der Orbitalelemente für vorhandene Satelliten (Nur Orbitaldaten) zu wählen.",
+      "title": "Katalog-Browser",
+      "helpBody": "Durchsuchen und laden Sie Satellitenkataloge. <br><br>Verwenden Sie den Schalter, um zwischen dem Ersetzen des gesamten Katalogs (Alle Daten) oder der Aktualisierung nur der Orbitalelemente für vorhandene Satelliten (Nur Orbitaldaten) zu wählen.",
       "labels": {
         "allData": "Alle Daten",
         "orbitalOnly": "Nur Orbital",
-        "allDataDesc": "Ersetzt den gesamten Katalog durch CelesTrack-Daten",
+        "allDataDesc": "Ersetzt den gesamten Katalog durch ausgewählte Daten",
         "orbitalOnlyDesc": "Aktualisiert TLEs unter Beibehaltung der Satellitenmetadaten"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "Navigation (GNSS)",
         "weather": "Wetter & Erdressourcen",
         "science": "Wissenschaft",
+        "keeptrack": "KeepTrack",
         "military": "Militär & Sonstiges"
       },
       "entries": {
+        "defaultCatalog": "Standardkatalog",
+        "celestrakOnly": "Nur CelesTrack",
+        "vimpelOnly": "Nur JSC Vimpel",
         "last30days": "Starts der letzten 30 Tage",
         "stations": "Raumstationen",
         "iss": "ISS",
@@ -81,13 +85,17 @@
         "other": "Sonstige Satelliten"
       },
       "toasts": {
-        "loaded": "{catalog} von CelesTrack geladen"
+        "loaded": "{catalog} geladen",
+        "defaultLoaded": "Standardkatalog wiederhergestellt",
+        "celestrakLoaded": "CelesTrack-Katalog geladen",
+        "vimpelLoaded": "JSC Vimpel-Katalog geladen"
       },
       "commands": {
         "category": "Katalog-Browser"
       },
       "errorMsgs": {
-        "FetchFailed": "Katalog konnte nicht von CelesTrack abgerufen werden"
+        "FetchFailed": "Katalog konnte nicht abgerufen werden",
+        "DefaultFailed": "Standardkatalog konnte nicht wiederhergestellt werden"
       }
     }
   }

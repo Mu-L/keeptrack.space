@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "Catalog Browser",
-      "title": "CelesTrack Catalog Browser",
-      "helpBody": "Browse and load satellite catalogs from CelesTrack. <br><br>Use the toggle to choose between replacing the entire catalog (All Data) or updating only orbital elements for existing satellites (Orbital Data Only).",
+      "title": "Catalog Browser",
+      "helpBody": "Browse and load satellite catalogs. <br><br>Use the toggle to choose between replacing the entire catalog (All Data) or updating only orbital elements for existing satellites (Orbital Data Only).",
       "labels": {
         "allData": "All Data",
         "orbitalOnly": "Orbital Only",
-        "allDataDesc": "Replaces entire catalog with CelesTrack data",
+        "allDataDesc": "Replaces entire catalog with selected data",
         "orbitalOnlyDesc": "Updates TLEs while preserving satellite metadata"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "Navigation (GNSS)",
         "weather": "Weather & Earth Resources",
         "science": "Scientific",
+        "keeptrack": "KeepTrack",
         "military": "Military & Other"
       },
       "entries": {
+        "defaultCatalog": "Default Catalog",
+        "celestrakOnly": "CelesTrack Only",
+        "vimpelOnly": "JSC Vimpel Only",
         "last30days": "Last 30 Days' Launches",
         "stations": "Space Stations",
         "iss": "ISS",
@@ -81,13 +85,17 @@
         "other": "Other Satellites"
       },
       "toasts": {
-        "loaded": "Loaded {catalog} from CelesTrack"
+        "loaded": "Loaded {catalog}",
+        "defaultLoaded": "Default catalog restored",
+        "celestrakLoaded": "CelesTrack catalog loaded",
+        "vimpelLoaded": "JSC Vimpel catalog loaded"
       },
       "commands": {
         "category": "Catalog Browser"
       },
       "errorMsgs": {
-        "FetchFailed": "Failed to fetch catalog from CelesTrack"
+        "FetchFailed": "Failed to fetch catalog",
+        "DefaultFailed": "Failed to restore default catalog"
       }
     }
   }

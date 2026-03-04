@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "Explorador de Catálogos",
-      "title": "Explorador de Catálogos CelesTrack",
-      "helpBody": "Explore y cargue catálogos de satélites desde CelesTrack. <br><br>Use el interruptor para elegir entre reemplazar todo el catálogo (Todos los Datos) o actualizar solo los elementos orbitales de los satélites existentes (Solo Datos Orbitales).",
+      "title": "Explorador de Catálogos",
+      "helpBody": "Explore y cargue catálogos de satélites. <br><br>Use el interruptor para elegir entre reemplazar todo el catálogo (Todos los Datos) o actualizar solo los elementos orbitales de los satélites existentes (Solo Datos Orbitales).",
       "labels": {
         "allData": "Todos los Datos",
         "orbitalOnly": "Solo Orbital",
-        "allDataDesc": "Reemplaza todo el catálogo con datos de CelesTrack",
+        "allDataDesc": "Reemplaza todo el catálogo con los datos seleccionados",
         "orbitalOnlyDesc": "Actualiza TLEs preservando los metadatos del satélite"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "Navegación (GNSS)",
         "weather": "Meteorología y Recursos Terrestres",
         "science": "Científico",
+        "keeptrack": "KeepTrack",
         "military": "Militar y Otros"
       },
       "entries": {
+        "defaultCatalog": "Catálogo Predeterminado",
+        "celestrakOnly": "Solo CelesTrack",
+        "vimpelOnly": "Solo JSC Vimpel",
         "last30days": "Lanzamientos de los Últimos 30 Días",
         "stations": "Estaciones Espaciales",
         "iss": "ISS",
@@ -81,13 +85,17 @@
         "other": "Otros Satélites"
       },
       "toasts": {
-        "loaded": "{catalog} cargado desde CelesTrack"
+        "loaded": "{catalog} cargado",
+        "defaultLoaded": "Catálogo predeterminado restaurado",
+        "celestrakLoaded": "Catálogo CelesTrack cargado",
+        "vimpelLoaded": "Catálogo JSC Vimpel cargado"
       },
       "commands": {
         "category": "Explorador de Catálogos"
       },
       "errorMsgs": {
-        "FetchFailed": "Error al obtener el catálogo de CelesTrack"
+        "FetchFailed": "Error al obtener el catálogo",
+        "DefaultFailed": "Error al restaurar el catálogo predeterminado"
       }
     }
   }

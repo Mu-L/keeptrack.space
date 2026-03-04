@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "카탈로그 브라우저",
-      "title": "CelesTrack 카탈로그 브라우저",
-      "helpBody": "CelesTrack에서 위성 카탈로그를 검색하고 로드합니다. <br><br>토글을 사용하여 전체 카탈로그 교체(모든 데이터) 또는 기존 위성의 궤도 요소만 업데이트(궤도 데이터만)를 선택할 수 있습니다.",
+      "title": "카탈로그 브라우저",
+      "helpBody": "위성 카탈로그를 검색하고 로드합니다. <br><br>토글을 사용하여 전체 카탈로그 교체(모든 데이터) 또는 기존 위성의 궤도 요소만 업데이트(궤도 데이터만)를 선택할 수 있습니다.",
       "labels": {
         "allData": "모든 데이터",
         "orbitalOnly": "궤도만",
-        "allDataDesc": "CelesTrack 데이터로 전체 카탈로그 교체",
+        "allDataDesc": "선택한 데이터로 전체 카탈로그 교체",
         "orbitalOnlyDesc": "위성 메타데이터를 유지하면서 TLE 업데이트"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "항법 (GNSS)",
         "weather": "기상 및 지구 자원",
         "science": "과학",
+        "keeptrack": "KeepTrack",
         "military": "군사 및 기타"
       },
       "entries": {
+        "defaultCatalog": "기본 카탈로그",
+        "celestrakOnly": "CelesTrack만",
+        "vimpelOnly": "JSC Vimpel만",
         "last30days": "최근 30일 발사",
         "stations": "우주 정거장",
         "iss": "ISS",
@@ -81,13 +85,17 @@
         "other": "기타 위성"
       },
       "toasts": {
-        "loaded": "CelesTrack에서 {catalog} 로드 완료"
+        "loaded": "{catalog} 로드 완료",
+        "defaultLoaded": "기본 카탈로그 복원됨",
+        "celestrakLoaded": "CelesTrack 카탈로그 로드됨",
+        "vimpelLoaded": "JSC Vimpel 카탈로그 로드됨"
       },
       "commands": {
         "category": "카탈로그 브라우저"
       },
       "errorMsgs": {
-        "FetchFailed": "CelesTrack에서 카탈로그를 가져오지 못했습니다"
+        "FetchFailed": "카탈로그를 가져오지 못했습니다",
+        "DefaultFailed": "기본 카탈로그를 복원하지 못했습니다"
       }
     }
   }

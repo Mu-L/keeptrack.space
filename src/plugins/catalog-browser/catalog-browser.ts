@@ -2,6 +2,7 @@ import { CatalogLoader, KeepTrackTLEFile } from '@app/app/data/catalog-loader';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { settingsManager } from '@app/settings/settings';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
@@ -20,6 +21,7 @@ import { t7e } from '@app/locales/keys';
 import { Satellite, Tle } from '@ootk/src/main';
 import satelliteAltPng from '@public/img/icons/satellite-alt.png';
 import { CatalogBrowserData } from './catalog-browser-data';
+import type { CatalogBrowserConfiguration } from './catalog-browser-settings';
 import './catalog-browser.css';
 
 type T7eKey = Parameters<typeof t7e>[0];
@@ -33,6 +35,10 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
 
   private isLoading_ = false;
   private orbitalDataOnly_ = false;
+
+  private get hideKeepTrackCatalogs_(): boolean {
+    return (settingsManager.plugins?.CatalogBrowserPlugin as CatalogBrowserConfiguration | undefined)?.hideKeepTrackCatalogs ?? false;
+  }
   /** Cached full catalog metadata for "Orbital Only" merges */
   private cachedCatalog_: KeepTrackTLEFile[] | null = null;
 
@@ -45,7 +51,7 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
       elementName: 'menu-catalog-browser',
       label: t7e('plugins.CatalogBrowserPlugin.bottomIconLabel' as T7eKey),
       image: satelliteAltPng,
-      menuMode: [MenuMode.BASIC, MenuMode.ALL],
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
     };
   }
 
@@ -76,6 +82,29 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
   getCommandPaletteCommands(): ICommandPaletteCommand[] {
     const category = t7e('plugins.CatalogBrowserPlugin.commands.category' as T7eKey);
     const commands: ICommandPaletteCommand[] = [];
+
+    if (!this.hideKeepTrackCatalogs_) {
+      commands.push(
+        {
+          id: 'CatalogBrowserPlugin.load.default',
+          label: `Load Catalog: ${t7e('plugins.CatalogBrowserPlugin.entries.defaultCatalog' as T7eKey)}`,
+          category,
+          callback: () => this.loadKeepTrackCatalog_('DEFAULT'),
+        },
+        {
+          id: 'CatalogBrowserPlugin.load.celestrak-only',
+          label: `Load Catalog: ${t7e('plugins.CatalogBrowserPlugin.entries.celestrakOnly' as T7eKey)}`,
+          category,
+          callback: () => this.loadKeepTrackCatalog_('CELESTRAK_ONLY'),
+        },
+        {
+          id: 'CatalogBrowserPlugin.load.vimpel-only',
+          label: `Load Catalog: ${t7e('plugins.CatalogBrowserPlugin.entries.vimpelOnly' as T7eKey)}`,
+          category,
+          callback: () => this.loadKeepTrackCatalog_('VIMPEL_ONLY'),
+        },
+      );
+    }
 
     for (const cat of CatalogBrowserData.categories) {
       for (const entry of cat.entries) {
@@ -124,14 +153,21 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
     listEl?.addEventListener('click', (evt: Event) => {
       const target = (evt.target as HTMLElement).closest('.cb-catalog-item') as HTMLElement | null;
 
-      if (!target) {
+      if (!target || this.isLoading_) {
         return;
       }
 
       const queryParam = target.dataset.query;
 
-      if (queryParam && !this.isLoading_) {
-        ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+      if (!queryParam) {
+        return;
+      }
+
+      ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+
+      if (queryParam === 'DEFAULT' || queryParam === 'CELESTRAK_ONLY' || queryParam === 'VIMPEL_ONLY') {
+        this.loadKeepTrackCatalog_(queryParam);
+      } else {
         this.fetchAndLoadCatalog_(queryParam);
       }
     });
@@ -140,6 +176,63 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
   // =========================================================================
   // Core logic
   // =========================================================================
+
+  private async loadKeepTrackCatalog_(mode: 'DEFAULT' | 'CELESTRAK_ONLY' | 'VIMPEL_ONLY'): Promise<void> {
+    if (this.isLoading_) {
+      return;
+    }
+
+    this.isLoading_ = true;
+    const uiManager = ServiceLocator.getUiManager();
+
+    try {
+      this.cachedCatalog_ = null;
+
+      if (mode === 'CELESTRAK_ONLY') {
+        settingsManager.isEnableJscCatalog = false;
+        try {
+          await CatalogLoader.load();
+        } finally {
+          settingsManager.isEnableJscCatalog = true;
+        }
+      } else if (mode === 'VIMPEL_ONLY') {
+        const resp = await fetch(settingsManager.dataSources.vimpel);
+
+        if (!resp.ok) {
+          throw new Error(`Vimpel fetch returned HTTP ${resp.status}`);
+        }
+        const vimpelData = await resp.json() as { TLE1: string; TLE2: string }[];
+        const tleLines = vimpelData.map((s) => `${s.TLE1}\n${s.TLE2}`).join('\n');
+
+        await CatalogLoader.reloadCatalog(tleLines);
+      } else {
+        await CatalogLoader.load();
+      }
+
+      let toastSuffix: string;
+
+      if (mode === 'DEFAULT') {
+        toastSuffix = 'defaultLoaded';
+      } else if (mode === 'CELESTRAK_ONLY') {
+        toastSuffix = 'celestrakLoaded';
+      } else {
+        toastSuffix = 'vimpelLoaded';
+      }
+
+      uiManager.toast(
+        t7e(`plugins.CatalogBrowserPlugin.toasts.${toastSuffix}` as T7eKey),
+        ToastMsgType.normal,
+      );
+    } catch (error) {
+      errorManagerInstance.error(error, 'CatalogBrowserPlugin');
+      uiManager.toast(
+        t7e('plugins.CatalogBrowserPlugin.errorMsgs.DefaultFailed' as T7eKey),
+        ToastMsgType.critical,
+      );
+    } finally {
+      this.isLoading_ = false;
+    }
+  }
 
   private async fetchAndLoadCatalog_(queryParam: string): Promise<void> {
     if (this.isLoading_) {
@@ -340,6 +433,25 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
       t7e(`plugins.CatalogBrowserPlugin.entries.${key}` as T7eKey);
 
     let listHtml = '';
+
+    // KeepTrack catalogs at the top (hidden when hideKeepTrackCatalogs is set)
+    if (!this.hideKeepTrackCatalogs_) {
+      listHtml += `<div class="cb-category-header">${catLabel('keeptrack')}</div>`;
+      listHtml += '<ul>';
+      listHtml += '<li class="menu-selectable cb-catalog-item" ' +
+        'data-query="DEFAULT" data-id="default">' +
+        `<span class="cb-item-name">${entryLabel('defaultCatalog')}</span>` +
+        '</li>';
+      listHtml += '<li class="menu-selectable cb-catalog-item" ' +
+        'data-query="CELESTRAK_ONLY" data-id="celestrak-only">' +
+        `<span class="cb-item-name">${entryLabel('celestrakOnly')}</span>` +
+        '</li>';
+      listHtml += '<li class="menu-selectable cb-catalog-item" ' +
+        'data-query="VIMPEL_ONLY" data-id="vimpel-only">' +
+        `<span class="cb-item-name">${entryLabel('vimpelOnly')}</span>` +
+        '</li>';
+      listHtml += '</ul>';
+    }
 
     for (const cat of categories) {
       listHtml += `<div class="cb-category-header">${catLabel(cat.nameKey)}</div>`;

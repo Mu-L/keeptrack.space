@@ -2,12 +2,12 @@
   "plugins": {
     "CatalogBrowserPlugin": {
       "bottomIconLabel": "目录浏览器",
-      "title": "CelesTrack 目录浏览器",
-      "helpBody": "从CelesTrack浏览和加载卫星目录。<br><br>使用切换开关选择替换整个目录（所有数据）或仅更新现有卫星的轨道元素（仅轨道数据）。",
+      "title": "目录浏览器",
+      "helpBody": "浏览和加载卫星目录。<br><br>使用切换开关选择替换整个目录（所有数据）或仅更新现有卫星的轨道元素（仅轨道数据）。",
       "labels": {
         "allData": "所有数据",
         "orbitalOnly": "仅轨道",
-        "allDataDesc": "用CelesTrack数据替换整个目录",
+        "allDataDesc": "用所选数据替换整个目录",
         "orbitalOnlyDesc": "更新TLE同时保留卫星元数据"
       },
       "categories": {
@@ -17,9 +17,13 @@
         "nav": "导航（GNSS）",
         "weather": "气象与地球资源",
         "science": "科学",
+        "keeptrack": "KeepTrack",
         "military": "军事及其他"
       },
       "entries": {
+        "defaultCatalog": "默认目录",
+        "celestrakOnly": "仅 CelesTrack",
+        "vimpelOnly": "仅 JSC Vimpel",
         "last30days": "最近30天发射",
         "stations": "空间站",
         "iss": "国际空间站",
@@ -81,13 +85,17 @@
         "other": "其他卫星"
       },
       "toasts": {
-        "loaded": "已从CelesTrack加载{catalog}"
+        "loaded": "已加载{catalog}",
+        "defaultLoaded": "默认目录已恢复",
+        "celestrakLoaded": "CelesTrack 目录已加载",
+        "vimpelLoaded": "JSC Vimpel 目录已加载"
       },
       "commands": {
         "category": "目录浏览器"
       },
       "errorMsgs": {
-        "FetchFailed": "从CelesTrack获取目录失败"
+        "FetchFailed": "获取目录失败",
+        "DefaultFailed": "恢复默认目录失败"
       }
     }
   }
