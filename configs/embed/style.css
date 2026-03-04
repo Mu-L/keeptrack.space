@@ -8,14 +8,14 @@
   --bottom-icon-height: 75px;
   --bottom-icon-width: 115px;
   --bottom-icon-img-size: 40px;
-  --bottom-filter-width: 185px;
+  --bottom-filter-width: 265px;
   --search-box-bottom: 0px;
   --nav-bar-height: 0px !important;
-  
+
   --top-menu-height: calc(var(--nav-bar-height) + var(--classification-bar-height) + var(--time-slider-height));
-  
+
   --classification-bar-height: 0px;
-  
+
   --time-slider-height: 0px;
 }
 
@@ -53,6 +53,14 @@
   align-items: center;
 }
 
+#drawer-hamburger {
+  display: none !important;
+}
+
+#drawer-utility-footer {
+  display: none !important;
+}
+
 #map-menu {
   display: none;
   position: absolute;
@@ -63,7 +71,7 @@
   border-left: 0;
   border-right: 0;
   border-bottom: 0;
-  
+
   background: rgba(255, 255, 255, 0.85);
   color: white;
   z-index: 10;

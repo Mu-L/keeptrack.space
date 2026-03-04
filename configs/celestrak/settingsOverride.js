@@ -350,6 +350,34 @@ const settingsOverride = {
     CatalogBrowserPlugin: {
       enabled: true,
       order: 10,
+      hideKeepTrackCatalogs: true,
+    },
+    SymbologyPlugin: {
+      enabled: false,
+    },
+    CatalogManagementPlugin: {
+      enabled: false,
+    },
+    ObservationReaderPlugin: {
+      enabled: false,
+    },
+    EclipseSolarAnalysis: {
+      enabled: false,
+    },
+    OpticalSimulation: {
+      enabled: false,
+    },
+    NeighborhoodWatch: {
+      enabled: false,
+    },
+    TocaPocaPlugin: {
+      enabled: false,
+    },
+    ColorSchemeEditorPlugin: {
+      enabled: false,
+    },
+    BestPassPlugin: {
+      enabled: false,
     },
   },
   dataSources: {
