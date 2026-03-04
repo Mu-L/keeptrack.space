@@ -15,8 +15,8 @@ describe('VcrPlugin', () => {
   beforeEach(() => {
     setupStandardEnvironment([TopMenu]);
 
-    // Add TopMenu's nav-top-left element that VCR depends on
-    KeepTrack.getInstance().containerRoot.innerHTML += '<div id="nav-top-left"></div>';
+    // Add nav-wrapper and nav-top-right elements that VCR depends on
+    KeepTrack.getInstance().containerRoot.innerHTML += '<div id="nav-wrapper"><ul id="nav-top-right"></ul></div>';
   });
 
   // Standard plugin lifecycle tests

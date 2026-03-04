@@ -15,6 +15,7 @@ import rewindPng from '@public/img/icons/rewind.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { ScenarioData, ScenarioManagementPlugin } from '../scenario-management/scenario-management';
 import { TopMenu } from '../top-menu/top-menu';
+import './vcr.css';
 
 export class VcrPlugin extends KeepTrackPlugin {
   readonly id = 'VcrPlugin';
@@ -55,12 +56,16 @@ export class VcrPlugin extends KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerInit,
       () => {
-        const topLeftMenuElement = getEl(TopMenu.TOP_LEFT_ID);
+        const navWrapper = getEl(TopMenu.NAV_WRAPPER_ID);
+        const navRight = getEl(TopMenu.TOP_RIGHT_ID);
 
-        if (topLeftMenuElement) {
-          topLeftMenuElement.innerHTML +=
+        if (navWrapper) {
+          const vcrEl = document.createElement('div');
+
+          vcrEl.id = 'vcr-container';
+          vcrEl.className = 'vcr-container';
+          vcrEl.innerHTML =
             html`
-            <div id="vcr-container" class="vcr-container">
               <div id="vcr-rewind-btn" class="vcr-btn top-menu-icons" kt-tooltip="Click to Rewind">
                 <img class="top-menu-icons__blue-img" src="${rewindPng}">
               </div>
@@ -70,8 +75,10 @@ export class VcrPlugin extends KeepTrackPlugin {
               <div id="vcr-fast-forward-btn" class="vcr-btn top-menu-icons" kt-tooltip="Click to Fast Forward">
                 <img class="top-menu-icons__blue-img" src="${fastForwardPng}">
               </div>
-            </div>
           `;
+
+          // Insert before nav-top-right so VCR appears on the right side
+          navWrapper.insertBefore(vcrEl, navRight);
         }
       },
     );

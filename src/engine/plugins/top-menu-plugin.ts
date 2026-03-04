@@ -55,6 +55,8 @@ export abstract class TopMenuPlugin extends KeepTrackPlugin {
   protected uiManagerFinal_(): void {
     const pluginRootEl = document.createElement('li');
 
+    pluginRootEl.id = `${this.id}-root`;
+
     pluginRootEl.innerHTML = html`
       <a id="${this.id}-btn" class="top-menu-icons" kt-tooltip="${this.tooltipText}">
         <img class="top-menu-icons__blue-img" src="${this.image}" />

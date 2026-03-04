@@ -13,7 +13,7 @@ export class TopMenu extends KeepTrackPlugin {
   readonly id = 'TopMenu';
   dependencies_ = [];
   static readonly SEARCH_RESULT_ID = 'search-results';
-  static readonly TOP_LEFT_ID = 'nav-top-left';
+  static readonly TOP_CENTER_ID = 'nav-top-center';
   static readonly TOP_RIGHT_ID = 'nav-top-right';
   static readonly NAV_WRAPPER_ID = 'nav-wrapper';
 
@@ -25,21 +25,21 @@ export class TopMenu extends KeepTrackPlugin {
     classInner?: string;
     tooltip: string;
   }[] = [
-    {
-      id: 'tutorial-btn',
-      order: 3,
-      class: 'bmenu-item-help bmenu-item-disabled',
-      icon: helpPng,
-      tooltip: t7e('TopMenu.showHelp'),
-    },
-    {
-      id: 'fullscreen-icon',
-      order: 4,
-      class: 'top-menu-icons__blue-img',
-      icon: fullscreenPng,
-      tooltip: t7e('TopMenu.toggleFullscreen'),
-    },
-  ];
+      {
+        id: 'tutorial-btn',
+        order: 3,
+        class: 'bmenu-item-help bmenu-item-disabled',
+        icon: helpPng,
+        tooltip: t7e('TopMenu.showHelp'),
+      },
+      {
+        id: 'fullscreen-icon',
+        order: 4,
+        class: 'top-menu-icons__blue-img',
+        icon: fullscreenPng,
+        tooltip: t7e('TopMenu.toggleFullscreen'),
+      },
+    ];
 
   addHtml() {
     super.addHtml();

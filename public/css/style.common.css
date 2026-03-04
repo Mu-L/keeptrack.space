@@ -8,7 +8,7 @@
   --bottom-icon-height: 75px;
   --bottom-icon-width: 115px;
   --bottom-icon-img-size: 40px;
-  --bottom-filter-width: 185px;
+  --bottom-filter-width: 265px;
   --bottom-utility-width: 300px;
   --search-box-bottom: 0px;
   --nav-bar-height: 50px;
@@ -2402,16 +2402,22 @@ button.ui-button::-moz-focus-inner {
   font-weight: bold;
 }
 
-#nav-top-left {
+#nav-top-center {
+  position: absolute;
+  width: 100%;
+  text-align: center;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-content: center;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   font-size: 20px;
   font-family: 'Roboto Mono', monospace;
   margin-left: 10px;
+  flex-grow: 1;
+  position: absolute;
+  width: 100%;
 }
 
 #nav-top-right {
@@ -2702,7 +2708,7 @@ button.ui-button::-moz-focus-inner {
   position: absolute;
   width: 100%;
   top: var(--top-menu-height);
-  bottom: var(--bottom-menu-top);
+  bottom: 0px;
   left: 0px;
   overflow: hidden;
   transition: all 1s ease-in-out;
@@ -2996,7 +3002,6 @@ nav a.sidenav-trigger i {
   height: 25px;
   margin: 3px;
   display: block;
-  border-left: solid 5px var(--color-dark-border) !important;
   border-radius: 0;
   background: var(--color-dark-background);
   font-size: 16px;
@@ -3674,6 +3679,11 @@ nav a.sidenav-trigger i {
   height: var(--bottom-menu-height);
   overflow: hidden;
   text-align: left;
+}
+
+/* Hide entire bottom menu when drawer mode is active (desktop) */
+body.drawer-mode:not(.is-mobile-mode) footer#nav-footer {
+  display: none !important;
 }
 
 #bottom-icons-filter {

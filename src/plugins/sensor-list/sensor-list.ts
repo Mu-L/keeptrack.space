@@ -50,7 +50,7 @@ export class SensorListPlugin extends KeepTrackPlugin implements ICommandPalette
     maxWidth: 800,
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   bottomIconImg = sensorPng;
 
@@ -157,7 +157,7 @@ export class SensorListPlugin extends KeepTrackPlugin implements ICommandPalette
     EventBus.getInstance().on(
       EventBusEvent.uiManagerInit,
       () => {
-        getEl('nav-top-left')?.insertAdjacentHTML(
+        getEl('nav-top-center')?.insertAdjacentHTML(
           'beforeend',
           html`
           <div id="sensor-selected-container" class="start-hidden">
