@@ -1,6 +1,6 @@
 @media (min-width: 1280px) and (max-width: 1535px) {
   :root {
-    --nav-bar-height: 30px;
+    --nav-bar-height: 40px;
   }
 }
 
@@ -40,9 +40,7 @@
 
   #sensor-selected-container {
     padding: 0px 10px 0px 10px;
-    border-width: 0px 0px 0px 1px;
-    border-style: solid;
-    border-color: var(--color-dark-text-accent);
+    border-left: 5px solid var(--color-dark-border);
   }
 
   #share-icon {

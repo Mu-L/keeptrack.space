@@ -61,9 +61,7 @@
   }
 
   #datetime-text {
-    border-width: 0px 0px 0px 1px;
-    border-style: solid;
-    border-color: var(--color-dark-text-accent);
+    border-left: 5px solid var(--color-dark-border);
     padding: 0px 10px 0px 10px;
     vertical-align: bottom;
   }

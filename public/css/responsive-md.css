@@ -10,7 +10,7 @@
   #ui-datepicker-div {
     top: var(--top-menu-height) !important;
     border: 5px solid var(--color-dark-border);
-    left: 0px !important;
+    left: calc(50% - 167.5px) !important;
     border-radius: 0px;
     bottom: unset;
     width: fit-content;
