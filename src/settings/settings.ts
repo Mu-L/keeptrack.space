@@ -112,6 +112,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isShowLoadingHints: 'ui',
   isShowPrimaryLogo: 'ui',
   isShowSecondaryLogo: 'ui',
+  navBarLogoUrl: 'ui',
   isWatchlistTopMenuNotification: 'ui',
   isUseJdayOnTopMenu: 'ui',
   mapWidth: 'ui',

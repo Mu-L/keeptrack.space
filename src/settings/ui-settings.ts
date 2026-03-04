@@ -30,7 +30,7 @@ export enum SatLabelMode {
  * User Interface and display settings
  */
 export class UiSettings {
-  activeMenuMode: MenuMode = 0; // MenuMode.BASIC
+  activeMenuMode: MenuMode = 0; // MenuMode.CATALOG
 
   // UI Enable/Disable
   /**
@@ -63,6 +63,10 @@ export class UiSettings {
 
   // Logos
   /**
+   * Flag for showing logos floating over canvas. This is separate from the splash screen and nav bar logos.
+   */
+  isShowFloatingLogos = false;
+  /**
    * Flag for showing the primary logo
    */
   isShowPrimaryLogo = true;
@@ -70,6 +74,11 @@ export class UiSettings {
    * Flag for showing the secondary logo for partnerships
    */
   isShowSecondaryLogo = false;
+  /**
+   * URL for the small logo displayed in the nav bar next to the hamburger icon.
+   * When empty string, an empty spacer div is used instead.
+   */
+  navBarLogoUrl = '/img/logo.png';
 
   // Top Menu
   /** Flag to determine if the watchlist is shown in the top menu */
