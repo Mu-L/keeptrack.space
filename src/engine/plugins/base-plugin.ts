@@ -966,12 +966,15 @@ export abstract class KeepTrackPlugin {
   }
 
   static readonly registeredMenus = {
-    [MenuMode.BASIC]: [] as string[],
+    [MenuMode.CATALOG]: [] as string[],
+    [MenuMode.SENSORS]: [] as string[],
+    [MenuMode.EVENTS]: [] as string[],
     [MenuMode.CREATE]: [] as string[],
-    [MenuMode.ADVANCED]: [] as string[],
     [MenuMode.ANALYSIS]: [] as string[],
-    [MenuMode.EXPERIMENTAL]: [] as string[],
+    [MenuMode.DISPLAY]: [] as string[],
+    [MenuMode.TOOLS]: [] as string[],
     [MenuMode.SETTINGS]: [] as string[],
+    [MenuMode.EXPERIMENTAL]: [] as string[],
     [MenuMode.ALL]: [] as string[],
   };
 
@@ -982,17 +985,26 @@ export abstract class KeepTrackPlugin {
 
         if (menuElements.length === 0) {
           switch (parseInt(menuMode)) {
-            case MenuMode.BASIC:
-              hideEl(BottomMenu.basicMenuId);
+            case MenuMode.CATALOG:
+              hideEl(BottomMenu.catalogMenuId);
+              break;
+            case MenuMode.SENSORS:
+              hideEl(BottomMenu.sensorsMenuId);
+              break;
+            case MenuMode.EVENTS:
+              hideEl(BottomMenu.eventsMenuId);
               break;
             case MenuMode.CREATE:
               hideEl(BottomMenu.createMenuId);
               break;
-            case MenuMode.ADVANCED:
-              hideEl(BottomMenu.advancedMenuId);
-              break;
             case MenuMode.ANALYSIS:
               hideEl(BottomMenu.analysisMenuId);
+              break;
+            case MenuMode.DISPLAY:
+              hideEl(BottomMenu.displayMenuId);
+              break;
+            case MenuMode.TOOLS:
+              hideEl(BottomMenu.toolsMenuId);
               break;
             case MenuMode.SETTINGS:
               hideEl(BottomMenu.settingsMenuId);
@@ -1134,6 +1146,11 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerInit,
       () => {
+        // In drawer mode the PluginDrawer creates its own utility icons with this ID
+        if (document.body.classList.contains('drawer-mode')) {
+          return;
+        }
+
         const item = document.createElement('div');
 
         item.id = `${this.id}-utility-icon`;
@@ -1197,6 +1214,7 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isMenuButtonActive = true;
+    this.bottomIconComponent_?.select();
     getEl(this.bottomIconElementName, true)?.classList.add('bmenu-item-selected');
     getEl(`${this.id}-utility-icon`, true)?.classList.add('bmenu-item-selected');
   }
@@ -1206,6 +1224,7 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isMenuButtonActive = false;
+    this.bottomIconComponent_?.deselect(false);
     if (this.onSetBottomIconToUnselected) {
       this.onSetBottomIconToUnselected();
     }
@@ -1222,6 +1241,7 @@ export abstract class KeepTrackPlugin {
     }
     this.setBottomIconToUnselected(isHideSideMenus);
     this.isIconDisabled = true;
+    this.bottomIconComponent_?.disable(false);
     getEl(this.bottomIconElementName, true)?.classList.add('bmenu-item-disabled');
     getEl(`${this.id}-utility-icon`, true)?.classList.add('bmenu-item-disabled');
   }
@@ -1231,6 +1251,7 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isIconDisabled = false;
+    this.bottomIconComponent_?.enable();
     getEl(this.bottomIconElementName, true)?.classList.remove('bmenu-item-disabled');
     getEl(`${this.id}-utility-icon`, true)?.classList.remove('bmenu-item-disabled');
   }

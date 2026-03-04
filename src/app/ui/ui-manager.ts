@@ -27,7 +27,7 @@
 import { SoundNames } from '@app/engine/audio/sounds';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { EventBus, EngineEventMap } from '@app/engine/events/event-bus';
+import { EngineEventMap, EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { KeyboardComponent } from '@app/engine/plugins/components/keyboard/keyboard-component';
@@ -40,8 +40,8 @@ import { closeColorbox } from '../../engine/utils/colorbox';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { getEl, hideEl, setInnerHtml, showEl } from '../../engine/utils/get-el';
 import { LayersManager } from './layers-manager';
-import { MobileDrawer } from './mobile-drawer';
 import { MobileManager } from './mobileManager';
+import { PluginDrawer } from './plugin-drawer';
 import { SearchManager } from './search-manager';
 import { UiValidation } from './ui-validation';
 
@@ -66,7 +66,7 @@ export class UiManager {
   updateNextPassOverlay: (arg0: boolean) => void;
   searchHoverSatId = -1;
   layersManager: LayersManager;
-  mobileDrawer: MobileDrawer;
+  pluginDrawer: PluginDrawer;
 
   static fullscreenToggle() {
     if (!document.fullscreenElement) {
@@ -237,11 +237,16 @@ export class UiManager {
       hideEl('keeptrack-header');
       hideEl('ui-wrapper');
       hideEl('nav-footer');
+      hideEl('drawer-overlay');
+      hideEl('drawer-utility-footer');
+      this.pluginDrawer?.close();
       this.isUiVisible = false;
     } else {
       showEl('keeptrack-header');
       showEl('ui-wrapper');
       showEl('nav-footer');
+      showEl('drawer-overlay');
+      showEl('drawer-utility-footer');
       this.isUiVisible = true;
     }
   }
@@ -257,13 +262,13 @@ export class UiManager {
     this.layersManager = new LayersManager();
     this.layersManager.init();
 
-    this.mobileDrawer = new MobileDrawer();
-    this.mobileDrawer.init();
+    this.pluginDrawer = new PluginDrawer();
+    this.pluginDrawer.init();
 
-    if (settingsManager.isShowPrimaryLogo) {
+    if (settingsManager.isShowPrimaryLogo && settingsManager.isShowFloatingLogos) {
       getEl('logo-primary')?.classList.remove('start-hidden');
     }
-    if (settingsManager.isShowSecondaryLogo) {
+    if (settingsManager.isShowSecondaryLogo && settingsManager.isShowFloatingLogos) {
       getEl('logo-secondary')?.classList.remove('start-hidden');
     }
 

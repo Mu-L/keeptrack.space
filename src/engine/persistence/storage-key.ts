@@ -98,6 +98,9 @@ export enum StorageKey {
   // Sat Constellations
   LAST_CONSTELLATION = 'v2-keepTrack-lastConstellation',
 
+  // Plugin Drawer
+  DRAWER_GROUP_STATES = 'v2-keepTrack-drawerGroupStates',
+
   VERSION = 'v2-version',
 
   // Doppler
