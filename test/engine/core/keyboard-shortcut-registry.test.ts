@@ -249,8 +249,16 @@ describe('KeyboardShortcutRegistry', () => {
       { pluginId: 'SearchManager', shortcuts: [{ key: 'F', ctrl: false, shift: false }] },
       // src/plugins/select-sat-manager/select-sat-manager.ts
       { pluginId: 'SelectSatManager', shortcuts: [{ key: '[' }, { key: ']' }, { key: '{' }, { key: '}' }] },
+      // src/plugins/watchlist/watchlist.ts
+      { pluginId: 'WatchlistPlugin', shortcuts: [{ key: 'W' }] },
       // src/plugins/find-sat/find-sat.ts
-      { pluginId: 'FindSatPlugin', shortcuts: [{ key: 'S' }] },
+      { pluginId: 'FindSatPlugin', shortcuts: [{ key: 'F', ctrl: true }] },
+      // src/plugins/edit-sat/edit-sat.ts
+      { pluginId: 'EditSat', shortcuts: [{ key: 'E' }] },
+      // src/plugins/dops/dops.ts
+      { pluginId: 'DopsPlugin', shortcuts: [{ key: 'D' }] },
+      // src/plugins/colors-menu/colors-menu.ts
+      { pluginId: 'ColorsMenu', shortcuts: [{ key: 'A' }] },
       // src/plugins/filter-menu/filter-menu.ts
       { pluginId: 'FilterMenuPlugin', shortcuts: [{ key: 'f' }] },
       // src/plugins/sound-toggle/sound-toggle.ts
@@ -260,7 +268,7 @@ describe('KeyboardShortcutRegistry', () => {
       // src/plugins/stereo-map/stereo-map.ts
       { pluginId: 'StereoMap', shortcuts: [{ key: 'm' }] },
       // src/plugins/vcr/vcr.ts
-      { pluginId: 'VcrPlugin', shortcuts: [{ key: ' ' }, { key: 'ArrowLeft' }, { key: 'ArrowRight' }] },
+      { pluginId: 'VcrPlugin', shortcuts: [{ key: ' ' }] },
       // src/plugins/plot-analysis/inc2alt.ts
       { pluginId: 'Inc2AltPlots', shortcuts: [{ key: 'I' }] },
       // src/plugins/plot-analysis/inc2lon.ts

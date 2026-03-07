@@ -76,6 +76,15 @@ export class SensorListPlugin extends KeepTrackPlugin implements ICommandPalette
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
+        key: 'S',
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+            return;
+          }
+          this.bottomMenuClicked();
+        },
+      },
+      {
         key: 'Home',
         ctrl: true,
         callback: () => {

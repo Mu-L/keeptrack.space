@@ -35,20 +35,26 @@ self.addEventListener('install', (event) => {
 
 // Listen for skip-waiting message from the page
 self.addEventListener('message', (event) => {
+  // Verify the message origin matches our service worker's origin
+  if (event.origin !== self.location.origin) {
+    return;
+  }
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// Activate: purge old version caches, claim clients
+// Activate: purge old version caches.
+// Do NOT call clients.claim() — let clients pick up the new SW on next
+// navigation.  Claiming mid-session can swap the fetch handler while the
+// page is still loading, which causes hangs when cached assets are stale.
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
       .then((cacheNames) =>
         Promise.all(cacheNames.filter((name) => name !== currentCacheName && name.startsWith('KeepTrack-')).map((name) => caches.delete(name))),
-      )
-      .then(() => self.clients.claim()),
+      ),
   );
 });
 

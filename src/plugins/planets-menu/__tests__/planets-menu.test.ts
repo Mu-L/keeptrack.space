@@ -74,16 +74,17 @@ describe('PlanetsMenuPlugin', () => {
       expect(config.isVisibleOffEarth).toBe(true);
     });
 
-    it('should return keyboard shortcuts with Home key', () => {
+    it('should return keyboard shortcuts with p and Home keys', () => {
       const plugin = new PlanetsMenuPlugin();
       const shortcuts = plugin.getKeyboardShortcuts();
 
-      expect(shortcuts).toHaveLength(2);
-      expect(shortcuts[0].key).toBe('Home');
-      expect(shortcuts[0].shift).toBe(true);
+      expect(shortcuts).toHaveLength(3);
+      expect(shortcuts[0].key).toBe('p');
       expect(shortcuts[0].callback).toBeInstanceOf(Function);
       expect(shortcuts[1].key).toBe('Home');
-      expect(shortcuts[1].shift).toBe(false);
+      expect(shortcuts[1].shift).toBe(true);
+      expect(shortcuts[2].key).toBe('Home');
+      expect(shortcuts[2].shift).toBe(false);
     });
 
     it('should return drag options with min and max width', () => {

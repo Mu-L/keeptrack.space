@@ -34,6 +34,10 @@ import { KeyboardComponent } from '@app/engine/plugins/components/keyboard/keybo
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import '@materializecss/materialize';
 import { BaseObject, Milliseconds, MILLISECONDS_PER_SECOND } from '@ootk/src/main';
+import cancelPng from '@public/img/icons/cancel.png';
+import checkCirclePng from '@public/img/icons/check-circle.png';
+import infoPng from '@public/img/icons/info.png';
+import warningPng from '@public/img/icons/warning.png';
 import { ColorScheme } from '../../engine/rendering/color-schemes/color-scheme';
 import { clickAndDragHeight, clickAndDragWidth } from '../../engine/utils/click-and-drag';
 import { closeColorbox } from '../../engine/utils/colorbox';
@@ -140,25 +144,61 @@ export class UiManager {
       return null;
     }
 
+    type = type || ToastMsgType.standby;
+
+    // Icon source is based on type
+    let iconSrc: string;
+
+    switch (type) {
+      case ToastMsgType.standby:
+        iconSrc = infoPng;
+        break;
+      case ToastMsgType.caution:
+        iconSrc = warningPng;
+        break;
+      case ToastMsgType.serious:
+        iconSrc = warningPng;
+        break;
+      case ToastMsgType.critical:
+        iconSrc = cancelPng;
+        break;
+      case ToastMsgType.error:
+        iconSrc = cancelPng;
+        break;
+      case ToastMsgType.normal:
+      default:
+        iconSrc = checkCirclePng;
+        break;
+    }
+
+    const iconHtml = `<img class="kt-toast-icon" src="${iconSrc}" alt="" />`;
+
     const toastMsg = window.M.toast({
-      unsafeHTML: toastText,
+      unsafeHTML: `${iconHtml}<span>${toastText}</span>`,
     });
 
+    const toastEl = toastMsg.$el[0] as HTMLElement;
+
     // Add an on click event to dismiss the toast
-    toastMsg.$el[0].addEventListener('click', () => {
+    toastEl.addEventListener('click', () => {
       toastMsg.dismiss();
       this.activeToastList_ = this.activeToastList_.filter((t) => t !== toastMsg);
     });
 
-    toastMsg.$el[0].addEventListener('contextmenu', () => {
+    toastEl.addEventListener('contextmenu', () => {
       this.dismissAllToasts();
     });
 
-
-    type = type || ToastMsgType.standby;
     if (isLong) {
       toastMsg.timeRemaining = UiManager.LONG_TIMER_DELAY;
     }
+
+    // Add auto-dismiss progress bar
+    const progressBar = document.createElement('div');
+
+    progressBar.className = 'kt-toast-progress';
+    progressBar.style.animationDuration = `${toastMsg.timeRemaining}ms`;
+    toastEl.appendChild(progressBar);
 
     setTimeout(() => {
       this.activeToastList_ = this.activeToastList_.filter((t) => t !== toastMsg);
@@ -166,28 +206,28 @@ export class UiManager {
 
     switch (type) {
       case ToastMsgType.standby:
-        toastMsg.$el[0].style.background = 'var(--statusDarkStandby)';
+        toastEl.style.setProperty('--kt-toast-accent', '#2dccff');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.caution:
-        toastMsg.$el[0].style.background = 'var(--statusDarkCaution)';
+        toastEl.style.setProperty('--kt-toast-accent', '#fce83a');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.serious:
-        toastMsg.$el[0].style.background = 'var(--statusDarkSerious)';
+        toastEl.style.setProperty('--kt-toast-accent', '#ffb302');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.critical:
-        toastMsg.$el[0].style.background = 'var(--statusDarkCritical)';
+        toastEl.style.setProperty('--kt-toast-accent', '#ff3838');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.error:
-        toastMsg.$el[0].style.background = 'var(--statusDarkCritical)';
+        toastEl.style.setProperty('--kt-toast-accent', '#ff3838');
         ServiceLocator.getSoundManager()?.play(SoundNames.ERROR);
         break;
       case ToastMsgType.normal:
       default:
-        toastMsg.$el[0].style.background = 'var(--statusDarkNormal)';
+        toastEl.style.setProperty('--kt-toast-accent', '#56f000');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
     }

@@ -48,8 +48,16 @@ export function registerServiceWorker(): void {
 
   // After the waiting SW calls skipWaiting(), it becomes the active controller.
   // Reload the page so all resources are served by the new SW.
+  // Guard: only reload on controller *change* (update), not on first install.
+  // On first visit clients.claim() sets a controller where there was none,
+  // which fires controllerchange — without this guard, the page reloads
+  // unnecessarily (causing a double splash screen).
+  const hadController = !!navigator.serviceWorker.controller;
+
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
+    if (hadController) {
+      window.location.reload();
+    }
   });
 }
 

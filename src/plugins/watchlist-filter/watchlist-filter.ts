@@ -1,4 +1,5 @@
 import { SoundNames } from '@app/engine/audio/sounds';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -34,7 +35,12 @@ export class WatchlistFilterPlugin extends KeepTrackPlugin {
     return [
       {
         key: 'w',
-        callback: () => this.bottomMenuClicked(),
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+            return;
+          }
+          this.bottomMenuClicked();
+        },
       },
     ];
   }

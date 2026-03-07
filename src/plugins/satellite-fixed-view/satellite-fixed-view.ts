@@ -39,7 +39,7 @@ export class SatelliteFixedView extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: '3',
+        key: '4',
         callback: () => this.bottomIconCallback(),
       },
     ];
@@ -63,7 +63,7 @@ export class SatelliteFixedView extends KeepTrackPlugin {
     EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
       const isFixedToSat = ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_LVLH;
 
-      if (isFixedToSat && !this.isMenuButtonActive && !this.isIconDisabled) {
+      if (isFixedToSat && !this.isIconDisabled) {
         this.setBottomIconToSelected();
       } else if (!isFixedToSat && this.isMenuButtonActive) {
         this.setBottomIconToUnselected();
@@ -81,6 +81,7 @@ export class SatelliteFixedView extends KeepTrackPlugin {
 
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
     ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT_LVLH;
+    this.selectSatManager_.selectSat(this.selectSatManager_.selectedSat); // Force update of selected satellite to update camera delegate
     this.setBottomIconToSelected();
   };
 }

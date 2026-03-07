@@ -84,12 +84,9 @@ export class CameraInputHandler {
       { key: 'ArrowDown', callback: noop },
       { key: 'ArrowLeft', callback: noop },
       { key: 'ArrowRight', callback: noop },
-      { key: 'W', callback: noop },
-      { key: 'A', callback: noop },
-      { key: 'S', callback: noop },
-      { key: 'D', callback: noop },
-      { key: 'Q', callback: noop },
-      { key: 'E', callback: noop },
+      // WASD+QE omitted — camera handles them via EventBus and they are
+      // only active in FPS / special camera modes.  Keeping them out of the
+      // registry lets plugins claim those keys for menu toggles.
       { key: 'r', callback: noop },
       { key: 'v', callback: noop },
       { key: '`', callback: noop },
@@ -192,9 +189,8 @@ export class CameraInputHandler {
 
   keyDownv_() {
     const uiManagerInstance = ServiceLocator.getUiManager();
-    const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
-    this.camera.changeCameraType(orbitManagerInstance);
+    this.camera.changeCameraType();
 
     switch (this.camera.cameraType) {
       case CameraType.FIXED_TO_EARTH:

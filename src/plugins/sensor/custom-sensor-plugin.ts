@@ -149,7 +149,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
 
     switch (targetId) {
       case 'create-observer-rmb':
-        slideInRight(getEl('custom-sensor-menu'), 1000);
+        slideInRight(getEl('custom-sensor-menu'), 300);
         this.setBottomIconToSelected();
         sensorManagerInstance.isCustomSensorMenuOpen = true;
         if (!(<HTMLInputElement>getEl('cs-telescope')).checked) {
@@ -172,7 +172,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
         break;
       case 'create-sensor-rmb':
         {
-          slideInRight(getEl('custom-sensor-menu'), 1000);
+          slideInRight(getEl('custom-sensor-menu'), 300);
           this.setBottomIconToSelected();
           sensorManagerInstance.isCustomSensorMenuOpen = true;
           if ((<HTMLInputElement>getEl('cs-telescope')).checked) {

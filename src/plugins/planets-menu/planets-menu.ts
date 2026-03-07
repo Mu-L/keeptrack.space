@@ -100,6 +100,15 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
+        key: 'p',
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+            return;
+          }
+          this.bottomMenuClicked();
+        },
+      },
+      {
         key: 'Home',
         shift: true,
         callback: () => {

@@ -48,17 +48,15 @@ describe('VcrPlugin', () => {
   });
 
   describe('keyboard shortcuts', () => {
-    it('should define keyboard shortcuts for space, left arrow, and right arrow', () => {
+    it('should define keyboard shortcut for space', () => {
       const plugin = new VcrPlugin();
       const shortcuts = plugin.getKeyboardShortcuts();
 
-      expect(shortcuts).toHaveLength(3);
+      expect(shortcuts).toHaveLength(1);
       expect(shortcuts[0].key).toBe(' ');
-      expect(shortcuts[1].key).toBe('ArrowLeft');
-      expect(shortcuts[2].key).toBe('ArrowRight');
     });
 
-    it('should have callbacks that invoke the correct handlers', () => {
+    it('should have callback that invokes play/pause handler', () => {
       const plugin = new VcrPlugin();
 
       plugin.init();
@@ -66,19 +64,10 @@ describe('VcrPlugin', () => {
 
       const shortcuts = plugin.getKeyboardShortcuts();
 
-      // Mock the handlers
       const handlePlayPauseSpy = vi.spyOn(plugin, 'handlePlayPause').mockImplementation();
-      const handleRewindSpy = vi.spyOn(plugin, 'handleRewind').mockImplementation();
-      const handleFastForwardSpy = vi.spyOn(plugin, 'handleFastForward').mockImplementation();
 
       shortcuts[0].callback();
       expect(handlePlayPauseSpy).toHaveBeenCalled();
-
-      shortcuts[1].callback();
-      expect(handleRewindSpy).toHaveBeenCalled();
-
-      shortcuts[2].callback();
-      expect(handleFastForwardSpy).toHaveBeenCalled();
     });
   });
 

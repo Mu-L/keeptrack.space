@@ -128,7 +128,7 @@ export const satChng = (row: number, testOverride?: undefined): void => {
 };
 
 export const hideSideMenus = (): void => {
-  slideOutLeft(getEl('satChng-menu'), 1000);
+  slideOutLeft(getEl('satChng-menu'), 300);
   getEl('menu-satChng')?.classList.remove('bmenu-item-selected');
   issatChngMenuOpen = false;
 };
@@ -146,7 +146,7 @@ export const bottomMenuClick = (iconName: string): void => {
         uiManagerInstance.searchManager.closeSearch();
       }
       uiManagerInstance.hideSideMenus();
-      slideInRight(getEl('satChng-menu'), 1000);
+      slideInRight(getEl('satChng-menu'), 300);
       issatChngMenuOpen = true;
       satChng(-1);
       getEl('menu-satChng')?.classList.add('bmenu-item-selected');

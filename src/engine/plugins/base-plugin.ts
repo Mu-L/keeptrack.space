@@ -1505,7 +1505,7 @@ export abstract class KeepTrackPlugin {
 
   openSideMenu() {
     this.hideSideMenus();
-    slideInRight(getEl(this.sideMenuElementName), 1000);
+    slideInRight(getEl(this.sideMenuElementName), 300);
     KeepTrackPlugin.openSideMenu_();
 
     if (this.isRenderPausedOnOpen) {
@@ -1540,14 +1540,14 @@ export abstract class KeepTrackPlugin {
       secondaryMenuElement.style.left = `${leftPos}px`;
       // Constrain width so the right edge doesn't exceed the viewport
       secondaryMenuElement.style.maxWidth = `${window.innerWidth - leftPos}px`;
-      slideInRight(secondaryMenuElement, 1000);
+      slideInRight(secondaryMenuElement, 300);
     }
   }
 
   closeSideMenu() {
     const settingsMenuElement = getEl(`${this.sideMenuElementName}`);
 
-    slideOutLeft(settingsMenuElement, 1000);
+    slideOutLeft(settingsMenuElement, 300);
     KeepTrackPlugin.closeSideMenu_();
   }
 

@@ -1,3 +1,5 @@
+@import url('design-tokens.css');
+
 /* Common CSS Rules - Extracted from style.css, style.celestrak.css, and style.embed.css */
 
 
@@ -2711,7 +2713,7 @@ button.ui-button::-moz-focus-inner {
   bottom: 0px;
   left: 0px;
   overflow: hidden;
-  transition: all 1s ease-in-out;
+  transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
   transform: translateX(-100%);
   background: var(--color-dark-background);
   border-top: solid 5px var(--color-dark-border);
@@ -2864,7 +2866,7 @@ button.ui-button::-moz-focus-inner {
 }
 
 .top-menu-icons-search-on {
-  transition: 1s;
+  transition: 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 nav {
@@ -2947,7 +2949,7 @@ nav a.sidenav-trigger i {
   height: 100%;
   display: flex;
   align-items: center;
-  transition: 1s;
+  transition: 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 
@@ -3015,7 +3017,7 @@ nav a.sidenav-trigger i {
 #search-holder {
   display: flex;
   height: 100%;
-  transition: 1s;
+  transition: 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   align-items: center;
   margin-left: 20px;
 }
@@ -3073,7 +3075,7 @@ nav a.sidenav-trigger i {
 
 .search-slide-down {
   width: 160px;
-  transition: 1s;
+  transition: width var(--kt-duration-normal, 200ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
 }
 
 .search-slide-down input[type='search'] {
@@ -3084,12 +3086,12 @@ nav a.sidenav-trigger i {
 }
 
 .search-slide-up {
-  transition: 1s;
+  transition: width var(--kt-duration-normal, 200ms) var(--kt-easing-exit, cubic-bezier(0.4, 0, 1, 1));
   width: 0px;
 }
 
 .search-slide-up input[type='search'] {
-  transition: 0.6s;
+  transition: width var(--kt-duration-normal, 200ms) var(--kt-easing-exit, cubic-bezier(0.4, 0, 1, 1));
   width: 0px;
   padding-left: 0px;
 }
@@ -3161,7 +3163,7 @@ nav a.sidenav-trigger i {
 #colorbox-container {
   background-color: 'white';
   transform: translateX(-200%);
-  transition: transform 1s ease-in-out 0s;
+  transition: transform 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   display: block;
   z-index: 100;
   width: 95%;
@@ -3288,7 +3290,7 @@ nav a.sidenav-trigger i {
 }
 
 .footer-slide-trans {
-  transition: 1s;
+  transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 .footer-slide-up {
@@ -4270,6 +4272,69 @@ a {
   color: var(--color-dark-text-accent) !important;
 }
 
+
+/* ========== Micro-Interactions & Focus ========== */
+
+/* Press feedback for all interactive elements */
+.drawer-item:active,
+.drawer-utility-icon:active,
+.bmenu-item .bmenu-item-inner:active,
+.search-result:active:not(.search-result-decayed) {
+  transform: scale(0.97);
+}
+
+/* Smooth transition for interactive element backgrounds */
+.search-result {
+  transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* Keyboard selected search result */
+.search-result--selected {
+  background: var(--kt-bg-active, rgba(255, 255, 255, 0.12));
+  outline: 1px solid var(--kt-border-strong, #616161);
+}
+
+/* Search result type badge */
+.search-type-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--kt-radius-sm, 4px);
+  font-size: var(--kt-font-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: var(--kt-bg-surface, #424242);
+  color: var(--kt-text-secondary, rgba(255, 255, 255, 0.7));
+  margin-right: 8px;
+  min-width: 42px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Focus-visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--kt-text-accent, #dd382f);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Custom focus for drawer items */
+.drawer-item:focus-visible {
+  outline: none;
+  background: var(--kt-bg-hover, rgba(255, 255, 255, 0.08));
+  box-shadow: inset 3px 0 0 var(--kt-text-accent, #dd382f);
+}
+
+/* Custom focus for utility icons */
+.drawer-utility-icon:focus-visible {
+  outline: none;
+  background: var(--kt-bg-hover, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 0 0 2px var(--kt-text-accent, #dd382f);
+  border-radius: var(--kt-radius-sm, 4px);
+}
+
 a,
 .link {
   cursor: pointer;
@@ -4370,4 +4435,41 @@ ul li {
   top: 0px;
   width: 100%;
   z-index: 105;
+}
+
+
+/* ========== Tooltip Popup ========== */
+
+.kt-tooltip-popup {
+  display: none;
+  position: absolute;
+  z-index: 999999;
+  max-width: 220px;
+  padding: var(--kt-space-2, 8px) var(--kt-space-3, 12px);
+  background: var(--kt-bg-elevated, #303030);
+  color: var(--kt-text-primary, #f5f5f5);
+  font-size: var(--kt-font-sm, 13px);
+  line-height: 1.4;
+  text-align: center;
+  border-radius: var(--kt-radius-md, 6px);
+  box-shadow: var(--kt-shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.5));
+  border: 1px solid var(--kt-border-subtle, rgba(255, 255, 255, 0.05));
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    transform var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.kt-tooltip-popup.kt-tooltip-measuring {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.kt-tooltip-popup.kt-tooltip-visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
 }

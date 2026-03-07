@@ -1,3 +1,4 @@
+import { CameraType } from '@app/engine/camera/camera-type';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -138,7 +139,10 @@ export class ColorMenu extends KeepTrackPlugin implements ICommandPaletteCapable
     return [
       {
         key: 'A',
-        callback: () => this.bottomMenuClicked(),
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) return;
+          this.bottomMenuClicked();
+        },
       },
     ];
   }

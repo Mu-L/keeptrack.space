@@ -62,12 +62,13 @@ describe('FindSatPlugin_class', () => {
   });
 
   describe('getKeyboardShortcuts', () => {
-    it('should return keyboard shortcuts with S key', () => {
+    it('should return keyboard shortcuts with Ctrl+Shift+F', () => {
       const plugin = new FindSatPlugin();
       const shortcuts = plugin.getKeyboardShortcuts();
 
       expect(shortcuts).toHaveLength(1);
-      expect(shortcuts[0].key).toBe('S');
+      expect(shortcuts[0].key).toBe('F');
+      expect(shortcuts[0].ctrl).toBe(true);
       expect(shortcuts[0].callback).toBeInstanceOf(Function);
     });
 

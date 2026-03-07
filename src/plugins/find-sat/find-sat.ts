@@ -2,6 +2,7 @@
 /* eslint-disable complexity */
 import { CatalogExporter } from '@app/app/data/catalog-exporter';
 import { countryCodeList, countryNameList } from '@app/app/data/catalogs/countries';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { GetSatType, MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -96,8 +97,14 @@ export class FindSatPlugin extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'S',
-        callback: () => this.bottomMenuClicked(),
+        key: 'F',
+        ctrl: true,
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+            return;
+          }
+          this.bottomMenuClicked();
+        },
       },
     ];
   }

@@ -1,5 +1,6 @@
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
+import { KeyboardShortcutRegistry } from '@app/engine/core/keyboard-shortcut-registry';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -22,6 +23,7 @@ interface DrawerItemData_ {
   isDisabled?: boolean;
   isLoginRequired?: boolean;
   order: number;
+  shortcutHint?: string;
 }
 
 interface DrawerGroup_ {
@@ -283,6 +285,7 @@ export class PluginDrawer {
           isDisabled: plugin.isIconDisabledOnLoad,
           isLoginRequired: isProGated,
           order,
+          shortcutHint: PluginDrawer.getShortcutHint_(plugin.id),
         });
       }
     }
@@ -350,10 +353,13 @@ export class PluginDrawer {
         const disabledClass = item.isDisabled ? ' disabled' : '';
         const proClass = item.isLoginRequired ? ' bmenu-item-pro' : '';
         const proAttr = item.isLoginRequired ? ' data-pro-gated' : '';
+        const tabIdx = item.isDisabled ? '' : ' tabindex="0"';
+        const shortcutBadge = item.shortcutHint ? `<span class="drawer-item-shortcut">${item.shortcutHint}</span>` : '';
 
-        html += `<div class="drawer-item${disabledClass}${proClass}" ${dataAttr}${proAttr}>`;
+        html += `<div class="drawer-item${disabledClass}${proClass}" ${dataAttr}${proAttr}${tabIdx} role="button">`;
         html += `<img class="drawer-item-icon" src="${item.imgSrc}" alt="${item.label}" />`;
         html += `<span class="drawer-item-label">${item.label}</span>`;
+        html += shortcutBadge;
         html += '</div>';
       }
 
@@ -460,6 +466,20 @@ export class PluginDrawer {
           this.close();
         }
       });
+
+      // Keyboard activation (Enter/Space) for drawer items
+      drawerContent.addEventListener('keydown', (evt: KeyboardEvent) => {
+        if (evt.key !== 'Enter' && evt.key !== ' ') {
+          return;
+        }
+        const itemEl = evt.target as HTMLElement;
+
+        if (!itemEl.classList.contains('drawer-item') || itemEl.classList.contains('disabled')) {
+          return;
+        }
+        evt.preventDefault();
+        itemEl.click();
+      });
     }
 
     // Utility footer click handler
@@ -500,10 +520,22 @@ export class PluginDrawer {
       this.close();
     });
 
-    // Escape key closes drawer
+    // Escape key closes drawer, Tab key toggles drawer
     window.addEventListener('keydown', (evt: KeyboardEvent) => {
       if (evt.key === 'Escape' && this.isOpen_) {
         this.close();
+      }
+
+      if (evt.key === 'Tab') {
+        // Don't toggle if user is typing in an input/textarea
+        const activeEl = document.activeElement;
+
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable)) {
+          return;
+        }
+
+        evt.preventDefault();
+        this.toggle();
       }
     });
   }
@@ -531,7 +563,13 @@ export class PluginDrawer {
     footerEl?.querySelectorAll('.drawer-utility-icon[data-plugin-id]').forEach((el) => {
       const pluginId = (el as HTMLElement).dataset.pluginId;
       const bottomIcon = pluginId ? getEl(pluginId, true) : null;
-      const isSelected = bottomIcon?.classList.contains('bmenu-item-selected') ?? false;
+
+      // UTILITY_ONLY plugins have no bottom bar icon element — their utility
+      // icon state is managed directly by setBottomIconToSelected/Unselected
+      if (!bottomIcon) {
+        return;
+      }
+      const isSelected = bottomIcon.classList.contains('bmenu-item-selected');
 
       el.classList.toggle('bmenu-item-selected', isSelected);
     });
@@ -624,5 +662,20 @@ export class PluginDrawer {
     } catch {
       // Ignore storage errors
     }
+  }
+
+  /**
+   * Look up the first registered keyboard shortcut for a plugin and return a display string.
+   */
+  private static getShortcutHint_(pluginId: string): string | undefined {
+    const allShortcuts = KeyboardShortcutRegistry.getAll();
+
+    for (const entry of allShortcuts) {
+      if (entry.pluginId === pluginId) {
+        return KeyboardShortcutRegistry.formatShortcut(entry.shortcut);
+      }
+    }
+
+    return undefined;
   }
 }

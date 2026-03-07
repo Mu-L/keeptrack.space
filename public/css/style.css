@@ -57,7 +57,7 @@
 #colorbox-container {
   background-color: var(--color-background-light);
   transform: translateX(-200%);
-  transition: transform 1s ease-in-out 0s;
+  transition: transform 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   display: block;
   z-index: 100;
   width: 95%;

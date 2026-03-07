@@ -39,7 +39,7 @@ export class SatelliteEciView extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: '4',
+        key: '3',
         callback: () => this.bottomIconCallback(),
       },
     ];
@@ -62,7 +62,7 @@ export class SatelliteEciView extends KeepTrackPlugin {
     EventBus.getInstance().on(EventBusEvent.updateLoop, () => {
       const isFixedToSatEci = ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_ECI;
 
-      if (isFixedToSatEci && !this.isMenuButtonActive && !this.isIconDisabled) {
+      if (isFixedToSatEci && !this.isIconDisabled) {
         this.setBottomIconToSelected();
       } else if (!isFixedToSatEci && this.isMenuButtonActive) {
         this.setBottomIconToUnselected();
@@ -80,6 +80,7 @@ export class SatelliteEciView extends KeepTrackPlugin {
 
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
     ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT_ECI;
+    this.selectSatManager_.selectSat(this.selectSatManager_.selectedSat); // Force update of selected satellite to update camera delegate
     this.setBottomIconToSelected();
   };
 }

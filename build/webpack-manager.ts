@@ -1,7 +1,7 @@
-import { Configuration, DefinePlugin, HtmlRspackPlugin, LightningCssMinimizerRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
+import { Configuration, DefinePlugin, DefinePluginOptions, HtmlRspackPlugin, LightningCssMinimizerRspackPlugin, SwcJsMinimizerRspackPlugin } from '@rspack/core';
+import { execSync } from 'child_process';
 import CleanTerminalPlugin from 'clean-terminal-webpack-plugin';
 import DotEnv from 'dotenv-webpack';
-import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +11,7 @@ export class WebpackManager {
   static readonly DEFAULT_MODE = 'development';
   static readonly DEFAULT_WATCH = false;
   private static config: BuildConfig;
-  private static versionDefine_: DefinePlugin;
+  private static versionDefine_: DefinePluginOptions;
 
   static createConfig(config: BuildConfig, isWatch: boolean = false): Configuration[] {
     this.config = config;
@@ -67,6 +67,7 @@ export class WebpackManager {
       baseConfig = {
         ...baseConfig,
         ...{
+          devtool: 'hidden-source-map',
           optimization: {
             minimizer: [
               new SwcJsMinimizerRspackPlugin({

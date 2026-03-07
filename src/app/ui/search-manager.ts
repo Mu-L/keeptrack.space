@@ -40,10 +40,22 @@ export enum SearchResultType {
  * It provides methods for performing searches, hiding search results, and retrieving information
  * about the current search state.
  */
+const SEARCH_TYPE_LABELS: Record<SearchResultType, string> = {
+  [SearchResultType.BUS]: 'BUS',
+  [SearchResultType.OBJECT_NAME]: 'NAME',
+  [SearchResultType.ALT_NAME]: 'ALT',
+  [SearchResultType.NORAD_ID]: 'NORAD',
+  [SearchResultType.INTLDES]: 'INTL',
+  [SearchResultType.LAUNCH_VEHICLE]: 'LV',
+  [SearchResultType.MISSILE]: 'MISSILE',
+  [SearchResultType.STAR]: 'STAR',
+};
+
 export class SearchManager {
   isSearchOpen = false;
   isResultsOpen = false;
   private lastResultGroup_: ObjectGroup<GroupType> | null = null;
+  private selectedIndex_ = -1;
 
   init() {
     const uiWrapper = getEl('ui-wrapper');
@@ -63,13 +75,12 @@ export class SearchManager {
       {
         key: 'F',
         ctrl: false,
-        shift: false,
         callback: () => {
           this.toggleSearch();
           if (this.isSearchOpen) {
             setTimeout(() => {
               getEl('search')?.focus();
-            }, 1000);
+            }, 200);
           }
         },
       },
@@ -143,10 +154,80 @@ export class SearchManager {
       if (this.isSearchOpen && this.getCurrentSearch().length === 0) {
         this.toggleSearch();
       }
+
+      // Force shift key to be released when search box is exited to prevent getting stuck in shift mode after using shift + click to select text in the search box
+      ServiceLocator.getInputManager().keyboard.keyStates.set('Shift', false);
     });
     getEl('search-icon')?.addEventListener('click', () => {
       this.toggleSearch();
     });
+
+    // Keyboard navigation within search results
+    getEl('search')?.addEventListener('keydown', (evt: KeyboardEvent) => {
+      const results = document.querySelectorAll('.search-result:not(.search-result-decayed)');
+
+      if (results.length === 0) {
+        return;
+      }
+
+      switch (evt.key) {
+        case 'ArrowDown':
+          evt.preventDefault();
+          this.selectedIndex_ = Math.min(this.selectedIndex_ + 1, results.length - 1);
+          this.updateSelectedResult_(results);
+          break;
+        case 'ArrowUp':
+          evt.preventDefault();
+          this.selectedIndex_ = Math.max(this.selectedIndex_ - 1, 0);
+          this.updateSelectedResult_(results);
+          break;
+        case 'Enter':
+          if (this.selectedIndex_ >= 0 && this.selectedIndex_ < results.length) {
+            evt.preventDefault();
+            (results[this.selectedIndex_] as HTMLElement).click();
+          }
+          break;
+        case 'Escape':
+          evt.preventDefault();
+          this.closeSearch(true);
+          (getEl('search') as HTMLInputElement | null)?.blur();
+          break;
+        default:
+          break;
+      }
+    });
+
+    // Add keyboard hint to search placeholder
+    const searchInput = getEl('search') as HTMLInputElement | null;
+
+    if (searchInput) {
+      const currentPlaceholder = searchInput.placeholder;
+
+      if (!currentPlaceholder.includes('(F)')) {
+        searchInput.placeholder = `${currentPlaceholder} (F)`;
+      }
+    }
+  }
+
+  private updateSelectedResult_(results: NodeListOf<Element>): void {
+    results.forEach((el, i) => {
+      el.classList.toggle('search-result--selected', i === this.selectedIndex_);
+    });
+
+    // Scroll selected result into view
+    const selectedEl = results[this.selectedIndex_] as HTMLElement | undefined;
+
+    selectedEl?.scrollIntoView({ block: 'nearest' });
+
+    // Update hover preview for selected result
+    const satIdStr = selectedEl?.dataset.objId;
+
+    if (satIdStr) {
+      const satId = parseInt(satIdStr, 10);
+
+      ServiceLocator.getHoverManager().setHoverId(satId);
+      ServiceLocator.getUiManager().searchHoverSatId = satId;
+    }
   }
 
   private static getSatIdFromSearchResults_(evt: Event): number {
@@ -202,7 +283,7 @@ export class SearchManager {
       const groupManagerInstance = ServiceLocator.getGroupsManager();
       const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-      slideOutUp(getEl('search-results')!, 1000);
+      slideOutUp(getEl('search-results')!, 200);
       groupManagerInstance.clearSelect();
       this.isResultsOpen = false;
 
@@ -227,6 +308,8 @@ export class SearchManager {
   }
 
   doSearch(searchString: string, isPreventDropDown?: boolean): void {
+    this.selectedIndex_ = -1;
+
     if (searchString === '') {
       this.hideResults();
       EventBus.getInstance().emit(EventBusEvent.searchUpdated, searchString, 0, settingsManager.searchLimit);
@@ -585,6 +668,7 @@ export class SearchManager {
       const decayedClass = isDecayed ? ' search-result-decayed' : '';
 
       html += `<div class="search-result${decayedClass}" data-obj-id="${obj.id}">`;
+      html += `<span class="search-type-badge">${SEARCH_TYPE_LABELS[result.searchType]}</span>`;
       html += '<div class="truncate-search">';
 
       // Left half of search results
@@ -720,7 +804,7 @@ export class SearchManager {
       const searchResultsEl = getEl('search-results', true);
 
       if (searchResultsEl) {
-        slideInDown(searchResultsEl, 1000);
+        slideInDown(searchResultsEl, 200);
         this.isResultsOpen = true;
       }
     }

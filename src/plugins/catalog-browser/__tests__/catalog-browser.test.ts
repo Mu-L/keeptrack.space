@@ -51,7 +51,9 @@ describe('CatalogBrowserPlugin_composition', () => {
     const commands = plugin.getCommandPaletteCommands();
     const totalEntries = CatalogBrowserData.categories.reduce((sum, cat) => sum + cat.entries.length, 0);
 
-    expect(commands.length).toBe(totalEntries);
+    const keepTrackCatalogCount = 3; // default, celestrak-only, vimpel-only
+
+    expect(commands.length).toBe(totalEntries + keepTrackCatalogCount);
     expect(commands.some((c) => c.id === 'CatalogBrowserPlugin.load.starlink')).toBe(true);
     expect(commands.some((c) => c.id === 'CatalogBrowserPlugin.load.gps-ops')).toBe(true);
   });

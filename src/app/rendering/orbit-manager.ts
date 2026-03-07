@@ -241,6 +241,9 @@ export class OrbitManager {
       {
         key: 'e',
         callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+            return;
+          }
           this.toggleEciToEcf_();
           SettingsMenuPlugin.syncOnLoad();
           SettingsManager.preserveSettings();

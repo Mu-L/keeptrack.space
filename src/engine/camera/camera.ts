@@ -36,7 +36,6 @@ import {
 } from '@ootk/src/main';
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { SatMath } from '../../app/analysis/sat-math';
-import type { OrbitManager } from '../../app/rendering/orbit-manager';
 import { PluginRegistry } from '../core/plugin-registry';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
@@ -184,7 +183,8 @@ export class Camera {
     this.state.hasPrevSatAngles = false;
   }
 
-  changeCameraType(orbitManager: OrbitManager) {
+  changeCameraType() {
+    const orbitManagerInstance = ServiceLocator.getOrbitManager();
     const sensorManagerInstance = ServiceLocator.getSensorManager();
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
 
@@ -194,66 +194,74 @@ export class Camera {
     }
 
     if (this.cameraType === CameraType.PLANETARIUM) {
-      orbitManager.clearInViewOrbit(); // Clear Orbits if Switching from Planetarium View
+      orbitManagerInstance.clearInViewOrbit(); // Clear Orbits if Switching from Planetarium View
     }
 
     switch (this.cameraType) {
       case CameraType.FIXED_TO_EARTH:
-        this.cameraType = CameraType.FIXED_TO_SAT_LVLH;
-        break;
-      case CameraType.FIXED_TO_SAT_LVLH:
-        this.cameraType = CameraType.FIXED_TO_SAT_ECI;
-        break;
-      case CameraType.FIXED_TO_SAT_ECI:
-        this.cameraType = CameraType.FPS;
-        break;
-      case CameraType.FPS:
-        this.cameraType = CameraType.SATELLITE_FIRST_PERSON;
-        break;
-      case CameraType.PLANETARIUM:
-        this.cameraType = CameraType.SATELLITE_FIRST_PERSON;
-        break;
-      case CameraType.SATELLITE_FIRST_PERSON:
-        this.cameraType = CameraType.FLAT_MAP;
-        break;
-      case CameraType.ASTRONOMY:
         this.cameraType = CameraType.FLAT_MAP;
         break;
       case CameraType.FLAT_MAP:
-        this.cameraType = CameraType.FIXED_TO_EARTH;
+        this.cameraType = CameraType.FIXED_TO_SAT_ECI;
         break;
+      case CameraType.FIXED_TO_SAT_ECI:
+        this.cameraType = CameraType.FIXED_TO_SAT_LVLH;
+        break;
+      case CameraType.FIXED_TO_SAT_LVLH:
+        this.cameraType = CameraType.POLAR_VIEW;
+        break;
+      case CameraType.POLAR_VIEW:
+        this.cameraType = CameraType.SATELLITE_FIRST_PERSON;
+        break;
+      case CameraType.SATELLITE_FIRST_PERSON:
+        this.cameraType = CameraType.PLANETARIUM;
+        break;
+      case CameraType.PLANETARIUM:
+        this.cameraType = CameraType.ASTRONOMY;
+        break;
+      case CameraType.ASTRONOMY:
+        this.cameraType = CameraType.FPS;
+        break;
+      case CameraType.FPS:
       default:
         this.cameraType = CameraType.MAX_CAMERA_TYPES;
         break;
-    }
-
-    if ((this.cameraType === CameraType.FIXED_TO_SAT_LVLH && !selectSatManagerInstance) || selectSatManagerInstance?.selectedSat === -1) {
-      this.cameraType++;
-    }
-    if ((this.cameraType === CameraType.FIXED_TO_SAT_ECI && !selectSatManagerInstance) || selectSatManagerInstance?.selectedSat === -1) {
-      this.cameraType = CameraType.FPS;
-    }
-    if (this.cameraType === CameraType.FPS) {
-      this.resetFpsPos_();
-    }
-    if (this.cameraType === CameraType.PLANETARIUM && !sensorManagerInstance.isSensorSelected()) {
-      this.cameraType++;
-    }
-
-    if (this.cameraType === CameraType.SATELLITE_FIRST_PERSON && selectSatManagerInstance?.selectedSat === -1) {
-      this.cameraType = CameraType.FLAT_MAP;
-    }
-
-    if (this.cameraType === CameraType.ASTRONOMY && !sensorManagerInstance.isSensorSelected()) {
-      this.cameraType++;
     }
 
     // Skip delegate-backed camera modes if their delegate isn't registered (pro plugin not loaded)
     if (this.cameraType === CameraType.FLAT_MAP && !this.cameraModeDelegates_.has(CameraType.FLAT_MAP)) {
       this.cameraType++;
     }
+
+    if ((this.cameraType === CameraType.FIXED_TO_SAT_LVLH && !selectSatManagerInstance) || selectSatManagerInstance?.selectedSat === -1) {
+      this.cameraType++;
+    }
+    if ((this.cameraType === CameraType.FIXED_TO_SAT_ECI && !selectSatManagerInstance) || selectSatManagerInstance?.selectedSat === -1) {
+      this.cameraType++;
+    }
+
+    if (this.cameraType === CameraType.POLAR_VIEW && !sensorManagerInstance.isSensorSelected()) {
+      this.cameraType++;
+    }
+
     if (this.cameraType === CameraType.POLAR_VIEW && !this.cameraModeDelegates_.has(CameraType.POLAR_VIEW)) {
       this.cameraType++;
+    }
+
+    if (this.cameraType === CameraType.PLANETARIUM && !sensorManagerInstance.isSensorSelected()) {
+      this.cameraType++;
+    }
+
+    if (this.cameraType === CameraType.ASTRONOMY && !sensorManagerInstance.isSensorSelected()) {
+      this.cameraType++;
+    }
+
+    if (this.cameraType === CameraType.SATELLITE_FIRST_PERSON && selectSatManagerInstance?.selectedSat === -1) {
+      this.cameraType++;
+    }
+
+    if (this.cameraType === CameraType.FPS) {
+      this.resetFpsPos_();
     }
 
     if (this.cameraType >= CameraType.MAX_CAMERA_TYPES) {
@@ -264,7 +272,7 @@ export class Camera {
       renderer.glInit();
       if ((selectSatManagerInstance?.selectedSat ?? '-1') !== '-1') {
         this.state.camZoomSnappedOnSat = true;
-        this.cameraType = CameraType.FIXED_TO_SAT_LVLH;
+        this.cameraType = CameraType.FIXED_TO_SAT_ECI;
       } else {
         this.cameraType = CameraType.FIXED_TO_EARTH;
       }

@@ -1,3 +1,4 @@
+import { CameraType } from '@app/engine/camera/camera-type';
 import { SatMath, StringifiedNumber } from '@app/app/analysis/sat-math';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { GetSatType, MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
@@ -60,7 +61,12 @@ export class EditSat extends KeepTrackPlugin {
     return [
       {
         key: 'E',
-        callback: () => this.bottomMenuClicked(),
+        callback: () => {
+          const ct = ServiceLocator.getMainCamera().cameraType;
+
+          if (ct === CameraType.FPS || ct === CameraType.SATELLITE_FIRST_PERSON || ct === CameraType.ASTRONOMY) return;
+          this.bottomMenuClicked();
+        },
       },
     ];
   }

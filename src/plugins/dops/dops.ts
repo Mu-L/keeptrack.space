@@ -1,3 +1,4 @@
+import { CameraType } from '@app/engine/camera/camera-type';
 import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { keepTrackApi } from '@app/keepTrackApi';
@@ -71,7 +72,10 @@ export class DopsPlugin extends KeepTrackPlugin {
     return [
       {
         key: 'D',
-        callback: () => this.bottomMenuClicked(),
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) return;
+          this.bottomMenuClicked();
+        },
       },
     ];
   }

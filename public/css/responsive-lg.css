@@ -27,7 +27,7 @@
   }
 
   .search-icon-search-on {
-    transition: 1s;
+    transition: 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .top-menu-icons img {
@@ -71,7 +71,7 @@
   }
 
   .share-up {
-    transition: 1s;
+    transition: 300ms var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
     top: 0px !important;
   }
 

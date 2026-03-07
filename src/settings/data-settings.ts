@@ -49,6 +49,7 @@ export class DataSettings {
   };
 
   // Servers
+  apiServer = 'https://api.keeptrack.space';
   telemetryServer = 'https://telemetry.keeptrack.space';
   userServer = 'https://user.keeptrack.space';
 

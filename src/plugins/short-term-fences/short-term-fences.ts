@@ -209,7 +209,7 @@ export class ShortTermFences extends KeepTrackPlugin {
       (sensor, id): void => {
         if (sensor === null && id === null) {
           this.closeAndDisable_();
-          slideOutLeft(getEl(this.sideMenuElementName), 1000);
+          slideOutLeft(getEl(this.sideMenuElementName), 300);
         } else {
           this.setBottomIconToEnabled();
         }
@@ -301,7 +301,7 @@ export class ShortTermFences extends KeepTrackPlugin {
     (<HTMLInputElement>getEl('stf-rng')).value = rae.rng.toFixed(1);
 
     ServiceLocator.getUiManager().hideSideMenus();
-    slideInRight(getEl('stf-menu'), 1000);
+    slideInRight(getEl('stf-menu'), 300);
     this.isMenuButtonActive = true;
     this.setBottomIconToSelected();
   }

@@ -40,14 +40,6 @@ export class VcrPlugin extends KeepTrackPlugin {
         key: ' ',
         callback: () => this.handlePlayPause(),
       },
-      {
-        key: 'ArrowLeft',
-        callback: () => this.handleRewind(),
-      },
-      {
-        key: 'ArrowRight',
-        callback: () => this.handleFastForward(),
-      },
     ];
   }
 

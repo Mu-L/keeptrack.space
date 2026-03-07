@@ -45,7 +45,8 @@ body.drawer-mode {
     background: white;
     margin: 3px 0;
     border-radius: 1px;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+      opacity var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
     transform-origin: center;
   }
 
@@ -97,7 +98,7 @@ body.drawer-mode {
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
     pointer-events: none;
   }
 
@@ -116,7 +117,7 @@ body.drawer-mode {
     background: var(--color-dark-background);
     z-index: 1000;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
     overflow: visible;
     visibility: hidden;
   }
@@ -183,7 +184,7 @@ body.drawer-mode {
     color: var(--color-dark-text-accent);
     background: rgba(0, 0, 0, 0.3);
     border-bottom: 1px solid var(--color-dark-border);
-    transition: background 0.15s ease;
+    transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .drawer-group-header:hover {
@@ -195,7 +196,7 @@ body.drawer-mode {
   }
 
   .drawer-group-chevron {
-    transition: transform 0.2s ease;
+    transition: transform var(--kt-duration-normal, 200ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
     font-size: 12px;
     color: rgba(255, 255, 255, 0.4);
   }
@@ -206,7 +207,7 @@ body.drawer-mode {
 
   .drawer-group-items {
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
     max-height: 2000px;
   }
 
@@ -221,7 +222,9 @@ body.drawer-mode {
     padding: 10px 16px;
     cursor: pointer;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    transition: background 0.15s ease;
+    transition:
+      background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+      transform var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .drawer-item:hover {
@@ -251,6 +254,21 @@ body.drawer-mode {
   .drawer-item-label {
     font-size: 14px;
     color: white;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .drawer-item-shortcut {
+    margin-left: auto;
+    padding: 2px 6px;
+    border-radius: var(--kt-radius-sm, 4px);
+    font-size: var(--kt-font-xs, 11px);
+    font-family: 'Roboto Mono', monospace;
+    color: var(--kt-text-tertiary, rgba(255, 255, 255, 0.45));
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .drawer-item.active .drawer-item-icon {
@@ -300,7 +318,7 @@ body.drawer-mode {
     cursor: pointer;
     text-decoration: none;
     color: white;
-    transition: background 0.15s ease;
+    transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .drawer-user-account__row:hover {
@@ -392,7 +410,8 @@ body.drawer-mode {
     justify-content: center;
     cursor: pointer;
     border-radius: 4px;
-    transition: background 0.15s ease, opacity 0.15s ease;
+    transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+      opacity var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .drawer-utility-icon img {
@@ -400,7 +419,7 @@ body.drawer-mode {
     height: 20px;
     filter: var(--filter-icon-blue);
     opacity: 0.6;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .drawer-utility-icon:hover {
@@ -514,7 +533,8 @@ body.is-mobile-mode {
     height: var(--nav-bar-height);
     background: var(--color-dark-background);
     border-radius: 0 6px 6px 0;
-    transition: right 0.3s ease, border-radius 0.3s ease;
+    transition: right var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1)),
+      border-radius var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
   }
 
   .plugin-drawer.open .drawer-hamburger {
