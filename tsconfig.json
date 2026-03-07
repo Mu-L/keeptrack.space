@@ -7,7 +7,8 @@
     "noEmit": true,
     "strictNullChecks": true,
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "google-publisher-tag"
     ],
   },
   "include": [
