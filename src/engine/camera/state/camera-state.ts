@@ -1,8 +1,6 @@
 // app/keeptrack/camera/camera-state.ts
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { RADIUS_OF_EARTH, ZOOM_EXP } from '@app/engine/utils/constants';
-import { alt2zoom } from '@app/engine/utils/transforms';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { Degrees, GreenwichMeanSiderealTime, Kilometers, Radians } from '@ootk/src/main';
 import { vec3 } from 'gl-matrix';
@@ -172,7 +170,10 @@ export class CameraState {
   }
 
   set camDistBuffer(val: Kilometers) {
-    this.camDistBuffer_ = Math.max(val, settingsManager.minDistanceFromSatellite) as Kilometers;
+    this.camDistBuffer_ = Math.min(
+      Math.max(val, settingsManager.minDistanceFromSatellite),
+      settingsManager.maxZoomDistance,
+    ) as Kilometers;
   }
 
   get earthCenteredPitch(): Radians {
@@ -241,109 +242,29 @@ export class CameraState {
 
   // ============ Methods ============
 
-  /**
-   * Convert a distance from Earth center (km) to a zoom level [0..1].
-   */
-  private distToZoom_(dist: number): number {
-    // Clamp so distances below minZoomDistance return minimum zoom instead of NaN
-    const clampedDist = Math.max(dist, settingsManager.minZoomDistance);
-    const raw = ((clampedDist - settingsManager.minZoomDistance) / (settingsManager.maxZoomDistance - settingsManager.minZoomDistance)) ** (1 / ZOOM_EXP);
-
-    return Math.min(Math.max(raw, 0.0001), 1);
-  }
-
-  /**
-   * For low-altitude satellites (below minZoomDistance from Earth center),
-   * extend the near-mode range so it overlaps with the far-mode minimum.
-   * For normal-altitude satellites, returns the default nearZoomLevel.
-   */
-  private effectiveNearZoomLevel_(satDist: number): Kilometers {
-    const gap = settingsManager.minZoomDistance - satDist;
-
-    if (gap <= 0) {
-      return settingsManager.nearZoomLevel;
-    }
-
-    // Extend near mode to cover the gap plus a 2km buffer for overlap
-    return Math.max(settingsManager.nearZoomLevel, gap + 2) as Kilometers;
-  }
-
   zoomTargetChange(): void {
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
-    const maxCovarianceDistance = Math.min((selectSatManagerInstance?.primarySatCovMatrix?.[2] ?? 0) * 10, 10000);
-    const wasSnapped = this.camZoomSnappedOnSat;
+    const isNoSatSelected = (selectSatManagerInstance?.selectedSat ?? '-1') === '-1';
 
-    // Compute satellite distance early so we can derive the effective near-mode range
-    const target = selectSatManagerInstance?.getSelectedSat();
-    const satDist = target
-      ? Math.sqrt(target.position.x ** 2 + target.position.y ** 2 + target.position.z ** 2)
-      : 0;
-    const effectiveNearZoom = this.effectiveNearZoomLevel_(satDist);
+    if (settingsManager.isZoomStopsSnappedOnSat || isNoSatSelected || !this.camZoomSnappedOnSat) {
+      const wasSnapped = this.camZoomSnappedOnSat;
 
-    if ((settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? '-1') === '-1') || (this.camDistBuffer >= effectiveNearZoom)) {
-
+      // Earth-centered mode — no satellite snapped or snapping disabled
       settingsManager.selectedColor = settingsManager.selectedColorFallback;
       ServiceLocator.getRenderer().setFarRenderer();
       this.camZoomSnappedOnSat = false;
 
-      if (target) {
-        const satAlt = <Kilometers>(satDist - RADIUS_OF_EARTH);
-        const curMinZoomLevel = alt2zoom(satAlt, settingsManager.minZoomDistance, settingsManager.maxZoomDistance, settingsManager.minDistanceFromSatellite);
-
-        if (this.zoomTarget < this.zoomLevel && this.zoomTarget < curMinZoomLevel) {
-          this.camZoomSnappedOnSat = true;
-
-          // Derive camDistBuffer from the current camera distance so the
-          // transition into near mode is seamless (no positional jump).
-          // Cap at effectiveNearZoom - 1 so we stay strictly BELOW the threshold
-          // and avoid oscillating between near/far modes on subsequent frames.
-          const camDist = this.zoomLevel_ ** ZOOM_EXP * (settingsManager.maxZoomDistance - settingsManager.minZoomDistance) + settingsManager.minZoomDistance;
-          const derived = <Kilometers>Math.max(camDist - satDist, settingsManager.minDistanceFromSatellite);
-          const nearCap = <Kilometers>(effectiveNearZoom - 1);
-
-          if (settingsManager.isDrawCovarianceEllipsoid) {
-            this.camDistBuffer = <Kilometers>Math.min(Math.max(derived, maxCovarianceDistance), nearCap);
-          } else {
-            this.camDistBuffer = <Kilometers>Math.min(derived, nearCap);
-          }
-        } else if (wasSnapped) {
-          // Transitioning near → far: sync zoomLevel/zoomTarget to match the
-          // actual camera distance so there is no visible jump.
-          const camDist = satDist + this.camDistBuffer;
-          const matchingZoom = this.distToZoom_(camDist);
-
-          this.zoomLevel_ = matchingZoom;
-          this.zoomTarget_ = matchingZoom;
-        }
+      // When unsnapping, restore zoom to where the user was before selecting
+      // the satellite. Without this, zoomLevel stays near 0 (satellite altitude)
+      // where the exponential zoom curve is too flat for scrolling to work.
+      if (wasSnapped) {
+        this.zoomLevel_ = Math.max(0.0001, Math.min(1, this.earthCenteredLastZoom));
+        this.zoomTarget_ = this.zoomLevel_;
       }
 
       this.earthCenteredLastZoom = this.zoomTarget;
-
-    } else {
-      ServiceLocator.getRenderer().setNearRenderer();
-
-      const nearCap = <Kilometers>(effectiveNearZoom - 1);
-
-      // Transitioning far → near: derive camDistBuffer from current camera
-      // distance so the close-up view starts exactly where the far view left off.
-      if (!wasSnapped) {
-        if (target) {
-          const camDist = this.zoomLevel_ ** ZOOM_EXP * (settingsManager.maxZoomDistance - settingsManager.minZoomDistance) + settingsManager.minZoomDistance;
-          const derived = <Kilometers>Math.max(camDist - satDist, settingsManager.minDistanceFromSatellite);
-
-          this.camDistBuffer = <Kilometers>Math.min(derived, nearCap);
-        }
-      } else {
-        // Already in near mode — just clamp camDistBuffer
-        this.camDistBuffer = <Kilometers>Math.min(
-          Math.max(
-            this.camDistBuffer,
-            settingsManager.minDistanceFromSatellite,
-          ),
-          nearCap,
-        );
-      }
     }
+    // When snapped to a satellite, renderer switching is handled by snapToSat()
   }
 
   /**

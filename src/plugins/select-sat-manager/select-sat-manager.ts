@@ -1,3 +1,4 @@
+import { CameraState } from '@app/engine/camera/state/camera-state';
 import { CameraType } from '@app/engine/camera/camera-type';
 import { GetSatType, SolarBody, ToastMsgType } from '@app/engine/core/interfaces';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
@@ -299,11 +300,31 @@ export class SelectSatManager extends KeepTrackPlugin {
     if (this.lastSelectedSat() !== -1) {
       const cam = ServiceLocator.getMainCamera();
 
-      if (cam.cameraType === CameraType.FIXED_TO_SAT_ECI || cam.cameraType === CameraType.FIXED_TO_SAT_LVLH) {
+      const wasSatMode = cam.cameraType === CameraType.FIXED_TO_SAT_ECI || cam.cameraType === CameraType.FIXED_TO_SAT_LVLH;
+
+      if (wasSatMode) {
         this.lastSatCameraType = cam.cameraType;
       }
       this.beginCameraTransition_();
       cam.exitFixedToSat();
+
+      // exitFixedToSat handles camDistBuffer and zoomTarget for SAT modes only.
+      // For FIXED_TO_EARTH (most common), clean up snap state here so zoom works.
+      if (cam.state.camZoomSnappedOnSat) {
+        cam.state.camZoomSnappedOnSat = false;
+        cam.state.camAngleSnappedOnSat = false;
+        // Reset isZoomIn so the direction guard in updateZoom_ doesn't cancel
+        // the zoom-out transition to earthCenteredLastZoom.
+        cam.state.isZoomIn = false;
+        settingsManager.selectedColor = settingsManager.selectedColorFallback;
+        ServiceLocator.getRenderer().setFarRenderer();
+
+        if (!wasSatMode) {
+          // FIXED_TO_EARTH: exitFixedToSat returned early, restore zoom ourselves
+          cam.state.camDistBuffer = CameraState.MAX_CAM_DIST_BUFFER;
+          cam.state.zoomTarget = cam.state.earthCenteredLastZoom;
+        }
+      }
 
       document.documentElement.style.setProperty('--search-box-bottom', '0px');
       PluginRegistry.getPlugin(SatInfoBox)?.hide();

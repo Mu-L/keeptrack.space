@@ -312,21 +312,6 @@ export class Camera {
 
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
 
-    // Compute effective near zoom level for low-altitude satellites
-    const selectedSat = selectSatManagerInstance?.getSelectedSat();
-    const satDist = selectedSat
-      ? Math.sqrt(selectedSat.position.x ** 2 + selectedSat.position.y ** 2 + selectedSat.position.z ** 2)
-      : 0;
-    const effectiveNearZoom = satDist > 0
-      ? Math.max(settingsManager.nearZoomLevel, settingsManager.minZoomDistance - satDist + 2) as Kilometers
-      : settingsManager.nearZoomLevel;
-
-    // Updated zoom logic for satellite/covariance bubble proximity
-    const isCameraCloseToSatellite = this.state.camDistBuffer < effectiveNearZoom;
-    const maxCovarianceDistance = Math.min((selectSatManagerInstance?.primarySatCovMatrix?.[2] ?? 0) * 10, 10000);
-    const isCameraCloseToCovarianceBubble = settingsManager.isDrawCovarianceEllipsoid &&
-      this.state.camDistBuffer < maxCovarianceDistance;
-
     // Scale zoom sensitivity by current zoom level so zooming naturally decelerates when close to a body.
     // Use asymmetric scaling: full deceleration when zooming in, but a higher floor when zooming out
     // so the user isn't trapped at close zoom levels.
@@ -335,22 +320,17 @@ export class Camera {
       ? Math.max(this.state.zoomLevel, 0.1)
       : Math.max(this.state.zoomLevel, 0.001);
 
-    if (settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? '-1') === '-1') {
-      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity; // delta is +/- 100
-    } else if ((isCameraCloseToSatellite || isCameraCloseToCovarianceBubble) ||
-      this.state.zoomLevel === -1) {
-      // Inside camDistBuffer
+    if (settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? '-1') === '-1' || !this.state.camZoomSnappedOnSat) {
+      // No satellite selected, not snapped, or snapping disabled — standard Earth-centered zoom
+      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity;
+    } else {
+      // Satellite snapped — satellite-relative zoom via camDistBuffer.
+      // snapToSat() converts camDistBuffer to zoomTarget each frame.
+      // Proportional scaling: each scroll step changes distance by ~7%, giving
+      // consistent feel at any distance (0.75km to 100,000km+).
+      const fraction = delta / 500;
 
-      /*
-       * Slowly zoom in/out, scaling speed with camDistBuffer (farther = faster)
-       * Exponential scaling for smoother zoom near the satellite
-       */
-      const scale = Math.max(0.01, (this.state.camDistBuffer / 100) ** 1.15); // Exponential factor > 1 for faster scaling as distance increases
-
-      this.state.camDistBuffer = <Kilometers>(this.state.camDistBuffer + (delta / 5) * scale); // delta is +/- 100
-    } else if (this.state.camDistBuffer >= effectiveNearZoom) {
-      // Outside camDistBuffer
-      this.state.zoomTarget += delta / 100 / 25 / this.state.speedModifier * zoomSensitivity; // delta is +/- 100
+      this.state.camDistBuffer = <Kilometers>(this.state.camDistBuffer * (1 + fraction));
     }
 
     this.zoomWheelFov_(delta);
@@ -802,16 +782,19 @@ export class Camera {
         settingsManager.selectedColor = settingsManager.selectedColorFallback;
       }
 
-      if (!this.transition.isActive) {
-        this.state.zoomLevel = Math.max(this.state.zoomLevel, this.state.zoomTarget);
-      }
-
-      // errorManagerInstance.debug(`Zoom Target: ${this.zoomTarget_}`);
-      this.state.earthCenteredLastZoom = this.state.zoomTarget + 0.1;
-
       // Only Zoom in Once on Mobile
       if (settingsManager.isMobileModeEnabled) {
         this.state.camZoomSnappedOnSat = false;
+      }
+    }
+
+    // Switch near/far renderer based on satellite distance for z-buffer precision
+    if (this.state.camZoomSnappedOnSat) {
+      if (this.state.camDistBuffer <= settingsManager.nearZoomLevel) {
+        ServiceLocator.getRenderer().setNearRenderer();
+      } else {
+        settingsManager.selectedColor = settingsManager.selectedColorFallback;
+        ServiceLocator.getRenderer().setFarRenderer();
       }
     }
 
