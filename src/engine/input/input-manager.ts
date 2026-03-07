@@ -487,7 +487,7 @@ export class InputManager {
      * TODO: Make this dynamic
      */
     const mainCameraInstance = ServiceLocator.getMainCamera();
-    const offsetX = mainCameraInstance.state.mouseX < canvasDOM!.clientWidth / 2 ? 0 : -1 * 165;
+    const offsetX = mainCameraInstance.state.mouseX < canvasDOM!.clientWidth / 2 ? 0 : -1 * 180;
     const offsetY = mainCameraInstance.state.mouseY < canvasDOM!.clientHeight / 2 ? 0 : numMenuItems * -25;
 
     rightBtnMenuDOM!.style.display = 'block';
