@@ -634,8 +634,9 @@ export class PluginDrawer {
   }
 
   private static updateBottomMenuCssVars_(): void {
-    const footerEl = getEl('drawer-utility-footer', true);
-    const height = footerEl?.offsetHeight ?? 0;
+    // const footerEl = getEl('drawer-utility-footer', true);
+    // const height = footerEl?.offsetHeight ?? 0;
+    const height = 0;
 
     document.documentElement.style.setProperty('--bottom-menu-top', `${height}px`);
     document.documentElement.style.setProperty('--bottom-menu-height', `${height}px`);

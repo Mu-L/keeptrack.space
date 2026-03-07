@@ -367,7 +367,7 @@ body.drawer-mode {
   .drawer-utility-footer {
     position: fixed;
     bottom: 0;
-    right: 0;
+    left: 0;
     z-index: 11;
     background: var(--color-dark-background);
     border-top: 2px solid var(--color-dark-border);
