@@ -141,7 +141,7 @@ export class SoundManager {
     if (soundKey.startsWith('click')) {
       return 0.15;
     } else if (soundKey.startsWith('chatter')) {
-      return 0.15;
+      return 0.25;
     } else if (soundKey === SoundNames.LOADING) {
       return 0.25;
     } else if (soundKey === SoundNames.EXPORT) {
