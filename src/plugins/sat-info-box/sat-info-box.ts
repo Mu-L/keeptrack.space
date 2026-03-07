@@ -184,7 +184,7 @@ export class SatInfoBox extends KeepTrackPlugin {
     const plugin = PluginRegistry.getPlugin(SatInfoBox)!;
 
     plugin.addElement({ html: this.createHeader(), order: 0 });
-    plugin.addElement({ html: this.createIdentifiersSection(), order: 3 });
+    plugin.addElement({ html: this.createIdentifiersSection(), order: 2 });
     // Make sure we have all the dynamic html elements before getting the order
     EventBus.getInstance().emit(EventBusEvent.satInfoBoxInit);
 

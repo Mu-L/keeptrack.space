@@ -11,7 +11,7 @@
   text-align: center;
   background: var(--color-dark-border);
   color: var(--colorWhite);
-  margin-bottom: 5px;
+  margin-bottom: 2px;
 }
 
 .sat-watchlist-icon {
@@ -34,8 +34,8 @@
 }
 
 .sat-info-section-header {
-  height: 25px;
-  font-size: 18px;
+  height: 20px;
+  font-size: 16px;
   text-align: center;
   background: var(--color-dark-border);
   color: var(--colorWhite);
@@ -44,7 +44,6 @@
   align-items: center;
   flex-direction: row;
   flex-wrap: nowrap;
-  margin-bottom: 5px;
   cursor: pointer;
 }
 
@@ -127,7 +126,7 @@
   max-height: 1000px;
   /* Set this to a value larger than the content's height */
   overflow: hidden;
-  margin: 5px 0px;
+  margin: 0px;
 }
 
 .sat-info-section.collapsed,
@@ -137,9 +136,9 @@
 #sensor-sat-info.collapsed,
 #doppler-sat-info.collapsed,
 #sat-mission-data.collapsed {
-  max-height: 25px;
+  max-height: 22px;
   transition: max-height 0.2s ease-in-out;
-  margin: 5px 0px;
+  margin: 0px;
 }
 
 #sat-infobox {
