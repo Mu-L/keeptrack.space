@@ -371,8 +371,8 @@ body.drawer-mode {
     z-index: 11;
     background: var(--color-dark-background);
     border-top: 2px solid var(--color-dark-border);
-    border-left: 2px solid var(--color-dark-border);
-    border-top-left-radius: 6px;
+    border-right: 2px solid var(--color-dark-border);
+    border-top-right-radius: 6px;
     padding: 8px 10px;
     display: flex;
     flex-direction: column;
