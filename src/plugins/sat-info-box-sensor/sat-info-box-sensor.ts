@@ -2,6 +2,7 @@
 import { SatMath, SunStatus } from '@app/app/analysis/sat-math';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { RfSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData } from '@app/app/sensors/sensor-math';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -15,11 +16,12 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
 import { keepTrackApi } from '@app/keepTrackApi';
 import {
-  BaseObject, cKmPerMs, DEG2RAD, Satellite, eci2lla, eci2rae,
+  BaseObject, cKmPerMs, DEG2RAD,
+  eci2lla, eci2rae,
   RadecTopocentric,
+  Satellite,
   SpaceObjectType, Sun, SunTime,
 } from '@ootk/src/main';
-import { RfSensor } from '@app/app/sensors/DetailedSensor';
 import type { SensorManager } from '../../app/sensors/sensorManager';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { missileManager } from '../missile/missile-manager';
@@ -55,7 +57,7 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
     super.addHtml();
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxInit, () => {
-      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createSensorSection_(), order: 5 });
+      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createSensorSection_(), order: 6 });
     });
   }
 

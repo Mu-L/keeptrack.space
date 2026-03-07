@@ -8,7 +8,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl, hideEl, setInnerHtml, showEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { BaseObject, Satellite, RADIUS_OF_EARTH } from '@ootk/src/main';
+import { BaseObject, RADIUS_OF_EARTH, Satellite } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { EL, SECTIONS } from './sat-info-box-orbit-guard-html';
@@ -42,7 +42,7 @@ export class SatInfoBoxOrbitGuard extends KeepTrackPlugin {
     super.addHtml();
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxInit, () => {
-      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createManeuverSection_(), order: 7 });
+      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createManeuverSection_(), order: 8 });
     });
   }
 
