@@ -1,9 +1,0 @@
-{
-  "plugins": {
-    "GraphicsMenuPlugin": {
-      "bottomIconLabel": "Graphics Menu",
-      "title": "Graphics Menu",
-      "helpBody": "The Graphics Menu is used to change the graphics settings of the application."
-    }
-  }
-}

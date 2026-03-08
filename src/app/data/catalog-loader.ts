@@ -865,12 +865,16 @@ export class CatalogLoader {
    * This is called before filterTLEDatabase so stars are part of the static set.
    */
   private static async injectStarData_(): Promise<void> {
+    if (!__IS_PRO__) {
+      return;
+    }
+
     try {
       const { StarsPlugin } = await import('../../plugins-pro/stars/stars-plugin');
 
       await StarsPlugin.injectStars();
     } catch {
-      // StarsPlugin not available (OSS build) — skip silently
+      // StarsPlugin not available — skip silently
     }
   }
 

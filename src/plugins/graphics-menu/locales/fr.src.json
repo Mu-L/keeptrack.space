@@ -1,9 +1,0 @@
-{
-  "plugins": {
-    "GraphicsMenuPlugin": {
-      "bottomIconLabel": "Menu Graphismes",
-      "title": "Menu Graphismes",
-      "helpBody": "Le menu Graphismes permet de modifier les paramètres graphiques de l'application."
-    }
-  }
-}

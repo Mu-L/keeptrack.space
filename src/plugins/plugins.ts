@@ -14,7 +14,7 @@ export class PluginManager {
    * Tries the pro import first when IS_PRO=true, falls back to OSS.
    */
   private static async loadPlugin_(descriptor: PluginDescriptor): Promise<void> {
-    if (process.env.IS_PRO === 'true' && descriptor.proImport) {
+    if (__IS_PRO__ && descriptor.proImport) {
       try {
         const mod = await descriptor.proImport();
         const className = descriptor.proClassName ?? descriptor.ossClassName;

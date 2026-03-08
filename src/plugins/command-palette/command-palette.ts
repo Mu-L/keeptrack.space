@@ -1,8 +1,0 @@
-import { t7e } from '@app/locales/keys';
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-
-export class CommandPalettePlugin extends KeepTrackPlugin {
-  init() {
-    console.error(t7e('plugins.proOnlyMsg'));
-  }
-}

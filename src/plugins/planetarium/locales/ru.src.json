@@ -1,7 +1,0 @@
-{
-  "plugins": {
-    "Planetarium": {
-      "bottomIconLabel": "Вид планетария"
-    }
-  }
-}

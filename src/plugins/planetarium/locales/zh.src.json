@@ -1,7 +1,0 @@
-{
-  "plugins": {
-    "Planetarium": {
-      "bottomIconLabel": "天文馆视图"
-    }
-  }
-}
