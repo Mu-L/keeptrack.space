@@ -42,6 +42,8 @@ const SAT_FOV_TABS_ID = 'sat-fov-tabs';
 export class SatelliteFov extends KeepTrackPlugin {
   readonly id = 'SatelliteFov';
   dependencies_ = [SelectSatManager.name];
+  isRequireSatelliteSelected = true;
+  isIconDisabledOnLoad = true;
   bottomIconImg = satelliteFovPng;
 
   menuMode: MenuMode[] = [MenuMode.DISPLAY, MenuMode.ALL];
