@@ -135,6 +135,12 @@ stats.json
 cypress
 cypress.config.ts
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Generated Locale Files
 src/locales/keys.ts
 src/locales/*.json
