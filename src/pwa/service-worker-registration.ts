@@ -61,6 +61,12 @@ export function registerServiceWorker(): void {
   });
 }
 
+/**
+ * Displays an update notification banner allowing the user to refresh
+ * the page to activate a waiting service worker update.
+ *
+ * @param registration - The service worker registration object.
+ */
 function showUpdateNotification_(registration: ServiceWorkerRegistration): void {
   // Prevent duplicate banners
   if (document.getElementById('sw-update-banner')) {
