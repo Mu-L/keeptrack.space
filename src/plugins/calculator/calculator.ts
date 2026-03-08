@@ -74,6 +74,7 @@ export class Calculator extends KeepTrackPlugin {
   readonly id = 'Calculator';
   protected dependencies_ = [];
   bottomIconImg = calculatorPng;
+  bottomIconElementName = 'menu-calculator';
 
   menuMode: MenuMode[] = [MenuMode.TOOLS, MenuMode.ALL];
 
