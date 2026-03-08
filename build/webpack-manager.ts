@@ -25,6 +25,7 @@ export class WebpackManager {
       __VERSION__: JSON.stringify(appVersion),
       __VERSION_DATE__: JSON.stringify(new Date().toISOString()),
       __COMMIT_HASH__: JSON.stringify(commitHash),
+      __IS_PRO__: JSON.stringify(this.config.isPro),
     });
     const webpackConfig = [] as Configuration[];
     let baseConfig = this.createBaseConfig_(dirName);
@@ -127,10 +128,6 @@ export class WebpackManager {
           '@css/style.css': `${dirName}/../${this.config.styleCssPath}`,
           '@css/loading-screen.css': `${dirName}/../${this.config.loadingScreenCssPath}`,
           '@css': `${dirName}/../public/css`,
-          // In OSS builds, redirect plugins-pro imports to open-source stubs
-          ...(this.config.isPro ? {} : {
-            [resolve(dirName, '../src/plugins-pro')]: resolve(dirName, '../src/plugins'),
-          }),
         },
       },
       module: {

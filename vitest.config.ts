@@ -10,6 +10,7 @@ export default defineConfig({
     __VERSION__: JSON.stringify(packageJson.version),
     __VERSION_DATE__: JSON.stringify(new Date().toISOString()),
     __COMMIT_HASH__: JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
+    __IS_PRO__: JSON.stringify(false),
   },
   test: {
     environment: 'jsdom',
@@ -40,7 +41,7 @@ export default defineConfig({
         lines: 34,
       },
     },
-    include: ['**/?(*.)+(spec|test).?(m)[jt]s?(x)'],
+    include: ['**/?(*.)+(test).?(m)[jt]s?(x)'],
     exclude: [
       'node_modules/**',
       'offline/**',

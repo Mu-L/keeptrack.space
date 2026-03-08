@@ -4,6 +4,7 @@ declare global {
   const __VERSION__: string;
   const __VERSION_DATE__: string;
   const __COMMIT_HASH__: string;
+  const __IS_PRO__: boolean;
 
   interface Window {
     keepTrack: KeepTrack;
