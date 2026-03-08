@@ -392,7 +392,7 @@ export class UiManager {
 
     this.addSearchEventListeners_();
 
-    getEl('fullscreen-icon')?.addEventListener('click', () => {
+    getEl('fullscreen-btn')?.addEventListener('click', () => {
       UiManager.fullscreenToggle();
     });
 

@@ -33,7 +33,7 @@ export class TopMenu extends KeepTrackPlugin {
         tooltip: t7e('TopMenu.showHelp'),
       },
       {
-        id: 'fullscreen-icon',
+        id: 'fullscreen-btn',
         order: 4,
         class: 'top-menu-icons__blue-img',
         icon: fullscreenPng,
