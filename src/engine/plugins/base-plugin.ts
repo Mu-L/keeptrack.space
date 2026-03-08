@@ -660,10 +660,10 @@ export abstract class KeepTrackPlugin {
 
     this.sideMenuSecondaryOptions.leftOffset = typeof this.sideMenuSecondaryOptions.leftOffset === 'number' ? this.sideMenuSecondaryOptions.leftOffset : null;
 
-    this.helpTitle = t7e(`plugins.${[this.id]}.title` as TranslationKey) ?? this.helpTitle ?? this.sideMenuTitle;
-    this.helpBody = t7e(`plugins.${[this.id]}.helpBody` as TranslationKey) ?? this.helpBody;
-    this.sideMenuTitle = t7e(`plugins.${[this.id]}.title` as TranslationKey) ?? this.sideMenuTitle;
-    this.bottomIconLabel = t7e(`plugins.${[this.id]}.bottomIconLabel` as TranslationKey) ?? this.bottomIconLabel;
+    this.helpTitle = this.t7eIfFound_(`plugins.${this.id}.title`) ?? this.helpTitle ?? this.sideMenuTitle;
+    this.helpBody = this.t7eIfFound_(`plugins.${this.id}.helpBody`) ?? this.helpBody;
+    this.sideMenuTitle = this.t7eIfFound_(`plugins.${this.id}.title`) ?? this.sideMenuTitle;
+    this.bottomIconLabel = this.t7eIfFound_(`plugins.${this.id}.bottomIconLabel`) ?? this.bottomIconLabel;
 
     if (this.bottomIconLabel) {
       const bottomIconSlug = this.bottomIconLabel.toLowerCase().replace(' ', '-');
@@ -1254,6 +1254,16 @@ export abstract class KeepTrackPlugin {
     this.bottomIconComponent_?.enable();
     getEl(this.bottomIconElementName, true)?.classList.remove('bmenu-item-disabled');
     getEl(`${this.id}-utility-icon`, true)?.classList.remove('bmenu-item-disabled');
+  }
+
+  /**
+   * Returns the translated string if the key exists in locale data,
+   * or null if t7e returned the raw key (meaning no translation found).
+   */
+  private t7eIfFound_(key: string): string | null {
+    const result = t7e(key as TranslationKey);
+
+    return result === key ? null : result;
   }
 
   private registerConnectivityHandlers_(): void {
