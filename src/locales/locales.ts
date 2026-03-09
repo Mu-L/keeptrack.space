@@ -5,8 +5,11 @@ import en from './en.json';
 import es from './es.json';
 import fr from './fr.json';
 import ja from './ja.json';
+import it from './it.json';
 import { Keys, t7e } from './keys';
 import ko from './ko.json';
+import pl from './pl.json';
+import cs from './cs.json';
 import ru from './ru.json';
 import uk from './uk.json';
 import zh from './zh.json';
@@ -27,6 +30,9 @@ const opts: InitOptions = {
     uk: { translation: uk },
     ru: { translation: ru },
     zh: { translation: zh },
+    pl: { translation: pl },
+    cs: { translation: cs },
+    it: { translation: it },
   },
 };
 
@@ -63,9 +69,9 @@ export class Localization implements LocaleInformation {
 
   private preCacheTranslations() {
     // Pre-cache translations for the current language
-    Keys.forEach((key) => {
-      t7e(Keys[key]);
-    });
+    for (const key of Keys) {
+      t7e(key);
+    }
   }
 
   private loadPlugins(): LocaleInformation['plugins'] {
