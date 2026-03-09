@@ -115,6 +115,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   navBarLogoUrl: 'ui',
   isWatchlistTopMenuNotification: 'ui',
   isUseJdayOnTopMenu: 'ui',
+  isJdayToggleable: 'ui',
   mapWidth: 'ui',
   mapHeight: 'ui',
   lastMapUpdateTime: 'ui',

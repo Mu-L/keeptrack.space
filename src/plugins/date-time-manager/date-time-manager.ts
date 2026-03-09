@@ -175,6 +175,18 @@ export class DateTimeManager extends KeepTrackPlugin {
 
     document.getElementById('datetime-text')?.addEventListener('click', this.datetimeTextClick.bind(this));
 
+    if (settingsManager.isJdayToggleable) {
+      const jdayEl = getEl('jday', true);
+
+      if (jdayEl) {
+        jdayEl.style.cursor = 'pointer';
+        jdayEl.addEventListener('click', () => {
+          settingsManager.isUseJdayOnTopMenu = !settingsManager.isUseJdayOnTopMenu;
+          this.updateDateTime(ServiceLocator.getTimeManager().simulationTimeObj);
+        });
+      }
+    }
+
     const datetimeInputTb = document.getElementById(this.dateTimeInputTbId_);
 
     if (datetimeInputTb && !isThisNode()) {

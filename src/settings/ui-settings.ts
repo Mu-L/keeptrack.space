@@ -84,6 +84,8 @@ export class UiSettings {
   /** Flag to determine if the watchlist is shown in the top menu */
   isWatchlistTopMenuNotification = true;
   isUseJdayOnTopMenu = true;
+  /** When true, the jday label becomes a toggle button to switch between jday and date display */
+  isJdayToggleable = true;
 
   // Maps
   /**
