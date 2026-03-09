@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "TimeMachine": {
+      "bottomIconLabel": "Stroj času"
+    }
+  }
+}

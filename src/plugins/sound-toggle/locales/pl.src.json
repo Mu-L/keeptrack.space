@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "SoundToggle": {
+      "tooltip": "Przełącz dźwięk wł./wył."
+    }
+  }
+}

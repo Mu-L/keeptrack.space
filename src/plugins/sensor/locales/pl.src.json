@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "SensorInfoPlugin": {
+      "bottomIconLabel": "Informacje o czujniku",
+      "title": "Menu informacji o czujniku",
+      "helpBody": "Informacje o czujniku zawierają dane o aktualnie wybranym czujniku. Informacje oparte są na publicznie dostępnych danych i nie zawsze muszą być w 100% dokładne. Jeśli posiadasz publiczne dane o dodatkowych czujnikach lub poprawki do istniejących informacji o czujnikach, skontaktuj się ze mną pod adresem <a href=\"mailto:admin@keeptrack.space\">admin@keeptrack.space</a>. <br><br> Dostępne informacje obejmują: <ul style=\"margin-left: 40px;\"> <li> Nazwa czujnika </li> <li> Właściciel czujnika </li> <li> Typ czujnika </li> <li> Pole widzenia czujnika </li> </ul> <br> Dodatkowo z tego menu można szybko utworzyć linie od czujnika do Słońca lub Księżyca."
+    },
+    "CustomSensorPlugin": {
+      "bottomIconLabel": "Własny czujnik",
+      "title": "Menu własnego czujnika",
+      "helpBody": "Umożliwia utworzenie własnego czujnika do wykorzystania w obliczeniach i funkcjach innych menu. Może to być zupełnie nowy czujnik lub modyfikacja istniejącego. <br><br> Po ustawieniu szerokości geograficznej, długości geograficznej i wysokości czujnika można ustawić jego pole widzenia. Wybranie teleskopu utworzy pole widzenia 360 stopni z maską elewacji 10 stopni i nieograniczonym zasięgiem. Odznaczenie opcji teleskopu pozwoli na ręczne ustawienie pola widzenia. <br><br> Jeśli próbujesz edytować istniejący czujnik, możesz najpierw wybrać go z listy czujników, a własny czujnik zostanie zaktualizowany informacjami wybranego czujnika."
+    },
+    "LookAnglesPlugin": {
+      "bottomIconLabel": "Kąty obserwacji",
+      "title": "Menu kątów obserwacji",
+      "helpBody": "Menu kątów obserwacji umożliwia obliczenie zasięgu, azymutu i kątów elewacji między czujnikiem a satelitą. Przed użyciem menu należy najpierw wybrać satelitę i czujnik. <br><br> Przełącznik pokazywania tylko czasów wschodu i zachodu obliczy jedynie czasy wschodu i zachodu satelity. Jest to przydatne do szybkiego określenia, kiedy satelita będzie widoczny dla czujnika. <br><br> Zakres wyszukiwania można modyfikować, zmieniając opcje długości i interwału."
+    },
+    "MultiSiteLookAnglesPlugin": {
+      "bottomIconLabel": "Obserwacje wielostanowiskowe",
+      "title": "Menu wielostanowiskowych kątów obserwacji",
+      "helpBody": "Menu wielostanowiskowych kątów obserwacji umożliwia obliczenie zasięgu, azymutu i kątów elewacji między satelitą a wieloma czujnikami. Przed użyciem menu należy najpierw wybrać satelitę. <br><br> Domyślnie menu oblicza kąty obserwacji dla wszystkich czujników w Sieci Obserwacji Przestrzeni Kosmicznej. Jeśli chcesz obliczyć kąty obserwacji dla dodatkowych czujników, możesz wyeksportować plik CSV na dole menu. Plik CSV będzie zawierał kąty obserwacji dla wszystkich czujników. <br><br> Kliknięcie wiersza w tabeli spowoduje wybranie czujnika i zmianę czasu symulacji na czas kąta obserwacji."
+    }
+  }
+}
