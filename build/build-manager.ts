@@ -46,42 +46,8 @@ class BuildManager {
         fileManager.copyDirectory(`public/${dir}`, `dist/${dir}`, { recursive: true });
       });
 
-      // Apply custom configurations
+      // Copy pro examples if available
       fileManager.copyDirectory('src/plugins-pro/examples', 'dist/examples', { isOptional: true, recursive: true });
-
-      // Apply custom configurations
-      if (config.textLogoPath) {
-        fileManager.copyFile(config.textLogoPath, './dist/img/logo.png', { force: true });
-      }
-      if (config.primaryLogoPath) {
-        fileManager.copyFile(config.primaryLogoPath, './dist/img/logo-primary.png', { force: true });
-      }
-
-      if (config.secondaryLogoPath) {
-        fileManager.copyFile(config.secondaryLogoPath, './dist/img/logo-secondary.png', { force: true });
-      }
-
-      if (config.styleCssPath) {
-        // Verify the file exists
-        if (!fileManager.fileExists(config.styleCssPath)) {
-          throw new BuildError(`Style CSS file not found: ${config.styleCssPath}`, ErrorCodes.FILE_NOT_FOUND);
-        }
-      }
-
-      if (config.loadingScreenCssPath) {
-        // Verify the file exists
-        if (!fileManager.fileExists(config.loadingScreenCssPath)) {
-          throw new BuildError(`Loading screen CSS file not found: ${config.loadingScreenCssPath}`, ErrorCodes.FILE_NOT_FOUND);
-        }
-      }
-
-      if (config.favIconPath) {
-        fileManager.copyFile(config.favIconPath, './dist/img/favicons/favicon.ico', { force: true });
-      }
-
-      if (config.settingsPath) {
-        fileManager.copyFile(config.settingsPath, './dist/settings/settingsOverride.js', { force: true });
-      }
 
       if (config.isPro) {
         // Merge locales files
