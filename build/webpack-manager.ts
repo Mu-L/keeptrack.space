@@ -72,7 +72,9 @@ export class WebpackManager {
           optimization: {
             minimizer: [
               new SwcJsMinimizerRspackPlugin({
-                // JS minimizer configuration
+                mangle: {
+                  keepClassNames: true,
+                },
               }),
               new LightningCssMinimizerRspackPlugin({
                 // CSS minimizer configuration
