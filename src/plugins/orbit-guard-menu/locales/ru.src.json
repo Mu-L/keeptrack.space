@@ -3,7 +3,7 @@
     "OrbitGuardMenuPlugin": {
       "bottomIconLabel": "OrbitGuard",
       "title": "OrbitGuard",
-      "helpBody": "The OrbitGuard Anomaly Detection menu displays the latest maneuvern Orbit Out of Family, and Stability Change events for satellites."
+      "helpBody": "Меню обнаружения аномалий OrbitGuard отображает последние манёвры, отклонения орбиты от семейства и события изменения стабильности для спутников."
     }
   }
 }

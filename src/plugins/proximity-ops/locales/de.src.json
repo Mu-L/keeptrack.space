@@ -3,7 +3,7 @@
     "ProximityOps": {
       "bottomIconLabel": "Rendezvous- und Annäherungsoperationen",
       "title": "Rendezvous- und Annäherungsoperationen (RPO)",
-      "titleSecondary": "RPO-Liste",
+      "titleSecondary": "Rendezvous- und Annäherungsoperationen-Liste",
       "helpBody": "Finde bevorstehende Annäherungen zwischen Satelliten. Konfiguriere Suchparameter wie Abstandsschwelle, Relativgeschwindigkeit und Orbittyp (GEO/LEO). Unterstützt Einzelsatelliten- und Alle-gegen-Alle-Suchmodi.",
       "noradId": "NORAD-ID",
       "maxDistThreshold": "Maximaler Abstandsschwellenwert (km)",

@@ -3,32 +3,32 @@
     "DopsPlugin": {
       "bottomIconLabel": "Просмотр DOP",
       "title": "Меню разбавления точности",
-      "helpTitle": "Dilution of Precision (DOP) Menu",
-      "helpBody": "Меню разбавления точности (DOP) используется для расчета значений DOP для спутника и датчика. <br><br> Значения DOP: <ul style=\"margin-left: 40px;\"> <li> GDOP - Геометрическое разбавление точности </li> <li> PDOP - Позиционное разбавление точности </li> <li> HDOP - Горизонтальное разбавление точности </li> <li> VDOP - Вертикальное разбавление точности </li> <li> TDOP - Временное разбавление точности </li> <li> NDOP - Разбавление точности по количеству спутников </li> </ul>",
+      "helpTitle": "Меню разбавления точности (DOP)",
+      "helpBody": "Меню разбавления точности (DOP) используется для расчёта значений DOP для заданного местоположения и маски возвышения.<br><br>HDOP — горизонтальное разбавление точности. Это мера точности горизонтального положения.<br><br>PDOP — позиционное разбавление точности. Это мера точности положения.<br><br>GDOP — геометрическое разбавление точности. Это мера точности положения.",
       "labels": {
-        "dopTable": "DOP Table",
-        "latitude": "Latitude",
-        "longitude": "Longitude",
-        "altitude": "Altitude",
-        "mask": "Mask",
-        "updateDopData": "Update DOP Data"
+        "dopTable": "Таблица DOP",
+        "latitude": "Широта",
+        "longitude": "Долгота",
+        "altitude": "Высота",
+        "mask": "Маска",
+        "updateDopData": "Обновить данные DOP"
       },
       "tooltips": {
-        "latitude": "Latitude in Degrees",
-        "longitude": "Longitude in Degrees",
-        "altitude": "Altitude in KM",
-        "mask": "Minimum Elevation for GPS Lock"
+        "latitude": "Широта в градусах",
+        "longitude": "Долгота в градусах",
+        "altitude": "Высота в км",
+        "mask": "Минимальная высота для приёма GPS"
       },
       "rmb": {
-        "dops": "DOPs",
-        "currentGpsDops": "Current GPS DOPs",
-        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+        "dops": "DOP",
+        "currentGpsDops": "Текущие GPS DOP",
+        "twentyFourHourGpsDops": "GPS DOP за 24 часа"
       },
       "toast": {
         "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
       },
       "errorMsgs": {
-        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+        "invalidLocation": "Пожалуйста, выберите допустимое местоположение на Земле для 24-часовых DOP!"
       }
     }
   }

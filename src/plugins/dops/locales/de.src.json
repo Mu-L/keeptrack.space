@@ -3,32 +3,32 @@
     "DopsPlugin": {
       "bottomIconLabel": "DOPs anzeigen",
       "title": "Präzisionsverdünnungs-Menü",
-      "helpTitle": "Dilution of Precision (DOP) Menu",
-      "helpBody": "Das Präzisionsverdünnungs-Menü (DOP) wird verwendet, um DOP-Werte für einen Satelliten und Sensor zu berechnen. <br><br> Die DOP-Werte sind: <ul style=\"margin-left: 40px;\"> <li> GDOP - Geometrische Präzisionsverdünnung </li> <li> PDOP - Positions-Präzisionsverdünnung </li> <li> HDOP - Horizontale Präzisionsverdünnung </li> <li> VDOP - Vertikale Präzisionsverdünnung </li> <li> TDOP - Zeit-Präzisionsverdünnung </li> <li> NDOP - Satellitenzahl-Präzisionsverdünnung </li> </ul>",
+      "helpTitle": "Präzisionsverdünnungs-Menü (DOP)",
+      "helpBody": "Das Präzisionsverdünnungs-Menü (DOP) wird verwendet, um die Präzisionsverdünnung (DOP) für einen bestimmten Standort und eine Elevationsmaske zu berechnen.<br><br>HDOP ist die Horizontale Präzisionsverdünnung. Sie ist ein Maß für die Genauigkeit der horizontalen Position.<br><br>PDOP ist die Positions-Präzisionsverdünnung. Sie ist ein Maß für die Genauigkeit der Position.<br><br>GDOP ist die Geometrische Präzisionsverdünnung. Sie ist ein Maß für die Genauigkeit der Position.",
       "labels": {
-        "dopTable": "DOP Table",
-        "latitude": "Latitude",
-        "longitude": "Longitude",
-        "altitude": "Altitude",
-        "mask": "Mask",
-        "updateDopData": "Update DOP Data"
+        "dopTable": "DOP-Tabelle",
+        "latitude": "Breitengrad",
+        "longitude": "Längengrad",
+        "altitude": "Höhe",
+        "mask": "Maske",
+        "updateDopData": "DOP-Daten aktualisieren"
       },
       "tooltips": {
-        "latitude": "Latitude in Degrees",
-        "longitude": "Longitude in Degrees",
-        "altitude": "Altitude in KM",
-        "mask": "Minimum Elevation for GPS Lock"
+        "latitude": "Breitengrad in Grad",
+        "longitude": "Längengrad in Grad",
+        "altitude": "Höhe in km",
+        "mask": "Minimale Elevation für GPS-Empfang"
       },
       "rmb": {
         "dops": "DOPs",
-        "currentGpsDops": "Current GPS DOPs",
-        "twentyFourHourGpsDops": "24 Hour GPS DOPs"
+        "currentGpsDops": "Aktuelle GPS-DOPs",
+        "twentyFourHourGpsDops": "24-Stunden GPS-DOPs"
       },
       "toast": {
-        "dopValues": "HDOP: {hdop}<br/>VDOP: {vdop}<br/>PDOP: {pdop}<br/>GDOP: {gdop}<br/>TDOP: {tdop}"
+        "dopValues": "HDOP-Wert: {hdop}<br/>VDOP-Wert: {vdop}<br/>PDOP-Wert: {pdop}<br/>GDOP-Wert: {gdop}<br/>TDOP-Wert: {tdop}"
       },
       "errorMsgs": {
-        "invalidLocation": "Please select a valid location on Earth for 24 Hour DOPs!"
+        "invalidLocation": "Bitte wählen Sie einen gültigen Standort auf der Erde für 24-Stunden-DOPs!"
       }
     }
   }

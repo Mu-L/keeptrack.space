@@ -37,8 +37,8 @@
         "incMax": "Max Ink (\u00B0)",
         "altMin": "Min H\u00f6he (km)",
         "altMax": "Max H\u00f6he (km)",
-        "raanMin": "Min RAAN (\u00B0)",
-        "raanMax": "Max RAAN (\u00B0)",
+        "raanMin": "Min. RAAN (\u00B0)",
+        "raanMax": "Max. RAAN (\u00B0)",
         "nameFilter": "Namensfilter",
         "apply": "Anwenden",
         "reset": "Zur\u00fccksetzen"

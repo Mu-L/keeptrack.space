@@ -1,7 +1,7 @@
 {
   "plugins": {
     "SatConstellations": {
-      "bottomIconLabel": "Constellations",
+      "bottomIconLabel": "Constellations sat.",
       "title": "Menu Constellations",
       "helpBody": "Le menu Constellations permet de visualiser des groupes de satellites. <br><br> Pour certaines constellations, des liaisons montantes/descendantes ou inter-satellites notionnelles seront affich\u00e9es.",
       "constellations": {
@@ -44,7 +44,7 @@
         "reset": "R\u00e9initialiser"
       },
       "commands": {
-        "category": "Constellations"
+        "category": "Constellations de satellites"
       },
       "errorMsgs": {
         "NoConstellationSelected": "Aucune constellation s\u00e9lectionn\u00e9e"

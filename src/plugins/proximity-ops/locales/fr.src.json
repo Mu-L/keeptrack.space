@@ -3,7 +3,7 @@
     "ProximityOps": {
       "bottomIconLabel": "Rendez-vous et opérations de proximité",
       "title": "Rendez-vous et opérations de proximité (RPO)",
-      "titleSecondary": "Liste RPO",
+      "titleSecondary": "Liste des opérations de proximité",
       "helpBody": "Trouver les approches entre satellites. Configurez les paramètres de recherche incluant le seuil de distance, la vitesse relative et le type d'orbite (GEO/LEO). Supporte les modes de recherche par satellite individuel et tous contre tous.",
       "noradId": "ID NORAD",
       "maxDistThreshold": "Seuil de distance max (km)",
