@@ -1,8 +1,4 @@
-/* eslint-disable complexity */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
-import { OemSatellite } from '@app/app/objects/oem-satellite';
-import { Planet } from '@app/app/objects/planet';
-import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -10,7 +6,6 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
 import { BaseObject, Satellite, SpaceObjectType, Star } from '@ootk/src/main';
-import { errorManagerInstance } from '../../utils/errorManager';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface ObjectTypeColorSchemeColorMap extends ColorSchemeColorMap {
@@ -85,152 +80,38 @@ export class ObjectTypeColorScheme extends ColorScheme {
   }
 
   update(obj: BaseObject): ColorInformation {
-    /*
-     * NOTE: The order of these checks is important
-     */
+    const earlyExit = this.earlyExitColor_(obj);
 
-    if (
-      obj instanceof Planet
-    ) {
-      return {
-        color: obj.color,
-        pickable: Pickable.Yes,
-      };
+    if (earlyExit) {
+      return earlyExit;
     }
 
-    const oemSource = (obj as OemSatellite).source ?? '';
+    const sensorResult = this.checkSensorVisibility_(obj, 'sensor', 'sensor');
 
-    if (oemSource === 'OEM Import' || oemSource === 'KeepTrack') {
-      return {
-        color: (obj as OemSatellite).dotColor,
-        pickable: Pickable.Yes,
-      };
-    }
-
-    if (settingsManager.maxZoomDistance > 2e6) {
-      // If zoomed out beyond 2 million km, hide everything except planets
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    if (obj.isNotional()) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    if (obj.isStar()) {
-      return this.starColor_(obj as Star);
-    }
-
-    // If we are in astronomy mode, hide everything that isn't a star (above)
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.ASTRONOMY) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    const checkFacility = this.checkFacility_(obj);
-
-    if (checkFacility) {
-      return checkFacility;
-    }
-
-    if (obj.isMarker()) {
-      return this.getMarkerColor_();
-    }
-
-    if (obj.isSensor() && (this.objectTypeFlags.sensor === false || ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM)) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (obj.isSensor()) {
-      return {
-        color: this.colorTheme.sensor,
-        pickable: Pickable.Yes,
-      };
+    if (sensorResult) {
+      return sensorResult;
     }
 
     if (obj.isMissile()) {
       return this.missileColor_(obj as MissileObject);
     }
 
-    if (obj.type === SpaceObjectType.PAYLOAD) {
-      if (!settingsManager.isShowPayloads) {
-        return {
-          color: this.colorTheme.deselected,
-          pickable: Pickable.No,
-        };
-      }
-    } else if (obj.type === SpaceObjectType.ROCKET_BODY) {
-      if (!settingsManager.isShowRocketBodies) {
-        return {
-          color: this.colorTheme.deselected,
-          pickable: Pickable.No,
-        };
-      }
-    } else if (obj.type === SpaceObjectType.DEBRIS) {
-      if (!settingsManager.isShowDebris) {
-        return {
-          color: this.colorTheme.deselected,
-          pickable: Pickable.No,
-        };
-      }
+    const settingsResult = this.checkSettingsVisibility_(obj);
+
+    if (settingsResult) {
+      return settingsResult;
     }
 
-    const catalogManagerInstance = ServiceLocator.getCatalogManager();
-    const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const dotsManagerInstance = ServiceLocator.getDotsManager();
     const sat = obj as Satellite;
 
     if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        this.objectTypeFlags.payload === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && sat.type === SpaceObjectType.PAYLOAD && this.objectTypeFlags.payload === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        this.objectTypeFlags.payload === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.ROCKET_BODY &&
-        this.objectTypeFlags.rocketBody === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && sat.type === SpaceObjectType.ROCKET_BODY && this.objectTypeFlags.rocketBody === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.ROCKET_BODY &&
-        this.objectTypeFlags.rocketBody === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.DEBRIS &&
-        this.objectTypeFlags.debris === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && sat.type === SpaceObjectType.DEBRIS && this.objectTypeFlags.debris === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.DEBRIS &&
-        this.objectTypeFlags.debris === false)
+      this.isTypeFlagFiltered_(sat, { types: SpaceObjectType.PAYLOAD, flagKey: 'payload' }) ||
+      this.isTypeFlagFiltered_(sat, { types: SpaceObjectType.ROCKET_BODY, flagKey: 'rocketBody' }) ||
+      this.isTypeFlagFiltered_(sat, { types: SpaceObjectType.DEBRIS, flagKey: 'debris' }) ||
+      this.isTypeFlagFiltered_(sat, {
+        types: [SpaceObjectType.SPECIAL, SpaceObjectType.UNKNOWN, SpaceObjectType.NOTIONAL],
+        flagKey: 'pink',
+      })
     ) {
       return {
         color: this.colorTheme.deselected,
@@ -238,42 +119,10 @@ export class ObjectTypeColorScheme extends ColorScheme {
       };
     }
 
-    // NOTE: Treat TBA Satellites as SPECIAL if SCC NUM is less than 70000 (ie a real satellite)
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        (sat.type === SpaceObjectType.SPECIAL || sat.type === SpaceObjectType.UNKNOWN || sat.type === SpaceObjectType.NOTIONAL) &&
-        this.objectTypeFlags.pink === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM &&
-        (sat.type === SpaceObjectType.SPECIAL || sat.type === SpaceObjectType.UNKNOWN || sat.type === SpaceObjectType.NOTIONAL) &&
-        this.objectTypeFlags.pink === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        (sat.type === SpaceObjectType.SPECIAL || sat.type === SpaceObjectType.UNKNOWN || sat.type === SpaceObjectType.NOTIONAL) &&
-        this.objectTypeFlags.pink === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
+    const fovResult = this.checkInFovVisibility_(sat, 'inFOV', 'inFOV');
 
-    if (dotsManagerInstance.inViewData?.[sat.id] === 1 && this.objectTypeFlags.inFOV === false && ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    if (dotsManagerInstance.inViewData?.[sat.id] === 1 && ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM) {
-      if (catalogManagerInstance.isSensorManagerLoaded && sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER && typeof sat.vmag === 'undefined') {
-        // Intentional
-      } else {
-        return {
-          color: this.colorTheme.inFOV,
-          pickable: Pickable.Yes,
-        };
-      }
+    if (fovResult) {
+      return fovResult;
     }
 
     let color: [number, number, number, number];
@@ -281,16 +130,12 @@ export class ObjectTypeColorScheme extends ColorScheme {
     if (sat.country === 'ANALSAT') {
       color = this.colorTheme.analyst;
     } else if (sat.type === SpaceObjectType.PAYLOAD) {
-      // Payload
       color = this.colorTheme.payload;
     } else if (sat.type === SpaceObjectType.ROCKET_BODY) {
-      // Rocket Body
       color = this.colorTheme.rocketBody;
     } else if (sat.type === SpaceObjectType.DEBRIS) {
-      // Debris
       color = this.colorTheme.debris;
     } else if (sat.type === SpaceObjectType.SPECIAL || sat.type === SpaceObjectType.UNKNOWN) {
-      // Special Object
       color = this.colorTheme.pink;
     } else if (sat.type === SpaceObjectType.NOTIONAL) {
       color = this.colorTheme.notional;
@@ -299,12 +144,7 @@ export class ObjectTypeColorScheme extends ColorScheme {
     }
 
     if (typeof color === 'undefined') {
-      errorManagerInstance.info(`${sat.id.toString()} has no color!`);
-
-      return {
-        color: settingsManager.colors.transparent ?? this.colorTheme.transparent,
-        pickable: Pickable.No,
-      };
+      return this.undefinedColorFallback_(sat.id);
     }
 
     return {

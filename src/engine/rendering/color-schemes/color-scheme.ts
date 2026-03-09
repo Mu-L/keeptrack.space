@@ -1,10 +1,19 @@
 import { DensityBin } from '@app/app/data/catalog-manager';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { Planet } from '@app/app/objects/planet';
 import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { BaseObject, Star } from '@app/engine/ootk/src/objects';
+import { BaseObject, Satellite, Star } from '@app/engine/ootk/src/objects';
 import { SpaceObjectType } from '@ootk/src/main';
+import { errorManagerInstance } from '../../utils/errorManager';
+
+export interface TypeFlagFilterConfig {
+  types: SpaceObjectType | SpaceObjectType[];
+  flagKey: string;
+  extraCondition?: (sat: Satellite) => boolean;
+}
 
 export interface ColorSchemeColorMap {
   version: string;
@@ -206,6 +215,175 @@ export abstract class ColorScheme {
       // TODO: Use this for Santa Tracker
       color: [1, 0, 0, 1],
       marker: true,
+      pickable: Pickable.No,
+    };
+  }
+
+  earlyExitColor_(obj: BaseObject): ColorInformation | null {
+    if (obj instanceof Planet) {
+      return {
+        color: obj.color,
+        pickable: Pickable.Yes,
+      };
+    }
+
+    const oemSource = (obj as OemSatellite).source ?? '';
+
+    if (oemSource === 'OEM Import' || oemSource === 'KeepTrack') {
+      return {
+        color: (obj as OemSatellite).dotColor,
+        pickable: Pickable.Yes,
+      };
+    }
+
+    if (settingsManager.maxZoomDistance > 2e6) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+
+    if (obj.isNotional()) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+
+    if (obj.isStar()) {
+      return this.starColor_(obj as Star);
+    }
+
+    if (ServiceLocator.getMainCamera().cameraType === CameraType.ASTRONOMY) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+
+    const checkFacility = this.checkFacility_(obj);
+
+    if (checkFacility) {
+      return checkFacility;
+    }
+
+    if (obj.isMarker()) {
+      return this.getMarkerColor_();
+    }
+
+    return null;
+  }
+
+  checkSensorVisibility_(obj: BaseObject, sensorFlagKey: string, sensorColorKey: string): ColorInformation | null {
+    if (obj.isSensor() && (this.objectTypeFlags[sensorFlagKey] === false || ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM)) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+    if (obj.isSensor()) {
+      return {
+        color: this.colorTheme[sensorColorKey],
+        pickable: Pickable.Yes,
+      };
+    }
+
+    return null;
+  }
+
+  checkSettingsVisibility_(obj: BaseObject): ColorInformation | null {
+    if (obj.type === SpaceObjectType.PAYLOAD && !settingsManager.isShowPayloads) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+    if (obj.type === SpaceObjectType.ROCKET_BODY && !settingsManager.isShowRocketBodies) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+    if (obj.type === SpaceObjectType.DEBRIS && !settingsManager.isShowDebris) {
+      return {
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
+      };
+    }
+
+    return null;
+  }
+
+  isTypeFlagFiltered_(sat: Satellite, config: TypeFlagFilterConfig): boolean {
+    if (this.objectTypeFlags[config.flagKey] !== false) {
+      return false;
+    }
+
+    const types = Array.isArray(config.types) ? config.types : [config.types];
+    const typeMatch = types.includes(sat.type) && (config.extraCondition?.(sat) ?? true);
+
+    if (!typeMatch) {
+      return false;
+    }
+
+    const dotsManagerInstance = ServiceLocator.getDotsManager();
+    const notInView = !dotsManagerInstance.inViewData || dotsManagerInstance.inViewData[sat.id] === 0;
+
+    if (notInView) {
+      return true;
+    }
+
+    if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
+      return true;
+    }
+
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const sensorManagerInstance = ServiceLocator.getSensorManager();
+
+    if (catalogManagerInstance.isSensorManagerLoaded &&
+        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
+        typeof sat.vmag === 'undefined') {
+      return true;
+    }
+
+    return false;
+  }
+
+  checkInFovVisibility_(sat: Satellite, fovFlagKey: string, fovColorKey: string): ColorInformation | null {
+    const dotsManagerInstance = ServiceLocator.getDotsManager();
+    const camera = ServiceLocator.getMainCamera();
+
+    if (dotsManagerInstance.inViewData?.[sat.id] === 1 && camera.cameraType !== CameraType.PLANETARIUM) {
+      if (this.objectTypeFlags[fovFlagKey] === false) {
+        return {
+          color: this.colorTheme.deselected,
+          pickable: Pickable.No,
+        };
+      }
+
+      const catalogManagerInstance = ServiceLocator.getCatalogManager();
+      const sensorManagerInstance = ServiceLocator.getSensorManager();
+
+      if (catalogManagerInstance.isSensorManagerLoaded &&
+          sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
+          typeof sat.vmag === 'undefined') {
+        return null;
+      }
+
+      return {
+        color: this.colorTheme[fovColorKey],
+        pickable: Pickable.Yes,
+      };
+    }
+
+    return null;
+  }
+
+  undefinedColorFallback_(satId: number, logLevel: 'info' | 'debug' = 'info'): ColorInformation {
+    errorManagerInstance[logLevel](`${satId.toString()} has no color!`);
+
+    return {
+      color: settingsManager.colors.transparent ?? this.colorTheme.transparent,
       pickable: Pickable.No,
     };
   }
