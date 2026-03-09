@@ -8,11 +8,6 @@ on:
       - main
       - develop
 
-permissions:
-  contents: read
-  issues: write
-  actions: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,6 +16,8 @@ jobs:
   lint-yml:
     name: Yaml Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -33,6 +30,9 @@ jobs:
     needs: lint-yml
     name: NPM Audit Report
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -48,6 +48,8 @@ jobs:
     needs: compliance
     name: Lint and Unit Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -109,6 +111,8 @@ jobs:
     needs: [lint-and-test]
     name: Build (${{ matrix.profile }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -154,6 +158,8 @@ jobs:
     needs: [build]
     name: E2E Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -201,6 +207,8 @@ jobs:
     needs: build
     name: TruffleHog Secrets Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -214,6 +222,9 @@ jobs:
     needs: build
     name: CodeQL Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
