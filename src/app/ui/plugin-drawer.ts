@@ -190,7 +190,7 @@ export class PluginDrawer {
       '<div id="drawer-user-account" class="drawer-user-account"></div>',
     ].join('');
 
-    // Utility footer lives outside the drawer — fixed to the bottom-right of the viewport
+    // Utility footer inside ui-wrapper so it shares the same stacking context as side menus
     const utilityFooter = document.createElement('div');
 
     utilityFooter.id = 'drawer-utility-footer';
@@ -198,7 +198,10 @@ export class PluginDrawer {
 
     root.appendChild(overlay);
     root.appendChild(drawer);
-    root.appendChild(utilityFooter);
+
+    const uiWrapper = getEl('ui-wrapper', true);
+
+    (uiWrapper ?? root).appendChild(utilityFooter);
 
     this.overlayEl_ = overlay;
     this.drawerEl_ = drawer;
