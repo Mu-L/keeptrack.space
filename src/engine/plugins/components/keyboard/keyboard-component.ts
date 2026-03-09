@@ -35,16 +35,27 @@ import { IKeyboardShortcut } from '../../core/plugin-capabilities';
 export class KeyboardComponent {
   private readonly pluginId_: string;
   private readonly shortcuts_: IKeyboardShortcut[];
+  private readonly loginGateCheck_?: () => boolean;
+  private readonly onLoginGateRejected_?: () => void;
   private isInitialized_ = false;
 
   /**
    * Creates a new KeyboardComponent.
    * @param pluginId The ID of the plugin this component belongs to.
    * @param shortcuts The list of keyboard shortcuts to register.
+   * @param loginGateCheck Optional callback that returns true if the login gate allows activation.
+   * @param onLoginGateRejected Optional callback invoked when the login gate rejects activation.
    */
-  constructor(pluginId: string, shortcuts: IKeyboardShortcut[]) {
+  constructor(
+    pluginId: string,
+    shortcuts: IKeyboardShortcut[],
+    loginGateCheck?: () => boolean,
+    onLoginGateRejected?: () => void,
+  ) {
     this.pluginId_ = pluginId;
     this.shortcuts_ = shortcuts;
+    this.loginGateCheck_ = loginGateCheck;
+    this.onLoginGateRejected_ = onLoginGateRejected;
   }
 
   /**
@@ -80,6 +91,10 @@ export class KeyboardComponent {
 
         for (const shortcut of validShortcuts) {
           if (this.matchesShortcut_(shortcut, key, code, isShift, isCtrl)) {
+            if (this.loginGateCheck_ && !this.loginGateCheck_()) {
+              this.onLoginGateRejected_?.();
+              break;
+            }
             shortcut.callback();
             break;
           }
