@@ -583,7 +583,7 @@ export interface ICommandPaletteCommand {
   /**
    * Callback invoked when the command is selected.
    */
-  callback: () => void;
+  callback: () => Promise<void> | void;
 
   /**
    * Optional predicate returning false to hide this command when conditions
