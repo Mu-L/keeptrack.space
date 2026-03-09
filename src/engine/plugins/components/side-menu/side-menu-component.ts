@@ -223,7 +223,6 @@ export class SideMenuComponent {
     if (element) {
       slideInRight(element, DEFAULTS.ANIMATION_DURATION);
       this.isOpen = true;
-      SideMenuComponent.onSideMenuOpened();
       this.callbacks.onOpen?.();
     }
   }
@@ -241,7 +240,6 @@ export class SideMenuComponent {
     if (element) {
       slideOutLeft(element, DEFAULTS.ANIMATION_DURATION);
       this.isOpen = false;
-      SideMenuComponent.onSideMenuClosed();
       this.callbacks.onClose?.();
     }
   }
@@ -268,22 +266,6 @@ export class SideMenuComponent {
       ServiceLocator.getUiManager()?.searchManager?.closeSearch();
     }
     ServiceLocator.getUiManager()?.hideSideMenus();
-  }
-
-  /**
-   * Called when any side menu is opened.
-   * Enables the tutorial button.
-   */
-  private static onSideMenuOpened(): void {
-    getEl('tutorial-btn', true)?.classList.remove('bmenu-item-disabled');
-  }
-
-  /**
-   * Called when any side menu is closed.
-   * Disables the tutorial button.
-   */
-  private static onSideMenuClosed(): void {
-    getEl('tutorial-btn', true)?.classList.add('bmenu-item-disabled');
   }
 
   /**

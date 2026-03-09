@@ -43,7 +43,6 @@ describe('SideMenuComponent', () => {
     // Reset DOM
     document.body.innerHTML = `
       <div id="left-menus"></div>
-      <div id="tutorial-btn" class="bmenu-item-disabled"></div>
     `;
 
     // Reset EventBus singleton
@@ -209,31 +208,6 @@ describe('SideMenuComponent', () => {
       component.close();
 
       expect(onClose).toHaveBeenCalled();
-    });
-
-    it('should enable tutorial button on open', () => {
-      const component = new SideMenuComponent('test-plugin', createConfig());
-
-      component.init();
-      eventBus.emit(EventBusEvent.uiManagerInit);
-      component.open();
-
-      const tutorialBtn = document.getElementById('tutorial-btn');
-
-      expect(tutorialBtn?.classList.contains('bmenu-item-disabled')).toBe(false);
-    });
-
-    it('should disable tutorial button on close', () => {
-      const component = new SideMenuComponent('test-plugin', createConfig());
-
-      component.init();
-      eventBus.emit(EventBusEvent.uiManagerInit);
-      component.open();
-      component.close();
-
-      const tutorialBtn = document.getElementById('tutorial-btn');
-
-      expect(tutorialBtn?.classList.contains('bmenu-item-disabled')).toBe(true);
     });
 
     // Skip: Jest mock hoisting makes it hard to verify ServiceLocator mock calls

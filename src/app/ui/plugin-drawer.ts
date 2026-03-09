@@ -44,7 +44,7 @@ const MODE_LABELS: Record<number, string> = {
 };
 
 /** Nav item IDs that should appear in the utility footer instead of Quick Actions */
-const UTILITY_NAV_ITEM_IDS = new Set(['sound-btn', 'layers-menu-btn', 'tutorial-btn']);
+const UTILITY_NAV_ITEM_IDS = new Set(['sound-btn', 'layers-menu-btn']);
 
 export class PluginDrawer {
   private isOpen_ = false;
@@ -256,10 +256,15 @@ export class PluginDrawer {
 
       // Put in utility group if applicable
       if (plugin.iconPlacement === IconPlacement.UTILITY_ONLY || plugin.iconPlacement === IconPlacement.BOTH) {
-        const utilityKey =
-          plugin.utilityGroup === UtilityGroup.CAMERA_MODE ? 'utility-camera'
-            : plugin.utilityGroup === UtilityGroup.SETTINGS_TOGGLE ? 'utility-settings'
-              : 'utility-layers';
+        let utilityKey: string;
+
+        if (plugin.utilityGroup === UtilityGroup.CAMERA_MODE) {
+          utilityKey = 'utility-camera';
+        } else if (plugin.utilityGroup === UtilityGroup.SETTINGS_TOGGLE) {
+          utilityKey = 'utility-settings';
+        } else {
+          utilityKey = 'utility-layers';
+        }
 
         const isProGated = plugin.isLoginRequired && !settingsManager.isDisableLoginGate;
 

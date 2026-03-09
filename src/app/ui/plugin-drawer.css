@@ -191,8 +191,7 @@ body.drawer-mode {
     background: rgba(255, 255, 255, 0.05);
   }
 
-  .drawer-group-label {
-  }
+  .drawer-group-label {}
 
   .drawer-group-chevron {
     transition: transform var(--kt-duration-normal, 200ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
@@ -490,7 +489,6 @@ body.drawer-mode:not(.is-mobile-mode) {
   /* Hide nav items that moved to the drawer utility footer or are redundant */
   #sound-btn,
   #layers-menu-btn,
-  #tutorial-btn,
   #GithubLinkPlugin-root,
   #search-btn,
   .user-account__menu-item {

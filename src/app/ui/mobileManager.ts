@@ -127,13 +127,6 @@ export class MobileManager {
             },
           );
 
-          EventBus.getInstance().on(
-            EventBusEvent.uiManagerFinal,
-            () => {
-              hideEl('tutorial-btn');
-            },
-          );
-
           settingsManager.maxAnalystSats = 1;
           settingsManager.maxFieldOfViewMarkers = 1;
           settingsManager.maxMissiles = 1;

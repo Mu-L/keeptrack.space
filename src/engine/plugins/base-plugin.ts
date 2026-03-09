@@ -631,7 +631,19 @@ export abstract class KeepTrackPlugin {
     if (hasKeyboardShortcuts(this)) {
       const shortcuts = this.getKeyboardShortcuts();
 
-      this.keyboardComponent_ = new KeyboardComponent(this.id, shortcuts);
+      this.keyboardComponent_ = new KeyboardComponent(
+        this.id,
+        shortcuts,
+        this.isLoginRequired ? () => this.isLoginGateValid_() : undefined,
+        this.isLoginRequired ? () => {
+          errorManagerInstance.warn(
+            t7e('errorMsgs.LoginRequired' as TranslationKey) ?? 'This feature requires login. Please sign in to continue.',
+            true,
+          );
+          this.shakeBottomIcon();
+          KeepTrackPlugin.loginGateOpenModal?.();
+        } : undefined,
+      );
       this.keyboardComponent_.init();
     }
 
@@ -653,6 +665,7 @@ export abstract class KeepTrackPlugin {
    * Adds HTML for the KeepTrackPlugin.
    * @throws {Error} If HTML has already been added.
    */
+  // eslint-disable-next-line complexity
   addHtml(): void {
     if (this.isHtmlAdded) {
       throw new Error(`${this.id} HTML already added.`);
@@ -1516,22 +1529,10 @@ export abstract class KeepTrackPlugin {
   openSideMenu() {
     this.hideSideMenus();
     slideInRight(getEl(this.sideMenuElementName), 300);
-    KeepTrackPlugin.openSideMenu_();
 
     if (this.isRenderPausedOnOpen) {
       KeepTrack.getInstance().engine.pause();
     }
-  }
-
-  /**
-   * This runs after a side menu is opened.
-   */
-  private static openSideMenu_() {
-    getEl('tutorial-btn', true)?.classList.remove('bmenu-item-disabled');
-  }
-
-  private static closeSideMenu_() {
-    getEl('tutorial-btn', true)?.classList.add('bmenu-item-disabled');
   }
 
   openSecondaryMenu() {
@@ -1558,7 +1559,6 @@ export abstract class KeepTrackPlugin {
     const settingsMenuElement = getEl(`${this.sideMenuElementName}`);
 
     slideOutLeft(settingsMenuElement, 300);
-    KeepTrackPlugin.closeSideMenu_();
   }
 
   closeSecondaryMenu() {

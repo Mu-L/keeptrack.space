@@ -6,7 +6,6 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
 import fullscreenPng from '@public/img/icons/fullscreen.png';
-import helpPng from '@public/img/icons/help.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 
 export class TopMenu extends KeepTrackPlugin {
@@ -25,13 +24,6 @@ export class TopMenu extends KeepTrackPlugin {
     classInner?: string;
     tooltip: string;
   }[] = [
-      {
-        id: 'tutorial-btn',
-        order: 3,
-        class: 'bmenu-item-help bmenu-item-disabled',
-        icon: helpPng,
-        tooltip: t7e('TopMenu.showHelp'),
-      },
       {
         id: 'fullscreen-btn',
         order: 4,
