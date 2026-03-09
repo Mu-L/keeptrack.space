@@ -602,7 +602,7 @@ KeepTrack uses AI-assisted development tools to maintain a large codebase with a
 - Stable Diffusion - Splash screen generation
 - OpenAI - Translations for 7 languages
 
-Why? Managing 50,000+ lines of code, 50+ plugins, and 7 languages as a solo developer is unsustainable without assistance. These tools enable faster releases, better
+Why? Managing 50,000+ lines of code, 50+ plugins, and 12 languages as a solo developer is unsustainable without assistance. These tools enable faster releases, better
 internationalization, and more features while maintaining quality.
 
 Could KeepTrack exist without AI? Yes - it did for years. But as the project grew to serve commercial, military, and educational institutions worldwide, AI became the most cost-effective way to
