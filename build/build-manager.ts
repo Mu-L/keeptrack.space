@@ -40,7 +40,7 @@ class BuildManager {
       fileManager.copyTopLevelFiles('./public', './dist');
 
       // Copy resource directories
-      const resourceDirs = ['img/favicons', 'img/pwa', 'img/achievements', 'data', 'meshes', 'res', 'simulation', 'textures', 'tle'];
+      const resourceDirs = ['img/favicons', 'img/pwa', 'img/achievements', 'data', 'meshes', 'res', 'settings', 'simulation', 'textures', 'tle'];
 
       resourceDirs.forEach((dir) => {
         fileManager.copyDirectory(`public/${dir}`, `dist/${dir}`, { recursive: true });
@@ -48,6 +48,14 @@ class BuildManager {
 
       // Copy pro examples if available
       fileManager.copyDirectory('src/plugins-pro/examples', 'dist/examples', { isOptional: true, recursive: true });
+
+      // Copy profile-specific runtime files (not bundled by webpack)
+      if (config.settingsPath && config.settingsPath !== 'public/settings/settingsOverride.js') {
+        fileManager.copyFile(config.settingsPath, './dist/settings/settingsOverride.js', { force: true });
+      }
+      if (config.favIconPath && config.favIconPath !== 'public/img/favicons/favicon.ico') {
+        fileManager.copyFile(config.favIconPath, './dist/img/favicons/favicon.ico', { force: true });
+      }
 
       if (config.isPro) {
         // Merge locales files
