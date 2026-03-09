@@ -67,6 +67,7 @@ export type KeepTrackPluginsConfiguration = {
   OrbitGuardMenuPlugin?: PluginConfiguration;
   Reentries?: PluginConfiguration;
   Breakup?: PluginConfiguration;
+  BreakupAnalysis?: PluginConfiguration;
   DebrisScreening?: PluginConfiguration;
   transponderChannelData?: PluginConfiguration;
   StkFileHandler?: PluginConfiguration;

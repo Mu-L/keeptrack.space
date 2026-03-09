@@ -371,6 +371,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 73 },
   },
   {
+    configKey: 'BreakupAnalysis',
+    ossImport: () => import('./breakup-analysis/breakup-analysis'),
+    ossClassName: 'BreakupAnalysis',
+    defaultConfig: { enabled: true, order: 74 },
+  },
+  {
     configKey: 'DebrisScreening',
     ossImport: () => import('./debris-screening/debris-screening'),
     ossClassName: 'DebrisScreening',
