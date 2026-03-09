@@ -151,11 +151,9 @@ export class PersistenceManager {
     this.cache_.set(key as StorageKey, value);
 
     // Write-through to primary (localStorage) immediately
-    try {
-      this.primary_.write(key, value);
-    } catch {
-      errorManagerInstance.debug(`Failed to save to primary storage: ${key}=${value}`);
-    }
+    this.primary_.write(key, value).catch((e) => {
+      errorManagerInstance.debug(`Failed to write to primary storage: ${key}=${value}, error: ${e}`);
+    });
 
     // Schedule debounced flush to sync providers
     this.scheduleSyncFlush_(key as StorageKey, value);
