@@ -108,6 +108,8 @@ jobs:
       - name: Run Type Check
         if: matrix.task == 'typecheck'
         run: |
+          echo "Creating translation files..."
+          npm run generate-t7e
           echo "Running Type Check..."
           npm run typecheck
           echo '### Type Check Passed' >> $GITHUB_STEP_SUMMARY
