@@ -2418,8 +2418,6 @@ button.ui-button::-moz-focus-inner {
   font-family: 'Roboto Mono', monospace;
   margin-left: 10px;
   flex-grow: 1;
-  position: absolute;
-  width: 100%;
 }
 
 #nav-top-right {
@@ -2718,8 +2716,8 @@ button.ui-button::-moz-focus-inner {
   inset: 0;
   overflow: auto;
   z-index: 10;
-  padding-bottom: 0.25rem;
   padding: 0rem 1rem;
+  padding-bottom: 0.25rem;
 }
 
 .side-menu .input-field {
