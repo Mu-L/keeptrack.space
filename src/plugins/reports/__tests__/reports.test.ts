@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 /* eslint-disable max-lines-per-function */
 /* eslint-disable dot-notation */
+/* eslint-disable no-new */
 import { MenuMode } from '@app/engine/core/interfaces';
 import { ReportsPlugin } from '@app/plugins/reports/reports';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
