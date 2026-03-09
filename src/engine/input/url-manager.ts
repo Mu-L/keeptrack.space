@@ -271,6 +271,7 @@ export abstract class UrlManager {
     }
   }
 
+  // eslint-disable-next-line complexity
   static updateURL(isMaxData: boolean = false): void {
     // Throttling navigation to prevent the browser from hanging.
     if (Date.now() - this.lastUpdateTime_ < 250) {

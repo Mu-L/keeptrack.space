@@ -73,7 +73,9 @@ export class DopsPlugin extends KeepTrackPlugin {
       {
         key: 'D',
         callback: () => {
-          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) return;
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+ return;
+}
           this.bottomMenuClicked();
         },
       },

@@ -462,12 +462,12 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
         const chipClass = isSupGp ? 'cb-chip cb-chip-supgp' : 'cb-chip cb-chip-gp';
         const chipText = isSupGp ? 'SupGP' : 'GP';
 
-        listHtml += `<li class="menu-selectable cb-catalog-item" `
-          + `data-query="${entry.queryParam}" `
-          + `data-id="${entry.id}">`
-          + `<span class="cb-item-name">${entryLabel(entry.nameKey)}</span>`
-          + `<span class="${chipClass}">${chipText}</span>`
-          + `</li>`;
+        listHtml += '<li class="menu-selectable cb-catalog-item" ' +
+          `data-query="${entry.queryParam}" ` +
+          `data-id="${entry.id}">` +
+          `<span class="cb-item-name">${entryLabel(entry.nameKey)}</span>` +
+          `<span class="${chipClass}">${chipText}</span>` +
+          '</li>';
       }
 
       listHtml += '</ul>';

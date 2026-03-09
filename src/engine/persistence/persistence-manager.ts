@@ -350,6 +350,7 @@ export class PersistenceManager {
 
         for (const [key, value] of batch) {
           if (value === null) {
+            // eslint-disable-next-line no-await-in-loop
             await entry.provider.remove(key);
           } else {
             writes.set(key, value);
@@ -357,6 +358,7 @@ export class PersistenceManager {
         }
 
         if (writes.size > 0) {
+          // eslint-disable-next-line no-await-in-loop
           await entry.provider.writeBatch(writes);
         }
       } catch (e) {

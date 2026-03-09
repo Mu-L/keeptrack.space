@@ -140,7 +140,9 @@ export class ColorMenu extends KeepTrackPlugin implements ICommandPaletteCapable
       {
         key: 'A',
         callback: () => {
-          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) return;
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+ return;
+}
           this.bottomMenuClicked();
         },
       },

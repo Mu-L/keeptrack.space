@@ -34,6 +34,7 @@ const COUNTRY_MAP: Record<string, CountryCode> = {
 
 const TRACKED_COUNTRIES = new Set(['US', 'UK', 'F', 'D', 'J', 'CN', 'IN', 'RU', 'SU', 'KR', 'AU']);
 
+/** Encodes a country string to its compact enum representation. */
 function encodeCountry(country: string | undefined): CountryCode {
   if (!country) {
     return CountryCode.OTHER;
@@ -42,6 +43,7 @@ function encodeCountry(country: string | undefined): CountryCode {
   return COUNTRY_MAP[country] ?? CountryCode.OTHER;
 }
 
+/** Encodes a catalog source string to its compact enum representation. */
 function encodeSource(source: string | undefined): SourceCode {
   switch (source) {
     case CatalogSource.USSF:
@@ -90,6 +92,7 @@ function encodeMission(mission: string | undefined, categorizer: MissionColorSch
   return MISSION_NAME_MAP[category] ?? MissionCategory.OTHER;
 }
 
+/** Builds a bitmask of object type flags for the given space object. */
 function buildObjFlags(obj: BaseObject): number {
   let flags = ObjFlags.NONE;
 
@@ -125,6 +128,7 @@ function buildObjFlags(obj: BaseObject): number {
   return flags;
 }
 
+/** Builds struct-of-arrays color data from the object cache for the color worker. */
 export function buildColorDataArrays(objectCache: BaseObject[]): ColorDataArrays {
   const n = objectCache.length;
   const missionCategorizer = new MissionColorScheme();

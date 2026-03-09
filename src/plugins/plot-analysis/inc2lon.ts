@@ -525,9 +525,7 @@ export class Inc2LonPlots extends KeepTrackPlugin {
           if (!countryBuckets.has(displayName)) {
             countryBuckets.set(displayName, []);
           }
-          countryBuckets.get(displayName)!.push([
-            sat.inclination, lla.lon, sat.period, sat.name, sat.id,
-          ]);
+          countryBuckets.get(displayName)!.push([sat.inclination, lla.lon, sat.period, sat.name, sat.id]);
         }
 
         offset = end;

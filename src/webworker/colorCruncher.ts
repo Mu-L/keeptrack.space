@@ -125,9 +125,9 @@ const CAM_PLANETARIUM = CameraType.PLANETARIUM;
 const CAM_ASTRONOMY = CameraType.ASTRONOMY;
 
 // PayloadStatus char codes
-const PS_OPERATIONAL = '+'.charCodeAt(0);   // 43
+const PS_OPERATIONAL = '+'.charCodeAt(0); // 43
 const PS_NONOPERATIONAL = '-'.charCodeAt(0); // 45
-const PS_UNKNOWN = '?'.charCodeAt(0);        // 63
+const PS_UNKNOWN = '?'.charCodeAt(0); // 63
 
 // SunStatus constants
 const SUN_UMBRAL = 0;
@@ -139,7 +139,7 @@ const PICKABLE_YES = 1;
 const PICKABLE_NO = 0;
 
 // ─── Helper: Color Result ────────────────────────────────────────────────────
-// Write color + pickable directly into output arrays at index i
+/** Writes RGBA color and pickable flag into the output arrays at the given index. */
 function writeColor(colorData: Float32Array, pickableData: Int8Array, i: number, r: number, g: number, b: number, a: number, pickable: number) {
   const i4 = i * 4;
 
@@ -150,6 +150,7 @@ function writeColor(colorData: Float32Array, pickableData: Int8Array, i: number,
   pickableData[i] = pickable;
 }
 
+/** Writes an RGBA color array and pickable flag into the output arrays at the given index. */
 function writeColorArr(colorData: Float32Array, pickableData: Int8Array, i: number, c: number[], pickable: number) {
   const i4 = i * 4;
 
@@ -160,10 +161,12 @@ function writeColorArr(colorData: Float32Array, pickableData: Int8Array, i: numb
   pickableData[i] = pickable;
 }
 
+/** Writes a fully transparent, non-pickable color at the given index. */
 function writeTransparent(colorData: Float32Array, pickableData: Int8Array, i: number) {
   writeColor(colorData, pickableData, i, 0, 0, 0, 0, PICKABLE_NO);
 }
 
+/** Writes the deselected theme color as a non-pickable entry at the given index. */
 function writeDeselected(colorData: Float32Array, pickableData: Int8Array, i: number) {
   const c = colorTheme.deselected;
 
@@ -176,6 +179,7 @@ function writeDeselected(colorData: Float32Array, pickableData: Int8Array, i: nu
 
 // ─── Shared Sub-routines ─────────────────────────────────────────────────────
 
+/** Returns true if the object type represents a facility (agency, operator, etc.). */
 function isFacilityType(type: number): boolean {
   return type === SOT_INTERGOVERNMENTAL_ORGANIZATION ||
     type === SOT_SUBORBITAL_PAYLOAD_OPERATOR ||
@@ -186,6 +190,7 @@ function isFacilityType(type: number): boolean {
     type === SOT_CONTROL_FACILITY;
 }
 
+/** Returns true if the object type represents a launch site or launch facility. */
 function isLaunchSiteType(type: number): boolean {
   return type === SOT_LAUNCH_SITE ||
     type === SOT_LAUNCH_POSITION ||
@@ -273,6 +278,7 @@ function starColor(colorData: Float32Array, pickableData: Int8Array, i: number):
   return true;
 }
 
+/** Converts a star's color temperature and visual magnitude to an RGBA color tuple. */
 function colorTempToRgba(kelvin: number, vmag: number): [number, number, number, number] {
   const temp = Math.max(1000, Math.min(40000, kelvin)) / 100;
   let r: number;
@@ -345,6 +351,7 @@ function missileColor(colorData: Float32Array, pickableData: Int8Array, i: numbe
 
 // ─── Filter Check (port of getColorIfDisabledSat_) ──────────────────────────
 
+/** Returns true if the object at index i should be hidden based on current filter settings. */
 function isFilteredOut(i: number): boolean {
   if (!catalogData) {
     return false;
@@ -467,6 +474,7 @@ function isFilteredOut(i: number): boolean {
 
 type SchemeUpdateFn = (cd: Float32Array, pd: Int8Array, i: number) => void;
 
+/** Colors objects by their space object type (payload, debris, rocket body, etc.). */
 function objectTypeScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -644,6 +652,7 @@ function objectTypeScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   writeColorArr(cd, pd, i, c, PICKABLE_YES);
 }
 
+/** Colors objects by type, hiding those not in the active group. */
 function objectTypeGroupScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -707,6 +716,7 @@ function objectTypeGroupScheme(cd: Float32Array, pd: Int8Array, i: number): void
   writeColorArr(cd, pd, i, c, PICKABLE_YES);
 }
 
+/** Colors objects using the CelesTrak default color scheme with active/inactive payload distinction. */
 function celestrakScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -875,6 +885,7 @@ function celestrakScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   writeColorArr(cd, pd, i, colorTheme.celestrakDefaultUnknown ?? [1, 1, 1, 0.85], PICKABLE_YES);
 }
 
+/** Colors objects by their country of origin. */
 function countryScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -953,6 +964,7 @@ function countryScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   writeColorArr(cd, pd, i, c, PICKABLE_YES);
 }
 
+/** Colors objects by country, hiding those not in the active group. */
 function countryGroupScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -974,6 +986,7 @@ function countryGroupScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 }
 
+/** Colors objects on a gradient based on their orbital velocity. */
 function velocityScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1042,6 +1055,7 @@ function velocityScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   writeColor(cd, pd, i, 1.0 - t, t, 0.0, 1.0, PICKABLE_YES);
 }
 
+/** Colors objects based on their sunlight illumination status (sunlit, penumbral, umbral). */
 function sunlightScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1130,15 +1144,13 @@ function sunlightScheme(cd: Float32Array, pd: Int8Array, i: number): void {
         } else {
           writeColorArr(cd, pd, i, colorTheme.sunlight60 ?? [0.6, 0.6, 0, 1], PICKABLE_YES);
         }
-      } else {
+      } else if (type === SOT_ROCKET_BODY) {
         // Type-based fallback
-        if (type === SOT_ROCKET_BODY) {
-          writeColorArr(cd, pd, i, colorTheme.sunlight100 ?? [1, 1, 0, 1], PICKABLE_YES);
-        } else if (type === SOT_PAYLOAD) {
-          writeColorArr(cd, pd, i, colorTheme.sunlight80 ?? [0.8, 0.8, 0, 1], PICKABLE_YES);
-        } else {
-          writeColorArr(cd, pd, i, colorTheme.sunlight60 ?? [0.6, 0.6, 0, 1], PICKABLE_YES);
-        }
+        writeColorArr(cd, pd, i, colorTheme.sunlight100 ?? [1, 1, 0, 1], PICKABLE_YES);
+      } else if (type === SOT_PAYLOAD) {
+        writeColorArr(cd, pd, i, colorTheme.sunlight80 ?? [0.8, 0.8, 0, 1], PICKABLE_YES);
+      } else {
+        writeColorArr(cd, pd, i, colorTheme.sunlight60 ?? [0.6, 0.6, 0, 1], PICKABLE_YES);
       }
 
       return;
@@ -1160,6 +1172,7 @@ function sunlightScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   writeDeselected(cd, pd, i);
 }
 
+/** Colors objects by their radar cross-section size category. */
 function rcsScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1227,15 +1240,14 @@ function rcsScheme(cd: Float32Array, pd: Int8Array, i: number): void {
     } else {
       writeColorArr(cd, pd, i, colorTheme.rcsMed ?? [0, 0, 1, 1], PICKABLE_YES);
     }
-  } else {
-    if (objectTypeFlags.rcsLarge === false) {
+  } else if (objectTypeFlags.rcsLarge === false) {
       writeDeselected(cd, pd, i);
     } else {
       writeColorArr(cd, pd, i, colorTheme.rcsLarge ?? [0, 0, 1, 1], PICKABLE_YES);
     }
-  }
 }
 
+/** Colors objects by their TLE confidence level (high, medium, low). */
 function confidenceScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1280,15 +1292,14 @@ function confidenceScheme(cd: Float32Array, pd: Int8Array, i: number): void {
     } else {
       writeColorArr(cd, pd, i, colorTheme.confidenceMed ?? [1, 1, 0, 1], PICKABLE_YES);
     }
-  } else {
-    if (objectTypeFlags.confidenceLow === false) {
+  } else if (objectTypeFlags.confidenceLow === false) {
       writeDeselected(cd, pd, i);
     } else {
       writeColorArr(cd, pd, i, colorTheme.confidenceLow ?? [1, 0, 0, 1], PICKABLE_YES);
     }
-  }
 }
 
+/** Colors objects by the age of their general perturbations (GP) data. */
 function gpAgeScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1355,6 +1366,7 @@ function gpAgeScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 }
 
+/** Colors objects by their mission category (military, communication, science, etc.). */
 function missionScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1431,6 +1443,7 @@ function missionScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 }
 
+/** Colors objects by their reentry risk level based on perigee altitude. */
 function reentryRiskScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1479,6 +1492,7 @@ function reentryRiskScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 }
 
+/** Colors objects by the spatial density of their orbital altitude bin. */
 function spatialDensityScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1540,6 +1554,7 @@ function spatialDensityScheme(cd: Float32Array, pd: Int8Array, i: number): void 
   }
 }
 
+/** Colors objects by the density of their orbital plane (inclination and altitude). */
 function orbitalPlaneDensityScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1598,15 +1613,14 @@ function orbitalPlaneDensityScheme(cd: Float32Array, pd: Int8Array, i: number): 
     } else {
       writeDeselected(cd, pd, i);
     }
-  } else {
-    if (objectTypeFlags.orbitalPlaneDensityOther !== false) {
+  } else if (objectTypeFlags.orbitalPlaneDensityOther !== false) {
       writeColorArr(cd, pd, i, colorTheme.orbitalPlaneDensityOther ?? [0.5, 0.5, 0.5, 1], PICKABLE_YES);
     } else {
       writeDeselected(cd, pd, i);
     }
-  }
 }
 
+/** Colors objects by their catalog data source (USSF, CelesTrak, Vimpel, etc.). */
 function sourceScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1685,6 +1699,7 @@ function sourceScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 }
 
+/** Colors objects to highlight Starlink satellites vs non-Starlink objects. */
 function starlinkScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1748,13 +1763,11 @@ function starlinkScheme(cd: Float32Array, pd: Int8Array, i: number): void {
       } else {
         writeColorArr(cd, pd, i, colorTheme.starlinkOperational ?? [0, 0.8, 0, 0.8], PICKABLE_YES);
       }
-    } else {
-      if (objectTypeFlags.starlinkOther === false) {
+    } else if (objectTypeFlags.starlinkOther === false) {
         writeDeselected(cd, pd, i);
       } else {
         writeColorArr(cd, pd, i, colorTheme.starlinkOther ?? [0.8, 0.8, 0, 0.8], PICKABLE_YES);
       }
-    }
 
     return;
   }
@@ -1767,6 +1780,7 @@ function starlinkScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 }
 
+/** Colors small satellite payloads (RCS < 0.5) and hides all other objects. */
 function smallSatScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   if (!catalogData) {
     return;
@@ -1830,6 +1844,7 @@ const SCHEME_MAP: Record<string, { update: SchemeUpdateFn; updateGroup?: SchemeU
   SmallSatColorScheme: { update: smallSatScheme },
 };
 
+/** Returns the appropriate color update function for the current scheme and group state. */
 function getUpdateFn(): SchemeUpdateFn {
   const entry = SCHEME_MAP[currentSchemeId];
 
@@ -1872,6 +1887,7 @@ function getUpdateFn(): SchemeUpdateFn {
 
 // ─── Main Calculation ────────────────────────────────────────────────────────
 
+/** Computes colors and pickability for all objects and transfers the buffers to the main thread. */
 function calculateAllColors(): void {
   if (!catalogData || catalogData.numObjects === 0) {
     return;
@@ -1902,6 +1918,7 @@ function calculateAllColors(): void {
   postMessage(msg, { transfer: [colorData.buffer as ArrayBuffer, pickableData.buffer as ArrayBuffer] });
 }
 
+/** Debounces color recalculation to avoid redundant recomputation within a single frame. */
 function scheduleRecalc(): void {
   if (recalcTimer !== null) {
     clearTimeout(recalcTimer);
@@ -1914,7 +1931,7 @@ function scheduleRecalc(): void {
 
 // ─── Message Handler ─────────────────────────────────────────────────────────
 
-onmessage = function onMessageHandler(event: MessageEvent<ColorWorkerInMsg>) {
+onmessage = function onmessage(event: MessageEvent<ColorWorkerInMsg>) {
   const msg = event.data;
 
   switch (msg.typ) {

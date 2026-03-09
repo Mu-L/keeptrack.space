@@ -11,10 +11,12 @@ export class NullStorageProvider implements StorageProvider {
     // No-op
   }
 
+  // eslint-disable-next-line require-await
   async readAll(): Promise<Map<string, string>> {
     return new Map();
   }
 
+  // eslint-disable-next-line require-await
   async read(): Promise<string | null> {
     return null;
   }

@@ -401,7 +401,8 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
       if (typeof m.data.isFrustumCullingEnabled === 'boolean') {
         isFrustumCullingEnabled_ = m.data.isFrustumCullingEnabled;
       }
-      return;
+
+return;
     default:
       // NOTE: For debugging turn this on
 

@@ -108,10 +108,10 @@ export class HoverManager {
   }
 
   private star_(star: Star): void {
-    const name = star.pname
-      || (star.bayer && star.constellation ? `${star.bayer} ${star.constellation}` : '')
-      || (star.flamsteed && star.constellation ? `${star.flamsteed} ${star.constellation}` : '')
-      || (star.hr ? `HR ${star.hr}` : star.name);
+    const name = star.pname ||
+      (star.bayer && star.constellation ? `${star.bayer} ${star.constellation}` : '') ||
+      (star.flamsteed && star.constellation ? `${star.flamsteed} ${star.constellation}` : '') ||
+      (star.hr ? `HR ${star.hr}` : star.name);
 
     this.satHoverBoxNode1.textContent = name;
     this.satHoverBoxNode2.textContent = star.constellation

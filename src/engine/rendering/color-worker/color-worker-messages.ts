@@ -65,7 +65,7 @@ export interface FilterState {
 
 /** Global settings that affect coloring */
 export interface SettingsFlags {
-  cameraType: number;           // CameraType enum value
+  cameraType: number; // CameraType enum value
   isShowPayloads: boolean;
   isShowRocketBodies: boolean;
   isShowDebris: boolean;
@@ -73,7 +73,7 @@ export interface SettingsFlags {
   isDisableLaunchSites: boolean;
   isDisableSensors: boolean;
   isSensorManagerLoaded: boolean;
-  sensorType: number;           // SpaceObjectType of current sensor (0 if none)
+  sensorType: number; // SpaceObjectType of current sensor (0 if none)
   maxZoomDistance: number;
   isMissilePluginEnabled: boolean;
 }
@@ -81,7 +81,7 @@ export interface SettingsFlags {
 /** Incoming message from main thread → worker */
 export interface ColorWorkerInMsg {
   typ: ColorWorkerMsgType;
-  seqNum?: number;               // Sequence number for catalog version tracking
+  seqNum?: number; // Sequence number for catalog version tracking
 
   // INIT_CATALOG
   catalogData?: ColorDataArrays;

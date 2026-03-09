@@ -109,14 +109,12 @@ export abstract class OrbitMath {
       if (x > 0 && y < 0) {
         u += TAU;
       }
-    } else {
-      if (y < 0) {
-        u = -Math.PI / 2;
-      } else if (y > 0) {
-        u = Math.PI / 2;
-      }
-      // if y === 0, u remains 0
+    } else if (y < 0) {
+      u = -Math.PI / 2;
+    } else if (y > 0) {
+      u = Math.PI / 2;
     }
+    // if x === 0 && y === 0, u remains 0
 
     return u;
   }

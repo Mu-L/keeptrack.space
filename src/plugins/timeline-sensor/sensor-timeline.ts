@@ -15,7 +15,7 @@ import {
   Hours, Kilometers, lla2eci, Milliseconds, MILLISECONDS_PER_SECOND, Radians,
   Satellite,
   SatelliteRecord,
-  Seconds, SpaceObjectType, Sun
+  Seconds, SpaceObjectType, Sun,
 } from '@ootk/src/main';
 import { SensorManager } from '../../app/sensors/sensorManager';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';

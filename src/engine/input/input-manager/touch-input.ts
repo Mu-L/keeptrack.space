@@ -321,26 +321,26 @@ export class TouchInput {
     const overlay = this.ensureDebugOverlay_();
 
     overlay.textContent =
-      `=== MOBILE PICKING DEBUG ===\n` +
+      '=== MOBILE PICKING DEBUG ===\n' +
       `raw clientXY:      (${evt.x.toFixed(1)}, ${evt.y.toFixed(1)})\n` +
       `rect-corrected:    (${rectCorrX.toFixed(1)}, ${rectCorrY.toFixed(1)})\n` +
       `container-corrected: (${containerCorrX.toFixed(1)}, ${containerCorrY.toFixed(1)})\n` +
-      `---\n` +
+      '---\n' +
       `canvas rect: L=${rect.left.toFixed(1)} T=${rect.top.toFixed(1)} W=${rect.width.toFixed(1)} H=${rect.height.toFixed(1)}\n` +
       `container offset: (${container.offsetLeft}, ${container.offsetTop})\n` +
       `drawingBuffer: ${gl.drawingBufferWidth}x${gl.drawingBufferHeight}\n` +
       `canvas elem: ${canvas.width}x${canvas.height}\n` +
       `canvas CSS: ${canvas.clientWidth}x${canvas.clientHeight}\n` +
       `devicePixelRatio: ${window.devicePixelRatio}\n` +
-      `---\n` +
+      '---\n' +
       `raw ID:       ${rawId}\n` +
       `rect ID:      ${rectId}\n` +
       `container ID: ${containerId}\n` +
-      `---\n` +
+      '---\n' +
       `21x21 scan (raw): nearest=${scan.id} offset=(${scan.offsetX},${scan.offsetY}) hits=${scan.hitCount}\n` +
-      `21x21 scan (rect): nearest=${scanCorr.id} offset=(${scanCorr.offsetX},${scanCorr.offsetY}) hits=${scanCorr.hitCount}\n` +
-      (scan.hitCount > 0 ? `raw hits:\n${scan.patchData}\n` : '') +
-      (scanCorr.hitCount > 0 && scanCorr.patchData !== scan.patchData ? `rect hits:\n${scanCorr.patchData}\n` : '');
+      `21x21 scan (rect): nearest=${scanCorr.id} offset=(${scanCorr.offsetX},${scanCorr.offsetY}) hits=${scanCorr.hitCount}\n${
+      scan.hitCount > 0 ? `raw hits:\n${scan.patchData}\n` : ''
+      }${scanCorr.hitCount > 0 && scanCorr.patchData !== scan.patchData ? `rect hits:\n${scanCorr.patchData}\n` : ''}`;
 
     // Show visual crosshairs
     this.showTapMarker_(evt.x, evt.y, rectCorrX, rectCorrY);

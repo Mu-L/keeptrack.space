@@ -69,7 +69,7 @@ export class KeyboardShortcutRegistry {
         console.warn(
           `[KeyboardShortcutRegistry] Shortcut conflict: "${KeyboardShortcutRegistry.formatShortcut(shortcut)}" ` +
           `registered by "${conflict.existing.pluginId}" overlaps with "${pluginId}". ` +
-          `The first registration wins.`,
+          'The first registration wins.',
         );
       } else {
         const entry: RegisteredShortcut = { pluginId, shortcut };

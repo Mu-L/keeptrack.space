@@ -247,9 +247,15 @@ export class CameraTransition {
     outTranslation[2] = m[14];
 
     // Extract upper-left 3x3 (column-major)
-    rotMat3[0] = m[0]; rotMat3[1] = m[1]; rotMat3[2] = m[2];
-    rotMat3[3] = m[4]; rotMat3[4] = m[5]; rotMat3[5] = m[6];
-    rotMat3[6] = m[8]; rotMat3[7] = m[9]; rotMat3[8] = m[10];
+    rotMat3[0] = m[0];
+    rotMat3[1] = m[1];
+    rotMat3[2] = m[2];
+    rotMat3[3] = m[4];
+    rotMat3[4] = m[5];
+    rotMat3[5] = m[6];
+    rotMat3[6] = m[8];
+    rotMat3[7] = m[9];
+    rotMat3[8] = m[10];
 
     quat.fromMat3(outRotation, rotMat3);
     quat.normalize(outRotation, outRotation);

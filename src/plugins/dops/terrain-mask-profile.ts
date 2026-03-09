@@ -14,6 +14,7 @@ export interface TerrainMaskStore {
   profiles: TerrainMaskProfile[];
 }
 
+/** Creates an empty terrain mask store with no active profile. */
 export function createDefaultStore(): TerrainMaskStore {
   return {
     activeProfileId: null,
@@ -21,6 +22,7 @@ export function createDefaultStore(): TerrainMaskStore {
   };
 }
 
+/** Creates a new terrain mask profile with a unique ID and default elevation mask. */
 export function createDefaultProfile(name = 'Default'): TerrainMaskProfile {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,

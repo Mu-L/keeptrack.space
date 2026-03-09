@@ -64,7 +64,9 @@ export class EditSat extends KeepTrackPlugin {
         callback: () => {
           const ct = ServiceLocator.getMainCamera().cameraType;
 
-          if (ct === CameraType.FPS || ct === CameraType.SATELLITE_FIRST_PERSON || ct === CameraType.ASTRONOMY) return;
+          if (ct === CameraType.FPS || ct === CameraType.SATELLITE_FIRST_PERSON || ct === CameraType.ASTRONOMY) {
+ return;
+}
           this.bottomMenuClicked();
         },
       },

@@ -63,7 +63,9 @@ export class WatchlistPlugin extends KeepTrackPlugin {
       {
         key: 'W',
         callback: () => {
-          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) return;
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+ return;
+}
           this.bottomMenuClicked();
         },
       },

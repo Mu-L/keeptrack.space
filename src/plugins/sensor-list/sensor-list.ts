@@ -182,7 +182,7 @@ export class SensorListPlugin extends KeepTrackPlugin implements ICommandPalette
       EventBusEvent.uiManagerFinal,
       () => {
         getEl('sensor-selected-container')?.addEventListener('click', () => {
-          this.bottomIconCallback();
+          this.bottomMenuClicked();
         });
 
         getEl('sensor-list-content')?.addEventListener('click', (e: Event) => {

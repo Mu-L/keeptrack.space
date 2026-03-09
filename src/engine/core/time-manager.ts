@@ -381,6 +381,7 @@ export class TimeManager {
 
     EventBus.getInstance().emit(EventBusEvent.updateDateTime, new Date(this.dynamicOffsetEpoch + this.staticOffset));
 
+    // eslint-disable-next-line no-sync
     catalogManagerInstance.satCruncherThread.sendTimeSync(this.staticOffset, this.dynamicOffsetEpoch, this.propRate);
   }
 

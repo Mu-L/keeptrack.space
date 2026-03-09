@@ -64,25 +64,25 @@ export const enum ObjFlags {
  */
 export interface ColorDataArrays {
   // Object classification
-  type: Int8Array;            // SpaceObjectType enum value
-  objFlags: Uint8Array;       // ObjFlags bit field
-  country: Uint8Array;        // CountryCode enum
-  source: Uint8Array;         // SourceCode enum
+  type: Int8Array; // SpaceObjectType enum value
+  objFlags: Uint8Array; // ObjFlags bit field
+  country: Uint8Array; // CountryCode enum
+  source: Uint8Array; // SourceCode enum
 
   // Orbital parameters
-  apogee: Float32Array;       // km
-  perigee: Float32Array;      // km
-  inclination: Float32Array;  // degrees
+  apogee: Float32Array; // km
+  perigee: Float32Array; // km
+  inclination: Float32Array; // degrees
   eccentricity: Float32Array;
 
   // Satellite metadata
-  rcs: Float32Array;          // radar cross section (NaN for unknown)
-  status: Uint8Array;         // PayloadStatus char code
-  vmag: Float32Array;         // visual magnitude (NaN for null/undefined)
-  mission: Uint8Array;        // MissionCategory enum
+  rcs: Float32Array; // radar cross section (NaN for unknown)
+  status: Uint8Array; // PayloadStatus char code
+  vmag: Float32Array; // visual magnitude (NaN for null/undefined)
+  mission: Uint8Array; // MissionCategory enum
 
   // TLE-derived data
-  tle1EpochYear: Uint8Array;  // 2-digit epoch year from tle1[18:20]
+  tle1EpochYear: Uint8Array; // 2-digit epoch year from tle1[18:20]
   tle1EpochDay: Float32Array; // epoch day from tle1[20:32]
   tle1Confidence: Uint8Array; // classification digit from tle1[64:65]
 
@@ -93,7 +93,7 @@ export interface ColorDataArrays {
   specialColor: Float32Array;
 
   // Active flag for missiles
-  active: Uint8Array;         // 1 = active, 0 = inactive
+  active: Uint8Array; // 1 = active, 0 = inactive
 
   numObjects: number;
 }

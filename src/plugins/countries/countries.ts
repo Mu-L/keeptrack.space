@@ -216,7 +216,7 @@ export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCap
         `<span class="${flagClass} country-flag"></span>` +
         `<span class="country-name">${country}</span>` +
         `<span class="country-count">${satCount.toLocaleString()}</span>` +
-        `</li>`;
+        '</li>';
     }, '');
 
     return `${mergedList}<br/>`;

@@ -34,6 +34,7 @@ export async function compressToGzip(jsonString: string): Promise<Uint8Array> {
   const chunks: Uint8Array[] = [];
 
   for (;;) {
+    // eslint-disable-next-line no-await-in-loop
     const { done, value } = await reader.read();
 
     if (done) {
@@ -69,6 +70,7 @@ export async function decompressFromGzip(data: Uint8Array): Promise<string> {
   let result = '';
 
   for (;;) {
+    // eslint-disable-next-line no-await-in-loop
     const { done, value } = await reader.read();
 
     if (done) {

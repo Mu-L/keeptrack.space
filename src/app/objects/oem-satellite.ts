@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { rgbaArray, SolarBody, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
