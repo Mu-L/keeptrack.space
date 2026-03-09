@@ -8,6 +8,7 @@ test.describe('SatelliteTimeline', () => {
     });
 
     const bottomIcon = page.locator('#satellite-timeline-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 

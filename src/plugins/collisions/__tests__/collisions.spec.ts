@@ -25,6 +25,7 @@ test.describe('Collisions Plugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-satellite-collision"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click the drawer item — should open side menu and select the icon
@@ -35,11 +36,13 @@ test.describe('Collisions Plugin', () => {
     // Verify the toolbar buttons exist
     const fetchBtn = page.locator('#Collisions-fetch-btn');
     const refreshBtn = page.locator('#Collisions-refresh-btn');
+
     await expect(fetchBtn).toBeAttached();
     await expect(refreshBtn).toBeAttached();
 
     // Verify the collision table exists
     const table = page.locator('#Collisions-table');
+
     await expect(table).toBeAttached();
 
     // Close via DOM click (toast notifications may intercept Playwright clicks)

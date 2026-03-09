@@ -8,6 +8,7 @@ test.describe('SensorFov', () => {
     });
 
     const utilityIcon = page.locator('#SensorFov-utility-icon');
+
     await expect(utilityIcon).toBeAttached();
     await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/);
 

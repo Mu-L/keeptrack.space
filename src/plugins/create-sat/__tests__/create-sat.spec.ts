@@ -26,6 +26,7 @@ test.describe('CreateSat Plugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="create-satellite-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
@@ -36,6 +37,7 @@ test.describe('CreateSat Plugin', () => {
 
     // Verify side menu content is visible (the inner .side-menu div)
     const sideMenuContent = page.locator('#createSat-content');
+
     await expect(sideMenuContent).toBeVisible({ timeout: 5_000 });
 
     // Verify both tabs exist
@@ -44,10 +46,12 @@ test.describe('CreateSat Plugin', () => {
 
     // Verify Basic tab form fields and defaults
     const basicScc = page.locator('#createSat-basic-scc');
+
     await expect(basicScc).toBeAttached();
     await expect(basicScc).toHaveValue('90000');
 
     const basicName = page.locator('#createSat-basic-name');
+
     await expect(basicName).toBeAttached();
     await expect(basicName).toHaveValue('New Satellite');
 

@@ -26,6 +26,7 @@ test.describe('ColorMenu Plugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-color-scheme"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
@@ -35,14 +36,17 @@ test.describe('ColorMenu Plugin', () => {
 
     // Verify color scheme list has items
     const colorsList = page.locator('#colors-menu');
+
     await expect(colorsList).toBeVisible();
 
     const colorItems = colorsList.locator('li.menu-selectable');
     const itemCount = await colorItems.count();
+
     expect(itemCount).toBeGreaterThan(3);
 
     // Each item should have a data-color attribute
     const firstItem = colorItems.first();
+
     await expect(firstItem).toHaveAttribute('data-color');
 
     // Close via the side menu close button

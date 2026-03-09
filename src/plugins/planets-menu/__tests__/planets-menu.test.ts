@@ -8,6 +8,7 @@ import { settingsManager } from '@app/settings/settings';
 import { setupDefaultHtml } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite } from '@test/generic-tests';
 
+// eslint-disable-next-line max-lines-per-function
 describe('PlanetsMenuPlugin', () => {
   beforeEach(() => {
     setupDefaultHtml();
@@ -89,7 +90,7 @@ describe('PlanetsMenuPlugin', () => {
 
     it('should return drag options with min and max width', () => {
       const plugin = new PlanetsMenuPlugin();
-      const dragOptions = plugin['getDragOptions_']();
+      const dragOptions = plugin.getDragOptions_();
 
       expect(dragOptions.isDraggable).toBe(true);
       expect(dragOptions.minWidth).toBe(320);
@@ -100,7 +101,7 @@ describe('PlanetsMenuPlugin', () => {
   describe('Side menu HTML', () => {
     it('should contain section headers', () => {
       const plugin = new PlanetsMenuPlugin();
-      const menuHtml = plugin['buildSideMenuHtml_']();
+      const menuHtml = plugin.buildSideMenuHtml_();
 
       expect(menuHtml).toContain('Planets');
       expect(menuHtml).toContain('Dwarf Planets');
@@ -109,7 +110,7 @@ describe('PlanetsMenuPlugin', () => {
 
     it('should include planet entries with data-planet attributes', () => {
       const plugin = new PlanetsMenuPlugin();
-      const menuHtml = plugin['buildSideMenuHtml_']();
+      const menuHtml = plugin.buildSideMenuHtml_();
 
       expect(menuHtml).toContain('data-planet="Mercury"');
       expect(menuHtml).toContain('data-planet="Venus"');
@@ -119,7 +120,7 @@ describe('PlanetsMenuPlugin', () => {
 
     it('should mark unsupported moons as disabled', () => {
       const plugin = new PlanetsMenuPlugin();
-      const menuHtml = plugin['buildSideMenuHtml_']();
+      const menuHtml = plugin.buildSideMenuHtml_();
 
       expect(menuHtml).toContain('planets-menu-disabled');
       expect(menuHtml).toContain('Planned for future update.');
@@ -129,7 +130,7 @@ describe('PlanetsMenuPlugin', () => {
   describe('Context menu HTML', () => {
     it('should build level 2 HTML with planet entries', () => {
       const plugin = new PlanetsMenuPlugin();
-      const rmbHtml = plugin['buildRmbL2Html_']();
+      const rmbHtml = plugin.buildRmbL2Html_();
 
       expect(rmbHtml).toContain('planets-Mercury-rmb');
       expect(rmbHtml).toContain('planets-Earth-rmb');

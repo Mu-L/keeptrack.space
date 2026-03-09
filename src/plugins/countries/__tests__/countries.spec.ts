@@ -16,6 +16,7 @@ test.describe('CountriesMenu Plugin', () => {
     // Open drawer and find the CountriesMenu item
     await page.locator('#drawer-hamburger').click();
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-countries"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click the drawer item — should open side menu and select the icon
@@ -25,10 +26,12 @@ test.describe('CountriesMenu Plugin', () => {
 
     // Verify the country list element exists
     const countryList = page.locator('#country-list');
+
     await expect(countryList).toBeAttached();
 
     // Verify the inner country-menu container is visible
     const countryMenu = page.locator('#country-menu');
+
     await expect(countryMenu).toBeVisible();
 
     // Close via the side menu close button

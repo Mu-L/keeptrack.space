@@ -29,6 +29,7 @@ test.describe('DebrisScreening Plugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="debris-screening-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Clicking a disabled plugin's drawer item should NOT open the side menu

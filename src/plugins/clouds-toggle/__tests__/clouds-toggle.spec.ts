@@ -9,6 +9,7 @@ test.describe('CloudsToggle Plugin', () => {
 
     // UTILITY_ONLY icons live in the drawer utility footer
     const utilityIcon = page.locator('#CloudsToggle-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'clouds-toggle-bottom-icon');
 
@@ -21,6 +22,7 @@ test.describe('CloudsToggle Plugin', () => {
     // Verify the setting toggled from its initial state
     await expect(async () => {
       const currentState = await page.evaluate(() => (window as any).settingsManager?.isDrawCloudsMap);
+
       expect(currentState).toBe(!initialState);
     }).toPass({ timeout: 5_000 });
 
@@ -30,6 +32,7 @@ test.describe('CloudsToggle Plugin', () => {
     // Verify the setting returned to its initial state
     await expect(async () => {
       const currentState = await page.evaluate(() => (window as any).settingsManager?.isDrawCloudsMap);
+
       expect(currentState).toBe(initialState);
     }).toPass({ timeout: 5_000 });
   });

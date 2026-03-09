@@ -62,7 +62,7 @@ describe('SatellitePhotos', () => {
 
     it('should return correct drag options', () => {
       const plugin = new SatellitePhotos();
-      const dragOptions = plugin['getDragOptions_']();
+      const dragOptions = plugin.getDragOptions_();
 
       expect(dragOptions.isDraggable).toBe(true);
       expect(dragOptions.minWidth).toBe(200);
@@ -80,7 +80,7 @@ describe('SatellitePhotos', () => {
 
     it('should build side menu HTML with satellite list', () => {
       const plugin = new SatellitePhotos();
-      const menuHtml = plugin['buildSideMenuHtml_']();
+      const menuHtml = plugin.buildSideMenuHtml_();
 
       expect(menuHtml).toContain('sat-photo-menu');
       expect(menuHtml).toContain('sat-photo-menu-list');
@@ -94,7 +94,7 @@ describe('SatellitePhotos', () => {
     it('should register uiManagerFinal handler on addJs', () => {
       const plugin = new SatellitePhotos();
 
-      vi.spyOn(plugin as any, 'uiManagerFinal_').mockImplementation(() => {});
+      vi.spyOn(plugin as any, 'uiManagerFinal_').mockImplementation(() => { /* Intentional no-op */ });
       const onSpy = vi.spyOn(EventBus.getInstance(), 'on');
 
       plugin.addJs();

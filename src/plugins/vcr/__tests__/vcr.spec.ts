@@ -8,6 +8,7 @@ test.describe('VcrPlugin', () => {
     });
 
     const container = page.locator('#vcr-container');
+
     await expect(container).toBeAttached({ timeout: 5_000 });
 
     await expect(page.locator('#vcr-rewind-btn')).toBeAttached();

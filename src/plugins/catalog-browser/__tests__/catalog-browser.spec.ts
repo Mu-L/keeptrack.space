@@ -16,6 +16,7 @@ test.describe('CatalogBrowserPlugin', () => {
     // Open drawer and find the CatalogBrowser item
     await page.locator('#drawer-hamburger').click();
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-catalog-browser"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click the drawer item — should open side menu and select the icon
@@ -25,30 +26,37 @@ test.describe('CatalogBrowserPlugin', () => {
 
     // Verify the toggle switch exists
     const toggle = page.locator('#cb-orbital-data-only');
+
     await expect(toggle).toBeAttached();
 
     // Verify the mode description starts with "All Data" description
     const modeDesc = page.locator('#cb-mode-description');
+
     await expect(modeDesc).toBeVisible();
 
     // Toggle "Orbital Data Only" via the Materialize lever and verify description text changes
     const textBefore = await modeDesc.textContent();
     const lever = page.locator('label[for="cb-orbital-data-only"] .lever');
+
     await lever.click();
     const textAfter = await modeDesc.textContent();
+
     expect(textAfter).not.toBe(textBefore);
 
     // Verify catalog list is rendered with categories and items
     const catalogList = page.locator('#cb-catalog-list');
+
     await expect(catalogList).toBeVisible();
 
     // Should have category headers (KeepTrack + 7 CelesTrack categories)
     const categoryHeaders = catalogList.locator('.cb-category-header');
+
     await expect(categoryHeaders).toHaveCount(8); // keeptrack, special, debris, weather, comms, nav, science, military
 
     // Should have catalog items rendered
     const catalogItems = catalogList.locator('.cb-catalog-item');
     const itemCount = await catalogItems.count();
+
     expect(itemCount).toBeGreaterThan(10);
 
     // Verify KeepTrack catalog items at the top

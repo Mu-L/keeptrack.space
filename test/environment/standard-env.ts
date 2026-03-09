@@ -412,7 +412,6 @@ export const setupDefaultHtml = () => {
     <div id="sat-infobox"></div>
     <div id="sat-hoverbox1"></div>
     <div id="fullscreen-btn"></div>
-    <div id="tutorial-btn"></div>
     <div id="layers-btn"></div>
     <div id="sound-btn"></div>
     <div id="colors-rmb-menu"></div>

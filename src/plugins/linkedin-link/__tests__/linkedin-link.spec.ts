@@ -9,6 +9,7 @@ test.describe('LinkedInLinkPlugin', () => {
 
     // The top menu button should exist in the DOM
     const topMenuBtn = page.locator('[id^="LinkedInLinkPlugin"][id$="-btn"]');
+
     await expect(topMenuBtn).toBeAttached();
 
     // Open drawer and find the LinkedIn item in the About group
@@ -24,6 +25,7 @@ test.describe('LinkedInLinkPlugin', () => {
 
     // TopMenuPlugin items use data-top-menu-id (NOT data-plugin-id)
     const drawerItem = page.locator('.drawer-item[data-top-menu-id="LinkedInLinkPlugin"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Intercept window.open to verify the LinkedIn URL
@@ -33,6 +35,7 @@ test.describe('LinkedInLinkPlugin', () => {
 
     // Verify window.open was called with the LinkedIn URL
     const popup = await openedUrl;
+
     if (popup) {
       expect(popup.url()).toContain('linkedin.com/company/keeptrackspace');
       await popup.close();
@@ -41,15 +44,20 @@ test.describe('LinkedInLinkPlugin', () => {
       const url = await page.evaluate(() => {
         let capturedUrl = '';
         const origOpen = window.open;
+
         window.open = (u?: string | URL) => {
           capturedUrl = String(u ?? '');
-          return null;
+
+return null;
         };
         const btn = document.querySelector('[id^="LinkedInLinkPlugin"][id$="-btn"]') as HTMLElement;
+
         btn?.click();
         window.open = origOpen;
-        return capturedUrl;
+
+return capturedUrl;
       });
+
       expect(url).toContain('linkedin.com/company/keeptrackspace');
     }
   });

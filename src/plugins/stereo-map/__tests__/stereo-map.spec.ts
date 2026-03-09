@@ -9,6 +9,7 @@ test.describe('StereoMap', () => {
 
     // StereoMap requires satellite selection
     const bottomIcon = page.locator('#stereo-map-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 

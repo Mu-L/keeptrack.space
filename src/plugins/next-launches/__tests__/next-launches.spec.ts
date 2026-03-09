@@ -9,6 +9,7 @@ test.describe('NextLaunchesPlugin', () => {
 
     // 1. Verify bottom icon exists in DOM (hidden in #bottom-icons)
     const bottomIcon = page.locator('#menu-nextLaunch');
+
     await expect(bottomIcon).toBeAttached();
 
     // 2. Open drawer and find plugin item in Events group
@@ -23,6 +24,7 @@ test.describe('NextLaunchesPlugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-nextLaunch"]');
+
     await expect(drawerItem).toBeVisible();
 
     // 3. Click to activate plugin
@@ -30,6 +32,7 @@ test.describe('NextLaunchesPlugin', () => {
 
     // 4. Verify side menu opens
     const sideMenu = page.locator('#nextLaunch-menu');
+
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify heading

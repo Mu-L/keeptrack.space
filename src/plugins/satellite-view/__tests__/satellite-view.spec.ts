@@ -8,6 +8,7 @@ test.describe('SatelliteViewPlugin', () => {
     });
 
     const utilityIcon = page.locator('#SatelliteViewPlugin-utility-icon');
+
     await expect(utilityIcon).toBeAttached();
     await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/);
 

@@ -8,18 +8,21 @@ test.describe('VideoDirectorPlugin', () => {
     });
 
     const bottomIcon = page.locator('#video-director-icon');
+
     await expect(bottomIcon).toBeAttached();
 
     // Open drawer and find item in Experimental group
     await page.locator('#drawer-hamburger').click();
     const group = page.locator('.drawer-group[data-group-key="mode-5"]');
     const groupItems = group.locator('.drawer-group-items');
+
     if (await groupItems.isHidden()) {
       await group.locator('.drawer-group-header').click();
       await expect(groupItems).toBeVisible({ timeout: 2_000 });
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="video-director-icon"]');
+
     await expect(drawerItem).toBeVisible();
     await drawerItem.click();
 

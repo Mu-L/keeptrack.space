@@ -121,7 +121,7 @@ describe('CatalogBrowserData', () => {
   test('all entries have valid queryParam format', () => {
     for (const cat of CatalogBrowserData.categories) {
       for (const entry of cat.entries) {
-        expect(entry.queryParam).toMatch(/^(GROUP|SPECIAL|FILE)=/u);
+        expect(entry.queryParam).toMatch(/^(?<type>GROUP|SPECIAL|FILE)=/u);
       }
     }
   });

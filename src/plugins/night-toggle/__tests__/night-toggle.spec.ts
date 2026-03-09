@@ -9,6 +9,7 @@ test.describe('NightToggle', () => {
 
     // UTILITY_ONLY plugins create NO bottom icon — only a utility icon
     const utilityIcon = page.locator('#NightToggle-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'night-toggle-bottom-icon');
 
@@ -17,6 +18,7 @@ test.describe('NightToggle', () => {
 
     // Read the initial state
     const initialState = await page.evaluate(() => (window as any).settingsManager?.isDrawNightAsDay);
+
     expect(initialState).toBe(false);
 
     // Click to toggle on (draw night as day)
@@ -25,6 +27,7 @@ test.describe('NightToggle', () => {
     // Verify setting toggled
     await expect(async () => {
       const currentState = await page.evaluate(() => (window as any).settingsManager?.isDrawNightAsDay);
+
       expect(currentState).toBe(true);
     }).toPass({ timeout: 5_000 });
 
@@ -37,6 +40,7 @@ test.describe('NightToggle', () => {
     // Verify setting returned to initial state
     await expect(async () => {
       const currentState = await page.evaluate(() => (window as any).settingsManager?.isDrawNightAsDay);
+
       expect(currentState).toBe(false);
     }).toPass({ timeout: 5_000 });
 

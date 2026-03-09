@@ -10,6 +10,7 @@ test.describe('NewLaunch', () => {
 
     // 1. Verify bottom icon exists (legacy pattern: "New Launch" → "new-launch-bottom-icon")
     const bottomIcon = page.locator('#new-launch-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
 
     // 2. Open drawer and find plugin item in Create group
@@ -24,6 +25,7 @@ test.describe('NewLaunch', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="new-launch-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // 3. Click to activate — Pro version doesn't require satellite selected
@@ -31,6 +33,7 @@ test.describe('NewLaunch', () => {
 
     // 4. Verify side menu opens
     const sideMenu = page.locator('#newLaunch-menu');
+
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify Pro-specific elements (mode selector, custom orbit fields)

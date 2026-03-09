@@ -8,6 +8,7 @@ test.describe('SkipInterpolationToggle', () => {
     });
 
     const utilityIcon = page.locator('#SkipInterpolationToggle-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
 
     // Click to toggle
@@ -16,6 +17,7 @@ test.describe('SkipInterpolationToggle', () => {
     // Verify state changed via settingsManager
     await expect(async () => {
       const state = await page.evaluate(() => (window as any).settingsManager?.isSkipTleInterpolation);
+
       expect(state).toBe(true);
     }).toPass({ timeout: 5_000 });
 
@@ -24,6 +26,7 @@ test.describe('SkipInterpolationToggle', () => {
 
     await expect(async () => {
       const state = await page.evaluate(() => (window as any).settingsManager?.isSkipTleInterpolation);
+
       expect(state).toBe(false);
     }).toPass({ timeout: 5_000 });
   });

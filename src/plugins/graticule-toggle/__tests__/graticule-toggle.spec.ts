@@ -9,6 +9,7 @@ test.describe('GraticuleToggle', () => {
 
     // UTILITY_ONLY icon uses #{plugin.id}-utility-icon
     const utilityIcon = page.locator('#GraticuleToggle-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'graticule-toggle-bottom-icon');
 

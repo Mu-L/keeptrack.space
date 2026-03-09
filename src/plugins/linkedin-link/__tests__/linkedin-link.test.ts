@@ -60,12 +60,12 @@ describe('LinkedInLinkPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
 
       // Simulate click
-      linkedInLinkPlugin['onClick_']();
+      linkedInLinkPlugin.onClick_();
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
         'https://www.linkedin.com/company/keeptrackspace/',
         '_blank',
-        'noopener,noreferrer'
+        'noopener,noreferrer',
       );
     });
   });
@@ -76,8 +76,8 @@ describe('LinkedInLinkPlugin', () => {
       linkedInLinkPlugin.addHtml();
 
       // After addHtml, tooltipText should be set
-      expect(linkedInLinkPlugin['tooltipText']).toBeDefined();
-      expect(typeof linkedInLinkPlugin['tooltipText']).toBe('string');
+      expect(linkedInLinkPlugin.tooltipText).toBeDefined();
+      expect(typeof linkedInLinkPlugin.tooltipText).toBe('string');
     });
   });
 
@@ -89,7 +89,7 @@ describe('LinkedInLinkPlugin', () => {
 
   describe('image property', () => {
     it('should have image defined', () => {
-      expect(linkedInLinkPlugin['image']).toBeDefined();
+      expect(linkedInLinkPlugin.image).toBeDefined();
     });
   });
 });

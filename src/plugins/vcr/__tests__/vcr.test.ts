@@ -104,6 +104,7 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
+
       timeManager.propRate = 1;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -120,6 +121,7 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
+
       timeManager.propRate = 0;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -181,6 +183,7 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
+
       plugin.isRewinding = false;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -198,6 +201,7 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
+
       plugin.isRewinding = true;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -231,6 +235,7 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
+
       plugin.isFastForwarding = false;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');
@@ -248,6 +253,7 @@ describe('VcrPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
       const timeManager = ServiceLocator.getTimeManager();
+
       plugin.isFastForwarding = true;
 
       const changePropRateSpy = vi.spyOn(timeManager, 'changePropRate');

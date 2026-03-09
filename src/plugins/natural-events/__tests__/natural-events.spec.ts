@@ -9,6 +9,7 @@ test.describe('NaturalEventsPlugin', () => {
 
     // Legacy pattern with explicit bottomIconElementName: 'menu-natural-events'
     const bottomIcon = page.locator('#menu-natural-events');
+
     await expect(bottomIcon).toBeAttached();
 
     // Open drawer and find item in Events group (mode-2)
@@ -23,12 +24,14 @@ test.describe('NaturalEventsPlugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-natural-events"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
     await drawerItem.click();
 
     const sideMenu = page.locator('#NaturalEventsPlugin-menu');
+
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
     await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
 

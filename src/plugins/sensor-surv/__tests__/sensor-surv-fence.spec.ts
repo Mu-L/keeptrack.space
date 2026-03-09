@@ -8,6 +8,7 @@ test.describe('SensorSurvFence', () => {
     });
 
     const utilityIcon = page.locator('#SensorSurvFence-utility-icon');
+
     await expect(utilityIcon).toBeAttached();
     await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/);
 

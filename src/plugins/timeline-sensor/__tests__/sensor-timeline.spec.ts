@@ -8,6 +8,7 @@ test.describe('SensorTimeline', () => {
     });
 
     const bottomIcon = page.locator('#sensor-timeline-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 

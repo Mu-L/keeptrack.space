@@ -8,6 +8,7 @@ test.describe('TransponderChannelData', () => {
     });
 
     const bottomIcon = page.locator('#menu-transponderChannelData');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
 

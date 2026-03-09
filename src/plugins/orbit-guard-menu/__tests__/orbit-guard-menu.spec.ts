@@ -4,6 +4,7 @@ import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 test.describe('OrbitGuardMenuPlugin', () => {
   test('loads without errors when enabled', async ({ page }) => {
     const errors: string[] = [];
+
     page.on('pageerror', (err) => errors.push(err.message));
 
     await waitForAppReady(page, {
@@ -14,7 +15,8 @@ test.describe('OrbitGuardMenuPlugin', () => {
     await expect(page.locator('#maneuver-detection-menu')).toBeAttached({ timeout: 10_000 });
     await expect(page.locator('#maneuver-detection-table')).toBeAttached();
 
-    const fatalErrors = errors.filter((e) => /orbit.?guard|maneuver/iu.test(e));
+    const fatalErrors = errors.filter((e) => (/orbit.?guard|maneuver/iu).test(e));
+
     expect(fatalErrors).toHaveLength(0);
   });
 });

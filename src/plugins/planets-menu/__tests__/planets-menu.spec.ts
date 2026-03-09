@@ -9,6 +9,7 @@ test.describe('PlanetsMenuPlugin', () => {
 
     // Bottom icon should exist in DOM
     const bottomIcon = page.locator('#menu-planets');
+
     await expect(bottomIcon).toBeAttached();
 
     // Open drawer and find item in Display group
@@ -22,12 +23,14 @@ test.describe('PlanetsMenuPlugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-planets"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
     await drawerItem.click();
 
     const sideMenu = page.locator('#planets-menu');
+
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify section headers (use exact text to avoid matching title or partial matches)
@@ -51,6 +54,7 @@ test.describe('PlanetsMenuPlugin', () => {
 
     // Verify disabled moons are present
     const disabledMoons = sideMenu.locator('.planets-menu-disabled');
+
     expect(await disabledMoons.count()).toBeGreaterThan(0);
 
     // Verify RMB context menu elements are in DOM

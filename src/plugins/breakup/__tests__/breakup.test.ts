@@ -33,7 +33,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
-        } as any
+        } as any,
       );
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
     });
@@ -150,7 +150,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
-        } as any
+        } as any,
       );
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
@@ -167,7 +167,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => ['Error', 'Error message'],
           };
-        } as any
+        } as any,
       );
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
@@ -184,7 +184,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
-        } as any
+        } as any,
       );
 
       vi.spyOn(SatMath, 'altitudeCheck').mockReturnValue(0 as Kilometers);
@@ -203,7 +203,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
-        } as any
+        } as any,
       );
 
       const originalSatellite = (global as any).Satellite;
@@ -235,7 +235,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
-        } as any
+        } as any,
       );
 
       expect(() => breakupPlugin['onSubmit_']()).not.toThrow();
@@ -255,7 +255,7 @@ describe('Breakup_class', () => {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
-        } as any
+        } as any,
       );
 
       breakupPlugin['onSubmit_']();

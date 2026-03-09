@@ -27,6 +27,7 @@ test.describe('CatalogManagement Plugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="catalog-management-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
@@ -60,6 +61,7 @@ test.describe('CatalogManagement Plugin', () => {
 
     // Ephemeris export button should be disabled (no satellite selected)
     const ephemBtn = page.locator('#de-export-ephem');
+
     await expect(ephemBtn).toBeAttached();
     await expect(ephemBtn).toBeDisabled();
 

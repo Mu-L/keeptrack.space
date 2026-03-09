@@ -12,9 +12,11 @@ test.describe('SoundToggle', () => {
 
     // Sound button should be injected into the nav
     const soundBtn = page.locator('#sound-btn');
+
     await expect(soundBtn).toBeAttached({ timeout: 5_000 });
 
     const soundIcon = page.locator('#sound-icon');
+
     await expect(soundIcon).toBeAttached();
   });
 });

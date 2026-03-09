@@ -9,6 +9,7 @@ test.describe('PoliticalMapToggle', () => {
 
     // UTILITY_ONLY icon: #PoliticalMapToggle-utility-icon
     const utilityIcon = page.locator('#PoliticalMapToggle-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'political-map-toggle-bottom-icon');
 
@@ -21,6 +22,7 @@ test.describe('PoliticalMapToggle', () => {
     // Verify the setting toggled from its initial state
     await expect(async () => {
       const currentState = await page.evaluate(() => (window as any).settingsManager?.isDrawPoliticalMap);
+
       expect(currentState).toBe(!initialState);
     }).toPass({ timeout: 5_000 });
 
@@ -30,6 +32,7 @@ test.describe('PoliticalMapToggle', () => {
     // Verify the setting returned to its initial state
     await expect(async () => {
       const currentState = await page.evaluate(() => (window as any).settingsManager?.isDrawPoliticalMap);
+
       expect(currentState).toBe(initialState);
     }).toPass({ timeout: 5_000 });
   });

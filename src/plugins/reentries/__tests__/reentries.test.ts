@@ -174,7 +174,7 @@ describe('Reentries_class', () => {
       expect(plugin['tipList_'].length).toBe(2);
     });
 
-    it('should not fetch if TIP list is already populated', async () => {
+    it('should not fetch if TIP list is already populated', () => {
       const plugin = new Reentries();
 
       websiteInit(plugin);
@@ -221,7 +221,7 @@ describe('Reentries_class', () => {
   });
 
   describe('createTipTable_', () => {
-    it('should create table with TIP data', async () => {
+    it('should create table with TIP data', () => {
       const plugin = new Reentries();
 
       websiteInit(plugin);
@@ -356,7 +356,9 @@ describe('Reentries_class', () => {
         apogee: 300,
         inclination: 45.0,
         rcs: 2.0,
-        toClassicalElements: () => { throw new Error('Propagation failed'); },
+        toClassicalElements: () => {
+ throw new Error('Propagation failed');
+},
       } as any;
 
       Reentries['createReentryRow_'](table, mockSat);

@@ -8,6 +8,7 @@ test.describe('ShortTermFences', () => {
     });
 
     const bottomIcon = page.locator('[id="short-term fence-bottom-icon"]');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 

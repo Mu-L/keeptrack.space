@@ -74,9 +74,11 @@ test.describe('Plot Analysis Plugins', () => {
 
     // ── Open Inc2AltPlots (non-satellite-dependent, login gate disabled) ──
     const inc2altDrawer = page.locator('.drawer-item[data-plugin-id="inc2alt-plots-icon"]');
+
     await inc2altDrawer.click();
 
     const inc2altMenu = page.locator('#inc2alt-plots-menu');
+
     await expect(inc2altMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify statistics elements

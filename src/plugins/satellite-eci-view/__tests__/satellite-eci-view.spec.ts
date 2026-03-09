@@ -8,6 +8,7 @@ test.describe('SatelliteEciView', () => {
     });
 
     const utilityIcon = page.locator('#SatelliteEciView-utility-icon');
+
     await expect(utilityIcon).toBeAttached();
     await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/);
 

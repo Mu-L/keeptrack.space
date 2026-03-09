@@ -27,6 +27,7 @@ test.describe('EarthPresetsPlugin', () => {
     ];
 
     for (const id of presetIds) {
+      // eslint-disable-next-line no-await-in-loop
       await expect(page.locator(`#${id}`)).toBeAttached();
     }
 

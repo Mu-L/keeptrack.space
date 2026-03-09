@@ -14,6 +14,7 @@ test.describe('WatchlistFilterPlugin', () => {
     // WatchlistFilter is UTILITY_ONLY — in drawer mode, the utility icon
     // gets id="${pluginId}-utility-icon" from the PluginDrawer.
     const utilityIcon = page.locator('#WatchlistFilterPlugin-utility-icon');
+
     await expect(utilityIcon).toBeAttached();
     await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/u);
   });

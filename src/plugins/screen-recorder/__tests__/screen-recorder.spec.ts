@@ -8,6 +8,7 @@ test.describe('ScreenRecorder', () => {
     });
 
     const bottomIcon = page.locator('#screen-recorder-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
   });
 });

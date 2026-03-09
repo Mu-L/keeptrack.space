@@ -9,6 +9,7 @@ test.describe('MissilePlugin', () => {
 
     // Composition-based: elementName is 'MissilePlugin-bottom-icon'
     const bottomIcon = page.locator('#MissilePlugin-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
 
     // Open drawer and find item in Create group (mode-3)
@@ -23,12 +24,14 @@ test.describe('MissilePlugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="MissilePlugin-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
     await drawerItem.click();
 
     const sideMenu = page.locator('#MissilePlugin-menu');
+
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
     await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
 
@@ -37,6 +40,7 @@ test.describe('MissilePlugin', () => {
 
     // Verify attack type select
     const typeSelect = page.locator('#ms-type');
+
     await expect(typeSelect).toBeAttached();
 
     // Verify custom options container and its select fields

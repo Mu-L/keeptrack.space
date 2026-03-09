@@ -8,18 +8,21 @@ test.describe('SearchSettingsPlugin', () => {
     });
 
     const bottomIcon = page.locator('#search-settings-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
 
     // Open drawer and find item in Settings group
     await page.locator('#drawer-hamburger').click();
     const group = page.locator('.drawer-group[data-group-key="mode-7"]');
     const groupItems = group.locator('.drawer-group-items');
+
     if (await groupItems.isHidden()) {
       await group.locator('.drawer-group-header').click();
       await expect(groupItems).toBeVisible({ timeout: 2_000 });
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="search-settings-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
     await drawerItem.click();
 

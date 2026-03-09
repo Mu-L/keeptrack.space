@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-undefined */
 /* eslint-disable max-lines-per-function */
+/* eslint-disable max-lines */
 /* eslint-disable dot-notation */
 import { MenuMode } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -546,7 +547,7 @@ describe('FilterMenuPlugin_class', () => {
         // Translation keys start with 'filterMenu.'
         expect(filter.id).not.toMatch(/^filterMenu\./u);
         // IDs should not contain 'name', 'category', 'tooltip' which are translation key suffixes
-        expect(filter.id).not.toMatch(/\.(name|category|tooltip)$/u);
+        expect(filter.id).not.toMatch(/\.(?<suffix>name|category|tooltip)$/u);
       });
     });
 

@@ -9,6 +9,7 @@ test.describe('GithubLinkPlugin', () => {
 
     // The top menu button should exist in the DOM
     const topMenuBtn = page.locator('[id^="GithubLinkPlugin"][id$="-btn"]');
+
     await expect(topMenuBtn).toBeAttached();
 
     // Open drawer and find the GitHub item in the About group
@@ -23,6 +24,7 @@ test.describe('GithubLinkPlugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-top-menu-id="GithubLinkPlugin"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Intercept window.open to verify the GitHub URL
@@ -32,6 +34,7 @@ test.describe('GithubLinkPlugin', () => {
 
     // Verify window.open was called with the GitHub URL
     const popup = await openedUrl;
+
     if (popup) {
       expect(popup.url()).toContain('github.com/thkruz/keeptrack.space');
       await popup.close();
@@ -40,15 +43,20 @@ test.describe('GithubLinkPlugin', () => {
       const url = await page.evaluate(() => {
         let capturedUrl = '';
         const origOpen = window.open;
+
         window.open = (u?: string | URL) => {
           capturedUrl = String(u ?? '');
-          return null;
+
+return null;
         };
         const btn = document.querySelector('[id^="GithubLinkPlugin"][id$="-btn"]') as HTMLElement;
+
         btn?.click();
         window.open = origOpen;
-        return capturedUrl;
+
+return capturedUrl;
       });
+
       expect(url).toContain('github.com/thkruz/keeptrack.space');
     }
   });

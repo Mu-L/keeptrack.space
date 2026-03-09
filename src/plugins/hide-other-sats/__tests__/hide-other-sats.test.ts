@@ -42,7 +42,7 @@ describe('HideOtherSatellitesPlugin', () => {
 
       websiteInit(plugin);
 
-      vi.spyOn(plugin, 'setBottomIconToSelected').mockImplementation(() => {});
+      vi.spyOn(plugin, 'setBottomIconToSelected').mockImplementation(() => { /* Intentional no-op */ });
       plugin.hideOtherSats();
 
       expect(settingsManager.colors.transparent[3]).toBe(0);
@@ -54,7 +54,7 @@ describe('HideOtherSatellitesPlugin', () => {
       websiteInit(plugin);
       settingsManager.colors.transparent = [1.0, 1.0, 1.0, 0];
 
-      vi.spyOn(plugin, 'setBottomIconToUnselected').mockImplementation(() => {});
+      vi.spyOn(plugin, 'setBottomIconToUnselected').mockImplementation(() => { /* Intentional no-op */ });
       plugin.showOtherSats();
 
       expect(settingsManager.colors.transparent[3]).toBe(0.1);

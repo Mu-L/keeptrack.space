@@ -8,6 +8,7 @@ test.describe('SatellitePhotos', () => {
     });
 
     const bottomIcon = page.locator('#menu-sat-photo');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
 
@@ -15,12 +16,14 @@ test.describe('SatellitePhotos', () => {
     await page.locator('#drawer-hamburger').click();
     const group = page.locator('.drawer-group[data-group-key="mode-5"]');
     const groupItems = group.locator('.drawer-group-items');
+
     if (await groupItems.isHidden()) {
       await group.locator('.drawer-group-header').click();
       await expect(groupItems).toBeVisible({ timeout: 2_000 });
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="menu-sat-photo"]');
+
     await expect(drawerItem).toBeVisible();
     await drawerItem.click();
 

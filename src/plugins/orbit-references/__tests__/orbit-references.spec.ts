@@ -16,7 +16,8 @@ test.describe('OrbitReferences Plugin', () => {
     // Without a selected satellite, there is no visible UI to test.
 
     // Verify the app loaded without plugin-related errors
-    const pluginErrors = pageErrors.filter((e) => /orbit.?ref/iu.test(e));
+    const pluginErrors = pageErrors.filter((e) => (/orbit.?ref/iu).test(e));
+
     expect(pluginErrors).toHaveLength(0);
 
     // The orbit-references-link should NOT exist until a satellite is selected

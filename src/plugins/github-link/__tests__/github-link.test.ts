@@ -60,12 +60,12 @@ describe('GithubLinkPlugin', () => {
       EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
 
       // Simulate click
-      githubLinkPlugin['onClick_']();
+      githubLinkPlugin.onClick_();
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
         'https://github.com/thkruz/keeptrack.space/',
         '_blank',
-        'noopener,noreferrer'
+        'noopener,noreferrer',
       );
     });
   });
@@ -76,8 +76,8 @@ describe('GithubLinkPlugin', () => {
       githubLinkPlugin.addHtml();
 
       // After addHtml, tooltipText should be set
-      expect(githubLinkPlugin['tooltipText']).toBeDefined();
-      expect(typeof githubLinkPlugin['tooltipText']).toBe('string');
+      expect(githubLinkPlugin.tooltipText).toBeDefined();
+      expect(typeof githubLinkPlugin.tooltipText).toBe('string');
     });
   });
 
@@ -89,7 +89,7 @@ describe('GithubLinkPlugin', () => {
 
   describe('image property', () => {
     it('should have image defined', () => {
-      expect(githubLinkPlugin['image']).toBeDefined();
+      expect(githubLinkPlugin.image).toBeDefined();
     });
   });
 });

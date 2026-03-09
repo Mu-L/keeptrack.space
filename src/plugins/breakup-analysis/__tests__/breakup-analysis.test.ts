@@ -78,7 +78,7 @@ describe('BreakupAnalysis_class', () => {
       const plugin = new BreakupAnalysis();
 
       websiteInit(plugin);
-      plugin['isMenuButtonActive'] = false;
+      plugin.isMenuButtonActive = false;
 
       expect(() => plugin.onBottomIconClick()).not.toThrow();
     });
@@ -100,9 +100,9 @@ describe('BreakupAnalysis_class', () => {
     it('should return zero stats for empty debris list', () => {
       const plugin = new BreakupAnalysis();
 
-      plugin['debrisResults_'] = [];
+      plugin.debrisResults_ = [];
 
-      const altStats = plugin['calcAltitudeStats_']();
+      const altStats = plugin.calcAltitudeStats_();
 
       expect(altStats.minPerigee).toBe(0);
       expect(altStats.maxPerigee).toBe(0);
@@ -112,9 +112,9 @@ describe('BreakupAnalysis_class', () => {
     it('should return zero counts for empty debris list', () => {
       const plugin = new BreakupAnalysis();
 
-      plugin['debrisResults_'] = [];
+      plugin.debrisResults_ = [];
 
-      const counts = plugin['countByType_']();
+      const counts = plugin.countByType_();
 
       expect(counts.payloads).toBe(0);
       expect(counts.rocketBodies).toBe(0);
@@ -122,7 +122,7 @@ describe('BreakupAnalysis_class', () => {
     });
 
     it('should calculate field stats correctly', () => {
-      const result = BreakupAnalysis['calcFieldStats_']([], () => 0);
+      const result = BreakupAnalysis.calcFieldStats_([], () => 0);
 
       expect(result.min).toBe(0);
       expect(result.max).toBe(0);
@@ -130,7 +130,7 @@ describe('BreakupAnalysis_class', () => {
     });
 
     it('should calculate years between dates', () => {
-      const years = BreakupAnalysis['calcYearsBetween_']('2000-01-01', '2010-01-01');
+      const years = BreakupAnalysis.calcYearsBetween_('2000-01-01', '2010-01-01');
 
       expect(parseFloat(years)).toBeCloseTo(10, 0);
     });
@@ -142,13 +142,13 @@ describe('BreakupAnalysis_class', () => {
 
       websiteInit(plugin);
 
-      plugin['selectedEventId_'] = 'fengyun1c';
-      plugin['debrisResults_'] = [{} as any];
+      plugin.selectedEventId_ = 'fengyun1c';
+      plugin.debrisResults_ = [{} as any];
 
-      plugin['showEventList_']();
+      plugin.showEventList_();
 
-      expect(plugin['selectedEventId_']).toBeNull();
-      expect(plugin['debrisResults_']).toHaveLength(0);
+      expect(plugin.selectedEventId_).toBeNull();
+      expect(plugin.debrisResults_).toHaveLength(0);
     });
   });
 });

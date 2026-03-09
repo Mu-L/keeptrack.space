@@ -11,6 +11,7 @@ test.describe('ProximityOps', () => {
     // Slug: "rendezvous-and proximity operations" (replace only first space)
     // Element name: "rendezvous-and proximity operations-bottom-icon"
     const bottomIcon = page.locator('[id="rendezvous-and proximity operations-bottom-icon"]');
+
     await expect(bottomIcon).toBeAttached();
 
     // Open drawer and find item in Events group
@@ -24,12 +25,14 @@ test.describe('ProximityOps', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="rendezvous-and proximity operations-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
     await drawerItem.click();
 
     const sideMenu = page.locator('#proximityOps-menu');
+
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify form elements exist

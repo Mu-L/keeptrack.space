@@ -9,6 +9,7 @@ test.describe('PolarPlotPlugin', () => {
 
     // Legacy pattern: locale "Polar Plot" → slug "polar-plot" → "polar-plot-bottom-icon"
     const bottomIcon = page.locator('#polar-plot-bottom-icon');
+
     await expect(bottomIcon).toBeAttached();
     await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
 
@@ -23,6 +24,7 @@ test.describe('PolarPlotPlugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="polar-plot-bottom-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Clicking disabled drawer item should NOT open the side menu

@@ -8,6 +8,7 @@ test.describe('SatelliteFixedView', () => {
     });
 
     const utilityIcon = page.locator('#SatelliteFixedView-utility-icon');
+
     await expect(utilityIcon).toBeAttached();
     await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/);
 

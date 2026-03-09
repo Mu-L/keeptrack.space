@@ -177,7 +177,7 @@ describe('Collisions_class', () => {
       vi.useFakeTimers();
     });
 
-    it('should not fetch if collision list is already populated', async () => {
+    it('should not fetch if collision list is already populated', () => {
       const plugin = new Collisions();
 
       websiteInit(plugin);
@@ -192,7 +192,7 @@ describe('Collisions_class', () => {
   });
 
   describe('createTable_', () => {
-    it('should create table with collision data', async () => {
+    it('should create table with collision data', () => {
       const plugin = new Collisions();
 
       websiteInit(plugin);

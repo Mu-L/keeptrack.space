@@ -9,6 +9,7 @@ test.describe('HideOtherSatellitesPlugin', () => {
 
     // UTILITY_ONLY icon uses #{plugin.id}-utility-icon
     const utilityIcon = page.locator('#HideOtherSatellitesPlugin-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'hide-other-sats-bottom-icon');
 

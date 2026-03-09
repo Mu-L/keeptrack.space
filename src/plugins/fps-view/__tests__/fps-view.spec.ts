@@ -9,6 +9,7 @@ test.describe('FpsView Plugin', () => {
 
     // Utility icon should be visible in the drawer utility footer
     const utilityIcon = page.locator('#FpsView-utility-icon');
+
     await expect(utilityIcon).toBeVisible();
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'fps-view-bottom-icon');
 

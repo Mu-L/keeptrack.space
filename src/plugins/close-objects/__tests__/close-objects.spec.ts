@@ -27,6 +27,7 @@ test.describe('CloseObjects Plugin', () => {
     }
 
     const drawerItem = page.locator('.drawer-item[data-plugin-id="close-objects-icon"]');
+
     await expect(drawerItem).toBeVisible();
 
     // Click to open side menu
