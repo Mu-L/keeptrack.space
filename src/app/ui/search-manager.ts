@@ -428,15 +428,15 @@ export class SearchManager {
     const satData = SearchManager.getSearchableObjects_(true) as (Satellite & MissileObject)[];
 
     searchList.forEach((searchStringIn) => {
-      satData.every((sat) => {
+      for (const sat of satData) {
         const len = searchStringIn.length;
 
         if (len === 0) {
-          return true;
+          continue;
         } // Skip empty strings
         // TODO: #855 Allow searching for other types of objects
         if (!sat.isMissile() && !sat.isSatellite()) {
-          return true;
+          continue;
         } // Skip non satellites and missiles
 
         // TODO: Vimpel additions may slow things down - perhaps make it a setting?
@@ -448,7 +448,7 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         }
 
         if (sat.altName && sat.altName.toUpperCase().indexOf(searchStringIn) !== -1) {
@@ -459,7 +459,7 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         }
 
         if (typeof sat.bus !== 'undefined' && sat.bus.toUpperCase().indexOf(searchStringIn) !== -1) {
@@ -470,7 +470,7 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         }
 
         if (!sat.desc) {
@@ -483,15 +483,15 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         } else {
-          return true; // Last check for missiles
+          continue; // Last check for missiles
         }
 
         if (sat.sccNum && sat.sccNum.indexOf(searchStringIn) !== -1) {
           // Ignore Notional Satellites unless all 6 characters are entered
           if (sat.name.includes(' Notional)') && searchStringIn.length < 6) {
-            return true;
+            continue;
           }
 
           addResult_({
@@ -501,13 +501,13 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         }
 
         if (sat.intlDes && sat.intlDes.indexOf(searchStringIn) !== -1 && !sat.name.includes('Vimpel')) {
           // Ignore Notional Satellites
           if (sat.name.includes(' Notional)')) {
-            return true;
+            continue;
           }
 
           addResult_({
@@ -517,7 +517,7 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         }
 
         if (sat.launchVehicle && sat.launchVehicle.toUpperCase().indexOf(searchStringIn) !== -1) {
@@ -528,11 +528,9 @@ export class SearchManager {
             id: sat.id,
           });
 
-          return true; // Prevent's duplicate results
+          continue;
         }
-
-        return true;
-      });
+      }
     });
 
     return { results, totalFound };
