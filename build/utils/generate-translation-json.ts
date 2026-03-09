@@ -18,7 +18,9 @@ export function mergeAllLocales(): void {
   // Load configuration
   const config = configManager.loadConfig(process.argv.slice(2));
 
-  if (config.isPro) {
+  // Always include pro plugin locales when the directory exists, even in OSS builds.
+  // The submodule is checked out in CI and locale keys must be consistent across all languages.
+  if (config.isPro || fileManager.fileExists('../src/plugins-pro')) {
     fileManager.mergeLocales('../src', '../src/plugins-pro');
   } else {
     fileManager.mergeLocales('../src');
