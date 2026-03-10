@@ -3,7 +3,9 @@
     "unknown": "Desconocido"
   },
   "loadingScreen": {
-    "startButton": "Haga Clic para Comenzar"
+    "startButton": "Haga Clic para Comenzar",
+    "hint": "Consejo:",
+    "downloadingScience": "Descargando ciencia..."
   },
   "errorMsgs": {
     "LoginRequired": "Esta función requiere inicio de sesión. Por favor, inicie sesión para continuar.",
@@ -236,5 +238,26 @@
       "title": "Menú de Gráficos",
       "helpBody": "El Menú de Gráficos se utiliza para cambiar la configuración gráfica de la aplicación."
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Catálogo",
+    "modeSensors": "Sensores",
+    "modeEvents": "Eventos",
+    "modeCreate": "Crear",
+    "modeAnalysis": "Análisis",
+    "modeDisplay": "Visualización",
+    "modeTools": "Herramientas",
+    "modeSettings": "Configuración",
+    "modeExperimental": "Experimental",
+    "groupCameraModes": "Modos de cámara",
+    "groupLayerToggles": "Alternar capas",
+    "groupSettingsToggles": "Alternar configuración",
+    "groupAbout": "Acerca de"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Pausar reloj",
+    "resetCamera": "Restablecer cámara",
+    "clearLines": "Borrar líneas",
+    "clearScreen": "Borrar pantalla"
   }
 }

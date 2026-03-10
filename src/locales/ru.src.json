@@ -3,7 +3,9 @@
     "unknown": "Неизвестно"
   },
   "loadingScreen": {
-    "startButton": "Нажмите, чтобы начать"
+    "startButton": "Нажмите, чтобы начать",
+    "hint": "Подсказка:",
+    "downloadingScience": "Загрузка научных данных..."
   },
   "errorMsgs": {
     "LoginRequired": "Эта функция требует входа в систему. Пожалуйста, войдите, чтобы продолжить.",
@@ -236,5 +238,26 @@
       "title": "Меню графики",
       "helpBody": "Меню графики используется для изменения графических настроек приложения."
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Каталог",
+    "modeSensors": "Датчики",
+    "modeEvents": "События",
+    "modeCreate": "Создание",
+    "modeAnalysis": "Анализ",
+    "modeDisplay": "Отображение",
+    "modeTools": "Инструменты",
+    "modeSettings": "Настройки",
+    "modeExperimental": "Экспериментальное",
+    "groupCameraModes": "Режимы камеры",
+    "groupLayerToggles": "Переключатели слоёв",
+    "groupSettingsToggles": "Переключатели настроек",
+    "groupAbout": "О программе"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Приостановить часы",
+    "resetCamera": "Сбросить камеру",
+    "clearLines": "Очистить линии",
+    "clearScreen": "Очистить экран"
   }
 }

@@ -3,7 +3,9 @@
     "unknown": "알 수 없음"
   },
   "loadingScreen": {
-    "startButton": "클릭하여 시작"
+    "startButton": "클릭하여 시작",
+    "hint": "힌트:",
+    "downloadingScience": "과학 데이터 다운로드 중..."
   },
   "errorMsgs": {
     "LoginRequired": "이 기능은 로그인이 필요합니다. 계속하려면 로그인해 주세요.",
@@ -236,5 +238,26 @@
       "title": "그래픽 메뉴",
       "helpBody": "그래픽 메뉴는 애플리케이션의 그래픽 설정을 변경하는 데 사용됩니다."
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "카탈로그",
+    "modeSensors": "센서",
+    "modeEvents": "이벤트",
+    "modeCreate": "생성",
+    "modeAnalysis": "분석",
+    "modeDisplay": "디스플레이",
+    "modeTools": "도구",
+    "modeSettings": "설정",
+    "modeExperimental": "실험적",
+    "groupCameraModes": "카메라 모드",
+    "groupLayerToggles": "레이어 토글",
+    "groupSettingsToggles": "설정 토글",
+    "groupAbout": "정보"
+  },
+  "rightClickMenu": {
+    "pauseClock": "시계 일시정지",
+    "resetCamera": "카메라 초기화",
+    "clearLines": "선 지우기",
+    "clearScreen": "화면 지우기"
   }
 }

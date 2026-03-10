@@ -3,7 +3,9 @@
     "unknown": "Inconnu"
   },
   "loadingScreen": {
-    "startButton": "Cliquez pour Commencer"
+    "startButton": "Cliquez pour Commencer",
+    "hint": "Astuce :",
+    "downloadingScience": "Téléchargement de la science..."
   },
   "errorMsgs": {
     "LoginRequired": "Cette fonctionnalité nécessite une connexion. Veuillez vous connecter pour continuer.",
@@ -236,5 +238,26 @@
       "title": "Menu Graphismes",
       "helpBody": "Le menu Graphismes permet de modifier les paramètres graphiques de l'application."
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Catalogue",
+    "modeSensors": "Capteurs",
+    "modeEvents": "Événements",
+    "modeCreate": "Créer",
+    "modeAnalysis": "Analyse",
+    "modeDisplay": "Affichage",
+    "modeTools": "Outils",
+    "modeSettings": "Paramètres",
+    "modeExperimental": "Expérimental",
+    "groupCameraModes": "Modes caméra",
+    "groupLayerToggles": "Couches d'affichage",
+    "groupSettingsToggles": "Paramètres d'affichage",
+    "groupAbout": "À propos"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Mettre en pause l'horloge",
+    "resetCamera": "Réinitialiser la caméra",
+    "clearLines": "Effacer les lignes",
+    "clearScreen": "Effacer l'écran"
   }
 }

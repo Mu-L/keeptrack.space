@@ -3,7 +3,9 @@
     "unknown": "Unbekannt"
   },
   "loadingScreen": {
-    "startButton": "Klicken Sie, um zu Beginnen"
+    "startButton": "Klicken Sie, um zu Beginnen",
+    "hint": "Tipp:",
+    "downloadingScience": "Wissenschaft wird heruntergeladen..."
   },
   "errorMsgs": {
     "LoginRequired": "Diese Funktion erfordert eine Anmeldung. Bitte melden Sie sich an, um fortzufahren.",
@@ -519,5 +521,26 @@
     "BH": "Bahrain",
     "BW": "Botswana",
     "ESA/JAXA": "ESA/JAXA"
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Katalog",
+    "modeSensors": "Sensoren",
+    "modeEvents": "Ereignisse",
+    "modeCreate": "Erstellen",
+    "modeAnalysis": "Analyse",
+    "modeDisplay": "Anzeige",
+    "modeTools": "Werkzeuge",
+    "modeSettings": "Einstellungen",
+    "modeExperimental": "Experimentell",
+    "groupCameraModes": "Kameramodi",
+    "groupLayerToggles": "Ebenen-Schalter",
+    "groupSettingsToggles": "Einstellungen-Schalter",
+    "groupAbout": "Über"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Uhr anhalten",
+    "resetCamera": "Kamera zurücksetzen",
+    "clearLines": "Linien löschen",
+    "clearScreen": "Bildschirm löschen"
   }
 }

@@ -3,7 +3,9 @@
     "unknown": "Unknown"
   },
   "loadingScreen": {
-    "startButton": "Click to Begin"
+    "startButton": "Click to Begin",
+    "hint": "Hint:",
+    "downloadingScience": "Downloading Science..."
   },
   "errorMsgs": {
     "LoginRequired": "This feature requires login. Please sign in to continue.",
@@ -236,5 +238,26 @@
       "title": "Graphics Menu",
       "helpBody": "The Graphics Menu is used to change the graphics settings of the application."
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Catalog",
+    "modeSensors": "Sensors",
+    "modeEvents": "Events",
+    "modeCreate": "Create",
+    "modeAnalysis": "Analysis",
+    "modeDisplay": "Display",
+    "modeTools": "Tools",
+    "modeSettings": "Settings",
+    "modeExperimental": "Experimental",
+    "groupCameraModes": "Camera Modes",
+    "groupLayerToggles": "Layer Toggles",
+    "groupSettingsToggles": "Settings Toggles",
+    "groupAbout": "About"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Pause Clock",
+    "resetCamera": "Reset Camera",
+    "clearLines": "Clear Lines",
+    "clearScreen": "Clear Screen"
   }
 }

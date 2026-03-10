@@ -3,7 +3,9 @@
     "unknown": "未知"
   },
   "loadingScreen": {
-    "startButton": "点击开始"
+    "startButton": "点击开始",
+    "hint": "提示：",
+    "downloadingScience": "正在下载科学数据..."
   },
   "errorMsgs": {
     "LoginRequired": "此功能需要登录。请登录后继续。",
@@ -267,5 +269,26 @@
       "title": "图形菜单",
       "helpBody": "图形菜单用于更改应用程序的图形设置。"
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "目录",
+    "modeSensors": "传感器",
+    "modeEvents": "事件",
+    "modeCreate": "创建",
+    "modeAnalysis": "分析",
+    "modeDisplay": "显示",
+    "modeTools": "工具",
+    "modeSettings": "设置",
+    "modeExperimental": "实验性",
+    "groupCameraModes": "相机模式",
+    "groupLayerToggles": "图层切换",
+    "groupSettingsToggles": "设置切换",
+    "groupAbout": "关于"
+  },
+  "rightClickMenu": {
+    "pauseClock": "暂停时钟",
+    "resetCamera": "重置相机",
+    "clearLines": "清除线条",
+    "clearScreen": "清除屏幕"
   }
 }

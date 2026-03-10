@@ -3,7 +3,9 @@
     "unknown": "不明"
   },
   "loadingScreen": {
-    "startButton": "クリックで開始"
+    "startButton": "クリックで開始",
+    "hint": "ヒント：",
+    "downloadingScience": "科学データをダウンロード中..."
   },
   "errorMsgs": {
     "LoginRequired": "この機能にはログインが必要です。続行するにはサインインしてください。",
@@ -267,5 +269,26 @@
       "title": "グラフィックメニュー",
       "helpBody": "グラフィックメニューは、アプリケーションのグラフィック設定を変更するために使用されます。"
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "カタログ",
+    "modeSensors": "センサー",
+    "modeEvents": "イベント",
+    "modeCreate": "作成",
+    "modeAnalysis": "分析",
+    "modeDisplay": "表示",
+    "modeTools": "ツール",
+    "modeSettings": "設定",
+    "modeExperimental": "実験的",
+    "groupCameraModes": "カメラモード",
+    "groupLayerToggles": "レイヤー切替",
+    "groupSettingsToggles": "設定切替",
+    "groupAbout": "概要"
+  },
+  "rightClickMenu": {
+    "pauseClock": "時計を一時停止",
+    "resetCamera": "カメラをリセット",
+    "clearLines": "ラインを消去",
+    "clearScreen": "画面を消去"
   }
 }

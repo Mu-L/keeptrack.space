@@ -3,7 +3,9 @@
     "unknown": "Невідомо"
   },
   "loadingScreen": {
-    "startButton": "Натисніть, щоб почати"
+    "startButton": "Натисніть, щоб почати",
+    "hint": "Підказка:",
+    "downloadingScience": "Завантаження наукових даних..."
   },
   "errorMsgs": {
     "LoginRequired": "Ця функція потребує входу в систему. Будь ласка, увійдіть, щоб продовжити.",
@@ -241,5 +243,26 @@
       "title": "Меню графіки",
       "helpBody": "Меню графіки використовується для зміни графічних налаштувань застосунку."
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Каталог",
+    "modeSensors": "Датчики",
+    "modeEvents": "Події",
+    "modeCreate": "Створення",
+    "modeAnalysis": "Аналіз",
+    "modeDisplay": "Відображення",
+    "modeTools": "Інструменти",
+    "modeSettings": "Налаштування",
+    "modeExperimental": "Експериментальне",
+    "groupCameraModes": "Режими камери",
+    "groupLayerToggles": "Перемикачі шарів",
+    "groupSettingsToggles": "Перемикачі налаштувань",
+    "groupAbout": "Про програму"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Призупинити годинник",
+    "resetCamera": "Скинути камеру",
+    "clearLines": "Очистити лінії",
+    "clearScreen": "Очистити екран"
   }
 }
