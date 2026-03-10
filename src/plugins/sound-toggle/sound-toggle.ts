@@ -6,6 +6,7 @@ import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
 import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
 import soundOffPng from '@public/img/icons/sound-off.png';
 import soundOnPng from '@public/img/icons/sound-on.png';
 import { TopMenu } from '../top-menu/top-menu';
@@ -13,6 +14,10 @@ import { TopMenu } from '../top-menu/top-menu';
 export class SoundToggle extends KeepTrackPlugin {
   readonly id = 'SoundToggle';
   dependencies_ = ['TopMenu'];
+
+  private t_(key: string): string {
+    return t7e(`plugins.SoundToggle.${key}` as Parameters<typeof t7e>[0]);
+  }
 
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
@@ -32,7 +37,7 @@ export class SoundToggle extends KeepTrackPlugin {
       order: 1,
       classInner: 'bmenu-item-selected',
       icon: soundOnPng,
-      tooltip: 'Toggle Sound On/Off',
+      tooltip: this.t_('tooltip'),
     });
 
     // Listen to mute state changes from SoundManager
@@ -52,7 +57,7 @@ export class SoundToggle extends KeepTrackPlugin {
     const soundManager = ServiceLocator.getSoundManager();
 
     if (!soundManager) {
-      errorManagerInstance.warn('SoundManager is not enabled. Check your settings!');
+      errorManagerInstance.warn(this.t_('errorMsgs.notEnabled'));
 
       return;
     }
