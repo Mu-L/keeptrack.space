@@ -15,6 +15,9 @@
         "satelliteToSatellite": "Спутник к спутнику",
         "satelliteToSun": "Спутник к Солнцу",
         "satelliteToMoon": "Спутник к Луне"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "Не выбран основной спутник для линии между спутниками."
       }
     }
   }

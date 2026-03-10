@@ -15,6 +15,9 @@
         "satelliteToSatellite": "Satelit – satelit",
         "satelliteToSun": "Satelit – Slunce",
         "satelliteToMoon": "Satelit – Měsíc"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "Nebyl vybrán primární satelit pro linii satelit–satelit."
       }
     }
   }

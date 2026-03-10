@@ -15,6 +15,9 @@
         "satelliteToSatellite": "Satelita do satelity",
         "satelliteToSun": "Satelita do Słońca",
         "satelliteToMoon": "Satelita do Księżyca"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "Nie wybrano głównego satelity dla linii satelita–satelita."
       }
     }
   }

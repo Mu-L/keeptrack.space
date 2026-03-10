@@ -15,6 +15,9 @@
         "satelliteToSatellite": "Satélite a satélite",
         "satelliteToSun": "Satélite al Sol",
         "satelliteToMoon": "Satélite a la Luna"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "No se ha seleccionado un satélite primario para la línea de satélite a satélite."
       }
     }
   }

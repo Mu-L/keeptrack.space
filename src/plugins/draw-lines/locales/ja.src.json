@@ -15,6 +15,9 @@
         "satelliteToSatellite": "衛星から衛星",
         "satelliteToSun": "衛星から太陽",
         "satelliteToMoon": "衛星から月"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "衛星間ラインの主衛星が選択されていません。"
       }
     }
   }

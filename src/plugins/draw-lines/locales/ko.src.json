@@ -15,6 +15,9 @@
         "satelliteToSatellite": "위성에서 위성으로",
         "satelliteToSun": "위성에서 태양으로",
         "satelliteToMoon": "위성에서 달로"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "위성 간 연결선을 위한 주 위성이 선택되지 않았습니다."
       }
     }
   }

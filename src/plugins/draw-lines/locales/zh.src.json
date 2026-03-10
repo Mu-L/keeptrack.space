@@ -15,6 +15,9 @@
         "satelliteToSatellite": "卫星到卫星",
         "satelliteToSun": "卫星到太阳",
         "satelliteToMoon": "卫星到月球"
+      },
+      "errorMsgs": {
+        "noPrimarySat": "未选择主卫星用于卫星到卫星连线。"
       }
     }
   }
