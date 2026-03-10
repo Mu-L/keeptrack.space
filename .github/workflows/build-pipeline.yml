@@ -156,13 +156,16 @@ jobs:
       - name: Build
         run: |
           npx tsx ./build/generate-translation.ts
-          npx tsx ./build/build-manager.ts production --profile=${{ matrix.profile }}
+          PROFILE=${{ matrix.profile }}
+          npx tsx ./build/build-manager.ts production \
+            --profile="$PROFILE"
 
       - name: Verify output
         run: |
           test -f dist/index.html
           test -f dist/settings/settingsOverride.js
-          echo "### Build (${{ matrix.profile }}) Passed" >> $GITHUB_STEP_SUMMARY
+          MSG="### Build (${{ matrix.profile }}) Passed"
+          echo "$MSG" >> $GITHUB_STEP_SUMMARY
 
   e2e:
     needs: [build]
