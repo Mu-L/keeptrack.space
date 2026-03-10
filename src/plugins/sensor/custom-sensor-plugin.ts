@@ -11,6 +11,7 @@ import { getEl, hideEl } from '@app/engine/utils/get-el';
 import { slideInRight } from '@app/engine/utils/slide';
 import { triggerSubmit } from '@app/engine/utils/trigger-submit';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
+import { t7e } from '@app/locales/keys';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
 import { Degrees, Kilometers, SpaceObjectType, ZoomValue } from '@ootk/src/main';
 import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
@@ -20,6 +21,11 @@ import { ClickDragOptions, KeepTrackPlugin, SideMenuSettingsOptions } from '../.
 export class CustomSensorPlugin extends KeepTrackPlugin {
   readonly id = 'CustomSensorPlugin';
   dependencies_ = [];
+
+  private static t_(key: string): string {
+    return t7e(`plugins.CustomSensorPlugin.${key}` as Parameters<typeof t7e>[0]);
+  }
+
   bottomIconCallback: () => void = () => {
     if (this.isMenuButtonActive) {
       const sensorManagerInstance = ServiceLocator.getSensorManager();
@@ -40,80 +46,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
   bottomIconImg = sensorAddPng;
 
   sideMenuElementName: string = 'custom-sensor-menu';
-  sideMenuElementHtml: string = html`
-    <form id="customSensor">
-      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="Name of the Sensor">
-          <input id="cs-uiName" type="text" value="Custom Sensor" />
-          <label for="cs-uiName" class="active">Sensor Name</label>
-      </div>
-      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="Latitude in Decimal Form (ex: 43.283)">
-          <input id="cs-lat" type="text" value="0" />
-          <label for="cs-lat" class="active">Latitude</label>
-      </div>
-      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="Longitude in Decimal Form (ex: -73.283)">
-          <input id="cs-lon" type="text" value="0" />
-          <label for="cs-lon" class="active">Longitude</label>
-      </div>
-      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="Elevation in kilometers (ex: 0.645)">
-          <input id="cs-hei" type="text" value="0" />
-          <label for="cs-hei" class="active">Elevation Above Sea Level (Km)</label>
-      </div>
-      <div class="input-field col s12">
-          <select id="cs-type">
-          <option value="Observer">Observer</option>
-          <option value="Optical">Optical</option>
-          <option value="Phased Array Radar">Phased Array Radar</option>
-          <option value="Mechanical">Mechanical</option>
-          </select>
-          <label>Type of Sensor</label>
-      </div>
-      <div class="input-field col s12">
-        <div class="switch row" data-position="top" data-delay="50" data-tooltip="Is this Sensor a Telescope?">
-            <label>
-            <input id="cs-telescope" type="checkbox" checked="false" />
-            <span class="lever"></span>
-            Telescope
-            </label>
-        </div>
-      </div>
-      <div id="cs-minaz-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="Azimuth in degrees (ex: 50)">
-          <input id="cs-minaz" type="text" value="0" />
-          <label for="cs-minaz" class="active">Minimum Azimuth</label>
-      </div>
-      <div id="cs-maxaz-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="Azimuth in degrees (ex: 120)">
-          <input id="cs-maxaz" type="text" value="360" />
-          <label for="cs-maxaz" class="active">Maximum Azimuth</label>
-      </div>
-      <div id="cs-minel-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="Elevation in degrees (ex: 10)">
-          <input id="cs-minel" type="text" value="10" />
-          <label for="cs-minel" class="active">Minimum Elevation</label>
-      </div>
-      <div id="cs-maxel-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="Elevation in degrees (ex: 90)">
-          <input id="cs-maxel" type="text" value="90" />
-          <label for="cs-maxel" class="active">Maximum Elevation</label>
-      </div>
-      <div id="cs-minrange-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="Range in kilometers (ex: 500)">
-          <input id="cs-minrange" type="text" value="100" />
-          <label for="cs-minrange" class="active">Minimum Range</label>
-      </div>
-      <div id="cs-maxrange-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="Range in kilometers (ex: 20000)">
-          <input id="cs-maxrange" type="text" value="50000" />
-          <label for="cs-maxrange" class="active">Maximum Range</label>
-      </div>
-    <div class="center-align">
-        <button id="cs-replace" class="btn btn-ui waves-effect waves-light" name="action">Replace Sensor &#9658;</button>
-        <br />
-        <br />
-        <button id="cs-submit" class="btn btn-ui waves-effect waves-light" type="submit" name="action">Add Custom Sensor &#9658;</button>
-        <br />
-        <br />
-        <button id="cs-clear" class="btn btn-ui waves-effect waves-light" name="action">Clear Custom Sensors &#9658;</button>
-        <br />
-        <br />
-        <button id="cs-geolocation" class="btn btn-ui waves-effect waves-light" name="search">Use Geolocation &#9658;</button>
-    </div>
-    </form>
-    `;
+  sideMenuElementHtml: string = CustomSensorPlugin.buildSideMenuHtml_();
   sideMenuSecondaryHtml: string = html`
     <div class="row" style="margin: 0 10px;">
       <div id="custom-sensors-sensor-list">
@@ -126,8 +59,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
   };
 
   rmbL1ElementName = 'create-rmb';
-  rmbL1Html = html`
-  <li class="rmb-menu-item" id=${this.rmbL1ElementName}><a href="#">Create &#x27A4;</a></li>`;
+  rmbL1Html = CustomSensorPlugin.buildRmbL1Html_();
 
   isRmbOnEarth = true;
   isRmbOffEarth = false;
@@ -135,11 +67,101 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
   rmbMenuOrder = 10;
 
   rmbL2ElementName = 'create-rmb-menu';
-  rmbL2Html = html`
-  <ul class='dropdown-contents'>
-    <li id="create-observer-rmb"><a href="#">Create Observer Here</a></li>
-    <li id="create-sensor-rmb"><a href="#">Create Sensor Here</a></li>
-  </ul>`;
+  rmbL2Html = CustomSensorPlugin.buildRmbL2Html_();
+
+  private static buildSideMenuHtml_(): string {
+    const l = (key: string) => CustomSensorPlugin.t_(`labels.${key}`);
+
+    return html`
+    <form id="customSensor">
+      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipSensorName')}">
+          <input id="cs-uiName" type="text" value="${l('defaultSensorName')}" />
+          <label for="cs-uiName" class="active">${l('sensorName')}</label>
+      </div>
+      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipLatitude')}">
+          <input id="cs-lat" type="text" value="0" />
+          <label for="cs-lat" class="active">${l('latitude')}</label>
+      </div>
+      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipLongitude')}">
+          <input id="cs-lon" type="text" value="0" />
+          <label for="cs-lon" class="active">${l('longitude')}</label>
+      </div>
+      <div class="input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipElevation')}">
+          <input id="cs-hei" type="text" value="0" />
+          <label for="cs-hei" class="active">${l('elevation')}</label>
+      </div>
+      <div class="input-field col s12">
+          <select id="cs-type">
+          <option value="Observer">${l('typeObserver')}</option>
+          <option value="Optical">${l('typeOptical')}</option>
+          <option value="Phased Array Radar">${l('typePhasedArray')}</option>
+          <option value="Mechanical">${l('typeMechanical')}</option>
+          </select>
+          <label>${l('sensorType')}</label>
+      </div>
+      <div class="input-field col s12">
+        <div class="switch row" data-position="top" data-delay="50" data-tooltip="${l('tooltipTelescope')}">
+            <label>
+            <input id="cs-telescope" type="checkbox" checked="false" />
+            <span class="lever"></span>
+            ${l('telescope')}
+            </label>
+        </div>
+      </div>
+      <div id="cs-minaz-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipMinAz')}">
+          <input id="cs-minaz" type="text" value="0" />
+          <label for="cs-minaz" class="active">${l('minAzimuth')}</label>
+      </div>
+      <div id="cs-maxaz-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipMaxAz')}">
+          <input id="cs-maxaz" type="text" value="360" />
+          <label for="cs-maxaz" class="active">${l('maxAzimuth')}</label>
+      </div>
+      <div id="cs-minel-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipMinEl')}">
+          <input id="cs-minel" type="text" value="10" />
+          <label for="cs-minel" class="active">${l('minElevation')}</label>
+      </div>
+      <div id="cs-maxel-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipMaxEl')}">
+          <input id="cs-maxel" type="text" value="90" />
+          <label for="cs-maxel" class="active">${l('maxElevation')}</label>
+      </div>
+      <div id="cs-minrange-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipMinRange')}">
+          <input id="cs-minrange" type="text" value="100" />
+          <label for="cs-minrange" class="active">${l('minRange')}</label>
+      </div>
+      <div id="cs-maxrange-div" class="start-hidden input-field col s12" data-position="top" data-delay="50" data-tooltip="${l('tooltipMaxRange')}">
+          <input id="cs-maxrange" type="text" value="50000" />
+          <label for="cs-maxrange" class="active">${l('maxRange')}</label>
+      </div>
+    <div class="center-align">
+        <button id="cs-replace" class="btn btn-ui waves-effect waves-light" name="action">${l('replaceSensor')} &#9658;</button>
+        <br />
+        <br />
+        <button id="cs-submit" class="btn btn-ui waves-effect waves-light" type="submit" name="action">${l('addCustomSensor')} &#9658;</button>
+        <br />
+        <br />
+        <button id="cs-clear" class="btn btn-ui waves-effect waves-light" name="action">${l('clearCustomSensors')} &#9658;</button>
+        <br />
+        <br />
+        <button id="cs-geolocation" class="btn btn-ui waves-effect waves-light" name="search">${l('useGeolocation')} &#9658;</button>
+    </div>
+    </form>
+    `;
+  }
+
+  private static buildRmbL1Html_(): string {
+    return html`
+    <li class="rmb-menu-item" id="create-rmb"><a href="#">${CustomSensorPlugin.t_('rmbMenu.title')} &#x27A4;</a></li>`;
+  }
+
+  private static buildRmbL2Html_(): string {
+    const m = (key: string) => CustomSensorPlugin.t_(`rmbMenu.${key}`);
+
+    return html`
+    <ul class='dropdown-contents'>
+      <li id="create-observer-rmb"><a href="#">${m('createObserver')}</a></li>
+      <li id="create-sensor-rmb"><a href="#">${m('createSensor')}</a></li>
+    </ul>`;
+  }
 
   rmbCallback: (targetId: string, clickedSat?: number) => void = (targetId: string) => {
     const sensorManagerInstance = ServiceLocator.getSensorManager();
@@ -304,54 +326,54 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
     const maxrange = (<HTMLInputElement>getEl('cs-maxrange')).value;
 
     if (lat > 90 || lat < -90) {
-      errorManagerInstance.warn('Custom Sensor Latitude must be between -90 and 90 degrees.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.latRange'));
 
       return;
     }
 
     if (lon > 180 || lon < -180) {
-      errorManagerInstance.warn('Custom Sensor Longitude must be between -180 and 180 degrees.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.lonRange'));
 
       return;
     }
 
     if (parseFloat(alt) < 0) {
-      errorManagerInstance.warn('Custom Sensor Altitude must be greater than or equal to 0 km.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.altRange'));
 
       return;
     }
 
     if (parseFloat(minaz) < -360 || parseFloat(minaz) > 360) {
-      errorManagerInstance.warn('Custom Sensor Minimum Azimuth must be between -360 and 360 degrees.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.minAzRange'));
 
       return;
     }
 
     if (parseFloat(maxaz) < -360 || parseFloat(maxaz) > 360) {
-      errorManagerInstance.warn('Custom Sensor Maximum Azimuth must be between -360 and 360 degrees.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.maxAzRange'));
 
       return;
     }
 
     if (parseFloat(minel) < -90 || parseFloat(minel) > 90) {
-      errorManagerInstance.warn('Custom Sensor Minimum Elevation must be between -90 and 90 degrees.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.minElRange'));
 
       return;
     }
 
     if (parseFloat(maxel) < -90 || parseFloat(maxel) > 90) {
-      errorManagerInstance.warn('Custom Sensor Maximum Elevation must be between -90 and 90 degrees.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.maxElRange'));
 
       return;
     }
 
     if (parseFloat(minrange) < 0) {
-      errorManagerInstance.warn('Custom Sensor Minimum Range must be greater than or equal to 0 km.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.minRangeValue'));
 
       return;
     }
     if (parseFloat(maxrange) < 0) {
-      errorManagerInstance.warn('Custom Sensor Maximum Range must be greater than or equal to 0 km.');
+      errorManagerInstance.warn(CustomSensorPlugin.t_('errorMsgs.maxRangeValue'));
 
       return;
     }
@@ -407,6 +429,7 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
   }
 
   private static updateCustomSensorListDom() {
+    const l = (key: string) => CustomSensorPlugin.t_(`sensorList.${key}`);
     const primarySensor = ServiceLocator.getSensorManager().currentSensors[0]?.objName?.startsWith('Custom Sensor')
       ? [ServiceLocator.getSensorManager().currentSensors[0]]
       : [] as DetailedSensor[];
@@ -415,13 +438,13 @@ export class CustomSensorPlugin extends KeepTrackPlugin {
     getEl('custom-sensors-sensor-list')!.innerHTML = sensors.map((sensor) => `
       <div class="row" style="height: 100%; display: flex; align-items: center; margin: 20px 0px;">
         <div class="col s10 m10 l10">
-          <div><strong>Sensor Name:</strong> ${sensor.uiName}</div>
-          <div><strong>Latitude:</strong> ${sensor.lat.toFixed(0)}°</div>
-          <div><strong>Longitude:</strong> ${sensor.lon.toFixed(0)}°</div>
-          <div><strong>Elevation:</strong> ${sensor.alt.toFixed(0)} km</div>
-          <div><strong>Azimuth:</strong> ${sensor.minAz.toFixed(0)}° - ${sensor.maxAz.toFixed(0)}°</div>
-          <div><strong>Elevation:</strong> ${sensor.minEl.toFixed(0)}° - ${sensor.maxEl.toFixed(0)}°</div>
-          <div><strong>Range:</strong> ${sensor.minRng.toFixed(0)} km - ${sensor.maxRng.toFixed(0)} km</div>
+          <div><strong>${l('sensorName')}:</strong> ${sensor.uiName}</div>
+          <div><strong>${l('latitude')}:</strong> ${sensor.lat.toFixed(0)}°</div>
+          <div><strong>${l('longitude')}:</strong> ${sensor.lon.toFixed(0)}°</div>
+          <div><strong>${l('elevation')}:</strong> ${sensor.alt.toFixed(0)} km</div>
+          <div><strong>${l('azimuth')}:</strong> ${sensor.minAz.toFixed(0)}° - ${sensor.maxAz.toFixed(0)}°</div>
+          <div><strong>${l('elevationRange')}:</strong> ${sensor.minEl.toFixed(0)}° - ${sensor.maxEl.toFixed(0)}°</div>
+          <div><strong>${l('range')}:</strong> ${sensor.minRng.toFixed(0)} km - ${sensor.maxRng.toFixed(0)} km</div>
         </div>
         <div class="col s2 m2 l2 center-align remove-icon" style="display: flex; align-items: center; height: 100%;">
           <img class="remove-sensor" data-id="${sensor.objName}" src="${bookmarkRemovePng}" style="cursor: pointer;"></img>

@@ -8,7 +8,66 @@
     "CustomSensorPlugin": {
       "bottomIconLabel": "Sensore personalizzato",
       "title": "Menu sensore personalizzato",
-      "helpBody": "Questa funzione consente di creare un sensore personalizzato da utilizzare nei calcoli e nelle funzioni di altri menu. Può essere un sensore completamente originale o una modifica di un sensore esistente. <br><br> Dopo aver impostato la latitudine, la longitudine e l'altitudine del sensore, è possibile impostare il campo visivo. Selezionando il telescopio si creerà un campo visivo di 360 gradi con una maschera di elevazione di 10 gradi e portata illimitata. Deselezionando l'opzione telescopio sarà possibile impostare il campo visivo manualmente. <br><br> Se si desidera modificare un sensore esistente, è possibile selezionarlo prima dall'elenco dei sensori e il sensore personalizzato verrà aggiornato con le informazioni del sensore selezionato."
+      "helpBody": "Questa funzione consente di creare un sensore personalizzato da utilizzare nei calcoli e nelle funzioni di altri menu. Può essere un sensore completamente originale o una modifica di un sensore esistente. <br><br> Dopo aver impostato la latitudine, la longitudine e l'altitudine del sensore, è possibile impostare il campo visivo. Selezionando il telescopio si creerà un campo visivo di 360 gradi con una maschera di elevazione di 10 gradi e portata illimitata. Deselezionando l'opzione telescopio sarà possibile impostare il campo visivo manualmente. <br><br> Se si desidera modificare un sensore esistente, è possibile selezionarlo prima dall'elenco dei sensori e il sensore personalizzato verrà aggiornato con le informazioni del sensore selezionato.",
+      "labels": {
+        "sensorName": "Nome del sensore",
+        "defaultSensorName": "Sensore personalizzato",
+        "latitude": "Latitudine",
+        "longitude": "Longitudine",
+        "elevation": "Altitudine sul livello del mare (km)",
+        "sensorType": "Tipo di sensore",
+        "typeObserver": "Osservatore",
+        "typeOptical": "Ottico",
+        "typePhasedArray": "Radar ad array a scansione di fase",
+        "typeMechanical": "Meccanico",
+        "telescope": "Telescopio",
+        "minAzimuth": "Azimut minimo",
+        "maxAzimuth": "Azimut massimo",
+        "minElevation": "Elevazione minima",
+        "maxElevation": "Elevazione massima",
+        "minRange": "Portata minima",
+        "maxRange": "Portata massima",
+        "replaceSensor": "Sostituisci sensore",
+        "addCustomSensor": "Aggiungi sensore personalizzato",
+        "clearCustomSensors": "Cancella sensori personalizzati",
+        "useGeolocation": "Usa geolocalizzazione",
+        "tooltipSensorName": "Nome del sensore",
+        "tooltipLatitude": "Latitudine in forma decimale (es: 43,283)",
+        "tooltipLongitude": "Longitudine in forma decimale (es: -73,283)",
+        "tooltipElevation": "Altitudine in chilometri (es: 0,645)",
+        "tooltipTelescope": "Questo sensore è un telescopio?",
+        "tooltipMinAz": "Azimut in gradi (es: 50)",
+        "tooltipMaxAz": "Azimut in gradi (es: 120)",
+        "tooltipMinEl": "Elevazione in gradi (es: 10)",
+        "tooltipMaxEl": "Elevazione in gradi (es: 90)",
+        "tooltipMinRange": "Portata in chilometri (es: 500)",
+        "tooltipMaxRange": "Portata in chilometri (es: 20000)"
+      },
+      "rmbMenu": {
+        "title": "Crea",
+        "createObserver": "Crea osservatore qui",
+        "createSensor": "Crea sensore qui"
+      },
+      "sensorList": {
+        "sensorName": "Nome del sensore",
+        "latitude": "Latitudine",
+        "longitude": "Longitudine",
+        "elevation": "Altitudine",
+        "azimuth": "Azimut",
+        "elevationRange": "Elevazione",
+        "range": "Portata"
+      },
+      "errorMsgs": {
+        "latRange": "La latitudine del sensore personalizzato deve essere compresa tra -90 e 90 gradi.",
+        "lonRange": "La longitudine del sensore personalizzato deve essere compresa tra -180 e 180 gradi.",
+        "altRange": "L'altitudine del sensore personalizzato deve essere maggiore o uguale a 0 km.",
+        "minAzRange": "L'azimut minimo del sensore personalizzato deve essere compreso tra -360 e 360 gradi.",
+        "maxAzRange": "L'azimut massimo del sensore personalizzato deve essere compreso tra -360 e 360 gradi.",
+        "minElRange": "L'elevazione minima del sensore personalizzato deve essere compresa tra -90 e 90 gradi.",
+        "maxElRange": "L'elevazione massima del sensore personalizzato deve essere compresa tra -90 e 90 gradi.",
+        "minRangeValue": "La portata minima del sensore personalizzato deve essere maggiore o uguale a 0 km.",
+        "maxRangeValue": "La portata massima del sensore personalizzato deve essere maggiore o uguale a 0 km."
+      }
     },
     "LookAnglesPlugin": {
       "bottomIconLabel": "Angoli di osservazione",

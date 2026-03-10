@@ -8,7 +8,66 @@
     "CustomSensorPlugin": {
       "bottomIconLabel": "커스텀 센서",
       "title": "커스텀 센서 메뉴",
-      "helpBody": "이 메뉴를 사용하면 계산 및 기타 메뉴 기능에 사용할 커스텀 센서를 생성할 수 있습니다. 완전히 새로운 센서를 만들거나 기존 센서를 수정할 수 있습니다. <br><br> 센서의 위도, 경도 및 고도를 설정한 후 센서의 시야각을 설정할 수 있습니다. 망원경을 선택하면 360도 시야각, 10도 고도 마스크 및 무제한 범위로 생성됩니다. 망원경 옵션을 선택 해제하면 시야각을 수동으로 설정할 수 있습니다. <br><br> 기존 센서를 편집하려면 먼저 센서 목록에서 선택하면 커스텀 센서가 선택한 센서의 정보로 업데이트됩니다."
+      "helpBody": "이 메뉴를 사용하면 계산 및 기타 메뉴 기능에 사용할 커스텀 센서를 생성할 수 있습니다. 완전히 새로운 센서를 만들거나 기존 센서를 수정할 수 있습니다. <br><br> 센서의 위도, 경도 및 고도를 설정한 후 센서의 시야각을 설정할 수 있습니다. 망원경을 선택하면 360도 시야각, 10도 고도 마스크 및 무제한 범위로 생성됩니다. 망원경 옵션을 선택 해제하면 시야각을 수동으로 설정할 수 있습니다. <br><br> 기존 센서를 편집하려면 먼저 센서 목록에서 선택하면 커스텀 센서가 선택한 센서의 정보로 업데이트됩니다.",
+      "labels": {
+        "sensorName": "센서 이름",
+        "defaultSensorName": "커스텀 센서",
+        "latitude": "위도",
+        "longitude": "경도",
+        "elevation": "해발 고도 (km)",
+        "sensorType": "센서 유형",
+        "typeObserver": "관측자",
+        "typeOptical": "광학",
+        "typePhasedArray": "위상 배열 레이더",
+        "typeMechanical": "기계식",
+        "telescope": "망원경",
+        "minAzimuth": "최소 방위각",
+        "maxAzimuth": "최대 방위각",
+        "minElevation": "최소 고도각",
+        "maxElevation": "최대 고도각",
+        "minRange": "최소 거리",
+        "maxRange": "최대 거리",
+        "replaceSensor": "센서 교체",
+        "addCustomSensor": "커스텀 센서 추가",
+        "clearCustomSensors": "커스텀 센서 지우기",
+        "useGeolocation": "위치 정보 사용",
+        "tooltipSensorName": "센서의 이름",
+        "tooltipLatitude": "십진수 형식의 위도 (예: 43.283)",
+        "tooltipLongitude": "십진수 형식의 경도 (예: -73.283)",
+        "tooltipElevation": "킬로미터 단위의 고도 (예: 0.645)",
+        "tooltipTelescope": "이 센서가 망원경입니까?",
+        "tooltipMinAz": "도 단위의 방위각 (예: 50)",
+        "tooltipMaxAz": "도 단위의 방위각 (예: 120)",
+        "tooltipMinEl": "도 단위의 고도각 (예: 10)",
+        "tooltipMaxEl": "도 단위의 고도각 (예: 90)",
+        "tooltipMinRange": "킬로미터 단위의 거리 (예: 500)",
+        "tooltipMaxRange": "킬로미터 단위의 거리 (예: 20000)"
+      },
+      "rmbMenu": {
+        "title": "생성",
+        "createObserver": "여기에 관측자 생성",
+        "createSensor": "여기에 센서 생성"
+      },
+      "sensorList": {
+        "sensorName": "센서 이름",
+        "latitude": "위도",
+        "longitude": "경도",
+        "elevation": "고도",
+        "azimuth": "방위각",
+        "elevationRange": "고도각",
+        "range": "거리"
+      },
+      "errorMsgs": {
+        "latRange": "커스텀 센서 위도는 -90도에서 90도 사이여야 합니다.",
+        "lonRange": "커스텀 센서 경도는 -180도에서 180도 사이여야 합니다.",
+        "altRange": "커스텀 센서 고도는 0 km 이상이어야 합니다.",
+        "minAzRange": "커스텀 센서 최소 방위각은 -360도에서 360도 사이여야 합니다.",
+        "maxAzRange": "커스텀 센서 최대 방위각은 -360도에서 360도 사이여야 합니다.",
+        "minElRange": "커스텀 센서 최소 고도각은 -90도에서 90도 사이여야 합니다.",
+        "maxElRange": "커스텀 센서 최대 고도각은 -90도에서 90도 사이여야 합니다.",
+        "minRangeValue": "커스텀 센서 최소 거리는 0 km 이상이어야 합니다.",
+        "maxRangeValue": "커스텀 센서 최대 거리는 0 km 이상이어야 합니다."
+      }
     },
     "LookAnglesPlugin": {
       "bottomIconLabel": "관측각",

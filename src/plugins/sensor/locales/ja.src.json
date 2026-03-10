@@ -8,7 +8,66 @@
     "CustomSensorPlugin": {
       "bottomIconLabel": "カスタムセンサー",
       "title": "カスタムセンサーメニュー",
-      "helpBody": "これにより、計算やその他のメニュー機能で使用するカスタムセンサーを作成できます。これは完全にオリジナルのセンサーでも、既存のセンサーの変更でもかまいません。<br><br>センサーの緯度、経度、高度を設定した後、センサーの視野を設定できます。望遠鏡を選択すると、360度の視野と10度の仰角マスク、無制限の範囲を持つ視野が作成されます。望遠鏡オプションの選択を解除すると、視野を手動で設定できます。<br><br>既存のセンサーを編集しようとしている場合は、センサーリストから選択すると、カスタムセンサーが選択したセンサーの情報で更新されます。"
+      "helpBody": "これにより、計算やその他のメニュー機能で使用するカスタムセンサーを作成できます。これは完全にオリジナルのセンサーでも、既存のセンサーの変更でもかまいません。<br><br>センサーの緯度、経度、高度を設定した後、センサーの視野を設定できます。望遠鏡を選択すると、360度の視野と10度の仰角マスク、無制限の範囲を持つ視野が作成されます。望遠鏡オプションの選択を解除すると、視野を手動で設定できます。<br><br>既存のセンサーを編集しようとしている場合は、センサーリストから選択すると、カスタムセンサーが選択したセンサーの情報で更新されます。",
+      "labels": {
+        "sensorName": "センサー名",
+        "defaultSensorName": "カスタムセンサー",
+        "latitude": "緯度",
+        "longitude": "経度",
+        "elevation": "海抜高度（km）",
+        "sensorType": "センサータイプ",
+        "typeObserver": "観測者",
+        "typeOptical": "光学",
+        "typePhasedArray": "フェーズドアレイレーダー",
+        "typeMechanical": "機械式",
+        "telescope": "望遠鏡",
+        "minAzimuth": "最小方位角",
+        "maxAzimuth": "最大方位角",
+        "minElevation": "最小仰角",
+        "maxElevation": "最大仰角",
+        "minRange": "最小距離",
+        "maxRange": "最大距離",
+        "replaceSensor": "センサーを置換",
+        "addCustomSensor": "カスタムセンサーを追加",
+        "clearCustomSensors": "カスタムセンサーをクリア",
+        "useGeolocation": "位置情報を使用",
+        "tooltipSensorName": "センサーの名前",
+        "tooltipLatitude": "10進数形式の緯度（例：43.283）",
+        "tooltipLongitude": "10進数形式の経度（例：-73.283）",
+        "tooltipElevation": "キロメートル単位の高度（例：0.645）",
+        "tooltipTelescope": "このセンサーは望遠鏡ですか？",
+        "tooltipMinAz": "度単位の方位角（例：50）",
+        "tooltipMaxAz": "度単位の方位角（例：120）",
+        "tooltipMinEl": "度単位の仰角（例：10）",
+        "tooltipMaxEl": "度単位の仰角（例：90）",
+        "tooltipMinRange": "キロメートル単位の距離（例：500）",
+        "tooltipMaxRange": "キロメートル単位の距離（例：20000）"
+      },
+      "rmbMenu": {
+        "title": "作成",
+        "createObserver": "ここに観測者を作成",
+        "createSensor": "ここにセンサーを作成"
+      },
+      "sensorList": {
+        "sensorName": "センサー名",
+        "latitude": "緯度",
+        "longitude": "経度",
+        "elevation": "高度",
+        "azimuth": "方位角",
+        "elevationRange": "仰角",
+        "range": "距離"
+      },
+      "errorMsgs": {
+        "latRange": "カスタムセンサーの緯度は-90度から90度の間でなければなりません。",
+        "lonRange": "カスタムセンサーの経度は-180度から180度の間でなければなりません。",
+        "altRange": "カスタムセンサーの高度は0 km以上でなければなりません。",
+        "minAzRange": "カスタムセンサーの最小方位角は-360度から360度の間でなければなりません。",
+        "maxAzRange": "カスタムセンサーの最大方位角は-360度から360度の間でなければなりません。",
+        "minElRange": "カスタムセンサーの最小仰角は-90度から90度の間でなければなりません。",
+        "maxElRange": "カスタムセンサーの最大仰角は-90度から90度の間でなければなりません。",
+        "minRangeValue": "カスタムセンサーの最小距離は0 km以上でなければなりません。",
+        "maxRangeValue": "カスタムセンサーの最大距離は0 km以上でなければなりません。"
+      }
     },
     "LookAnglesPlugin": {
       "bottomIconLabel": "視線角度",
