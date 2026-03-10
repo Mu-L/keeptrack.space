@@ -3,7 +3,17 @@
     "PlanetsMenuPlugin": {
       "bottomIconLabel": "Planety",
       "title": "Menu seznamu planet",
-      "helpBody": "Toto menu umožňuje vybrat a zobrazit různé planety v simulaci."
+      "helpBody": "Toto menu umožňuje vybrat a zobrazit různé planety v simulaci.",
+      "sections": {
+        "planets": "Planety",
+        "dwarfPlanets": "Trpasličí planety",
+        "otherCelestialBodies": "Ostatní nebeská tělesa",
+        "deepSpaceProbes": "Sondy do hlubokého vesmíru"
+      },
+      "tooltips": {
+        "centerCamera": "Zaměřit kameru na {body}.",
+        "plannedFuture": "Plánováno pro budoucí aktualizaci."
+      }
     }
   }
 }

@@ -3,7 +3,17 @@
     "PlanetsMenuPlugin": {
       "bottomIconLabel": "Planeten",
       "title": "Planetenlisten-Menü",
-      "helpBody": "Dieses Menü ermöglicht es Ihnen, verschiedene Planeten in der Simulation auszuwählen und anzusehen."
+      "helpBody": "Dieses Menü ermöglicht es Ihnen, verschiedene Planeten in der Simulation auszuwählen und anzusehen.",
+      "sections": {
+        "planets": "Planeten",
+        "dwarfPlanets": "Zwergplaneten",
+        "otherCelestialBodies": "Andere Himmelskörper",
+        "deepSpaceProbes": "Weltraumsonden"
+      },
+      "tooltips": {
+        "centerCamera": "Kamera auf {body} zentrieren.",
+        "plannedFuture": "Für zukünftiges Update geplant."
+      }
     }
   }
 }

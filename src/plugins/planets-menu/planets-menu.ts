@@ -27,6 +27,10 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
   readonly id = 'PlanetsMenuPlugin';
   dependencies_ = [];
 
+  private t_(key: string): string {
+    return t7e(`plugins.PlanetsMenuPlugin.${key}` as Parameters<typeof t7e>[0]);
+  }
+
   private isPlanetsDisabled_ = false;
 
   PLANETS = [SolarBody.Mercury, SolarBody.Venus, SolarBody.Earth, SolarBody.Mars, SolarBody.Jupiter, SolarBody.Saturn, SolarBody.Uranus, SolarBody.Neptune];
@@ -145,35 +149,37 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
     let html_ = html`
         <ul>`;
 
+    const centerTooltip = (body: string) => this.t_('tooltips.centerCamera').replace('{body}', body);
+
     html_ += html`
-      <h5 class="center-align side-menu-row-header">Planets</h5>
+      <h5 class="center-align side-menu-row-header">${this.t_('sections.planets')}</h5>
     `;
 
     for (const object of this.PLANETS) {
-      html_ += `<li class="menu-selectable" kt-tooltip="Center the camera on ${object}." data-planet="${object}">${object}</li>`;
+      html_ += `<li class="menu-selectable" kt-tooltip="${centerTooltip(object)}" data-planet="${object}">${object}</li>`;
     }
 
     html_ += html`
       <div class="divider flow5out"></div>
-      <h5 class="center-align side-menu-row-header">Dwarf Planets</h5>
+      <h5 class="center-align side-menu-row-header">${this.t_('sections.dwarfPlanets')}</h5>
     `;
 
     for (const object of this.DWARF_PLANETS) {
-      html_ += `<li class="menu-selectable" kt-tooltip="Center the camera on ${object}." data-planet="${object}">${object}</li>`;
+      html_ += `<li class="menu-selectable" kt-tooltip="${centerTooltip(object)}" data-planet="${object}">${object}</li>`;
     }
 
     html_ += html`
       <div class="divider flow5out"></div>
-      <h5 class="center-align side-menu-row-header">Other Celestial Bodies</h5>
+      <h5 class="center-align side-menu-row-header">${this.t_('sections.otherCelestialBodies')}</h5>
     `;
 
     for (const object of this.OTHER_CELESTIAL_BODIES) {
       const isDisabled = ['Io', 'Europa', 'Ganymede', 'Callisto', 'Titan', 'Rhea', 'Iapetus', 'Dione', 'Tethys', 'Enceladus'].includes(object);
 
       if (isDisabled) {
-        html_ += `<li class="planets-menu-disabled" kt-tooltip="Planned for future update." aria-disabled="true" disabled>${object}</li>`;
+        html_ += `<li class="planets-menu-disabled" kt-tooltip="${this.t_('tooltips.plannedFuture')}" aria-disabled="true" disabled>${object}</li>`;
       } else {
-        html_ += `<li class="menu-selectable" kt-tooltip="Center the camera on ${object}." data-planet="${object}">${object}</li>`;
+        html_ += `<li class="menu-selectable" kt-tooltip="${centerTooltip(object)}" data-planet="${object}">${object}</li>`;
       }
     }
 
@@ -448,14 +454,14 @@ export class PlanetsMenuPlugin extends KeepTrackPlugin {
     const header = document.createElement('h5');
 
     header.className = 'center-align side-menu-row-header';
-    header.textContent = 'Deep Space Probes';
+    header.textContent = this.t_('sections.deepSpaceProbes');
     ul.appendChild(header);
 
     for (const probe of probes) {
       const li = document.createElement('li');
 
       li.className = 'menu-selectable';
-      li.setAttribute('kt-tooltip', `Center the camera on ${probe}.`);
+      li.setAttribute('kt-tooltip', this.t_('tooltips.centerCamera').replace('{body}', probe));
       li.dataset.planet = probe;
       li.textContent = probe;
       li.addEventListener('click', () => {

@@ -3,7 +3,17 @@
     "PlanetsMenuPlugin": {
       "bottomIconLabel": "Планети",
       "title": "Меню списку планет",
-      "helpBody": "Це меню дозволяє вибирати та переглядати різні планети у симуляції."
+      "helpBody": "Це меню дозволяє вибирати та переглядати різні планети у симуляції.",
+      "sections": {
+        "planets": "Планети",
+        "dwarfPlanets": "Карликові планети",
+        "otherCelestialBodies": "Інші небесні тіла",
+        "deepSpaceProbes": "Міжпланетні зонди"
+      },
+      "tooltips": {
+        "centerCamera": "Направити камеру на {body}.",
+        "plannedFuture": "Заплановано для майбутнього оновлення."
+      }
     }
   }
 }

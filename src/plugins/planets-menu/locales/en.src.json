@@ -3,7 +3,17 @@
     "PlanetsMenuPlugin": {
       "bottomIconLabel": "Planets",
       "title": "Planets List Menu",
-      "helpBody": "This menu allows you to select and view different planets in the simulation."
+      "helpBody": "This menu allows you to select and view different planets in the simulation.",
+      "sections": {
+        "planets": "Planets",
+        "dwarfPlanets": "Dwarf Planets",
+        "otherCelestialBodies": "Other Celestial Bodies",
+        "deepSpaceProbes": "Deep Space Probes"
+      },
+      "tooltips": {
+        "centerCamera": "Center the camera on {body}.",
+        "plannedFuture": "Planned for future update."
+      }
     }
   }
 }
