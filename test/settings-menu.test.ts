@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Container } from '@app/engine/core/container';
 import { Singletons } from '@app/engine/core/interfaces';
 import { ColorSchemeManager } from '@app/engine/rendering/color-scheme-manager';
@@ -27,7 +28,6 @@ describe('SettingsMenuPlugin_class', () => {
     expect(() => getEl('settings-drawEcf')?.click()).not.toThrow();
     expect(() => getEl('settings-isDrawInCoverageLines')?.click()).not.toThrow();
     expect(() => getEl('settings-eciOnHover')?.click()).not.toThrow();
-    expect(() => getEl('settings-hos')?.click()).not.toThrow();
     expect(() => getEl('settings-demo-mode')?.click()).not.toThrow();
     expect(() => getEl('settings-sat-label-mode')?.click()).not.toThrow();
     expect(() => getEl('settings-freeze-drag')?.click()).not.toThrow();
@@ -39,11 +39,11 @@ describe('SettingsMenuPlugin_class', () => {
     const settingsMenuPlugin = new SettingsMenuPlugin();
 
     websiteInit(settingsMenuPlugin);
-    ServiceLocator.getGroupsManager().clearSelect = jest.fn();
+    ServiceLocator.getGroupsManager().clearSelect = vi.fn();
     const colorSchemeManagerInstance = new ColorSchemeManager();
 
-    colorSchemeManagerInstance.setColorScheme = jest.fn();
-    colorSchemeManagerInstance.reloadColors = jest.fn();
+    colorSchemeManagerInstance.setColorScheme = vi.fn();
+    colorSchemeManagerInstance.reloadColors = vi.fn();
     Container.getInstance().registerSingleton(Singletons.ColorSchemeManager, colorSchemeManagerInstance);
     expect(() => getEl('settings-submit')?.click()).not.toThrow();
   });

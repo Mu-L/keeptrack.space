@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Screenshot } from '@app/plugins/screenshot/screenshot';
 import { setupDefaultHtml } from './environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginRmbTests, standardPluginSuite } from './generic-tests';
@@ -17,17 +18,17 @@ describe('Screenshot_class', () => {
 
   // test if the screenshot can be taken
   it('should take a screenshot', () => {
-    KeepTrack.getInstance().containerRoot.appendChild = jest.fn();
-    document.createElement = jest.fn(() => ({
-      click: jest.fn(),
-      getContext: jest.fn(() => ({
-        drawImage: jest.fn(),
-        fillText: jest.fn(),
-        measureText: jest.fn(() => ({ width: 0 })),
+    KeepTrack.getInstance().containerRoot.appendChild = vi.fn();
+    document.createElement = vi.fn(() => ({
+      click: vi.fn(),
+      getContext: vi.fn(() => ({
+        drawImage: vi.fn(),
+        fillText: vi.fn(),
+        measureText: vi.fn(() => ({ width: 0 })),
       })),
-      toDataURL: jest.fn(() => 'data:image/png;base64,'),
+      toDataURL: vi.fn(() => 'data:image/png;base64,'),
       parentNode: {
-        removeChild: jest.fn(),
+        removeChild: vi.fn(),
       },
     })) as unknown as typeof document.createElement;
     expect(() => screenshotPlugin.takeScreenShot()).not.toThrow();

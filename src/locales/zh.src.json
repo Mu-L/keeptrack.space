@@ -3,53 +3,12 @@
     "unknown": "未知"
   },
   "loadingScreen": {
-    "startButton": "点击开始"
-  },
-  "time": {
-    "days": {
-      "0": "星期日",
-      "1": "星期一",
-      "2": "星期二",
-      "3": "星期三",
-      "4": "星期四",
-      "5": "星期五",
-      "6": "星期六"
-    },
-    "days-short": {
-      "0": "周日",
-      "1": "周一",
-      "2": "周二",
-      "3": "周三",
-      "4": "周四",
-      "5": "周五",
-      "6": "周六"
-    },
-    "months": {
-      "1": "一月",
-      "2": "二月",
-      "3": "三月",
-      "4": "四月",
-      "5": "五月",
-      "6": "六月",
-      "7": "七月",
-      "8": "八月",
-      "9": "九月",
-      "10": "十月",
-      "11": "十一月",
-      "12": "十二月"
-    },
-    "calendar": {
-      "time": "时间",
-      "hour": "小时",
-      "minute": "分钟",
-      "second": "秒",
-      "now": "现在",
-      "done": "完成",
-      "pause": "暂停",
-      "propagation": "传播"
-    }
+    "startButton": "点击开始",
+    "hint": "提示：",
+    "downloadingScience": "正在下载科学数据..."
   },
   "errorMsgs": {
+    "LoginRequired": "此功能需要登录。请登录后继续。",
     "catalogNotFullyInitialized": "目录尚未完全初始化。请等待几秒钟再试。",
     "sensorGroupsApiEmpty": "API中未找到传感器组，恢复使用内置的传感器组数据库。",
     "SelectSensorFirst": "请先选择一个传感器！",
@@ -64,25 +23,6 @@
       "disablingMoon": "您的计算机运行困难！正在禁用月球。",
       "disablingMilkyWay": "您的计算机运行困难！正在禁用银河系。",
       "disablingSun": "您的计算机运行困难！正在禁用太阳。"
-    },
-    "Breakup": {
-      "CannotCreateBreakupForNonCircularOrbits": "无法为非圆形轨道创建解体。正在修复中。",
-      "CannotCalcDirectionOfSatellite": "无法计算卫星方向。请稍后再试。",
-      "ErrorCreatingBreakup": "创建解体时出错！",
-      "InvalidStartNum": "无效的卫星起始编号！默认为90000！",
-      "BreakupGeneratorFailed": "解体生成器失败！",
-      "SatelliteNotFound": "未找到卫星！"
-    },
-    "Collisions": {
-      "noCollisionsData": "未找到碰撞数据！",
-      "errorProcessingCollisions": "处理SOCRATES数据时出错！"
-    },
-    "EditSat": {
-      "errorReadingFile": "读取文件时出错！",
-      "satelliteNotFound": "未找到卫星！"
-    },
-    "CreateSat": {
-      "errorCreatingSat": "创建卫星时出错！"
     },
     "Reports": {
       "popupBlocker": "请允许此网站的弹出窗口以查看报告。"
@@ -167,39 +107,20 @@
       "title": "传感器时间线菜单",
       "helpBody": "传感器时间线菜单显示多个传感器对一颗卫星的可见性。时间线按颜色区分观测质量：红色为差，黄色为一般，绿色为好。点击某次观测可切换到对应传感器和时间。<br><br>可通过更改仿真的起止时间，以及长度和间隔选项来调整时间线。"
     },
-    "ProximityOps": {
-      "bottomIconLabel": "交会与近距离操作",
-      "title": "交会与近距离操作（RPO）",
-      "titleSecondary": "交会与近距离操作列表",
-      "helpBody": "查找卫星之间即将发生的接近事件",
-      "noradId": "NORAD编号",
-      "maxDistThreshold": "最大距离阈值（公里）",
-      "maxRelativeVelocity": "最大相对速度（公里/秒）",
-      "searchDuration": "搜索时长（小时）",
-      "geoText": "地球同步轨道",
-      "leoText": "近地轨道",
-      "orbitType": "轨道类型",
-      "geoAllVsAll": "地球同步轨道全部对全部",
-      "geoAllVsAllTooltip": "搜索所有地球同步轨道卫星之间的RPO",
-      "comparePayloadsOnly": "仅比较有效载荷",
-      "comparePayloadsOnlyTooltip": "仅搜索有效载荷之间的RPO",
-      "ignoreVimpelRso": "忽略Vimpel RSO",
-      "ignoreVimpelRsoTooltip": "忽略来自Vimpel目录的RSO"
-    },
     "SatelliteTimeline": {
       "bottomIconLabel": "卫星时间线",
       "title": "卫星时间线菜单",
       "helpBody": "卫星时间线菜单显示单个传感器对一组卫星的可见性。时间线按颜色区分通过质量：红色为差，黄色为一般，绿色为好。点击某次通过可切换到对应卫星和时间。<br><br>可通过更改仿真的起止时间，以及长度和间隔选项来调整时间线。"
     },
     "WatchlistPlugin": {
-      "bottomIconLabel": "关注列表",
-      "title": "关注列表菜单",
-      "helpBody": "关注列表菜单允许您创建优先跟踪的卫星列表，便于快速检索感兴趣的卫星。该列表保存在浏览器本地存储，下次访问网站时仍可用。<br><br>当关注列表中的卫星进入所选传感器视场时，会显示通知，从传感器到卫星会绘制一条连线，并在地球上显示卫星编号。<br><br>叠加功能依赖于关注列表已被填充。"
+      "bottomIconLabel": "卫星列表",
+      "title": "卫星列表",
+      "helpBody": "卫星列表菜单允许您创建优先跟踪的卫星列表，便于快速检索感兴趣的卫星。该列表保存在浏览器本地存储，下次访问网站时仍可用。<br><br>当卫星列表中的卫星进入所选传感器视场时，会显示通知，从传感器到卫星会绘制一条连线，并在地球上显示卫星编号。<br><br>叠加功能依赖于卫星列表已被填充。"
     },
     "WatchlistOverlay": {
       "bottomIconLabel": "叠加",
       "title": "叠加菜单",
-      "helpBody": "<p>关注列表叠加显示关注卫星的下次通过时间，每10秒更新一次。</p><p>叠加颜色表示距离下次通过的时间：</p><ul><li>黄色 - 可见中</li><li>蓝色 - 距当前时间30分钟内或提前10分钟的通过</li><li>白色 - 其他未来通过</li></ul><p>点击叠加中的卫星会将地图中心定位到该卫星。</p>"
+      "helpBody": "<p>卫星列表叠加显示卫星列表中卫星的下次通过时间，每10秒更新一次。</p><p>叠加颜色表示距离下次通过的时间：</p><ul><li>黄色 - 可见中</li><li>蓝色 - 距当前时间30分钟内或提前10分钟的通过</li><li>白色 - 其他未来通过</li></ul><p>点击叠加中的卫星会将地图中心定位到该卫星。</p>"
     },
     "ReportsPlugin": {
       "bottomIconLabel": "报告",
@@ -226,20 +147,10 @@
       "title": "短期搜索框（STF）菜单",
       "helpBody": "短期搜索框（STF）菜单用于可视化传感器搜索区域。<br><br>除非您拥有/操作带有搜索框功能的传感器，否则该功能可能用处不大。"
     },
-    "Collisions": {
-      "bottomIconLabel": "碰撞",
-      "title": "碰撞菜单",
-      "helpBody": "碰撞菜单显示高碰撞概率的卫星。<br><br>点击某一行会选中涉及碰撞的两颗卫星，并将时间切换到碰撞发生时刻。"
-    },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "再入预测",
       "title": "跟踪与再入预测菜单",
       "helpBody": "跟踪与再入预测（TIP）菜单显示卫星的最新跟踪与再入预测信息。表格包含以下列：<br><br><b>NORAD</b>：卫星的NORAD目录编号。<br><br><b>衰减日期</b>：预测的卫星衰减日期。<br><br><b>纬度</b>：卫星衰减时的纬度。<br><br><b>经度</b>：卫星衰减时的经度。<br><br><b>窗口（分钟）</b>：预测时间窗口（分钟）。<br><br><b>下次报告（小时）</b>：距离下次报告的时间（小时）。<br><br><b>再入角（度）</b>：卫星再入角度（度）。<br><br><b>雷达截面积（平方米）</b>：卫星的雷达截面积。<br><br><b>GP数据龄（小时）</b>：最新轨道参数集的时效（小时）。<br><br><b>干质量（千克）</b>：卫星干质量。<br><br><b>体积（立方米）</b>：卫星估算体积。"
-    },
-    "Breakup": {
-      "bottomIconLabel": "创建解体",
-      "title": "解体菜单",
-      "helpBody": "解体菜单用于模拟卫星解体。<br><br>通过复制并修改卫星轨道，可对卫星解体进行建模。选择卫星并打开菜单后，可设置：<ul style=\"margin-left: 40px;\"> <li>倾角变化</li> <li>升交点赤经变化</li> <li>周期变化</li> <li>解体碎片数量</li> </ul>变化越大，模拟解体的碎片分布越广。默认参数足以模拟合理的解体分布。"
     },
     "DebrisScreening": {
       "bottomIconLabel": "碎片筛查",
@@ -251,11 +162,6 @@
       "title": "卫星转发器与频道信息",
       "helpBody": "<p>本表包含卫星频道的技术细节，包括电视、广播及其他通信服务：</p><ul><li><strong>卫星：</strong> 播出频道的卫星名称</li><li><strong>频道：</strong> 电视/广播频道或通信服务名称</li><li><strong>波束：</strong> 卫星波束方向（如西半球）</li><li><strong>频率：</strong> 转发器频率及极化（如3840 V）</li><li><strong>系统：</strong> 播出系统（如DVB-S2 8PSK）</li><li><strong>符号率/FEC：</strong> 符号率及FEC比（如30000 3/4）</li><li><strong>视频：</strong> 视频/数据压缩格式（如MPEG-4/HD）</li><li><strong>语言：</strong> 可用音频/通信语言（如英语、中文）</li><li><strong>加密：</strong> 使用的加密系统（如PowerVu）</li></ul><p>这些信息适用于卫星通信专业人士、技术人员、爱好者及任何需要设置或排查卫星接收设备的人。</p>"
     },
-    "EditSat": {
-      "bottomIconLabel": "编辑卫星",
-      "title": "编辑卫星菜单",
-      "helpBody": "编辑卫星菜单用于编辑卫星数据。<br><br><ul><li>卫星SCC# - 美国太空军分配的唯一编号</li><li>历元年份 - 卫星最后一次轨道更新的年份</li><li>历元日 - 卫星最后一次轨道更新的儒略日</li><li>倾角 - 卫星轨道面与赤道面的夹角</li><li>升交点赤经 - 升交点与卫星最后一次轨道更新位置的夹角</li><li>偏心率 - 卫星轨道偏离圆形的程度</li><li>近地点幅角 - 升交点与卫星近地点的夹角</li><li>平近点角 - 卫星当前位置与近地点的夹角</li><li>平均运动 - 卫星平近点角变化速率</li></ul>"
-    },
     "NewLaunch": {
       "bottomIconLabel": "新发射",
       "title": "新发射菜单",
@@ -265,11 +171,6 @@
       "bottomIconLabel": "导弹",
       "title": "导弹菜单",
       "helpBody": "导弹菜单用于生成国家间的假想导弹发射。<br><br>使用潜射导弹时，发射点为自定义经纬度；使用陆基导弹时，发射点为公开报道的固定经纬度。<br><br>除自定义导弹外，还提供若干涉及数百枚导弹的预设场景。<br><br>所有导弹发射均为假想，不代表真实世界事件。发射轨迹均基于同一弹道模型，但最小和最大射程不同。"
-    },
-    "StereoMap": {
-      "bottomIconLabel": "立体地图",
-      "title": "立体投影地图菜单",
-      "helpBody": "立体投影地图菜单用于以立体投影方式可视化卫星地面轨迹。<br/><br/>可点击轨迹上的任意点，将仿真时间切换到卫星到达该点的时刻。<br/><br/>黄色点表示卫星在传感器视场内，红色点表示不在视场内，距离卫星最近的点为当前时间。"
     },
     "SensorFov": {
       "bottomIconLabel": "传感器视场"
@@ -282,7 +183,7 @@
     },
     "SatelliteFov": {
       "bottomIconLabel": "卫星视场",
-      "title": "卫星视场菜单",
+      "title": "卫星视场",
       "helpBody": "卫星视场插件允许您控制卫星的视场。"
     },
     "Planetarium": {
@@ -291,16 +192,6 @@
     "NightToggle": {
       "bottomIconLabel": "夜间切换"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "星座",
-      "title": "星座菜单",
-      "helpBody": "星座菜单允许您查看卫星群。<br><br>对于某些星座，将在星座内的卫星之间绘制假想的上/下行链路和/或星间链路。"
-    },
-    "CountriesMenu": {
-      "bottomIconLabel": "国家",
-      "title": "国家菜单",
-      "helpBody": "国家菜单允许您按原籍国筛选卫星。"
-    },
     "ColorMenu": {
       "bottomIconLabel": "配色方案",
       "title": "配色方案菜单",
@@ -308,9 +199,6 @@
     },
     "Screenshot": {
       "bottomIconLabel": "拍照"
-    },
-    "LaunchCalendar": {
-      "bottomIconLabel": "发射日历"
     },
     "TimeMachine": {
       "bottomIconLabel": "时间机器"
@@ -336,11 +224,6 @@
       "title": "机动菜单",
       "helpBody": "机动菜单用于为卫星创建机动。<br><br>菜单允许您选择机动类型、机动时间和机动幅度。可通过从卫星列表中选择卫星来应用机动。"
     },
-    "AnalysisMenu": {
-      "bottomIconLabel": "分析",
-      "title": "分析菜单",
-      "helpBody": "分析菜单提供多种工具，帮助您分析当前视图中的数据。工具包括：<ul style=\"margin-left: 40px;\"><li>导出官方TLE - 导出真实的两行元数据。</li><li>导出3LES - 导出三行元数据。</li><li>导出KeepTrack TLE - 导出所有KeepTrack两行元数据（含分析员数据）。</li><li>导出KeepTrack 3LES - 导出所有KeepTrack三行元数据（含分析员数据）。</li><li>查找近距离物体 - 查找彼此接近的物体。</li><li>查找再入 - 查找可能再入大气层的物体。</li><li>最佳过境 - 基于当前选中传感器查找卫星的最佳过境。</li></ul>"
-    },
     "SettingsMenuPlugin": {
       "bottomIconLabel": "设置",
       "title": "设置菜单",
@@ -350,16 +233,6 @@
       "bottomIconLabel": "视频导演",
       "title": "视频导演菜单",
       "helpBody": "视频导演菜单用于操作场景中的摄像机和对象以创建视频。"
-    },
-    "CreateSat": {
-      "bottomIconLabel": "创建卫星",
-      "title": "创建卫星",
-      "helpBody": "创建卫星菜单用于根据开普勒元素创建卫星。"
-    },
-    "DopsPlugin": {
-      "bottomIconLabel": "查看DOP",
-      "title": "精度因子菜单",
-      "helpBody": "精度因子（DOP）菜单用于计算卫星和传感器的DOP值。<br><br>DOP值包括：<ul style=\"margin-left: 40px;\"><li>GDOP - 几何精度因子</li><li>PDOP - 位置精度因子</li><li>HDOP - 水平精度因子</li><li>VDOP - 垂直精度因子</li><li>TDOP - 时间精度因子</li><li>NDOP - 卫星数量精度因子</li></ul>"
     },
     "EciPlot": {
       "bottomIconLabel": "ECI绘图",
@@ -386,11 +259,6 @@
       "title": "纬度-经度绘图菜单",
       "helpBody": "纬度-经度绘图菜单用于绘制GEO带内的纬度与经度关系。"
     },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "倾角-高度图",
-      "title": "倾角-高度绘图菜单",
-      "helpBody": "倾角-高度绘图菜单用于绘制卫星倾角与高度的关系。"
-    },
     "Inc2LonPlots": {
       "bottomIconLabel": "倾角-经度图",
       "title": "倾角-经度绘图菜单",
@@ -401,5 +269,26 @@
       "title": "图形菜单",
       "helpBody": "图形菜单用于更改应用程序的图形设置。"
     }
+  },
+  "pluginDrawer": {
+    "modeCatalog": "目录",
+    "modeSensors": "传感器",
+    "modeEvents": "事件",
+    "modeCreate": "创建",
+    "modeAnalysis": "分析",
+    "modeDisplay": "显示",
+    "modeTools": "工具",
+    "modeSettings": "设置",
+    "modeExperimental": "实验性",
+    "groupCameraModes": "相机模式",
+    "groupLayerToggles": "图层切换",
+    "groupSettingsToggles": "设置切换",
+    "groupAbout": "关于"
+  },
+  "rightClickMenu": {
+    "pauseClock": "暂停时钟",
+    "resetCamera": "重置相机",
+    "clearLines": "清除线条",
+    "clearScreen": "清除屏幕"
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { EciArr3, SatCruncherMessageData, SolarBody } from '../core/interfaces';
 import { GlUtils } from './gl-utils';
 /* eslint-disable camelcase */
@@ -5,18 +6,21 @@ import { GlUtils } from './gl-utils';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { BaseObject, DetailedSatellite, EciVec3, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType } from '@ootk/src/main';
+import { BaseObject, Kilometers, KilometersPerSecond, Satellite, Seconds, SpaceObjectType, TemeVec3 } from '@ootk/src/main';
 import { mat4 } from 'gl-matrix';
 import { SettingsManager } from '../../settings/settings';
-import { CameraType } from '../camera/camera';
+import { CameraType } from '../camera/camera-type';
 import { PluginRegistry } from '../core/plugin-registry';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
+import { RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { BufferAttribute } from './buffer-attribute';
 import { DepthManager } from './depth-manager';
+import { IDotsShaderProvider } from './dots-shader-provider';
+import { createBaseFragShader, createBaseVertShader } from './dots-shaders-base';
 import { WebGlProgramHelper } from './webgl-program';
 import { WebGLRenderer } from './webgl-renderer';
 
@@ -31,6 +35,7 @@ declare module '@app/engine/core/interfaces' {
     satInView: Int8Array;
     satPos: Float32Array;
     satVel: Float32Array;
+    gmst: number;
   }
 }
 
@@ -47,8 +52,12 @@ export class DotsManager {
    */
   private positionBufferOneTime_ = false;
   private settings_: SettingsManager;
+  private shaderProvider_: IDotsShaderProvider | null = null;
+  private extraBuffers_: Record<string, WebGLBuffer> = {};
   // Array for which colors go to which ids
   private isSizeBufferOneTime_ = false;
+  /** When true, renders the picking shader to the screen instead of visual dots */
+  debugShowPicking = false;
 
   buffers = {
     position: <WebGLBuffer><unknown>null,
@@ -70,6 +79,7 @@ export class DotsManager {
 
   pickingRenderBuffer: WebGLRenderbuffer;
   pickingTexture: WebGLTexture;
+  cruncherGmst = 0;
   positionData: Float32Array;
   programs = {
     dots: {
@@ -100,8 +110,20 @@ export class DotsManager {
         u_pMvCamMatrix: <WebGLUniformLocation><unknown>null,
         u_minSize: <WebGLUniformLocation><unknown>null,
         u_maxSize: <WebGLUniformLocation><unknown>null,
+        u_starMinSize: <WebGLUniformLocation><unknown>null,
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
+        u_flatMapMode: <WebGLUniformLocation><unknown>null,
+        u_gmst: <WebGLUniformLocation><unknown>null,
+        u_currentGmst: <WebGLUniformLocation><unknown>null,
+        u_earthRadius: <WebGLUniformLocation><unknown>null,
+        u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
+        u_flatMapZoom: <WebGLUniformLocation><unknown>null,
+        u_polarViewMode: <WebGLUniformLocation><unknown>null,
+        u_sensorEcef: <WebGLUniformLocation><unknown>null,
+        u_ecefToEnu: <WebGLUniformLocation><unknown>null,
+        u_polarRadius: <WebGLUniformLocation><unknown>null,
+        u_polarZoom: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -130,6 +152,17 @@ export class DotsManager {
         u_maxSize: <WebGLUniformLocation><unknown>null,
         worldOffset: <WebGLUniformLocation><unknown>null,
         logDepthBufFC: <WebGLUniformLocation><unknown>null,
+        u_flatMapMode: <WebGLUniformLocation><unknown>null,
+        u_gmst: <WebGLUniformLocation><unknown>null,
+        u_currentGmst: <WebGLUniformLocation><unknown>null,
+        u_earthRadius: <WebGLUniformLocation><unknown>null,
+        u_flatMapCenterX: <WebGLUniformLocation><unknown>null,
+        u_flatMapZoom: <WebGLUniformLocation><unknown>null,
+        u_polarViewMode: <WebGLUniformLocation><unknown>null,
+        u_sensorEcef: <WebGLUniformLocation><unknown>null,
+        u_ecefToEnu: <WebGLUniformLocation><unknown>null,
+        u_polarRadius: <WebGLUniformLocation><unknown>null,
+        u_polarZoom: <WebGLUniformLocation><unknown>null,
       },
       vao: <WebGLVertexArrayObject><unknown>null,
     },
@@ -146,6 +179,10 @@ export class DotsManager {
     },
   };
 
+  // Polar view sensor uniforms (precomputed on CPU, pushed by plugin)
+  sensorEcef: Float32Array = new Float32Array(3);
+  ecefToEnu: Float32Array = new Float32Array(9);
+
   sizeData: Int8Array;
   starIndex1: number;
   starIndex2: number;
@@ -155,6 +192,14 @@ export class DotsManager {
   planetDot2: number;
   velocityData: Float32Array;
   lastUpdateSimTime = 0;
+
+  /**
+   * Register a custom shader provider (e.g., symbology plugin).
+   * Must be called before init().
+   */
+  registerShaderProvider(provider: IDotsShaderProvider): void {
+    this.shaderProvider_ = provider;
+  }
 
   /**
    * Draws dots on a WebGLFramebuffer.
@@ -180,15 +225,45 @@ export class DotsManager {
     gl.bindFramebuffer(gl.FRAMEBUFFER, tgtBuffer);
 
     gl.uniformMatrix4fv(this.programs.dots.uniforms.u_pMvCamMatrix, false, projectionCameraMatrix);
-    gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform3fv(this.programs.dots.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
 
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
+    const mainCamera = ServiceLocator.getMainCamera();
+    const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
+
+    const isPolarView = mainCamera.cameraType === CameraType.POLAR_VIEW;
+
+    gl.uniform1i(this.programs.dots.uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1i(this.programs.dots.uniforms.u_polarViewMode, isPolarView ? 1 : 0);
+    gl.uniform1f(this.programs.dots.uniforms.u_gmst, this.cruncherGmst);
+    gl.uniform1f(this.programs.dots.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.programs.dots.uniforms.u_earthRadius, RADIUS_OF_EARTH);
+    if (isFlatMap) {
+      gl.uniform1f(this.programs.dots.uniforms.u_flatMapCenterX, mainCamera.flatMapPanX);
+      gl.uniform1f(this.programs.dots.uniforms.u_flatMapZoom, mainCamera.flatMapZoom);
+      gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, 0.0); // disable log depth in ortho
+    } else if (isPolarView) {
+      gl.uniform3fv(this.programs.dots.uniforms.u_sensorEcef, this.sensorEcef);
+      gl.uniformMatrix3fv(this.programs.dots.uniforms.u_ecefToEnu, false, this.ecefToEnu);
+      gl.uniform1f(this.programs.dots.uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.dots.uniforms.u_polarZoom, mainCamera.polarViewZoom);
+      gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.programs.dots.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
+
+    if (mainCamera.cameraType === CameraType.PLANETARIUM) {
       gl.uniform1f(this.programs.dots.uniforms.u_minSize, this.settings_.satShader.minSizePlanetarium);
       gl.uniform1f(this.programs.dots.uniforms.u_maxSize, this.settings_.satShader.maxSizePlanetarium);
+      gl.uniform1f(this.programs.dots.uniforms.u_starMinSize, this.settings_.satShader.minSizePlanetarium);
     } else {
       gl.uniform1f(this.programs.dots.uniforms.u_minSize, this.settings_.satShader.minSize);
       gl.uniform1f(this.programs.dots.uniforms.u_maxSize, this.settings_.satShader.maxSize);
+      gl.uniform1f(this.programs.dots.uniforms.u_starMinSize, this.settings_.satShader.starMinSize);
+    }
+
+    // Let shader provider set extra uniforms (e.g., symbology)
+    if (this.shaderProvider_) {
+      this.shaderProvider_.setExtraUniforms(gl, this.programs.dots.uniforms);
     }
 
     gl.bindVertexArray(this.programs.dots.vao);
@@ -208,6 +283,11 @@ export class DotsManager {
     }
     gl.vertexAttribPointer(this.programs.dots.attribs.a_position.location, 3, gl.FLOAT, false, 0, 0);
 
+    // Let shader provider update extra buffers (e.g., symbology affiliation/staleness)
+    if (this.shaderProvider_) {
+      this.shaderProvider_.updateExtraBuffers(gl, this.extraBuffers_);
+    }
+
     /*
      * DEBUG:
      * gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -215,9 +295,19 @@ export class DotsManager {
     gl.enable(gl.BLEND);
     gl.depthMask(false); // Disable depth writing
 
-    // Should not be relying on sizeData -- but temporary
-    gl.drawArrays(gl.POINTS, 0, settingsManager.dotsOnScreen);
+    // Cap draw count to position buffer capacity to prevent WebGL errors
+    // during catalog swap when dotsOnScreen may reference the new catalog size
+    // but vertex buffers still contain old catalog data
+    const maxDrawable = this.positionData ? Math.floor(this.positionData.length / 3) : 0;
+    const drawCount = Math.min(settingsManager.dotsOnScreen, maxDrawable);
+
+    gl.drawArrays(gl.POINTS, 0, drawCount);
     gl.bindVertexArray(null);
+
+    // Debug: draw picking dots to screen using the same GL state as visual dots
+    if (this.debugShowPicking) {
+      this.drawPickingToScreen_(gl, projectionCameraMatrix, drawCount);
+    }
 
     gl.depthMask(true);
     gl.disable(gl.BLEND);
@@ -251,6 +341,29 @@ export class DotsManager {
     gl.uniformMatrix4fv(this.programs.picking.uniforms.u_pMvCamMatrix, false, pMvCamMatrix);
     gl.uniform3fv(this.programs.picking.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
 
+    const mainCam = ServiceLocator.getMainCamera();
+    const isFlatMapPick = mainCam.cameraType === CameraType.FLAT_MAP;
+    const isPolarViewPick = mainCam.cameraType === CameraType.POLAR_VIEW;
+
+    gl.uniform1i(this.programs.picking.uniforms.u_flatMapMode, isFlatMapPick ? 1 : 0);
+    gl.uniform1i(this.programs.picking.uniforms.u_polarViewMode, isPolarViewPick ? 1 : 0);
+    gl.uniform1f(this.programs.picking.uniforms.u_gmst, this.cruncherGmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
+    if (isFlatMapPick) {
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, mainCam.flatMapPanX);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, mainCam.flatMapZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else if (isPolarViewPick) {
+      gl.uniform3fv(this.programs.picking.uniforms.u_sensorEcef, this.sensorEcef);
+      gl.uniformMatrix3fv(this.programs.picking.uniforms.u_ecefToEnu, false, this.ecefToEnu);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarZoom, mainCam.polarViewZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
+
     // no reason to render 100000s of pixels when we're only going to read one
     if (!settingsManager.isMobileModeEnabled) {
       gl.enable(gl.SCISSOR_TEST);
@@ -258,13 +371,57 @@ export class DotsManager {
     }
 
     gl.bindVertexArray(this.programs.picking.vao);
-    // Should not be relying on sizeData -- but temporary
-    gl.drawArrays(gl.POINTS, 0, settingsManager.dotsOnScreen);
+    const maxPickable = this.positionData ? Math.floor(this.positionData.length / 3) : 0;
+
+    gl.drawArrays(gl.POINTS, 0, Math.min(settingsManager.dotsOnScreen, maxPickable));
     gl.bindVertexArray(null);
 
     if (!settingsManager.isMobileModeEnabled) {
       gl.disable(gl.SCISSOR_TEST);
     }
+  }
+
+  /**
+   * Renders picking dots to the same framebuffer as visual dots for debugging.
+   * Called inline during draw() while blend/depthMask state is still active,
+   * so the picking overlay goes through the exact same GL pipeline as visual dots.
+   */
+  private drawPickingToScreen_(gl: WebGL2RenderingContext, pMvCamMatrix: mat4, drawCount: number): void {
+    // Switch to picking program — framebuffer and blend/depth state are inherited from draw()
+    gl.useProgram(this.programs.picking.program);
+
+    gl.uniformMatrix4fv(this.programs.picking.uniforms.u_pMvCamMatrix, false, pMvCamMatrix);
+    gl.uniform3fv(this.programs.picking.uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const mainCam = ServiceLocator.getMainCamera();
+    const isFlatMap = mainCam.cameraType === CameraType.FLAT_MAP;
+    const isPolarView = mainCam.cameraType === CameraType.POLAR_VIEW;
+
+    gl.uniform1i(this.programs.picking.uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1i(this.programs.picking.uniforms.u_polarViewMode, isPolarView ? 1 : 0);
+    gl.uniform1f(this.programs.picking.uniforms.u_gmst, this.cruncherGmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(this.programs.picking.uniforms.u_earthRadius, RADIUS_OF_EARTH);
+    if (isFlatMap) {
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapCenterX, mainCam.flatMapPanX);
+      gl.uniform1f(this.programs.picking.uniforms.u_flatMapZoom, mainCam.flatMapZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else if (isPolarView) {
+      gl.uniform3fv(this.programs.picking.uniforms.u_sensorEcef, this.sensorEcef);
+      gl.uniformMatrix3fv(this.programs.picking.uniforms.u_ecefToEnu, false, this.ecefToEnu);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.programs.picking.uniforms.u_polarZoom, mainCam.polarViewZoom);
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.programs.picking.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
+
+    gl.bindVertexArray(this.programs.picking.vao);
+    gl.drawArrays(gl.POINTS, 0, drawCount);
+    gl.bindVertexArray(null);
+
+    // Restore visual dots program so subsequent code (if any) doesn't break
+    gl.useProgram(this.programs.dots.program);
   }
 
   /**
@@ -383,8 +540,14 @@ export class DotsManager {
     this.setupPickingBuffer(catalogManagerInstance.objectCache.length);
     this.updateSizeBuffer(catalogManagerInstance.objectCache.length);
     this.initColorBuffer(colorBuffer);
+    if (this.shaderProvider_) {
+      const gl = ServiceLocator.getRenderer().gl;
+
+      this.extraBuffers_ = this.shaderProvider_.initExtraBuffers(gl);
+    }
     this.initVao(); // Needs ColorBuffer first
   }
+
 
   /**
    * We need to share the color buffer between the color manager and the dots manager
@@ -406,7 +569,15 @@ export class DotsManager {
     this.programs.picking.program = new WebGlProgramHelper(gl, this.shaders_.picking.vert, this.shaders_.picking.frag).program;
 
     GlUtils.assignAttributes(this.programs.picking.attribs, gl, this.programs.picking.program, ['a_position', 'a_color', 'a_pickable']);
-    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program, ['u_pMvCamMatrix', 'worldOffset']);
+    GlUtils.assignUniforms(this.programs.picking.uniforms, gl, this.programs.picking.program,
+      ['u_pMvCamMatrix', 'worldOffset', 'logDepthBufFC', 'u_flatMapMode', 'u_gmst', 'u_currentGmst', 'u_earthRadius', 'u_flatMapCenterX', 'u_flatMapZoom']);
+
+    // Assign polar view uniforms separately — some ANGLE backends strip these from conditional branches
+    const polarPickUniforms = ['u_polarViewMode', 'u_sensorEcef', 'u_ecefToEnu', 'u_polarRadius', 'u_polarZoom'] as const;
+
+    for (const name of polarPickUniforms) {
+      this.programs.picking.uniforms[name] = gl.getUniformLocation(this.programs.picking.program, name) as WebGLUniformLocation;
+    }
 
     ServiceLocator.getScene().frameBuffers.gpuPicking = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
@@ -449,6 +620,11 @@ export class DotsManager {
     gl.enableVertexAttribArray(this.programs.dots.attribs.a_size.location);
     gl.vertexAttribPointer(this.programs.dots.attribs.a_size.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
 
+    // Let shader provider set up extra VAO bindings (e.g., symbology buffers)
+    if (this.shaderProvider_) {
+      this.shaderProvider_.setupExtraVao(gl, this.programs.dots.attribs, this.extraBuffers_);
+    }
+
     gl.bindVertexArray(null);
 
     // Picking Program
@@ -468,6 +644,85 @@ export class DotsManager {
     gl.vertexAttribPointer(this.programs.picking.attribs.a_pickable.location, 1, gl.UNSIGNED_BYTE, false, 0, 0);
 
     gl.bindVertexArray(null);
+  }
+
+  /**
+   * Resets all OneTime flags and clears accumulated buffers so that
+   * initBuffers() can reallocate them for a new catalog.
+   */
+  resetForCatalogSwap(): void {
+    this.positionBufferOneTime_ = false;
+    this.isSizeBufferOneTime_ = false;
+    if (this.shaderProvider_) {
+      this.shaderProvider_.resetBufferState();
+    }
+    this.pickingColorData = [];
+    this.isReady = false;
+    // Force updateCruncherBuffers to allocate new typed arrays
+    // eslint-disable-next-line no-void
+    this.positionData = void 0 as unknown as Float32Array;
+    // eslint-disable-next-line no-void
+    this.velocityData = void 0 as unknown as Float32Array;
+    // eslint-disable-next-line no-void
+    this.inViewData = void 0 as unknown as Int8Array;
+    // eslint-disable-next-line no-void
+    this.inSunData = void 0 as unknown as Int8Array;
+  }
+
+  /**
+   * Diagnostic: reads the picking FB at center and corners, reports sizes and status.
+   * Call from browser console: ServiceLocator.getDotsManager().diagnosePicking()
+   */
+  diagnosePicking(): string {
+    const gl = ServiceLocator.getRenderer().gl;
+    const buf = new Uint8Array(4);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ServiceLocator.getScene().frameBuffers.gpuPicking);
+
+    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    const statusStr = status === gl.FRAMEBUFFER_COMPLETE ? 'COMPLETE' : `0x${status.toString(16)}`;
+
+    const w = gl.drawingBufferWidth;
+    const h = gl.drawingBufferHeight;
+
+    const readId = (px: number, py: number): string => {
+      gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      const id = ((buf[2] << 16) | (buf[1] << 8) | buf[0]) - 1;
+
+      return `id=${id} rgba=(${buf[0]},${buf[1]},${buf[2]},${buf[3]})`;
+    };
+
+    const canvas = ServiceLocator.getRenderer().domElement;
+    const rect = canvas.getBoundingClientRect();
+
+    const lines = [
+      '=== PICKING FB DIAGNOSIS ===',
+      `FB status: ${statusStr}`,
+      `drawingBuffer: ${w}x${h}`,
+      `canvas.width/height: ${canvas.width}x${canvas.height}`,
+      `canvas CSS size: ${canvas.clientWidth}x${canvas.clientHeight}`,
+      `canvas rect: L=${rect.left} T=${rect.top} W=${rect.width} H=${rect.height}`,
+      `devicePixelRatio: ${window.devicePixelRatio}`,
+      `pickingTexture exists: ${!!this.pickingTexture}`,
+      `pickReadPixelBuffer size: ${this.pickReadPixelBuffer?.length}`,
+      `isMobileModeEnabled: ${settingsManager.isMobileModeEnabled}`,
+      `isDisableAsyncReadPixels: ${settingsManager.isDisableAsyncReadPixels}`,
+      '---',
+      `center (${w >> 1},${h >> 1}): ${readId(w >> 1, h >> 1)}`,
+      `TL (0,${h - 1}): ${readId(0, h - 1)}`,
+      `TR (${w - 1},${h - 1}): ${readId(w - 1, h - 1)}`,
+      `BL (0,0): ${readId(0, 0)}`,
+      `BR (${w - 1},0): ${readId(w - 1, 0)}`,
+    ];
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    const result = lines.join('\n');
+
+    // eslint-disable-next-line no-console
+    console.log(result);
+
+    return result;
   }
 
   /**
@@ -523,9 +778,15 @@ export class DotsManager {
    * @param mData The data received from the SatCruncher worker.
    */
   updateCruncherBuffers(mData: SatCruncherMessageData) {
+    if (typeof mData.gmst === 'number') {
+      this.cruncherGmst = mData.gmst;
+    }
+
     if (mData.satPos) {
-      if (typeof this.positionData === 'undefined') {
+      if (!this.positionData || this.positionData.length !== mData.satPos.length) {
         this.positionData = new Float32Array(mData.satPos);
+        // Force full GPU buffer reallocation on next draw since size changed
+        this.positionBufferOneTime_ = false;
         this.isReady = true;
       } else {
         this.positionData.set(mData.satPos, 0);
@@ -533,7 +794,7 @@ export class DotsManager {
     }
 
     if (mData.satVel) {
-      if (typeof this.velocityData === 'undefined') {
+      if (!this.velocityData || this.velocityData.length !== mData.satVel.length) {
         this.velocityData = new Float32Array(mData.satVel);
       } else {
         this.velocityData.set(mData.satVel, 0);
@@ -541,7 +802,7 @@ export class DotsManager {
     }
 
     if (mData.satInView?.length > 0) {
-      if (typeof this.inViewData === 'undefined' || this.inViewData.length !== mData.satInView.length) {
+      if (!this.inViewData || this.inViewData.length !== mData.satInView.length) {
         this.inViewData = new Int8Array(mData.satInView);
       } else {
         this.inViewData.set(mData.satInView, 0);
@@ -549,7 +810,7 @@ export class DotsManager {
     }
 
     if (mData.satInSun?.length > 0) {
-      if (typeof this.inSunData === 'undefined' || this.inSunData.length !== mData.satInSun.length) {
+      if (!this.inSunData || this.inSunData.length !== mData.satInSun.length) {
         this.inSunData = new Int8Array(mData.satInSun);
       } else {
         this.inSunData.set(mData.satInSun, 0);
@@ -572,14 +833,21 @@ export class DotsManager {
      * TODO: Remove this once we figure out why this is happening
      */
 
-    object.velocity = { x: 0, y: 0, z: 0 } as EciVec3<KilometersPerSecond>;
-    object.totalVelocity = 0;
+    // Type assertion: only SpaceObject and its subclasses have velocity and position
+    const spaceObject = object as unknown as { velocity: TemeVec3<KilometersPerSecond>; position: TemeVec3 };
 
-    const isChanged = object.velocity.x !== this.velocityData[i * 3] || object.velocity.y !== this.velocityData[i * 3 + 1] || object.velocity.z !== this.velocityData[i * 3 + 2];
+    spaceObject.velocity = { x: 0, y: 0, z: 0 } as TemeVec3<KilometersPerSecond>;
 
-    object.velocity.x = (this.velocityData[i * 3] as KilometersPerSecond) || (0 as KilometersPerSecond);
-    object.velocity.y = (this.velocityData[i * 3 + 1] as KilometersPerSecond) || (0 as KilometersPerSecond);
-    object.velocity.z = (this.velocityData[i * 3 + 2] as KilometersPerSecond) || (0 as KilometersPerSecond);
+    const isChanged = spaceObject.velocity.x !== this.velocityData[i * 3] ||
+      spaceObject.velocity.y !== this.velocityData[i * 3 + 1] ||
+      spaceObject.velocity.z !== this.velocityData[i * 3 + 2];
+
+    spaceObject.velocity.x = (this.velocityData[i * 3] as KilometersPerSecond) || (0 as KilometersPerSecond);
+    spaceObject.velocity.y = (this.velocityData[i * 3 + 1] as KilometersPerSecond) || (0 as KilometersPerSecond);
+    spaceObject.velocity.z = (this.velocityData[i * 3 + 2] as KilometersPerSecond) || (0 as KilometersPerSecond);
+
+    // Missiles have their own mutable totalVelocity that needs smoothing
+    // Other SpaceObjects use a computed getter that auto-calculates from velocity
     if (object.type === SpaceObjectType.BALLISTIC_MISSILE) {
       const missile = object as MissileObject;
       const newVel = Math.sqrt(missile.velocity.x ** 2 + missile.velocity.y ** 2 + missile.velocity.z ** 2);
@@ -589,11 +857,9 @@ export class DotsManager {
       } else if (isChanged) {
         missile.totalVelocity = missile.totalVelocity * 0.9 + newVel * 0.1;
       }
-    } else {
-      object.totalVelocity = Math.sqrt(object.velocity.x ** 2 + object.velocity.y ** 2 + object.velocity.z ** 2);
     }
 
-    object.position = {
+    spaceObject.position = {
       x: <Kilometers>this.positionData[i * 3],
       y: <Kilometers>this.positionData[i * 3 + 1],
       z: <Kilometers>this.positionData[i * 3 + 2],
@@ -616,23 +882,23 @@ export class DotsManager {
     // TODO: Decouple OEM logic from TLE logic
 
     if (!settingsManager.lowPerf && (renderer.dtAdjusted > settingsManager.minimumDrawDt || Math.abs(this.lastUpdateSimTime - simTime) > 1000)) {
-      if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) > -1) {
-        const obj = ServiceLocator.getCatalogManager().objectCache[PluginRegistry.getPlugin(SelectSatManager)!.selectedSat] as DetailedSatellite | MissileObject;
+      if (Number(PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) > -1) {
+        const obj = ServiceLocator.getCatalogManager().objectCache[PluginRegistry.getPlugin(SelectSatManager)!.selectedSat] as Satellite | MissileObject;
 
-        if (obj instanceof DetailedSatellite) {
-          const sat = obj as DetailedSatellite;
+        if (obj instanceof Satellite) {
+          const sat = obj as Satellite;
           const now = ServiceLocator.getTimeManager().simulationTimeObj;
           const pv = sat.eci(now);
 
           if (!pv) {
             return;
           }
-          this.positionData[sat.id * 3] = pv.position.x;
-          this.positionData[sat.id * 3 + 1] = pv.position.y;
-          this.positionData[sat.id * 3 + 2] = pv.position.z;
-          this.velocityData[sat.id * 3] = pv.velocity.x;
-          this.velocityData[sat.id * 3 + 1] = pv.velocity.y;
-          this.velocityData[sat.id * 3 + 2] = pv.velocity.z;
+          this.positionData[Number(sat.id) * 3] = pv.position.x;
+          this.positionData[Number(sat.id) * 3 + 1] = pv.position.y;
+          this.positionData[Number(sat.id) * 3 + 2] = pv.position.z;
+          this.velocityData[Number(sat.id) * 3] = pv.velocity.x;
+          this.velocityData[Number(sat.id) * 3 + 1] = pv.velocity.y;
+          this.velocityData[Number(sat.id) * 3 + 2] = pv.velocity.z;
         } else if (obj instanceof OemSatellite) {
           const sat = obj as OemSatellite;
           const now = ServiceLocator.getTimeManager().simulationTimeObj.getTime() / 1000 as Seconds;
@@ -642,16 +908,16 @@ export class DotsManager {
           if (!pv) {
             return;
           }
-          this.positionData[sat.id * 3] = pv[0];
-          this.positionData[sat.id * 3 + 1] = pv[1];
-          this.positionData[sat.id * 3 + 2] = pv[2];
-          this.velocityData[sat.id * 3] = pv[3];
-          this.velocityData[sat.id * 3 + 1] = pv[4];
-          this.velocityData[sat.id * 3 + 2] = pv[5];
+          this.positionData[Number(sat.id) * 3] = pv[0];
+          this.positionData[Number(sat.id) * 3 + 1] = pv[1];
+          this.positionData[Number(sat.id) * 3 + 2] = pv[2];
+          this.velocityData[Number(sat.id) * 3] = pv[3];
+          this.velocityData[Number(sat.id) * 3 + 1] = pv[4];
+          this.velocityData[Number(sat.id) * 3 + 2] = pv[5];
         }
       }
 
-      if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
+      if ((settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) && !settingsManager.isSkipTleInterpolation) {
         this.interpolatePositionsOfTleSatellites_(renderer);
       }
     }
@@ -667,9 +933,7 @@ export class DotsManager {
       return 1.0; // Return size for search results
     }
 
-    if ((i >= this.starIndex1 && i <= this.starIndex2)) {
-      return 1.0; // Return size for stars
-    }
+    // Stars use distance-based sizing (size 0) — at 3e10 km they naturally get u_minSize
 
     // If a planet and we aren't centered on Earth or Moon
     if ((i >= this.planetDot1 && i <= this.planetDot2) &&
@@ -700,20 +964,16 @@ export class DotsManager {
       this.sizeData = new Int8Array(bufferLen);
     }
 
-    // This has to happen first because it resets things to 0
+    // Reset everything to 0 (distance-based sizing).
+    // Stars stay at 0 — at 3e10 km they naturally get u_minSize in the shader.
     for (let i = 0; i < bufferLen; i++) {
-      // Stars are always bigger
-      if (i >= this.starIndex1 && i <= this.starIndex2) {
-        this.sizeData[i] = 1.0;
-      } else {
-        this.sizeData[i] = 0.0;
-      }
+      this.sizeData[i] = 0.0;
     }
 
     const selectedSat = PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1;
 
-    if (selectedSat > -1) {
-      this.sizeData[selectedSat] = 1.0;
+    if (Number(selectedSat) > -1) {
+      this.sizeData[Number(selectedSat)] = 1.0;
     }
 
     /*
@@ -740,96 +1000,31 @@ export class DotsManager {
    * Initializes the shaders used by the dots manager.
    */
   private initShaders_() {
-    this.shaders_ = {
-      dots: {
-        frag: glsl`#version 300 es
-            #extension GL_EXT_frag_depth : enable
-            precision highp float;
+    // Use shader provider if registered (e.g., symbology plugin), otherwise use base shaders
+    if (this.shaderProvider_) {
+      const config = this.shaderProvider_.getShaderConfig(this.settings_);
 
-            uniform float logDepthBufFC;
+      this.shaders_ = {
+        dots: { frag: config.fragShader, vert: config.vertShader },
+        picking: <{ vert: string; frag: string }><unknown>null,
+      };
+      Object.assign(this.programs.dots.attribs, config.extraAttribs);
+      for (const u of config.extraUniforms) {
+        (this.programs.dots.uniforms as Record<string, WebGLUniformLocation | null>)[u] = null;
+      }
+    } else {
+      this.shaders_ = {
+        dots: {
+          frag: createBaseFragShader(this.settings_),
+          vert: createBaseVertShader(this.settings_),
+        },
+        picking: <{ vert: string; frag: string }><unknown>null,
+      };
+    }
 
-            in vec4 vColor;
-            in float vSize;
-            in float vDist;
-
-            out vec4 fragColor;
-
-            float when_lt(float x, float y) {
-            return max(sign(y - x), 0.0);
-            }
-            float when_ge(float x, float y) {
-            return 1.0 - when_lt(x, y);
-            }
-
-            void main(void) {
-              vec2 ptCoord = gl_PointCoord * 2.0 - vec2(1.0, 1.0);
-              float r = (${settingsManager.satShader.blurFactor1} - min(abs(length(ptCoord)), 1.0));
-              float alpha = (2.0 * r + ${settingsManager.satShader.blurFactor2});
-
-              alpha = min(alpha, 1.0);
-
-              if (alpha == 0.0) discard;
-              fragColor = vec4(vColor.rgb, vColor.a * alpha);
-
-              ${DepthManager.getLogDepthFragCode()}
-            }
-          `,
-        vert: glsl`#version 300 es
-          precision highp float;
-          in vec3 a_position;
-          in vec4 a_color;
-          in float a_size;
-
-          uniform float u_minSize;
-          uniform float u_maxSize;
-          uniform vec3 worldOffset;
-          uniform mat4 u_pMvCamMatrix;
-          uniform float logDepthBufFC;
-
-          out vec4 vColor;
-          out float vSize;
-          out float vDist;
-
-          float when_lt(float x, float y) {
-              return max(sign(y - x), 0.0);
-          }
-          float when_ge(float x, float y) {
-              return 1.0 - when_lt(x, y);
-          }
-
-          void main(void) {
-              vec4 position = u_pMvCamMatrix * vec4(a_position + worldOffset, 1.0);
-              gl_Position = position;
-
-              ${DepthManager.getLogDepthVertCode()}
-
-              float drawSize = 0.0;
-              float dist = distance(vec3(0.0, 0.0, 0.0), a_position.xyz);
-              float baseSize = pow(${settingsManager.satShader.distanceBeforeGrow} \/ position.z, 2.1);
-
-              // Satellite
-              drawSize +=
-              when_lt(a_size, 0.5) *
-              (min(max(baseSize, u_minSize), u_maxSize) * 1.0);
-
-              // Something on the ground
-              drawSize +=
-              when_lt(a_size, 0.5) * when_lt(dist, 6421.0) *
-              (min(max(baseSize, u_minSize * 0.5), u_maxSize) * 1.0);
-
-              // Searched Object
-              drawSize += when_ge(a_size, 0.5) * ${settingsManager.satShader.starSize};
-
-              gl_PointSize = drawSize;
-              vColor = a_color;
-              vSize = a_size * 1.0;
-              vDist = dist;
-          }
-        `,
-      },
-      picking: {
-        vert: `#version 300 es
-                precision mediump float;
+    this.shaders_.picking = {
+      vert: glsl`#version 300 es
+                precision highp float;
                 in vec3 a_position;
                 in vec3 a_color;
                 in float a_pickable;
@@ -837,20 +1032,125 @@ export class DotsManager {
                 uniform mat4 u_pMvCamMatrix;
                 uniform vec3 worldOffset;
                 uniform float logDepthBufFC;
+                uniform bool u_flatMapMode;
+                uniform float u_gmst;
+                uniform float u_currentGmst;
+                uniform float u_earthRadius;
+                uniform float u_flatMapCenterX;
+                uniform float u_flatMapZoom;
+                uniform bool u_polarViewMode;
+                uniform vec3 u_sensorEcef;
+                uniform mat3 u_ecefToEnu;
+                uniform float u_polarRadius;
+                uniform float u_polarZoom;
 
                 out vec3 vColor;
 
                 void main(void) {
-                vec4 position = u_pMvCamMatrix * vec4(a_position + worldOffset, 1.0);
+                // Skip objects with invalid positions:
+                // - NaN from failed propagation (NaN comparisons always false)
+                // - Positions inside Earth (< 100 km from center)
+                float posLen = length(a_position);
+                if (posLen < 100.0 || posLen != posLen) {
+                    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                    gl_PointSize = 0.0;
+                    vColor = vec3(0.0);
+                    return;
+                }
+
+                vec3 eciPos = a_position + worldOffset;
+                vec4 position;
+
+                if (u_flatMapMode) {
+                    float PI = 3.14159265359;
+                    float eciDist = length(eciPos);
+                    if (eciDist > 1.0e7) {
+                        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                        gl_PointSize = 0.0;
+                        vColor = vec3(0.0);
+                        return;
+                    }
+                    float lon = atan(eciPos.y, eciPos.x) - u_gmst;
+                    lon = mod(lon + PI, 2.0 * PI) - PI;
+                    float lat = atan(eciPos.z, length(eciPos.xy));
+                    float alt = eciDist - u_earthRadius;
+                    vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+
+                    // Wrap X to nearest copy of camera center for seamless scrolling
+                    float mapW = 2.0 * PI * u_earthRadius;
+                    flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+
+                    position = u_pMvCamMatrix * vec4(flatPos, 1.0);
+                } else if (u_polarViewMode) {
+                    float PI = 3.14159265359;
+                    float eciDist = length(eciPos);
+                    if (eciDist > 1.0e7) {
+                        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                        gl_PointSize = 0.0;
+                        vColor = vec3(0.0);
+                        return;
+                    }
+                    float cg = cos(u_currentGmst);
+                    float sg = sin(u_currentGmst);
+                    vec3 ecef = vec3(
+                        eciPos.x * cg + eciPos.y * sg,
+                       -eciPos.x * sg + eciPos.y * cg,
+                        eciPos.z
+                    );
+                    vec3 d = ecef - u_sensorEcef;
+                    vec3 enu = u_ecefToEnu * d;
+                    float az = atan(enu.x, enu.y);
+                    float el = atan(enu.z, length(enu.xy));
+                    if (el < 0.0) {
+                        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                        gl_PointSize = 0.0;
+                        vColor = vec3(0.0);
+                        return;
+                    }
+                    float r = (PI / 2.0 - el) / (PI / 2.0);
+                    vec3 polarPos = vec3(
+                        r * sin(az) * u_polarRadius,
+                        r * cos(az) * u_polarRadius,
+                        0.0
+                    );
+                    position = u_pMvCamMatrix * vec4(polarPos, 1.0);
+                } else {
+                    // Rotate stale ground-object ECI positions to match current Earth rotation
+                    float groundDist = length(a_position.xyz);
+                    if (groundDist < 6421.0) {
+                        float deltaGmst = u_currentGmst - u_gmst;
+                        float cosD = cos(deltaGmst);
+                        float sinD = sin(deltaGmst);
+                        eciPos = vec3(
+                            eciPos.x * cosD - eciPos.y * sinD,
+                            eciPos.x * sinD + eciPos.y * cosD,
+                            eciPos.z
+                        );
+                    }
+                    position = u_pMvCamMatrix * vec4(eciPos, 1.0);
+                }
+
                 gl_Position = position;
                 ${DepthManager.getLogDepthVertCode()}
-                gl_PointSize = ${settingsManager.pickingDotSize} * a_pickable;
+
+                float pickSize;
+                if (u_polarViewMode) {
+                    pickSize = ${settingsManager.pickingDotSize} * sqrt(u_polarZoom);
+                } else if (u_flatMapMode) {
+                    pickSize = ${settingsManager.pickingDotSize} * sqrt(u_flatMapZoom);
+                } else {
+                    // Scale picking size with camera distance via position.w (eye-space depth)
+                    float camDist = max(position.w, 1.0);
+                    float depthRatio = clamp(${settingsManager.satShader.distanceBeforeGrow} / camDist, 0.5, 1.0);
+                    pickSize = ${settingsManager.pickingDotSize} * depthRatio;
+                }
+                gl_PointSize = pickSize * a_pickable;
                 vColor = a_color * a_pickable;
                 }
             `,
-        frag: `#version 300 es
+      frag: glsl`#version 300 es
                 #extension GL_EXT_frag_depth : enable
-                precision mediump float;
+                precision highp float;
 
                 in vec3 vColor;
 
@@ -863,7 +1163,6 @@ export class DotsManager {
                     ${DepthManager.getLogDepthFragCode()}
                 }
             `,
-      },
     };
   }
 
@@ -897,12 +1196,12 @@ export class DotsManager {
         continue;
       }
 
-      this.positionData[oemSat.id * 3] = pv[0];
-      this.positionData[oemSat.id * 3 + 1] = pv[1];
-      this.positionData[oemSat.id * 3 + 2] = pv[2];
-      this.velocityData[oemSat.id * 3] = pv[3];
-      this.velocityData[oemSat.id * 3 + 1] = pv[4];
-      this.velocityData[oemSat.id * 3 + 2] = pv[5];
+      this.positionData[Number(oemSat.id) * 3] = pv[0];
+      this.positionData[Number(oemSat.id) * 3 + 1] = pv[1];
+      this.positionData[Number(oemSat.id) * 3 + 2] = pv[2];
+      this.velocityData[Number(oemSat.id) * 3] = pv[3];
+      this.velocityData[Number(oemSat.id) * 3 + 1] = pv[4];
+      this.velocityData[Number(oemSat.id) * 3 + 2] = pv[5];
     }
   }
 }

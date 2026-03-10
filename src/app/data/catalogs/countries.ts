@@ -112,9 +112,11 @@ export const countryFlagIconMap = {
   'BH': 'BH',
   'BM': 'BM',
   'BO': 'BO',
+  'BOTS': 'BW', // Botswana
   'BR': 'BR',
   'BS': 'BS',
   'BT': 'BT',
+  'BW': 'BW',
   'BY': 'BY',
   'CA': 'CA',
   'CD': 'CD',
@@ -127,8 +129,8 @@ export const countryFlagIconMap = {
   'CO': 'CO',
   'COLP': 'CG', // Congo
   'CR': 'CR',
-  'CSFR': 'CSFR', // No matching code, kept original (historical Czechoslovakia)
-  'CSSR': 'CSSR', // No matching code, kept original (historical Czechoslovakia)
+  'CSFR': 'CZ', // Czechoslovakia → same flag as Czechia
+  'CSSR': 'CZ', // Czechoslovakia → same flag as Czechia
   'CU': 'CU',
   'CYM': 'KY', // Cayman Islands
   'CYMRU': 'GB-WLS', // Wales
@@ -136,6 +138,7 @@ export const countryFlagIconMap = {
   'D': 'DE', // Germany
   'DAG': 'RU', // Dagestan is part of Russia
   'DD': 'DD', // No matching code, kept original (historical East Germany)
+  'DJ': 'DJ',
   'DK': 'DK',
   'DML': 'DML', // No matching code, kept original
   'DR': 'DR', // No matching code, kept original (historical Germany)
@@ -163,6 +166,7 @@ export const countryFlagIconMap = {
   'GUF': 'GF', // French Guiana
   'HK': 'HK',
   'HKUK': 'HK',
+  'HR': 'HR',
   'HU': 'HU',
   'I': 'IT', // Italy
   'I-ARAB': 'I-ARAB', // No matching code, kept original
@@ -216,13 +220,18 @@ export const countryFlagIconMap = {
   'MX': 'MX',
   'MY': 'MY',
   'MYM': 'MM', // Myanmar
+  'MDA': 'MD', // Moldova
+  'MNG': 'MN', // Mongolia
+  'MUS': 'MU', // Mauritius
   'N': 'NO', // Norway
   'NO': 'NO', // Norway
   'NG': 'NG',
   'NL': 'NL',
   'NP': 'NP',
   'NZ': 'NZ',
+  'NZL': 'NZ', // New Zealand
   'NZRD': 'NZRD', // No matching code, kept original
+  'OM': 'OM',
   'P': 'PT', // Portugal
   'PAR': 'PA', // Panama
   'PCZ': 'PCZ', // No matching code, kept original
@@ -245,6 +254,7 @@ export const countryFlagIconMap = {
   'SD': 'SD',
   'SG': 'SG',
   'SH': 'SH',
+  'SN': 'SN',
   'SI': 'SI',
   'SK': 'SK',
   'SR': 'SR',
@@ -273,6 +283,7 @@ export const countryFlagIconMap = {
   'YE': 'YE',
   'ZA': 'ZA',
   'ZR': 'CD', // Zaire is now Democratic Republic of the Congo
+  'ZW': 'ZW',
   'ANALSAT': 'ANALSAT', // No matching code, kept original
   'SAUD': 'SA', // Saudi Arabia
   'AB': 'SA', // Saudi Arabia
@@ -318,9 +329,10 @@ export const countryFlagIconMap = {
   'ISRA': 'IL',
   'ISS': 'ISS', // No matching code, kept original
   'IT': 'IT',
-  'ITSO': 'LU', // Luxembourg
+  'ITSO': 'ITSO', // Intelsat (custom flag)
   'JPN': 'JP',
   'KAZ': 'KZ',
+  'KWT': 'KW', // Kuwait
   'LAOS': 'LA',
   'LTU': 'LT',
   'LUXE': 'LU',
@@ -339,7 +351,7 @@ export const countryFlagIconMap = {
   'POL': 'PL',
   'POR': 'PT',
   'PRC': 'CN',
-  'RASC': 'MU', // Mauritius
+  'RASC': 'RASC', // RASCOM (custom flag)
   'ROC': 'TW',
   'Taiwan': 'TW',
   'ROM': 'RO',

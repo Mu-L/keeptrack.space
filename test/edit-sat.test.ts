@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getEl } from '@app/engine/utils/get-el';
 import { EditSat } from '@app/plugins/edit-sat/edit-sat';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
@@ -33,13 +34,13 @@ describe('EditSatPlugin_class', () => {
     standardSelectSat();
     const toggleButton = getEl(editSatPlugin.bottomIconElementName);
 
-    toggleButton.click();
+    toggleButton!.click();
     ServiceLocator.getCatalogManager().sccNum2Id = () => 0;
     ServiceLocator.getCatalogManager().getObject = () => defaultSat;
     const button = getEl('editSat-newTLE');
 
-    button.click();
-    jest.advanceTimersByTime(1000);
+    button!.click();
+    vi.advanceTimersByTime(1000);
   });
 
   it('should save TLE', () => {
@@ -49,12 +50,12 @@ describe('EditSatPlugin_class', () => {
     standardSelectSat();
     const toggleButton = getEl(editSatPlugin.bottomIconElementName);
 
-    toggleButton.click();
+    toggleButton!.click();
     ServiceLocator.getCatalogManager().sccNum2Id = () => 0;
     ServiceLocator.getCatalogManager().getObject = () => defaultSat;
     const button = getEl('editSat-save');
 
-    button.click();
-    jest.advanceTimersByTime(1000);
+    button!.click();
+    vi.advanceTimersByTime(1000);
   });
 });

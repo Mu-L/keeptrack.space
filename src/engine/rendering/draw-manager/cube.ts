@@ -1,9 +1,11 @@
+import { Scene } from '@app/engine/core/scene';
 import { BufferAttribute } from '@app/engine/rendering/buffer-attribute';
 import { WebGlProgramHelper } from '@app/engine/rendering/webgl-program';
-import { mat3, mat4, vec3, vec4 } from 'gl-matrix';
-import { BaseObject, EciVec3, Kilometers } from '@ootk/src/main';
-import { GlUtils } from '../gl-utils';
 import { glsl } from '@app/engine/utils/development/formatter';
+import { BaseObject, Kilometers, KilometersPerSecond, TemeVec3 } from '@ootk/src/main';
+import { mat3, mat4, vec3, vec4 } from 'gl-matrix';
+import { DepthManager } from '../depth-manager';
+import { GlUtils } from '../gl-utils';
 
 /* eslint-disable no-useless-escape */
 /* eslint-disable camelcase */
@@ -72,6 +74,8 @@ export class Box {
     u_camMatrix: <WebGLUniformLocation><unknown>null,
     u_mvMatrix: <WebGLUniformLocation><unknown>null,
     u_color: <WebGLUniformLocation><unknown>null,
+    logDepthBufFC: <WebGLUniformLocation><unknown>null,
+    worldOffset: <WebGLUniformLocation><unknown>null,
   };
 
   private color_ = [0.5, 0.5, 0.5, 0.5]; // Set color to gray with alpha
@@ -79,7 +83,7 @@ export class Box {
   private vao: WebGLVertexArrayObject;
 
   drawPosition = [0, 0, 0] as vec3;
-  eci: EciVec3;
+  eci: TemeVec3;
 
   setColor(color: vec4) {
     this.color_[0] = color[0];
@@ -90,9 +94,6 @@ export class Box {
 
   draw(pMatrix: mat4, camMatrix: mat4, tgtBuffer = null as WebGLFramebuffer | null) {
     if (!this.isLoaded_) {
-      return;
-    }
-    if (this.drawPosition[0] === 0 && this.drawPosition[1] === 0 && this.drawPosition[2] === 0) {
       return;
     }
 
@@ -109,6 +110,8 @@ export class Box {
     gl.uniformMatrix4fv(this.uniforms_.u_pMatrix, false, pMatrix);
     gl.uniform4fv(this.uniforms_.u_color, this.color_);
     gl.uniformMatrix4fv(this.uniforms_.u_camMatrix, false, camMatrix);
+    gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    gl.uniform3fv(this.uniforms_.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
 
     // Enable alpha blending
     gl.enable(gl.BLEND);
@@ -143,7 +146,11 @@ export class Box {
     if (!this.isLoaded_) {
       return;
     }
-    if (!obj?.position) {
+
+    // Type assertion: only SpaceObject and its subclasses have position and velocity
+    const spaceObj = obj as { position?: TemeVec3; velocity?: TemeVec3<KilometersPerSecond> } | null;
+
+    if (!spaceObj?.position) {
       this.drawPosition[0] = 0;
       this.drawPosition[1] = 0;
       this.drawPosition[2] = 0;
@@ -151,16 +158,16 @@ export class Box {
       return;
     }
 
-    this.drawPosition[0] = obj.position.x;
-    this.drawPosition[1] = obj.position.y;
-    this.drawPosition[2] = obj.position.z;
+    this.drawPosition[0] = spaceObj.position.x;
+    this.drawPosition[1] = spaceObj.position.y;
+    this.drawPosition[2] = spaceObj.position.z;
 
     this.mvMatrix_ = mat4.create();
     mat4.identity(this.mvMatrix_);
     mat4.translate(this.mvMatrix_, this.mvMatrix_, this.drawPosition);
 
     // Calculate a position to look at along the satellite's velocity vector
-    const lookAtPos = [obj.position.x + obj.velocity.x, obj.position.y + obj.velocity.y, obj.position.z + obj.velocity.z];
+    const lookAtPos = [spaceObj.position.x + (spaceObj.velocity?.x ?? 0), spaceObj.position.y + (spaceObj.velocity?.y ?? 0), spaceObj.position.z + (spaceObj.velocity?.z ?? 0)];
 
     // Normalize an up vector to the satellite's position from the center of the earth
     const up = vec3.normalize(vec3.create(), this.drawPosition);
@@ -190,7 +197,7 @@ export class Box {
 
     // Assign Attributes
     GlUtils.assignAttributes(this.attribs_, gl, this.program_, ['a_position', 'a_normal']);
-    GlUtils.assignUniforms(this.uniforms_, gl, this.program_, ['u_pMatrix', 'u_camMatrix', 'u_mvMatrix', 'u_nMatrix', 'u_color']);
+    GlUtils.assignUniforms(this.uniforms_, gl, this.program_, ['u_pMatrix', 'u_camMatrix', 'u_mvMatrix', 'u_nMatrix', 'u_color', 'logDepthBufFC', 'worldOffset']);
   }
 
   private initVao_() {
@@ -219,9 +226,12 @@ export class Box {
       in vec3 v_normal;
       out vec4 fragColor;
       uniform vec4 u_color;
+      uniform float logDepthBufFC;
 
       void main(void) {
         fragColor = vec4(u_color.rgb * u_color.a, u_color.a);
+
+        ${DepthManager.getLogDepthFragCode()}
       }
     `,
     vert: glsl`#version 300 es
@@ -229,6 +239,8 @@ export class Box {
       uniform mat4 u_camMatrix;
       uniform mat4 u_mvMatrix;
       uniform mat3 u_nMatrix;
+      uniform vec3 worldOffset;
+      uniform float logDepthBufFC;
 
       in vec3 a_position;
       in vec3 a_normal;
@@ -236,8 +248,11 @@ export class Box {
       out vec3 v_normal;
 
       void main(void) {
-          vec4 position = u_mvMatrix * vec4(a_position, 1.0);
-          gl_Position = u_pMatrix * u_camMatrix * position;
+          vec4 worldPosition = u_mvMatrix * vec4(a_position.xyz, 1.0);
+          gl_Position = u_pMatrix * u_camMatrix * vec4(worldPosition.xyz + worldOffset, 1.0);
+
+          ${DepthManager.getLogDepthVertCode()}
+
           v_normal = u_nMatrix * a_normal;
       }
       `,

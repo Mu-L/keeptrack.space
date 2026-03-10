@@ -1,3 +1,5 @@
+import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData, TearrType } from '@app/app/sensors/sensor-math';
 import { GetSatType, MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -9,11 +11,11 @@ import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { showLoading } from '@app/engine/utils/showLoading';
-import { BaseObject, DetailedSatellite, DetailedSensor, SpaceObjectType } from '@ootk/src/main';
+import { BaseObject, Satellite, SpaceObjectType } from '@ootk/src/main';
 import tableChartPng from '@public/img/icons/table-chart.png';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { ClickDragOptions, fileExcelPng, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 type LookAngleData = TearrData & { canStationObserve: boolean };
@@ -28,7 +30,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
   }
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   /**
    * Flag to determine if the look angles should only show rise and set times
@@ -62,8 +64,8 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
 
   dragOptions: ClickDragOptions = {
     isDraggable: true,
-    minWidth: 400,
-    maxWidth: 600,
+    minWidth: 500,
+    maxWidth: 800,
   };
 
   sideMenuElementName: string = 'look-angles-menu';
@@ -96,6 +98,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
           <label for="look-anglesInterval" class="active">Interval (Seconds)</label>
       </div>
     </div>`;
+  downloadIconSrc = fileExcelPng;
   downloadIconCb = () => {
     const sensor = ServiceLocator.getSensorManager().getSensor();
 
@@ -131,7 +134,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
       Sensor: sensorDisplayName,
     }));
 
-    saveCsv(csvData, `${sensorDisplayName ?? 'unk'}-${(this.selectSatManager_.getSelectedSat() as DetailedSatellite).sccNum6}-look-angles`);
+    saveXlsx(csvData, `${sensorDisplayName ?? 'unk'}-${(this.selectSatManager_.getSelectedSat() as Satellite).sccNum6}-look-angles`);
   };
   sideMenuSecondaryOptions = {
     width: 300,
@@ -181,7 +184,7 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
     if (obj?.isSatellite() && ServiceLocator.getSensorManager().isSensorSelected()) {
       this.setBottomIconToEnabled();
       if (this.isMenuButtonActive && obj) {
-        this.getlookangles_(obj as DetailedSatellite);
+        this.getlookangles_(obj as Satellite);
       }
     } else {
       if (this.isMenuButtonActive) {
@@ -199,12 +202,12 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
         if (!obj.isSatellite()) {
           return;
         }
-        this.getlookangles_(obj as DetailedSatellite);
+        this.getlookangles_(obj as Satellite);
       });
     }
   }
 
-  private getlookangles_(sat: DetailedSatellite, sensors?: DetailedSensor[]): TearrData[] {
+  private getlookangles_(sat: Satellite, sensors?: DetailedSensor[]): TearrData[] {
     const timeManagerInstance = ServiceLocator.getTimeManager();
 
     if (!sensors) {
@@ -227,14 +230,23 @@ export class LookAnglesPlugin extends KeepTrackPlugin {
      */
     const lookanglesInterval = this.isRiseSetOnly_ ? 1 : this.angleCalculationInterval_;
 
+    const isOemSat = sat instanceof OemSatellite;
+
+    // Cap loop to OEM ephemeris end time so we don't propagate beyond available data
+    const maxSeconds = isOemSat
+      ? Math.max(0, ((sat as unknown as OemSatellite).header.STOP_TIME.getTime() - timeManagerInstance.simulationTimeObj.getTime()) / 1000)
+      : this.lengthOfLookAngles_ * 24 * 60 * 60;
+
     const looksArray = <LookAngleData[]>[];
     let offset = 0;
     let isMaxElFound = false;
 
-    for (let i = 0; i < this.lengthOfLookAngles_ * 24 * 60 * 60; i += lookanglesInterval) {
+    for (let i = 0; i < maxSeconds; i += lookanglesInterval) {
       offset = i * 1000; // Offset in seconds (msec * 1000)
       const now = timeManagerInstance.getOffsetTimeObj(offset);
-      const tearrData = SensorMath.getTearData(now, sat.satrec, sensors, this.isRiseSetOnly_, isMaxElFound);
+      const tearrData = isOemSat
+        ? (sat as unknown as OemSatellite).getTearData(now, sensors, this.isRiseSetOnly_, isMaxElFound)
+        : SensorMath.getTearData(now, sat.satrec, sensors, this.isRiseSetOnly_, isMaxElFound);
       const canStationObserve = sensors[0].type === SpaceObjectType.OPTICAL ? SensorMath.checkIfVisibleForOptical(sat, sensors[0], now) : true;
       const looksPass = { ...tearrData, canStationObserve };
 

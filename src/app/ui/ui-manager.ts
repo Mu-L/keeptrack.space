@@ -24,15 +24,20 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { SoundNames } from '@app/engine/audio/sounds';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { EventBus } from '@app/engine/events/event-bus';
+import { EngineEventMap, EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import { KeyboardComponent } from '@app/engine/plugins/components/keyboard/keyboard-component';
 import { isThisNode } from '@app/engine/utils/isThisNode';
-import { SoundNames } from '@app/plugins/sounds/sounds';
 import '@materializecss/materialize';
-import { BaseObject, DetailedSatellite, Milliseconds, MILLISECONDS_PER_SECOND } from '@ootk/src/main';
+import { BaseObject, Milliseconds, MILLISECONDS_PER_SECOND } from '@ootk/src/main';
+import cancelPng from '@public/img/icons/cancel.png';
+import checkCirclePng from '@public/img/icons/check-circle.png';
+import infoPng from '@public/img/icons/info.png';
+import warningPng from '@public/img/icons/warning.png';
 import { ColorScheme } from '../../engine/rendering/color-schemes/color-scheme';
 import { clickAndDragHeight, clickAndDragWidth } from '../../engine/utils/click-and-drag';
 import { closeColorbox } from '../../engine/utils/colorbox';
@@ -40,6 +45,7 @@ import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { getEl, hideEl, setInnerHtml, showEl } from '../../engine/utils/get-el';
 import { LayersManager } from './layers-manager';
 import { MobileManager } from './mobileManager';
+import { PluginDrawer } from './plugin-drawer';
 import { SearchManager } from './search-manager';
 import { UiValidation } from './ui-validation';
 
@@ -53,11 +59,10 @@ export class UiManager {
   M = window.M;
   bottomIconPress: (el: HTMLElement) => void;
   hideSideMenus: () => void;
-  isAnalysisMenuOpen = false;
   isCurrentlyTyping = false;
   isUiVisible = true;
   lastBoxUpdateTime = 0;
-  lastNextPassCalcSatId = 0;
+  lastNextPassCalcSatId = -1;
   lastNextPassCalcSensorShortName: string;
   lastToast: string;
   searchManager: SearchManager;
@@ -65,6 +70,7 @@ export class UiManager {
   updateNextPassOverlay: (arg0: boolean) => void;
   searchHoverSatId = -1;
   layersManager: LayersManager;
+  pluginDrawer: PluginDrawer;
 
   static fullscreenToggle() {
     if (!document.fullscreenElement) {
@@ -138,25 +144,61 @@ export class UiManager {
       return null;
     }
 
+    type = type || ToastMsgType.standby;
+
+    // Icon source is based on type
+    let iconSrc: string;
+
+    switch (type) {
+      case ToastMsgType.standby:
+        iconSrc = infoPng;
+        break;
+      case ToastMsgType.caution:
+        iconSrc = warningPng;
+        break;
+      case ToastMsgType.serious:
+        iconSrc = warningPng;
+        break;
+      case ToastMsgType.critical:
+        iconSrc = cancelPng;
+        break;
+      case ToastMsgType.error:
+        iconSrc = cancelPng;
+        break;
+      case ToastMsgType.normal:
+      default:
+        iconSrc = checkCirclePng;
+        break;
+    }
+
+    const iconHtml = `<img class="kt-toast-icon" src="${iconSrc}" alt="" />`;
+
     const toastMsg = window.M.toast({
-      unsafeHTML: toastText,
+      unsafeHTML: `${iconHtml}<span>${toastText}</span>`,
     });
 
+    const toastEl = toastMsg.$el[0] as HTMLElement;
+
     // Add an on click event to dismiss the toast
-    toastMsg.$el[0].addEventListener('click', () => {
+    toastEl.addEventListener('click', () => {
       toastMsg.dismiss();
       this.activeToastList_ = this.activeToastList_.filter((t) => t !== toastMsg);
     });
 
-    toastMsg.$el[0].addEventListener('contextmenu', () => {
+    toastEl.addEventListener('contextmenu', () => {
       this.dismissAllToasts();
     });
 
-
-    type = type || ToastMsgType.standby;
     if (isLong) {
       toastMsg.timeRemaining = UiManager.LONG_TIMER_DELAY;
     }
+
+    // Add auto-dismiss progress bar
+    const progressBar = document.createElement('div');
+
+    progressBar.className = 'kt-toast-progress';
+    progressBar.style.animationDuration = `${toastMsg.timeRemaining}ms`;
+    toastEl.appendChild(progressBar);
 
     setTimeout(() => {
       this.activeToastList_ = this.activeToastList_.filter((t) => t !== toastMsg);
@@ -164,28 +206,28 @@ export class UiManager {
 
     switch (type) {
       case ToastMsgType.standby:
-        toastMsg.$el[0].style.background = 'var(--statusDarkStandby)';
+        toastEl.style.setProperty('--kt-toast-accent', '#2dccff');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.caution:
-        toastMsg.$el[0].style.background = 'var(--statusDarkCaution)';
+        toastEl.style.setProperty('--kt-toast-accent', '#fce83a');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.serious:
-        toastMsg.$el[0].style.background = 'var(--statusDarkSerious)';
+        toastEl.style.setProperty('--kt-toast-accent', '#ffb302');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.critical:
-        toastMsg.$el[0].style.background = 'var(--statusDarkCritical)';
+        toastEl.style.setProperty('--kt-toast-accent', '#ff3838');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
       case ToastMsgType.error:
-        toastMsg.$el[0].style.background = 'var(--statusDarkCritical)';
+        toastEl.style.setProperty('--kt-toast-accent', '#ff3838');
         ServiceLocator.getSoundManager()?.play(SoundNames.ERROR);
         break;
       case ToastMsgType.normal:
       default:
-        toastMsg.$el[0].style.background = 'var(--statusDarkNormal)';
+        toastEl.style.setProperty('--kt-toast-accent', '#56f000');
         ServiceLocator.getSoundManager()?.play(SoundNames.WARNING);
         break;
     }
@@ -235,11 +277,16 @@ export class UiManager {
       hideEl('keeptrack-header');
       hideEl('ui-wrapper');
       hideEl('nav-footer');
+      hideEl('drawer-overlay');
+      hideEl('drawer-utility-footer');
+      this.pluginDrawer?.close();
       this.isUiVisible = false;
     } else {
       showEl('keeptrack-header');
       showEl('ui-wrapper');
       showEl('nav-footer');
+      showEl('drawer-overlay');
+      showEl('drawer-utility-footer');
       this.isUiVisible = true;
     }
   }
@@ -255,33 +302,38 @@ export class UiManager {
     this.layersManager = new LayersManager();
     this.layersManager.init();
 
-    if (settingsManager.isShowPrimaryLogo) {
+    this.pluginDrawer = new PluginDrawer();
+    this.pluginDrawer.init();
+
+    if (settingsManager.isShowPrimaryLogo && settingsManager.isShowFloatingLogos) {
       getEl('logo-primary')?.classList.remove('start-hidden');
     }
-    if (settingsManager.isShowSecondaryLogo) {
+    if (settingsManager.isShowSecondaryLogo && settingsManager.isShowFloatingLogos) {
       getEl('logo-secondary')?.classList.remove('start-hidden');
     }
 
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
 
     this.sortBottomIcons();
+    this.sortUtilityIcons_();
 
     UiManager.initBottomMenuResizing_();
 
     // Initialize Navigation and Select Menus
     const elems = document.querySelectorAll('.dropdown-button');
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean, isShift: boolean) => {
-      if (key === 'F2' && isShift && !isRepeat) {
-        this.hideUi();
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'B' && !isRepeat) {
-        this.toggleBottomMenu();
-      }
-    });
+    new KeyboardComponent('UiManager', [
+      {
+        key: 'F2',
+        shift: true,
+        callback: () => this.hideUi(),
+      },
+      {
+        key: 'b',
+        shift: false,
+        callback: () => this.toggleBottomMenu(),
+      },
+    ]).init();
 
     window.M.Dropdown.init(elems);
     this.isInitialized_ = true;
@@ -306,6 +358,31 @@ export class UiManager {
     }
   }
 
+  private sortUtilityIcons_() {
+    const sortWithinContainer = (containerId: string) => {
+      const container = getEl(containerId);
+
+      if (!container) {
+        return;
+      }
+
+      const icons = Array.from(container.querySelectorAll(':scope > div'));
+      const sorted = icons.sort((a, b) => {
+        const aOrder = parseInt(a.getAttribute('data-order') ?? '100', 10);
+        const bOrder = parseInt(b.getAttribute('data-order') ?? '100', 10);
+
+        return aOrder - bOrder;
+      });
+
+      sorted.forEach((icon) => {
+        container.appendChild(icon);
+      });
+    };
+
+    sortWithinContainer('utility-camera-icons');
+    sortWithinContainer('utility-layer-icons');
+  }
+
   initMenuController() {
     // Resizing Listener
     window.addEventListener('resize', () => {
@@ -315,7 +392,7 @@ export class UiManager {
 
     this.addSearchEventListeners_();
 
-    getEl('fullscreen-icon')?.addEventListener('click', () => {
+    getEl('fullscreen-btn')?.addEventListener('click', () => {
       UiManager.fullscreenToggle();
     });
 
@@ -450,10 +527,8 @@ export class UiManager {
       return;
     }
 
-    const sat = obj as DetailedSatellite;
-
     if (realTime * 1 > lastBoxUpdateTime * 1 + this.updateInterval) {
-      EventBus.getInstance().emit(EventBusEvent.updateSelectBox, sat);
+      EventBus.getInstance().emit(EventBusEvent.updateSelectBox, obj as EngineEventMap[EventBusEvent.updateSelectBox][0]);
       ServiceLocator.getTimeManager().lastBoxUpdateTime = realTime;
     }
   }

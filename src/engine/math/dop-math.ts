@@ -1,18 +1,34 @@
 import numeric from 'numeric';
-import { AzEl, DEG2RAD, Degrees, DetailedSatellite, Kilometers, MILLISECONDS_PER_SECOND, ecf2rae, eci2ecf } from '@ootk/src/main';
+import { AzEl, DEG2RAD, Degrees, Satellite, Kilometers, MILLISECONDS_PER_SECOND, ecef2rae, eci2ecef } from '@ootk/src/main';
 import { SatMath } from '../../app/analysis/sat-math';
 import { dateFormat } from '../utils/dateFormat';
 import { getEl } from '../utils/get-el';
 
+export type DopValues = {
+  pdop: string;
+  hdop: string;
+  gdop: string;
+  vdop: string;
+  tdop: string;
+};
+
+export type DopResult = DopValues & {
+  visibleSats: number;
+  allSatAzEl?: SatAzEl[];
+};
+
+export type SatAzEl = {
+  az: Degrees;
+  el: Degrees;
+  isVisible: boolean;
+};
+
+/** Function that returns the minimum elevation at a given azimuth */
+export type ElevationMaskFn = (az: Degrees) => Degrees;
+
 export type DopList = {
   time: Date;
-  dops: {
-    pdop: string;
-    hdop: string;
-    gdop: string;
-    vdop: string;
-    tdop: string;
-  };
+  dops: DopValues;
 }[];
 
 /**
@@ -24,8 +40,8 @@ export abstract class DopMath {
    * @param azElList The list of GPS satellites to use for the calculation.
    * @returns An object containing the calculated DOP values.
    */
-  public static calculateDops(azElList: AzEl<Degrees>[]): { pdop: string; hdop: string; gdop: string; vdop: string; tdop: string } {
-    const dops = { pdop: '50.00', hdop: '50.00', gdop: '50.00', vdop: '50.00', tdop: '50.00' };
+  public static calculateDops(azElList: AzEl<Degrees>[]): DopValues {
+    const dops: DopValues = { pdop: '50.00', hdop: '50.00', gdop: '50.00', vdop: '50.00', tdop: '50.00' };
 
     const nsat = azElList.length;
 
@@ -69,30 +85,46 @@ export abstract class DopMath {
    * @returns An object containing the calculated DOP values.
    * @throws An error if the latitude or longitude is undefined.
    */
-  public static getDops(propTime: Date, gpsSatObjects: DetailedSatellite[], lat: Degrees, lon: Degrees, alt?: Kilometers, gpsElevationMask = <Degrees>10) {
+  public static getDops(
+    propTime: Date,
+    gpsSatObjects: Satellite[],
+    lat: Degrees,
+    lon: Degrees,
+    alt?: Kilometers,
+    gpsElevationMask: Degrees | ElevationMaskFn = <Degrees>10,
+    includeAllSatPositions = false,
+  ): DopResult {
     if (typeof lat === 'undefined' || typeof lon === 'undefined') {
-      return { pdop: 'N/A', hdop: 'N/A', gdop: 'N/A', vdop: 'N/A', tdop: 'N/A' };
+      return { pdop: 'N/A', hdop: 'N/A', gdop: 'N/A', vdop: 'N/A', tdop: 'N/A', visibleSats: 0 };
     }
 
     alt ??= <Kilometers>0;
 
     const { gmst } = SatMath.calculateTimeVariables(propTime);
+    const isFunction = typeof gpsElevationMask === 'function';
 
     const inViewList = <AzEl<Degrees>[]>[];
+    const allSatAzEl: SatAzEl[] | undefined = includeAllSatPositions ? [] : undefined;
 
-    gpsSatObjects.forEach((sat: DetailedSatellite) => {
-      const lookAngles = ecf2rae({ lon, lat, alt }, eci2ecf(sat.position, gmst));
-      const azel = {
-        az: lookAngles.az,
-        el: lookAngles.el,
-      };
+    gpsSatObjects.forEach((sat: Satellite) => {
+      const lookAngles = ecef2rae({ lon, lat, alt }, eci2ecef(sat.position, gmst));
+      const az = lookAngles.az;
+      const el = lookAngles.el;
+      const minEl = isFunction ? (gpsElevationMask as ElevationMaskFn)(az) : gpsElevationMask;
+      const isVisible = el > minEl;
 
-      if (azel.el > gpsElevationMask) {
-        inViewList.push(azel);
+      if (isVisible) {
+        inViewList.push({ az, el });
+      }
+
+      if (allSatAzEl) {
+        allSatAzEl.push({ az, el, isVisible });
       }
     });
 
-    return DopMath.calculateDops(inViewList);
+    const dops = DopMath.calculateDops(inViewList);
+
+    return { ...dops, visibleSats: inViewList.length, allSatAzEl };
   }
 
   /**
@@ -141,7 +173,14 @@ export abstract class DopMath {
     }
   }
 
-  public static getDopsList(getOffsetTimeObj: (offset: number) => Date, gpsSats: DetailedSatellite[], lat: Degrees, lon: Degrees, alt: Kilometers, el: Degrees): DopList {
+  public static getDopsList(
+    getOffsetTimeObj: (offset: number) => Date,
+    gpsSats: Satellite[],
+    lat: Degrees,
+    lon: Degrees,
+    alt: Kilometers,
+    el: Degrees | ElevationMaskFn,
+  ): DopList {
     const dopsResults = [] as DopList;
 
     for (let t = 0; t < 1440; t++) {

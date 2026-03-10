@@ -1,7 +1,9 @@
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { compressToGzip, decompressFromGzip } from '@app/engine/utils/compression';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
@@ -9,7 +11,6 @@ import { isThisNode } from '@app/engine/utils/isThisNode';
 import landscape3Png from '@public/img/icons/landscape3.png';
 import { saveAs } from 'file-saver';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '../sounds/sounds';
 
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -46,28 +47,21 @@ export interface ScenarioData {
   endTime: Date | null;
 }
 
-interface ScenarioFile {
-  name: string;
-  description?: string;
-  startTime?: string;
-  endTime?: string;
-}
-
 export class ScenarioManagementPlugin extends KeepTrackPlugin {
   readonly id = 'ScenarioManagementPlugin';
   dependencies_ = [];
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.SETTINGS, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.TOOLS, MenuMode.ALL];
 
   defaultScenarioName = 'My Scenario';
   defaultScenarioDescription = 'Description of My Scenario';
 
   bottomIconElementName: string = 'scenario-management-icon';
   bottomIconImg = landscape3Png;
-  formPrefix_ = 'scenario-management-form';
+  protected formPrefix_ = 'scenario-management-form';
   sideMenuElementName: string = 'scenario-management-menu';
   sideMenuElementHtml: string = html`
-  <div id="scenario-management-menu" class="side-menu-parent start-hidden text-select">
+  <div id="scenario-management-menu" class="side-menu-parent start-hidden">
     <div id="scenario-management-content" class="side-menu">
       <div class="row">
         <form id="${this.formPrefix_}-form">
@@ -179,10 +173,20 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
       return false;
     }
 
+    const oldStart = this.scenario.startTime?.getTime() ?? null;
+    const oldEnd = this.scenario.endTime?.getTime() ?? null;
+
     this.scenario = {
       ...this.scenario,
       ...partialScenario,
     };
+
+    const newStart = this.scenario.startTime?.getTime() ?? null;
+    const newEnd = this.scenario.endTime?.getTime() ?? null;
+
+    if (oldStart !== newStart || oldEnd !== newEnd) {
+      EventBus.getInstance().emit(EventBusEvent.scenarioBoundsChanged, this.scenario);
+    }
 
     (getEl(`${this.formPrefix_}-name`) as HTMLInputElement).value = this.scenario.name;
     (getEl(`${this.formPrefix_}-description`) as HTMLInputElement).value = this.scenario.description;
@@ -212,7 +216,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return true;
   }
 
-  private onSubmit_(e?: Event): void {
+  protected onSubmit_(e?: Event): void {
     e?.preventDefault();
 
     const nameInput = getEl(`${this.formPrefix_}-name`) as HTMLInputElement;
@@ -260,13 +264,13 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     }
   }
 
-  private onDateChange_(e: Event): void {
+  protected onDateChange_(e: Event): void {
     const input = e.target as HTMLInputElement;
 
     this.validateDate_(input);
   }
 
-  private validateScenario_(scenario: ScenarioData): boolean {
+  protected validateScenario_(scenario: ScenarioData): boolean {
     if (scenario.startTime && scenario.endTime && scenario.startTime >= scenario.endTime) {
       errorManagerInstance.warn('Scenario start time must be before end time.');
 
@@ -300,7 +304,7 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return true;
   }
 
-  private validateDate_(input: HTMLInputElement): boolean {
+  protected validateDate_(input: HTMLInputElement): boolean {
     const dateStr = input.value;
 
     // Simple regex to validate the format YYYY-MM-DD HH:MM:SS.sss
@@ -321,57 +325,71 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     return isValid;
   }
 
-  private onSave_(evt: Event): void {
+  protected async onSave_(evt: Event): Promise<void> {
+    evt.preventDefault();
     this.onSubmit_();
     ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
-    const blob = new Blob([JSON.stringify(this.scenario, null, 2)], {
-      type: 'text/plain;charset=utf-8',
-    });
+
+    const file = {
+      version: '3.0' as const,
+      scenario: {
+        name: this.scenario.name,
+        description: this.scenario.description,
+        ...(this.scenario.startTime ? { startTime: this.scenario.startTime.toISOString() } : {}),
+        ...(this.scenario.endTime ? { endTime: this.scenario.endTime.toISOString() } : {}),
+      },
+    };
 
     try {
-      saveAs(blob, `keeptrack-scenario-${this.scenario.name}.json`);
+      const compressed = await compressToGzip(JSON.stringify(file));
+      const blob = new Blob([compressed.buffer as ArrayBuffer], { type: 'application/gzip' });
+
+      saveAs(blob, `keeptrack-scenario-${this.scenario.name}.kts`);
     } catch (e) {
       if (!isThisNode()) {
         errorManagerInstance.error(e, 'scenario-management.ts', 'Error saving scenario!');
       }
     }
-    evt.preventDefault();
   }
 
-  private onLoad_(): void {
+  protected onLoad_(): void {
     ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
     const input = document.createElement('input');
 
     input.type = 'file';
-    input.accept = '.json,text/json';
+    input.accept = '.kts,application/gzip';
 
     input.onchange = (e: Event) => {
       const target = e.target as HTMLInputElement;
 
       if (target.files && target.files.length > 0) {
-        const file = target.files[0];
         const reader = new FileReader();
 
         reader.onload = (event: ProgressEvent<FileReader>) => {
-          if (event.target && typeof event.target.result === 'string') {
-            try {
-              const scenarioFile: ScenarioFile = JSON.parse(event.target.result);
-              const scenarioData = {
-                name: scenarioFile.name,
-                description: scenarioFile.description || '',
-                startTime: scenarioFile.startTime ? new Date(scenarioFile.startTime) : null,
-                endTime: scenarioFile.endTime ? new Date(scenarioFile.endTime) : null,
-              };
+          if (event.target?.result instanceof ArrayBuffer) {
+            decompressFromGzip(new Uint8Array(event.target.result)).then((json) => {
+              try {
+                const parsed = JSON.parse(json);
+                const scenario = parsed.scenario;
+                const scenarioData = {
+                  name: scenario.name,
+                  description: scenario.description || '',
+                  startTime: scenario.startTime ? new Date(scenario.startTime) : null,
+                  endTime: scenario.endTime ? new Date(scenario.endTime) : null,
+                };
 
-              if (this.updateScenario(scenarioData)) {
-                ServiceLocator.getUiManager().toast('Scenario loaded successfully!', ToastMsgType.normal);
+                if (this.updateScenario(scenarioData)) {
+                  ServiceLocator.getUiManager().toast('Scenario loaded successfully!', ToastMsgType.normal);
+                }
+              } catch (error) {
+                errorManagerInstance.error(error, 'scenario-management.ts', 'Error loading scenario file!');
               }
-            } catch (error) {
-              errorManagerInstance.error(error, 'scenario-management.ts', 'Error loading scenario file!');
-            }
+            }).catch((error: Error) => {
+              errorManagerInstance.error(error, 'scenario-management.ts', 'Error decompressing scenario file!');
+            });
           }
         };
-        reader.readAsText(file);
+        reader.readAsArrayBuffer(target.files[0]);
       }
     };
 

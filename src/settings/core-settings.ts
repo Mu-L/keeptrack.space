@@ -25,6 +25,16 @@ import type { ClassificationString } from '../app/ui/classification';
 import { defaultPlugins } from './default-plugins';
 
 /**
+ * Controls how plugin icons behave when internet is unavailable.
+ */
+export enum OfflineIconBehavior {
+  /** Grey out the icon; not clickable */
+  DISABLE = 'disable',
+  /** Completely hide the icon from the bottom menu */
+  HIDE = 'hide',
+}
+
+/**
  * Core application settings and global flags
  */
 export class CoreSettings {
@@ -41,14 +51,25 @@ export class CoreSettings {
 
   filter: FilterPluginSettings = {};
 
+  /**
+   * URL-based regime filter. When non-empty, only satellites in the specified
+   * regimes are loaded. Valid values: vleo, leo, meo, geo, heo, xgeo
+   */
+  regimeFilter: string[] = [];
+
   // Installation and Environment
   /**
    * The relative path to the installation directory. This is necessary if the application is
    * a folder inside the main folder of the webserver.
+   * @deprecated This should be removed in favor of dynamic path resolution in the future.
    */
   installDirectory = '';
   /** Flag to determine if external data is available */
   offlineMode = false;
+  /** Controls how internet-dependent plugin icons behave when offline */
+  offlineIconBehavior: OfflineIconBehavior = OfflineIconBehavior.HIDE;
+  /** Skip loading the satellite catalog on startup. Use with CatalogManagementPlugin to load catalogs via drag-and-drop or file picker. */
+  noCatalogOnLoad = false;
   /**
    * Flag if the user is running inside an iframe
    */
@@ -158,6 +179,10 @@ export class CoreSettings {
    */
   searchLimit = 600;
   /**
+   * Whether to show decayed satellites (position 0,0,0) in search results.
+   */
+  isShowDecayedInSearch = true;
+  /**
    * String to limit which satellites are loaded from the catalog
    */
   limitSats = '';
@@ -263,10 +288,6 @@ export class CoreSettings {
    */
   isBlockPersistence = false;
 
-  // Version
-  versionDate = '';
-  versionNumber = '';
-
   // Recording
   /**
    * The desired video bitrate in bits per second for video recording.
@@ -286,6 +307,12 @@ export class CoreSettings {
   lkVerify = 0;
   settingsManager: unknown = null;
   isAutoStart = false;
+
+  /**
+   * When true, pro plugins are usable without logging in.
+   * Useful for self-hosted or branded deployments (e.g., celestrak).
+   */
+  isDisableLoginGate = false;
 
   /**
    * Callback function that is called when the settings are loaded.

@@ -57,7 +57,7 @@ export class PerformanceSettings {
    */
   maxLabels = 0; // 20000;
   /** Maximum number of OEM satellites to load */
-  maxOemSatellites: number = 10;
+  maxOemSatellites: number = 200;
   maxNotionalDebris = 100000;
 
   // FPS Throttling

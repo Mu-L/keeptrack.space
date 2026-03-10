@@ -22,6 +22,10 @@ export enum EventBusEvent {
   orbitManagerInit = 'orbitManagerInit',
   drawManagerLoadScene = 'drawManagerLoadScene',
   drawOptionalScenery = 'drawOptionalScenery',
+  /**
+   * Emitted after renderOpaque() completes. Use for transparent overlays that must draw on top of the Earth surface.
+   */
+  drawOverlay = 'drawOverlay',
   updateLoop = 'updateLoop',
   /**
    * Run as the default case in the rmbMenuActions event with parameters (targetId: string, clickedSat: number)
@@ -64,8 +68,14 @@ export enum EventBusEvent {
   canvasMouseDown = 'canvasMouseDown',
   touchStart = 'touchStart',
   ConeMeshUpdate = 'ConeMeshUpdate',
+  FrustumMeshUpdate = 'FrustumMeshUpdate',
   bottomMenuModeChange = 'bottomMenuModeChange',
   saveSettings = 'saveSettings',
+  /**
+   * Emitted when filter menu toggles change. ColorSchemeManager listens to
+   * forward the updated filter state to the color worker.
+   */
+  filterChanged = 'filterChanged',
   loadSettings = 'loadSettings',
   update = 'update',
   parseGetVariables = 'parseGetVariables',
@@ -87,4 +97,66 @@ export enum EventBusEvent {
   onLinesCleared = 'onLinesCleared',
   selectedDateChange = 'selectedDateChange',
   calculateSimulationTime = 'calculateSimulationTime',
+  soundMuteChanged = 'audio:muteChanged',
+  /**
+   * Emitted before default 3D background rendering. Subscribers render custom backgrounds
+   * (e.g. 2D flat map). Return true from the handler to skip default 3D background.
+   */
+  renderCustomBackground = 'renderCustomBackground',
+  /**
+   * Methods-pattern event. Return true to skip Earth mesh rendering in renderOpaque.
+   */
+  shouldSkipEarthDraw = 'shouldSkipEarthDraw',
+  /**
+   * Methods-pattern event. Return true to skip 3D satellite model rendering.
+   */
+  shouldSkipSatelliteModels = 'shouldSkipSatelliteModels',
+  /**
+   * Methods-pattern event. Return true to skip transparent object rendering (search box, covariance ellipsoids).
+   */
+  shouldSkipTransparentObjects = 'shouldSkipTransparentObjects',
+  /**
+   * Emitted during screenshot compositing. Subscribers draw overlays onto the 2D canvas context.
+   * Parameters: (ctx: CanvasRenderingContext2D, width: number, height: number)
+   */
+  screenshotComposite = 'screenshotComposite',
+  /**
+   * Methods-pattern event. Return true to crop screenshot to a 1:1 square.
+   */
+  screenshotShouldCropSquare = 'screenshotShouldCropSquare',
+  /**
+   * Emitted after a catalog has been reloaded via drag-and-drop or programmatic swap.
+   * Plugins should use this to clear stale caches and refresh UI.
+   */
+  catalogReloaded = 'catalogReloaded',
+  /**
+   * Emitted when browser internet connectivity changes.
+   * Parameters: (isOnline: boolean)
+   */
+  connectivityChange = 'connectivityChange',
+  /**
+   * Emitted when the login gate state changes (user logs in/out or token rotates).
+   * Parameters: (isAuthenticated: boolean)
+   */
+  loginGateStateChange = 'loginGateStateChange',
+  /**
+   * Emitted when the active color scheme changes via setColorScheme().
+   * Parameters: (scheme: ColorScheme)
+   */
+  colorSchemeChanged = 'colorSchemeChanged',
+  /**
+   * Emitted when scenario start/end time bounds change via updateScenario().
+   * Parameters: (scenario: ScenarioData)
+   */
+  scenarioBoundsChanged = 'scenarioBoundsChanged',
+  /**
+   * Emitted when the camera type changes via changeCameraType().
+   * Parameters: (cameraTypeName: string)
+   */
+  cameraTypeChanged = 'cameraTypeChanged',
+  /**
+   * Emitted when the color worker has new color/pickable buffers ready.
+   * ColorSchemeManager consumes the data and uploads to GPU.
+   */
+  onColorBufferReady = 'onColorBufferReady',
 }

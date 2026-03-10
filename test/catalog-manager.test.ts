@@ -1,12 +1,21 @@
+import { vi } from 'vitest';
 import { CatalogExporter } from '@app/app/data/catalog-exporter';
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import { CatalogSearch } from '@app/app/data/catalog-search';
 import { GetSatType } from '@app/engine/core/interfaces';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { BaseObject, Degrees, DetailedSatellite, Kilometers, Minutes, SpaceObjectType } from '@ootk/src/main';
+import { BaseObject, Degrees, Satellite, Kilometers, Minutes, SpaceObjectType } from '@ootk/src/main';
 import { defaultSat } from './environment/apiMocks';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+
+vi.mock('@app/engine/utils/saveVariable', () => ({
+  saveXlsx: vi.fn(),
+  saveCsv: vi.fn(),
+  saveVariable: vi.fn(),
+  copyTsvToClipboard: vi.fn(),
+  getCircularReplacer: vi.fn(),
+}));
 
 // Test calcSatrec function
 describe('calcSatrec', () => {
@@ -80,23 +89,29 @@ describe('calcSatrec', () => {
     // mock new Date() with new Date(2021, 6, 22, 12);
     const mockDate = new Date(2021, 6, 22, 12);
 
-    jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
+    vi.spyOn(global, 'Date').mockImplementation(function() {
+      return mockDate;
+    } as any);
 
-    const satData = CatalogSearch.findObjsByOrbit(catalogManagerInstance.objectCache as DetailedSatellite[], defaultSat);
+    const satData = CatalogSearch.findObjsByOrbit(catalogManagerInstance.objectCache as Satellite[], defaultSat);
 
     expect(satData).toStrictEqual([0, 1]);
   });
 
   // should find reentries
   it('find_reentries', () => {
-    defaultSat.period = 100 as Minutes;
+    Object.defineProperty(defaultSat, 'period', { value: 100 as Minutes, configurable: true });
     const matchSat = defaultSat.clone();
 
-    matchSat.perigee = 200 as Kilometers;
+    // ootk clone() doesn't preserve type, so we must set it explicitly
+    matchSat.type = SpaceObjectType.PAYLOAD;
+    // perigee is a computed getter in ootk, so we need to override it with defineProperty
+    Object.defineProperty(matchSat, 'perigee', { value: 200 as Kilometers, configurable: true });
     matchSat.sccNum = '00001';
     const nonmatchSat = defaultSat.clone();
 
-    nonmatchSat.perigee = 0 as Kilometers;
+    nonmatchSat.type = SpaceObjectType.PAYLOAD;
+    Object.defineProperty(nonmatchSat, 'perigee', { value: 0 as Kilometers, configurable: true });
     nonmatchSat.sccNum = '00002';
     const nonmatchSat2 = defaultSat.clone();
 
@@ -104,7 +119,8 @@ describe('calcSatrec', () => {
     nonmatchSat2.sccNum = '00002';
     const nonmatchSat3 = defaultSat.clone();
 
-    nonmatchSat3.perigee = 300 as Kilometers;
+    nonmatchSat3.type = SpaceObjectType.PAYLOAD;
+    Object.defineProperty(nonmatchSat3, 'perigee', { value: 300 as Kilometers, configurable: true });
     nonmatchSat3.sccNum = '00002';
 
     catalogManagerInstance.objectCache = [];
@@ -116,7 +132,7 @@ describe('calcSatrec', () => {
       correctResult.push(matchSat.sccNum);
     }
 
-    const satData = CatalogSearch.findReentry(catalogManagerInstance.objectCache as DetailedSatellite[]);
+    const satData = CatalogSearch.findReentry(catalogManagerInstance.objectCache as Satellite[]);
 
     expect(satData).toStrictEqual(correctResult);
   });
@@ -175,20 +191,20 @@ describe('calcSatrec', () => {
   // Should addAnalystSat
   it('process_insert_new_analyst_satellite', () => {
     catalogManagerInstance.objectCache = [defaultSat];
-    catalogManagerInstance.satCruncher = {
-      postMessage: jest.fn(),
-      terminate: jest.fn(),
-    } as unknown as Worker;
+    catalogManagerInstance.satCruncherThread = {
+      postMessage: vi.fn(),
+      sendSatEdit: vi.fn(),
+    } as any;
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, defaultSat.tle2, 0)).not.toThrow();
   });
 
   // Should error on bad addAnalystSat
   it('process_insert_new_analyst_satellite_bad', () => {
     catalogManagerInstance.objectCache = [defaultSat];
-    catalogManagerInstance.satCruncher = {
-      postMessage: jest.fn(),
-      terminate: jest.fn(),
-    } as unknown as Worker;
+    catalogManagerInstance.satCruncherThread = {
+      postMessage: vi.fn(),
+      sendSatEdit: vi.fn(),
+    } as any;
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1.slice(0, 68), defaultSat.tle2, 0)).toThrow();
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, `${defaultSat.tle2}0`, 0)).toThrow();
     expect(() => catalogManagerInstance.addAnalystSat(defaultSat.tle1, defaultSat.tle2, 1)).not.toThrow();

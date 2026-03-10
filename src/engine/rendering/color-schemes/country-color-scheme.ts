@@ -1,10 +1,11 @@
 /* eslint-disable complexity */
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
-import { html } from '@app/engine/utils/development/formatter';
-import { BaseObject, DetailedSatellite, SpaceObjectType } from '@ootk/src/main';
-import { CameraType } from '../../camera/camera';
-import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
+import { BaseObject, Satellite, SpaceObjectType } from '@ootk/src/main';
+import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
   sourceUssf: rgbaArray;
@@ -15,7 +16,7 @@ export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class CountryColorScheme extends ColorScheme {
-  readonly label = 'Country';
+  readonly label = t7e('colorSchemes.CountryColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'CountryColorScheme';
   static readonly id = 'CountryColorScheme';
 
@@ -110,7 +111,7 @@ export class CountryColorScheme extends ColorScheme {
       };
     }
 
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
 
     switch (sat.country) {
       case 'United States of America':

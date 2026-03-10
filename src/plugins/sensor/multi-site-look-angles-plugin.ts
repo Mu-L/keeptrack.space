@@ -1,6 +1,9 @@
 import { SatMath } from '@app/app/analysis/sat-math';
 import { sensors } from '@app/app/data/catalogs/sensors';
+import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { SensorMath, TearrData } from '@app/app/sensors/sensor-math';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -10,13 +13,14 @@ import { dateFormat } from '@app/engine/utils/dateFormat';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
-import { saveCsv } from '@app/engine/utils/saveVariable';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
 import { showLoading } from '@app/engine/utils/showLoading';
 import {
   BaseObject,
-  Degrees, DetailedSatellite, DetailedSensor,
+  Degrees,
   Kilometers,
   MINUTES_PER_DAY,
+  Satellite,
   SatelliteRecord, Seconds,
   SpaceObjectType,
   TAU,
@@ -24,9 +28,8 @@ import {
 import tableRowsPng from '@public/img/icons/table-rows.png';
 import { sensorGroups } from '../../app/data/catalogs/sensor-groups';
 import { SensorManager } from '../../app/sensors/sensorManager';
-import { ClickDragOptions, KeepTrackPlugin, SideMenuSettingsOptions } from '../../engine/plugins/base-plugin';
+import { ClickDragOptions, fileExcelPng, KeepTrackPlugin, SideMenuSettingsOptions } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '../sounds/sounds';
 export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
   readonly id = 'MultiSiteLookAnglesPlugin';
   dependencies_ = [SelectSatManager.name];
@@ -36,7 +39,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
   isRequireSatelliteSelected = true;
   isRequireSensorSelected = false;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   // Settings
   private readonly lengthOfLookAngles_ = 1; // Days
@@ -73,7 +76,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     if (!sat?.isSatellite()) {
       return;
     }
-    this.refreshSideMenuData(sat as DetailedSatellite);
+    this.refreshSideMenuData(sat as Satellite);
   };
 
 
@@ -99,18 +102,19 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
       </div>
     </div>`;
   sideMenuSettingsWidth: number = 350;
+  downloadIconSrc = fileExcelPng;
   downloadIconCb = () => {
     ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
     const exportData = ServiceLocator.getSensorManager().lastMultiSiteArray.map((look) => ({
       time: look.time,
       sensor: look.objName,
-      az: look.az.toFixed(2),
-      el: look.el.toFixed(2),
-      rng: look.rng.toFixed(2),
+      az: look.az?.toFixed(2) ?? 'N/A',
+      el: look.el?.toFixed(2) ?? 'N/A',
+      rng: look.rng?.toFixed(2) ?? 'N/A',
       visible: look.visible,
     }));
 
-    saveCsv(exportData, `multisite-${(this.selectSatManager_?.getSelectedSat() as DetailedSatellite | undefined)?.sccNum6 ?? '000000'}-look-angles`);
+    saveXlsx(exportData, `multisite-${(this.selectSatManager_?.getSelectedSat() as Satellite | undefined)?.sccNum6 ?? '000000'}-look-angles`);
   };
   sideMenuSecondaryOptions: SideMenuSettingsOptions = {
     width: 300,
@@ -133,7 +137,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     if (obj?.isSatellite() && ServiceLocator.getSensorManager().isSensorSelected()) {
       this.setBottomIconToEnabled();
       if (this.isMenuButtonActive && obj) {
-        this.refreshSideMenuData(obj as DetailedSatellite);
+        this.refreshSideMenuData(obj as Satellite);
       }
     } else {
       if (this.isMenuButtonActive) {
@@ -153,12 +157,12 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
         if (!sat?.isSatellite()) {
           return;
         }
-        this.refreshSideMenuData(sat as DetailedSatellite);
+        this.refreshSideMenuData(sat as Satellite);
       },
     );
   }
 
-  private refreshSideMenuData(sat: DetailedSatellite) {
+  private refreshSideMenuData(sat: Satellite) {
     if (this.isMenuButtonActive) {
       if (sat) {
         showLoading(() => {
@@ -223,20 +227,12 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     }
   }
 
-  private getlookanglesMultiSite_(sat: DetailedSatellite, sensors?: DetailedSensor[]): void {
+  private getlookanglesMultiSite_(sat: Satellite, sensors?: DetailedSensor[]): void {
     const timeManagerInstance = ServiceLocator.getTimeManager();
     const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const staticSet = ServiceLocator.getCatalogManager().staticSet;
 
     if (!sensors) {
-      sensors = [];
-      for (const sensorName in staticSet) {
-        if (staticSet[sensorName] instanceof DetailedSensor) {
-          const sensor = staticSet[sensorName];
-
-          sensors.push(sensor);
-        }
-      }
+      sensors = this.sensorList_;
     }
 
     const isResetToDefault = !sensorManagerInstance.isSensorSelected();
@@ -244,32 +240,81 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     // Save Current Sensor as a new array
     const tempSensor = [...sensorManagerInstance.currentSensors];
 
-    const satrec = sat.satrec;
+    const isOemSat = sat instanceof OemSatellite;
+    const satrec = isOemSat ? null : sat.satrec;
 
-    if (!satrec) {
+    if (!isOemSat && !satrec) {
       errorManagerInstance.warn('Satellite record not found');
 
       return;
     }
 
-    const orbitalPeriod = MINUTES_PER_DAY / ((satrec.no * MINUTES_PER_DAY) / TAU); // Seconds in a day divided by mean motion
+    // Estimate orbital period for skip-ahead optimization
+    let orbitalPeriod: number;
+    let isHighOrbit: boolean;
+
+    if (satrec) {
+      orbitalPeriod = MINUTES_PER_DAY / ((satrec.no * MINUTES_PER_DAY) / TAU);
+      isHighOrbit = sat.semiMajorAxis > 30000;
+    } else {
+      // Estimate from current position magnitude
+      const pos = (sat as unknown as OemSatellite).position;
+      const r = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+
+      orbitalPeriod = (TAU * Math.sqrt(r * r * r / 398600.4418)) / 60; // minutes
+      isHighOrbit = r > 30000;
+    }
+
+    // Cap loop to OEM ephemeris end time so we don't propagate beyond available data
+    const maxSeconds = isOemSat
+      ? Math.max(0, ((sat as unknown as OemSatellite).header.STOP_TIME.getTime() - timeManagerInstance.simulationTimeObj.getTime()) / 1000)
+      : this.lengthOfLookAngles_ * 24 * 60 * 60;
 
     const multiSiteArray = <TearrData[]>[];
 
     for (const sensor of sensors) {
-      // Skip if satellite is above the max range of the sensor
-      if (sensor.maxRng < sat.perigee && (!sensor.maxRng2 || sensor.maxRng2 < sat.perigee)) {
+      // Skip if satellite is above the max range of the sensor (not applicable for OEM satellites without perigee)
+      if (!isOemSat && sensor.maxRng < sat.perigee && (!sensor.maxRng2 || sensor.maxRng2 < sat.perigee)) {
         continue;
       }
 
       SensorManager.updateSensorUiStyling([sensor]);
       let offset = 0;
 
-      for (let i = 0; i < this.lengthOfLookAngles_ * 24 * 60 * 60; i += this.angleCalculationInterval_) {
-        // 5second Looks
+      for (let i = 0; i < maxSeconds; i += this.angleCalculationInterval_) {
         offset = i * 1000; // Offset in seconds (msec * 1000)
         const now = timeManagerInstance.getOffsetTimeObj(offset);
-        const multiSitePass = MultiSiteLookAnglesPlugin.propagateMultiSite_(now, satrec, sensor);
+
+        let multiSitePass: TearrData;
+
+        if (isOemSat) {
+          const oemSat = sat as unknown as OemSatellite;
+          const rae = oemSat.getRae(now, sensor);
+
+          if (!rae) {
+            continue; // outside ephemeris range
+          }
+          if (SatMath.checkIsInView(sensor, rae)) {
+            multiSitePass = {
+              time: now.toISOString(),
+              el: rae.el,
+              az: rae.az,
+              rng: rae.rng,
+              objName: sensor.objName ?? '',
+            };
+          } else {
+            multiSitePass = {
+              time: '',
+              el: <Degrees>0,
+              az: <Degrees>0,
+              rng: <Kilometers>0,
+              objName: '',
+            };
+          }
+        } else {
+          multiSitePass = MultiSiteLookAnglesPlugin.propagateMultiSite_(now, satrec!, sensor);
+        }
+
         let canStationObserve = true;
 
         if (multiSitePass.time !== '') {
@@ -278,10 +323,10 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
             canStationObserve = SensorMath.checkIfVisibleForOptical(sat, sensor, now);
           }
           multiSitePass.visible = canStationObserve;
-          multiSiteArray.push(multiSitePass); // Update the table with looks for this 5 second chunk and then increase table counter by 1
+          multiSiteArray.push(multiSitePass);
 
-          // Jump 3/4th to the next orbit
-          if (sat.semiMajorAxis > 30000) {
+          // Jump ahead to avoid redundant calculations within the same pass
+          if (isHighOrbit) {
             i += orbitalPeriod * 60 * 0.1;
           } else {
             i += orbitalPeriod * 60 * 0.75;
@@ -300,7 +345,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
       sensorManagerInstance.setCurrentSensor(tempSensor);
     }
 
-    this.populateMultiSiteTable_(multiSiteArray);
+    this.populateMultiSiteTable_(multiSiteArray, sensors);
   }
 
   private static propagateMultiSite_(now: Date, satrec: SatelliteRecord, sensor: DetailedSensor): TearrData {
@@ -337,9 +382,9 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
 
   }
 
-  private populateMultiSiteTable_(multiSiteArray: TearrData[]) {
+  private populateMultiSiteTable_(multiSiteArray: TearrData[], sensors: DetailedSensor[]) {
     const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const staticSet = ServiceLocator.getCatalogManager().staticSet;
+    const sensorMap = new Map(sensors.map((s) => [s.objName, s]));
 
     const tbl = <HTMLTableElement>getEl('multi-site-look-angles-table'); // Identify the table to update
 
@@ -373,7 +418,7 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
     const timeManagerInstance = ServiceLocator.getTimeManager();
 
     for (const entry of multiSiteArray) {
-      const sensor = staticSet.find((s) => s.objName === entry.objName);
+      const sensor = entry.objName ? sensorMap.get(entry.objName) : null;
 
       if (!sensor) {
         continue;
@@ -383,11 +428,11 @@ export class MultiSiteLookAnglesPlugin extends KeepTrackPlugin {
       tdT = tr.insertCell();
       tdT.appendChild(document.createTextNode(dateFormat(entry.time, 'isoDateTime', true)));
       tdE = tr.insertCell();
-      tdE.appendChild(document.createTextNode(entry.el.toFixed(1)));
+      tdE.appendChild(document.createTextNode(entry.el?.toFixed(1) ?? 'N/A'));
       tdA = tr.insertCell();
-      tdA.appendChild(document.createTextNode(entry.az.toFixed(0)));
+      tdA.appendChild(document.createTextNode(entry.az?.toFixed(0) ?? 'N/A'));
       tdR = tr.insertCell();
-      tdR.appendChild(document.createTextNode(entry.rng.toFixed(0)));
+      tdR.appendChild(document.createTextNode(entry.rng?.toFixed(0) ?? 'N/A'));
       tdS = tr.insertCell();
       tdS.appendChild(document.createTextNode(sensor.uiName ?? sensor.shortName ?? sensor.objName ?? ''));
       tdV = tr.insertCell();

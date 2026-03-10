@@ -1,88 +1,146 @@
+import { CameraType } from '@app/engine/camera/camera-type';
 import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { keepTrackApi } from '@app/keepTrackApi';
+import { t7e } from '@app/locales/keys';
+import { settingsManager } from '@app/settings/settings';
 import gpsPng from '@public/img/icons/gps.png';
 
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import type { GroupsManager } from '@app/app/data/groups-manager';
 import { GroupType } from '@app/app/data/object-group';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { DopMath } from '@app/engine/math/dop-math';
+import { DopMath, ElevationMaskFn } from '@app/engine/math/dop-math';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import {
+  IBottomIconConfig,
+  IDragOptions,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { Degrees, DetailedSatellite, EciVec3, Kilometers, eci2lla } from '@ootk/src/main';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+import { Degrees, Kilometers, Satellite, TemeVec3, eci2lla } from '@ootk/src/main';
+import './dops.css';
 
 export class DopsPlugin extends KeepTrackPlugin {
   readonly id = 'DopsPlugin';
   dependencies_ = [];
 
-  menuMode: MenuMode[] = [MenuMode.EXPERIMENTAL, MenuMode.ALL];
+  // =========================================================================
+  // Composition-based configuration methods
+  // =========================================================================
 
-  bottomIconImg = gpsPng;
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'menu-dops',
+      label: t7e('plugins.DopsPlugin.bottomIconLabel' as Parameters<typeof t7e>[0]),
+      image: gpsPng,
+      menuMode: [MenuMode.SENSORS, MenuMode.ALL],
+    };
+  }
+
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'dops-menu',
+      title: t7e('plugins.DopsPlugin.title'),
+      html: this.buildSideMenuHtml_(),
+      dragOptions: this.getDragOptions_(),
+    };
+  }
+
+  protected getDragOptions_(): IDragOptions {
+    return {
+      isDraggable: true,
+      minWidth: 550,
+      maxWidth: 800,
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.DopsPlugin.helpTitle'),
+      body: t7e('plugins.DopsPlugin.helpBody'),
+    };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'D',
+        callback: () => {
+          if (ServiceLocator.getMainCamera().cameraType === CameraType.FPS) {
+ return;
+}
+          this.bottomMenuClicked();
+        },
+      },
+    ];
+  }
+
+  // =========================================================================
+  // Side menu HTML
+  // =========================================================================
+
+  protected buildSideMenuHtml_(): string {
+    return html`
+    <div id="dops-menu" class="side-menu-parent start-hidden">
+      <div id="dops-content" class="side-menu">
+        <div class="row">
+          <h5 class="center-align">${t7e('plugins.DopsPlugin.title')}</h5>
+        </div>
+        <form id="dops-form">
+          <div class="switch row">
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.latitude')}">
+              <input value="41" id="dops-lat" type="text">
+              <label for="dops-lat" class="active">${t7e('plugins.DopsPlugin.labels.latitude')}</label>
+            </div>
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.longitude')}">
+              <input value="-71" id="dops-lon" type="text">
+              <label for="dops-lon" class="active">${t7e('plugins.DopsPlugin.labels.longitude')}</label>
+            </div>
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.altitude')}">
+              <input value="0" id="dops-alt" type="text">
+              <label for="dops-alt" class="active">${t7e('plugins.DopsPlugin.labels.altitude')}</label>
+            </div>
+            <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="${t7e('plugins.DopsPlugin.tooltips.mask')}">
+              <input value="15" id="dops-el" type="text">
+              <label for="dops-el" class="active">${t7e('plugins.DopsPlugin.labels.mask')}</label>
+            </div>
+          </div>
+          <div class="row center">
+            <button id="dops-submit" class="btn btn-ui waves-effect waves-light" type="submit"
+              name="action">${t7e('plugins.DopsPlugin.labels.updateDopData')} &#9658;
+            </button>
+          </div>
+        </form>
+      <div class="row">
+        <table id="dops" class="center-align striped-light centered"></table>
+      </div>
+    </div>`;
+  }
+
+  // =========================================================================
+  // Legacy bridges
+  // =========================================================================
+
   bottomIconCallback = (): void => {
     if (this.isMenuButtonActive) {
-      showLoading(DopsPlugin.updateSideMenu);
+      showLoading(() => this.updateSideMenu());
     }
   };
 
-  dragOptions: ClickDragOptions = {
-    isDraggable: true,
-    minWidth: 550,
-    maxWidth: 800,
-  };
-
-  helpTitle = 'Dilution of Precision (DOP) Menu';
-  helpBody = html`The Dilution of Precision (DOP) Menu is used to calculate the Dilution of Precision (DOP) for a given location and elevation mask.
-    <br><br>
-    HDOP is the Horizontal Dilution of Precision. It is a measure of the accuracy of the horizontal position.
-    <br><br>
-    PDOP is the Position Dilution of Precision. It is a measure of the accuracy of the position.
-    <br><br>
-    GDOP is the Geometric Dilution of Precision. It is a measure of the accuracy of the position.
-  `;
-
-  sideMenuElementName = 'dops-menu';
-  sideMenuElementHtml = html`
-  <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden text-select">
-    <div id="dops-content" class="side-menu">
-      <form id="dops-form">
-        <div class="switch row">
-          <h5 class="center-align">DOP Table</h5>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="Latitude in Degrees">
-            <input value="41" id="dops-lat" type="text">
-            <label for="dops-lat" class="active">Latitude</label>
-          </div>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="Longitude in Degrees">
-            <input value="-71" id="dops-lon" type="text">
-            <label for="dops-lon" class="active">Longitude</label>
-          </div>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="Altitude in KM">
-            <input value="-71" id="dops-alt" type="text">
-            <label for="dops-lon" class="active">Altitude</label>
-          </div>
-          <div class="input-field col s3" data-position="bottom" data-offset="60" data-tooltip="Minimum Elevation for GPS Lock">
-            <input value="15" id="dops-el" type="text">
-            <label for="dops-el" class="active">Mask</label>
-          </div>
-        </div>
-        <div class="row center">
-          <button id="dops-submit" class="btn btn-ui waves-effect waves-light" type="submit"
-            name="action">Update DOP Data &#9658;
-          </button>
-        </div>
-      </form>
-    <div class="row">
-      <table id="dops" class="center-align striped-light centered"></table>
-    </div>
-  </div>`;
+  // =========================================================================
+  // Context menu
+  // =========================================================================
 
   rmbL1ElementName = 'dops-rmb';
   rmbL1Html = html`
-  <li class="rmb-menu-item" id=${this.rmbL1ElementName}><a href="#">DOPs &#x27A4;</a></li>
+  <li class="rmb-menu-item" id=${this.rmbL1ElementName}><a href="#">${t7e('plugins.DopsPlugin.rmb.dops')} &#x27A4;</a></li>
 `;
 
   isRmbOnEarth = true;
@@ -92,8 +150,8 @@ export class DopsPlugin extends KeepTrackPlugin {
   rmbL2ElementName = 'dops-rmb-menu';
   rmbL2Html = html`
   <ul class='dropdown-contents'>
-    <li id="dops-curdops-rmb"><a href="#">Current GPS DOPs</a></li>
-    <li id="dops-24dops-rmb"><a href="#">24 Hour GPS DOPs</a></li>
+    <li id="dops-curdops-rmb"><a href="#">${t7e('plugins.DopsPlugin.rmb.currentGpsDops')}</a></li>
+    <li id="dops-24dops-rmb"><a href="#">${t7e('plugins.DopsPlugin.rmb.twentyFourHourGpsDops')}</a></li>
   </ul>
 `;
 
@@ -101,8 +159,9 @@ export class DopsPlugin extends KeepTrackPlugin {
     switch (targetId) {
       case 'dops-curdops-rmb': {
         {
-          let latLon = ServiceLocator.getInputManager().mouse.latLon;
-          const dragPosition = ServiceLocator.getInputManager().mouse.dragPosition;
+          const inputManager = ServiceLocator.getInputManager();
+          let latLon = inputManager.mouse.latLon;
+          const dragPosition = inputManager.mouse.dragPosition;
 
           if (typeof latLon === 'undefined' || isNaN(latLon.lat) || isNaN(latLon.lon)) {
             errorManagerInstance.debug('latLon undefined!');
@@ -113,16 +172,25 @@ export class DopsPlugin extends KeepTrackPlugin {
                 x: dragPosition[0],
                 y: dragPosition[1],
                 z: dragPosition[2],
-              } as EciVec3,
+              } as TemeVec3,
               gmst,
             );
           }
           const gpsSatObjects = DopsPlugin.getGpsSats(ServiceLocator.getCatalogManager(), ServiceLocator.getGroupsManager());
-          const gpsDOP = DopMath.getDops(ServiceLocator.getTimeManager().simulationTimeObj, gpsSatObjects, latLon.lat, latLon.lon, <Kilometers>0, settingsManager.gpsElevationMask);
+          const gpsDOP = DopMath.getDops(ServiceLocator.getTimeManager().simulationTimeObj, gpsSatObjects, latLon.lat, latLon.lon, <Kilometers>0, this.getElevationMask_());
 
           keepTrackApi
             .getUiManager()
-            .toast(`HDOP: ${gpsDOP.hdop}<br/>VDOP: ${gpsDOP.vdop}<br/>PDOP: ${gpsDOP.pdop}<br/>GDOP: ${gpsDOP.gdop}<br/>TDOP: ${gpsDOP.tdop}`, ToastMsgType.normal, true);
+            .toast(
+              t7e('plugins.DopsPlugin.toast.dopValues')
+                .replace('{hdop}', gpsDOP.hdop)
+                .replace('{vdop}', gpsDOP.vdop)
+                .replace('{pdop}', gpsDOP.pdop)
+                .replace('{gdop}', gpsDOP.gdop)
+                .replace('{tdop}', gpsDOP.tdop),
+              ToastMsgType.normal,
+              true,
+            );
         }
         break;
       }
@@ -130,7 +198,7 @@ export class DopsPlugin extends KeepTrackPlugin {
         const latLon = ServiceLocator.getInputManager().mouse.latLon;
 
         if (typeof latLon === 'undefined' || isNaN(latLon.lat) || isNaN(latLon.lon)) {
-          errorManagerInstance.warn('Please select a valid location on Earth for 24 Hour DOPs!');
+          errorManagerInstance.warn(t7e('plugins.DopsPlugin.errorMsgs.invalidLocation'));
 
           return;
         }
@@ -142,7 +210,7 @@ export class DopsPlugin extends KeepTrackPlugin {
           (<HTMLInputElement>getEl('dops-el')).value = settingsManager.gpsElevationMask.toString();
           this.bottomMenuClicked();
         } else {
-          showLoading(DopsPlugin.updateSideMenu);
+          showLoading(() => this.updateSideMenu());
           this.setBottomIconToEnabled();
           break;
         }
@@ -153,6 +221,10 @@ export class DopsPlugin extends KeepTrackPlugin {
     }
   };
 
+  // =========================================================================
+  // Lifecycle
+  // =========================================================================
+
   addJs(): void {
     super.addJs();
 
@@ -161,13 +233,21 @@ export class DopsPlugin extends KeepTrackPlugin {
       () => {
         getEl('dops-form')!.addEventListener('submit', (e: Event) => {
           e.preventDefault();
-          DopsPlugin.updateSideMenu();
+          this.updateSideMenu();
         });
       },
     );
   }
 
-  static updateSideMenu(): void {
+  /**
+   * Returns the elevation mask to use for DOP calculations.
+   * Override in pro plugin to return a terrain-aware function.
+   */
+  protected getElevationMask_(): Degrees | ElevationMaskFn {
+    return <Degrees>parseFloat((<HTMLInputElement>getEl('dops-el')).value);
+  }
+
+  protected updateSideMenu(): void {
     const groupManagerInstance = ServiceLocator.getGroupsManager();
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const timeManagerInstance = ServiceLocator.getTimeManager();
@@ -175,9 +255,11 @@ export class DopsPlugin extends KeepTrackPlugin {
     const lat = <Degrees>parseFloat((<HTMLInputElement>getEl('dops-lat')).value);
     const lon = <Degrees>parseFloat((<HTMLInputElement>getEl('dops-lon')).value);
     const alt = <Kilometers>parseFloat((<HTMLInputElement>getEl('dops-alt')).value);
-    const el = <Degrees>parseFloat((<HTMLInputElement>getEl('dops-el')).value);
+    const el = this.getElevationMask_();
 
-    settingsManager.gpsElevationMask = el;
+    if (typeof el === 'number') {
+      settingsManager.gpsElevationMask = el;
+    }
     const gpsSats = DopsPlugin.getGpsSats(catalogManagerInstance, groupManagerInstance);
     const getOffsetTimeObj = (now: number) => timeManagerInstance.getOffsetTimeObj(now);
     const dopsList = DopMath.getDopsList(getOffsetTimeObj, gpsSats, lat, lon, alt, el);
@@ -185,12 +267,12 @@ export class DopsPlugin extends KeepTrackPlugin {
     DopMath.updateDopsTable(dopsList);
   }
 
-  static getGpsSats(catalogManagerInstance: CatalogManager, groupManagerInstance: GroupsManager): DetailedSatellite[] {
+  static getGpsSats(catalogManagerInstance: CatalogManager, groupManagerInstance: GroupsManager): Satellite[] {
     if (!groupManagerInstance.groupList.GPSGroup) {
       groupManagerInstance.groupList.GPSGroup = groupManagerInstance.createGroup(GroupType.NAME_REGEX, /NAVSTAR/iu, 'GPSGroup');
     }
     const gpsSats = groupManagerInstance.groupList.GPSGroup;
-    const gpsSatObjects = [] as DetailedSatellite[];
+    const gpsSatObjects = [] as Satellite[];
 
     gpsSats.ids.forEach((id: number) => {
       const sat = catalogManagerInstance.getSat(id);

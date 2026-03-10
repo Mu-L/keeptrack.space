@@ -6,6 +6,10 @@
   "compilerOptions": {
     "noEmit": true,
     "strictNullChecks": true,
+    "types": [
+      "vitest/globals",
+      "google-publisher-tag"
+    ],
   },
   "include": [
     "src/**/*.ts",
@@ -36,7 +40,8 @@
     "coverage/**/*",
     "tsconfig.json",
     "src/tools/**/*",
-    "src/engine/ootk/examples/**/*"
+    "src/engine/ootk/examples/**/*",
+    "src/engine/ootk/src/**/__tests__/**/*"
   ],
   "filesGlob": [
     "src/**/*.ts",

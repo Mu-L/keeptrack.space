@@ -3,6 +3,7 @@ import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { MouseInput } from './mouse-input';
 
@@ -21,6 +22,13 @@ export interface PinchTouchEvent {
    * The distance between the two fingers
    */
   pinchDistance: number;
+}
+
+interface CachedTouch {
+  clientX: number;
+  clientY: number;
+  pageX: number;
+  pageY: number;
 }
 
 export class TouchInput {
@@ -58,18 +66,77 @@ export class TouchInput {
    */
   pressMinTime = 150;
 
+  private touchMoveRafId_ = -1;
+  private cachedTouches_: CachedTouch[] = [];
+  private debugOverlay_: HTMLDivElement | null = null;
+  private tapMarker_: HTMLDivElement | null = null;
+
+  private ensureDebugOverlay_(): HTMLDivElement {
+    if (!this.debugOverlay_) {
+      this.debugOverlay_ = document.createElement('div');
+      this.debugOverlay_.id = 'touch-debug-overlay';
+      this.debugOverlay_.style.cssText =
+        'position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,0.85);' +
+        'color:#0f0;font:11px monospace;padding:8px;pointer-events:none;white-space:pre;max-width:100vw;overflow:auto;max-height:60vh;';
+      document.body.appendChild(this.debugOverlay_);
+    }
+
+    return this.debugOverlay_;
+  }
+
+  private showTapMarker_(rawX: number, rawY: number, corrX: number, corrY: number): void {
+    if (!this.tapMarker_) {
+      this.tapMarker_ = document.createElement('div');
+      this.tapMarker_.style.cssText = 'position:fixed;z-index:99998;pointer-events:none;';
+      document.body.appendChild(this.tapMarker_);
+    }
+
+    this.tapMarker_.innerHTML =
+      // Red crosshair at raw clientX/Y
+      `<div style="position:fixed;left:${rawX - 10}px;top:${rawY - 10}px;width:20px;height:20px;border:2px solid red;border-radius:50%;"></div>` +
+      `<div style="position:fixed;left:${rawX}px;top:${rawY - 15}px;width:1px;height:30px;background:red;"></div>` +
+      `<div style="position:fixed;left:${rawX - 15}px;top:${rawY}px;width:30px;height:1px;background:red;"></div>` +
+      // Green crosshair at corrected coordinates
+      `<div style="position:fixed;left:${corrX - 8}px;top:${corrY - 8}px;width:16px;height:16px;border:2px solid lime;border-radius:50%;"></div>` +
+      `<div style="position:fixed;left:${corrX}px;top:${corrY - 12}px;width:1px;height:24px;background:lime;"></div>` +
+      `<div style="position:fixed;left:${corrX - 12}px;top:${corrY}px;width:24px;height:1px;background:lime;"></div>` +
+      // Labels
+      `<div style="position:fixed;left:${rawX + 15}px;top:${rawY - 25}px;color:red;font:10px monospace;background:rgba(0,0,0,0.7);padding:2px;">` +
+      `RAW (${rawX.toFixed(0)},${rawY.toFixed(0)})</div>` +
+      `<div style="position:fixed;left:${corrX + 15}px;top:${corrY + 10}px;color:lime;font:10px monospace;background:rgba(0,0,0,0.7);padding:2px;">` +
+      `CORR (${corrX.toFixed(0)},${corrY.toFixed(0)})</div>`;
+
+    setTimeout(() => {
+      if (this.tapMarker_) {
+        this.tapMarker_.innerHTML = '';
+      }
+    }, 3000);
+  }
+
   init(canvasDOM: HTMLCanvasElement) {
     this.canvasDOM = canvasDOM;
 
     if (settingsManager.isMobileModeEnabled) {
+      // Prevent browser gesture interpretation (scroll, bounce, back-swipe)
+      canvasDOM.style.touchAction = 'none';
+
       canvasDOM.addEventListener('touchstart', (e) => {
+        e.preventDefault();
         this.canvasTouchStart(e);
-      });
+      }, { passive: false });
+
       canvasDOM.addEventListener('touchend', (e) => {
         this.canvasTouchEnd(e, ServiceLocator.getMainCamera());
-      });
+      }, { passive: false });
+
       canvasDOM.addEventListener('touchmove', (e) => {
+        e.preventDefault();
         this.canvasTouchMove(e);
+      }, { passive: false });
+
+      // Recalculate max pinch size on orientation change or resize
+      window.addEventListener('resize', () => {
+        this.maxPinchSize = Math.hypot(window.innerWidth, window.innerHeight);
       });
     }
   }
@@ -88,49 +155,77 @@ export class TouchInput {
       }
     }
 
-    // Reset if last finger
+    // Transition from 2 fingers to 1: stop rotation to prevent jerk
+    if (evt.touches?.length === 1) {
+      this.isPinching = false;
+      this.isPanning = false;
+      mainCameraInstance.state.isDragging = false;
+      mainCameraInstance.state.camPitchSpeed = 0;
+      mainCameraInstance.state.camYawSpeed = 0;
+
+      // Record remaining finger position so a new single-finger drag
+      // can start cleanly from the next touchmove threshold check
+      const remaining = evt.touches[0];
+
+      this.touchStartX = remaining.clientX;
+      this.touchStartY = remaining.clientY;
+    }
+
+    // Reset if last finger — do NOT zero mouseX/mouseY so momentum uses last known position
     if (evt.touches?.length === 0) {
       this.isPinching = false;
       this.isPanning = false;
-      mainCameraInstance.state.mouseX = 0;
-      mainCameraInstance.state.mouseY = 0;
       this.dragHasMoved = false;
       mainCameraInstance.state.isDragging = false;
     }
   }
 
   public canvasTouchMove(evt: TouchEvent): void {
-    if (settingsManager.disableNormalEvents) {
-      evt.preventDefault();
-    }
-
     // Can't move if there is no touch
     if (!evt.touches || evt.touches.length < 1) {
       return;
     }
 
+    // Cache touch data synchronously (browser may recycle TouchEvent after handler returns)
     this.touchX = evt.touches[0].clientX;
     this.touchY = evt.touches[0].clientY;
+    this.cachedTouches_ = Array.from(evt.touches).map((t) => ({
+      clientX: t.clientX,
+      clientY: t.clientY,
+      pageX: t.pageX,
+      pageY: t.pageY,
+    }));
 
-    if (this.isPinching && evt.touches?.[0] && evt.touches?.[1]) {
-      const currentPinchDistance = Math.hypot(evt.touches[0].pageX - evt.touches[1].pageX, evt.touches[0].pageY - evt.touches[1].pageY);
+    // Throttle processing to once per animation frame (matches mouse-input pattern)
+    if (this.touchMoveRafId_ === -1) {
+      this.touchMoveRafId_ = requestAnimationFrame(() => {
+        this.processTouchMove_();
+        this.touchMoveRafId_ = -1;
+      });
+    }
+  }
 
-      if (isNaN(currentPinchDistance)) {
-        return;
-      }
+  private processTouchMove_(): void {
+    const touches = this.cachedTouches_;
 
-      if (currentPinchDistance > this.tapMovementThreshold) {
-        this.pinchMove({
-          pinchDistance: currentPinchDistance,
-        });
+    if (this.isPinching && touches.length >= 2) {
+      // Pinch zoom only — no rotation during pinch to prevent jerk on finger release
+      const dist = Math.hypot(
+        touches[0].pageX - touches[1].pageX,
+        touches[0].pageY - touches[1].pageY,
+      );
+
+      if (!isNaN(dist) && dist > this.tapMovementThreshold) {
+        this.pinchMove({ pinchDistance: dist });
       }
     } else if (!this.isPinching) {
-      if (Math.abs(this.touchStartX - this.touchX) > this.tapMovementThreshold || Math.abs(this.touchStartY - this.touchY) > this.tapMovementThreshold) {
+      // Single-finger pan
+      if (
+        Math.abs(this.touchStartX - this.touchX) > this.tapMovementThreshold ||
+        Math.abs(this.touchStartY - this.touchY) > this.tapMovementThreshold
+      ) {
         this.isPanning = true;
-        this.pan({
-          x: this.touchX,
-          y: this.touchY,
-        });
+        this.pan({ x: this.touchX, y: this.touchY });
       }
     }
   }
@@ -140,9 +235,17 @@ export class TouchInput {
 
     if (evt.touches.length > 1) {
       this.isPinching = true;
+      this.isPanning = false;
       this.pinchStart({
         pinchDistance: Math.hypot(evt.touches[0].pageX - evt.touches[1].pageX, evt.touches[0].pageY - evt.touches[1].pageY),
       });
+
+      // Stop rotation drag — pinch is zoom-only
+      const cam = ServiceLocator.getMainCamera();
+
+      cam.state.isDragging = false;
+      cam.state.camPitchSpeed = 0;
+      cam.state.camYawSpeed = 0;
     } else {
       this.touchStart({
         x: evt.touches[0].clientX,
@@ -159,8 +262,8 @@ export class TouchInput {
 
     this.touchStartX = evt.x;
     this.touchStartY = evt.y;
-    ServiceLocator.getMainCamera().state.mouseX = this.touchStartX; // Move this
-    ServiceLocator.getMainCamera().state.mouseY = this.touchStartY; // Move this
+    ServiceLocator.getMainCamera().state.mouseX = evt.x;
+    ServiceLocator.getMainCamera().state.mouseY = evt.y;
 
     // If you hit the canvas hide any popups
     ServiceLocator.getInputManager().hidePopUps();
@@ -175,10 +278,75 @@ export class TouchInput {
     ServiceLocator.getMainCamera().state.isAutoPitchYawToTarget = false;
     ServiceLocator.getMainCamera().autoRotate(false);
 
+    const inputManager = ServiceLocator.getInputManager();
+
+    if (settingsManager.debugMobilePicking) {
+      this.tapDebug_(evt, inputManager);
+
+      return;
+    }
+
     // Try to select satellite
-    const satId = ServiceLocator.getInputManager().getSatIdFromCoord(evt.x, evt.y);
+    const satId = inputManager.getSatIdFromCoord(evt.x, evt.y);
 
     PluginRegistry.getPlugin(SelectSatManager)?.selectSat(satId);
+  }
+
+  private tapDebug_(evt: TapTouchEvent, inputManager: ReturnType<typeof ServiceLocator.getInputManager>): void {
+    const gl = ServiceLocator.getRenderer().gl;
+    const canvas = this.canvasDOM;
+    const rect = canvas.getBoundingClientRect();
+    const container = KeepTrack.getInstance().containerRoot;
+
+    // Compute corrected coordinates (matching mouse-input.ts offset logic)
+    const rectCorrX = evt.x - rect.left;
+    const rectCorrY = evt.y - rect.top;
+    const containerOffX = container.scrollLeft - window.scrollX + container.offsetLeft;
+    const containerOffY = container.scrollTop - window.scrollY + container.offsetTop;
+    const containerCorrX = evt.x - containerOffX;
+    const containerCorrY = evt.y - containerOffY;
+
+    // Read with raw coordinates (current behavior)
+    const rawId = inputManager.getSatIdFromCoord(evt.x, evt.y);
+    // Read with rect-corrected coordinates
+    const rectId = inputManager.getSatIdFromCoord(rectCorrX, rectCorrY);
+    // Read with container-corrected coordinates (desktop mouse-input style)
+    const containerId = inputManager.getSatIdFromCoord(containerCorrX, containerCorrY);
+
+    // Neighborhood scan around raw coordinates
+    const scan = inputManager.getSatIdFromCoordNeighborhood(evt.x, evt.y, 21);
+    // Neighborhood scan around rect-corrected coordinates
+    const scanCorr = inputManager.getSatIdFromCoordNeighborhood(rectCorrX, rectCorrY, 21);
+
+    const overlay = this.ensureDebugOverlay_();
+
+    overlay.textContent =
+      '=== MOBILE PICKING DEBUG ===\n' +
+      `raw clientXY:      (${evt.x.toFixed(1)}, ${evt.y.toFixed(1)})\n` +
+      `rect-corrected:    (${rectCorrX.toFixed(1)}, ${rectCorrY.toFixed(1)})\n` +
+      `container-corrected: (${containerCorrX.toFixed(1)}, ${containerCorrY.toFixed(1)})\n` +
+      '---\n' +
+      `canvas rect: L=${rect.left.toFixed(1)} T=${rect.top.toFixed(1)} W=${rect.width.toFixed(1)} H=${rect.height.toFixed(1)}\n` +
+      `container offset: (${container.offsetLeft}, ${container.offsetTop})\n` +
+      `drawingBuffer: ${gl.drawingBufferWidth}x${gl.drawingBufferHeight}\n` +
+      `canvas elem: ${canvas.width}x${canvas.height}\n` +
+      `canvas CSS: ${canvas.clientWidth}x${canvas.clientHeight}\n` +
+      `devicePixelRatio: ${window.devicePixelRatio}\n` +
+      '---\n' +
+      `raw ID:       ${rawId}\n` +
+      `rect ID:      ${rectId}\n` +
+      `container ID: ${containerId}\n` +
+      '---\n' +
+      `21x21 scan (raw): nearest=${scan.id} offset=(${scan.offsetX},${scan.offsetY}) hits=${scan.hitCount}\n` +
+      `21x21 scan (rect): nearest=${scanCorr.id} offset=(${scanCorr.offsetX},${scanCorr.offsetY}) hits=${scanCorr.hitCount}\n${
+      scan.hitCount > 0 ? `raw hits:\n${scan.patchData}\n` : ''
+      }${scanCorr.hitCount > 0 && scanCorr.patchData !== scan.patchData ? `rect hits:\n${scanCorr.patchData}\n` : ''}`;
+
+    // Show visual crosshairs
+    this.showTapMarker_(evt.x, evt.y, rectCorrX, rectCorrY);
+
+    // Use rect-corrected ID for selection (fix probe)
+    PluginRegistry.getPlugin(SelectSatManager)?.selectSat(rectId);
   }
 
   pan(evt: PanTouchEvent) {
@@ -215,11 +383,21 @@ export class TouchInput {
 
     const mainCameraInstance = ServiceLocator.getMainCamera();
 
-    this.deltaPinchDistance = (this.startPinchDistance - evt.pinchDistance) / this.maxPinchSize;
+    // Ratio-based zoom: spread fingers (ratio > 1) = zoom in, pinch (ratio < 1) = zoom out
+    const pinchRatio = evt.pinchDistance / this.startPinchDistance;
+
+    // Reset for next frame's incremental calculation (prevents quadratic accumulation)
+    this.startPinchDistance = evt.pinchDistance;
+
     let zoomTarget = mainCameraInstance.state.zoomTarget;
 
-    zoomTarget += this.deltaPinchDistance * settingsManager.zoomSpeed;
-    zoomTarget = Math.min(Math.max(zoomTarget, 0.0001), 1); // Force between 0 and 1
+    // Dampen ratio toward 1.0 to reduce pinch sensitivity (~50%)
+    const dampenedRatio = 1 + (pinchRatio - 1) * 0.5;
+
+    // Divide by ratio for logarithmic feel proportional to current zoom level
+    zoomTarget /= dampenedRatio;
+    zoomTarget = Math.min(Math.max(zoomTarget, 0.0001), 1);
+    mainCameraInstance.state.isZoomIn = pinchRatio > 1;
     mainCameraInstance.state.zoomTarget = zoomTarget;
   }
 

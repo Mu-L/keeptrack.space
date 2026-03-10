@@ -1,6 +1,11 @@
 import { KeepTrack } from './keeptrack';
 
 declare global {
+  const __VERSION__: string;
+  const __VERSION_DATE__: string;
+  const __COMMIT_HASH__: string;
+  const __IS_PRO__: boolean;
+
   interface Window {
     keepTrack: KeepTrack;
     zaraz?: {
@@ -9,6 +14,8 @@ declare global {
         modal: boolean;
       };
     };
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
   }
 }
 

@@ -1,8 +1,8 @@
+import { vi } from 'vitest';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { SoundManager } from '@app/plugins/sounds/sound-manager';
-import { SoundNames, sounds } from '@app/plugins/sounds/sounds';
+import { SoundManager } from '@app/engine/audio/sound-manager';
+import { SoundNames, sounds } from '@app/engine/audio/sounds';
 import { setupStandardEnvironment } from './environment/standard-env';
-import { standardPluginSuite } from './generic-tests';
 import { EventBus } from '@app/engine/events/event-bus';
 
 describe('Sound Manager', () => {
@@ -13,7 +13,9 @@ describe('Sound Manager', () => {
     soundManagerPlugin = new SoundManager();
   });
 
-  standardPluginSuite(SoundManager, 'SoundManager');
+  it('should have a valid id', () => {
+    expect(soundManagerPlugin.id).toBe('SoundManager');
+  });
 
   it('should_play_sound', () => {
     expect(sounds).toBeDefined();
@@ -23,7 +25,7 @@ describe('Sound Manager', () => {
     for (const sound in sounds) {
       const soundManagerPlugin2 = soundManagerPlugin;
 
-      jest.spyOn(global, 'navigator', 'get').mockReturnValue({
+      vi.spyOn(global, 'navigator', 'get').mockReturnValue({
         userActivation: {
           isActive: true,
           hasBeenActive: true,
@@ -43,7 +45,7 @@ describe('Sound Manager', () => {
   it('should_be_able_to_speak', () => {
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     // Mock SpeechSynthesisUtterance
-    const mockSpeechUtterance = jest.fn(() => ({
+    const mockSpeechUtterance = vi.fn(() => ({
       lang: 'en-US',
       pitch: 1,
       rate: 1,
@@ -55,7 +57,7 @@ describe('Sound Manager', () => {
     mockSpeechUtterance.prototype = {};
     global.SpeechSynthesisUtterance = mockSpeechUtterance as unknown as typeof SpeechSynthesisUtterance;
     global.speechSynthesis = {
-      speak: jest.fn(),
+      speak: vi.fn(),
     } as unknown as SpeechSynthesis;
     expect(() => soundManagerPlugin.speak('hello')).not.toThrow();
   });

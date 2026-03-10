@@ -46,6 +46,8 @@ export class BufferGeometry {
 
   static id = -1;
   indexLength: number;
+  /** GL enum for drawElements: gl.UNSIGNED_SHORT or gl.UNSIGNED_INT */
+  indexType: number = 0x1403; // gl.UNSIGNED_SHORT
   attributes: Record<string, BufferAttribute>;
   gl: WebGL2RenderingContext;
   vao: WebGLVertexArrayObject;
@@ -101,7 +103,23 @@ export class BufferGeometry {
 
   setIndex(gl: WebGL2RenderingContext, array: number[]) {
     this.indexLength = array.length;
-    this.index = GlUtils.createElementArrayBuffer(gl, new Uint16Array(array));
+
+    // Use 32-bit indices when vertex count exceeds Uint16 range
+    let maxVal = 0;
+
+    for (let i = 0; i < array.length; i++) {
+      if (array[i] > maxVal) {
+        maxVal = array[i];
+      }
+    }
+
+    if (maxVal > 65535) {
+      this.indexType = gl.UNSIGNED_INT;
+      this.index = GlUtils.createElementArrayBuffer(gl, new Uint32Array(array));
+    } else {
+      this.indexType = gl.UNSIGNED_SHORT;
+      this.index = GlUtils.createElementArrayBuffer(gl, new Uint16Array(array));
+    }
   }
 
   getIndex() {

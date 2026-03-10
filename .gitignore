@@ -55,6 +55,9 @@ jspm_packages
 !.vscode/extensions.json
 *.code-workspace
 .idea/
+CLAUDE.md
+.claude
+.github/copilot-instructions.md
 
 # Prettier
 .prettierignore
@@ -78,12 +81,14 @@ public/audio/samples
 public/img/wallpaper/.archive
 public/img/*.xcf
 
+# TypeDoc Output
+docs/api
+
 # Jest Coverage
 coverage/
 
 # Build Folder
 dist
-embed
 /lib
 
 # nyc Output
@@ -124,13 +129,32 @@ stats.json
 
 # Local env files
 .env
+.env.offline
 
 # Cypress Testing Files
 cypress
 cypress.config.ts
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Generated Locale Files
 src/locales/keys.ts
 src/locales/*.json
 
+# Generated Version File (version is injected at build time via DefinePlugin)
+src/settings/version.js
+
 **/*.notes.md
+
+#plans/
+docs-local
+
+# R2 Data
+public/data/ephemeris
+
+# Offline
+configs/offline/settingsOverride.js

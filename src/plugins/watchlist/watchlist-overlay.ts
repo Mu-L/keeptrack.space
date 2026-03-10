@@ -11,7 +11,7 @@ import { html } from '@app/engine/utils/development/formatter';
 import { getEl, setInnerHtml } from '@app/engine/utils/get-el';
 import { shake } from '@app/engine/utils/shake';
 import { showLoading } from '@app/engine/utils/showLoading';
-import { DetailedSatellite, MILLISECONDS_PER_DAY } from '@ootk/src/main';
+import { MILLISECONDS_PER_DAY, Satellite } from '@ootk/src/main';
 import pictureInPicturePng from '@public/img/icons/picture-in-picture.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
@@ -27,7 +27,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     this.watchlistPlugin_ = PluginRegistry.getPlugin(WatchlistPlugin)!;
   }
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CATALOG, MenuMode.ALL];
 
   private readonly OVERLAY_CALC_LENGTH_IN_DAYS = 0.5;
   private infoOverlayDOMHtmlStrArr = [] as string[];
@@ -41,7 +41,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     }
 
     if (PluginRegistry.getPlugin(WatchlistPlugin)?.watchlistList.length === 0) {
-      ServiceLocator.getUiManager().toast('Add Satellites to Watchlist!', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast('Add Satellites to List!', ToastMsgType.caution);
       shake(getEl('menu-info-overlay'));
 
       return;
@@ -52,7 +52,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     }
 
     if (this.watchlistPlugin_.watchlistList.length === 0 && !this.watchlistPlugin_.isWatchlistChanged) {
-      ServiceLocator.getUiManager().toast('Add Satellites to Watchlist!', ToastMsgType.caution);
+      ServiceLocator.getUiManager().toast('Add Satellites to List!', ToastMsgType.caution);
       shake(getEl('menu-info-overlay'));
       this.nextPassArray = [];
 
@@ -67,7 +67,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
 
   lastOverlayUpdateTime = 0;
   sideMenuElementHtml = html`
-    <div id="info-overlay-menu" class="side-menu-parent start-hidden text-select">
+    <div id="info-overlay-menu" class="side-menu-parent start-hidden">
       <div id="info-overlay-content"></div>
     </div>`;
 
@@ -108,7 +108,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     this.updateFovLines_();
   }
 
-  private updateFovLinesMulti_(sat: DetailedSatellite) {
+  private updateFovLinesMulti_(sat: Satellite) {
     const idx = this.watchlistPlugin_.watchlistList.findIndex((el) => el.id === sat.id);
 
     ServiceLocator.getOrbitManager().removeInViewOrbit(this.watchlistPlugin_.watchlistList[idx].id);
@@ -117,7 +117,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
     }
   }
 
-  private updateFovLinesSingle_(sat: DetailedSatellite) {
+  private updateFovLinesSingle_(sat: Satellite) {
     const inView = ServiceLocator.getDotsManager().inViewData[sat.id];
     const uiManagerInstance = ServiceLocator.getUiManager();
     const idx = this.watchlistPlugin_.watchlistList.findIndex((el) => el.id === sat.id);
@@ -179,7 +179,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
       showLoading(() => {
         const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
-        const satArray: DetailedSatellite[] = [];
+        const satArray: Satellite[] = [];
 
         for (const obj of this.watchlistPlugin_.watchlistList) {
           const satellite = catalogManagerInstance.getSat(obj.id, GetSatType.EXTRA_ONLY);
@@ -206,7 +206,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
   }
 
   private pushOverlayElement_(s: number, propTime: number, infoOverlayDOMHtmlStrArr: string[]) {
-    const isSatInView = ServiceLocator.getDotsManager().inViewData[this.nextPassArray[s].sat.id];
+    const isSatInView = ServiceLocator.getDotsManager().inViewData?.[this.nextPassArray[s].sat.id];
     // If old time and not in view, skip it
 
     if (this.nextPassArray[s].time.getTime() - propTime < -1000 * 60 * 5 && !isSatInView) {

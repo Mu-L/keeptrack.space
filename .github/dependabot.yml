@@ -9,5 +9,21 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'daily'
+      interval: 'weekly'
     target-branch: 'develop'
+    groups:
+      minor-and-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    target-branch: 'develop'
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - 'minor'
+          - 'patch'

@@ -1,12 +1,11 @@
 import { SatMath } from '@app/app/analysis/sat-math';
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { t7e } from '@app/locales/keys';
-import { CruncherInMsgTimeSync } from '@app/webworker/orbit-cruncher-interfaces';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import { getDayOfYear, GreenwichMeanSiderealTime, Milliseconds } from '@ootk/src/main';
 import { DateTimeManager } from '../../plugins/date-time-manager/date-time-manager';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
+import { KeyboardComponent } from '../plugins/components/keyboard/keyboard-component';
 import { getEl } from '../utils/get-el';
 import { PluginRegistry } from './plugin-registry';
 import { ServiceLocator } from './service-locator';
@@ -16,14 +15,14 @@ export class TimeManager {
   /**
    * The real time at the moment when dynamicOffset or propRate changes
    */
-  dynamicOffsetEpoch = <number>null;
-  lastPropRate = <number>1;
+  dynamicOffsetEpoch = 0;
+  lastPropRate = 1;
   propFrozen = 0;
   propOffset = 0;
   /**
    * The rate of change applied to the dynamicOffset
    */
-  propRate = <number>null;
+  propRate = 0;
   /**
    * The time in the real world
    */
@@ -48,8 +47,7 @@ export class TimeManager {
   private dynamicOffset_: number;
   gmst: GreenwichMeanSiderealTime = 0 as GreenwichMeanSiderealTime;
   j: number;
-  readonly timeUntilChangingEnabled = 10000;
-  isTimeChangingEnabled = false;
+  isTimeChangingEnabled = true;
   isKeyboardBindingsInitialized_ = false;
   isInitialized = false;
 
@@ -110,10 +108,12 @@ export class TimeManager {
 
     const toggleTimeDOM = getEl('toggle-time-rmb');
 
-    if (ServiceLocator.getTimeManager().propRate === 0) {
-      toggleTimeDOM.childNodes[0].textContent = 'Start Clock';
-    } else {
-      toggleTimeDOM.childNodes[0].textContent = 'Pause Clock';
+    if (toggleTimeDOM) {
+      if (ServiceLocator.getTimeManager().propRate === 0) {
+        toggleTimeDOM.childNodes[0].textContent = 'Start Clock';
+      } else {
+        toggleTimeDOM.childNodes[0].textContent = 'Pause Clock';
+      }
     }
 
     const uiManagerInstance = ServiceLocator.getUiManager();
@@ -187,10 +187,6 @@ export class TimeManager {
     this.setSelectedDate(this.simulationTimeObj);
     this.initializeKeyboardBindings_();
 
-    setTimeout(() => {
-      this.isTimeChangingEnabled = true;
-    }, this.timeUntilChangingEnabled);
-
     this.isInitialized = true;
   }
 
@@ -205,168 +201,141 @@ export class TimeManager {
     if (this.isKeyboardBindingsInitialized_) {
       return;
     }
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 't' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
 
-          return;
-        }
-        ServiceLocator.getUiManager().toast('Time Set to Real Time', ToastMsgType.normal);
-        this.changeStaticOffset(0); // Reset to Current Time
-      }
-    });
+    new KeyboardComponent('TimeManager', [
+      {
+        key: 't',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          ServiceLocator.getUiManager().toast('Time Set to Real Time', ToastMsgType.normal);
+          this.changeStaticOffset(0);
+        },
+      },
+      {
+        key: ',',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          let newPropRate = this.propRate;
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === ',' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
+          if (this.propRate < 0.001 && this.propRate > -0.001) {
+            newPropRate = -0.001;
+          }
+          if (this.propRate < -1000) {
+            newPropRate = -1000;
+          }
+          if (newPropRate < 0) {
+            newPropRate = (this.propRate * 1.5);
+          } else {
+            newPropRate = ((this.propRate * 2) / 3);
+          }
+          this.applyPropRate_(newPropRate);
+        },
+      },
+      {
+        key: '.',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          let newPropRate = this.propRate;
 
-          return;
-        }
+          if (this.propRate < 0.001 && this.propRate > -0.001) {
+            newPropRate = 0.001;
+          }
+          if (this.propRate > 1000) {
+            newPropRate = 1000;
+          }
+          if (newPropRate > 0) {
+            newPropRate = (this.propRate * 1.5);
+          } else {
+            newPropRate = ((this.propRate * 2) / 3);
+          }
+          this.applyPropRate_(newPropRate);
+        },
+      },
+      {
+        key: '<',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountBig);
+        },
+      },
+      {
+        key: '>',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountBig);
+        },
+      },
+      {
+        key: '/',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          const newPropRate = this.propRate === 1 ? 0 : 1;
 
-        this.calculateSimulationTime();
-        let newPropRate = this.propRate;
-
-        if (this.propRate < 0.001 && this.propRate > -0.001) {
-          newPropRate = -0.001;
-        }
-
-        if (this.propRate < -1000) {
-          newPropRate = -1000;
-        }
-
-        if (newPropRate < 0) {
-          newPropRate = (this.propRate * 1.5);
-        } else {
-          newPropRate = ((this.propRate * 2) / 3);
-        }
-
-        const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
-
-        if (calendarInstance) {
-          calendarInstance.updatePropRate(newPropRate);
-        } else {
-          this.changePropRate(newPropRate);
-        }
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '.' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        let newPropRate = this.propRate;
-
-        if (this.propRate < 0.001 && this.propRate > -0.001) {
-          newPropRate = 0.001;
-        }
-
-        if (this.propRate > 1000) {
-          newPropRate = 1000;
-        }
-
-        if (newPropRate > 0) {
-          newPropRate = (this.propRate * 1.5);
-        } else {
-          newPropRate = ((this.propRate * 2) / 3);
-        }
-
-        const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
-
-        if (calendarInstance) {
-          calendarInstance.updatePropRate(newPropRate);
-        } else {
-          this.changePropRate(newPropRate);
-        }
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '<' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountBig);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '>' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountBig);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === '/' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        let newPropRate: number;
-
-        if (this.propRate === 1) {
-          newPropRate = 0;
-        } else {
-          newPropRate = 1;
-        }
-
-        const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
-
-        if (calendarInstance) {
-          calendarInstance.updatePropRate(newPropRate);
-        } else {
-          this.changePropRate(newPropRate);
-        }
-        this.calculateSimulationTime();
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (_key: string, code: string, isRepeat: boolean) => {
-      if (code === 'Equal' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountSmall);
-      }
-    });
-
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (_key: string, code: string, isRepeat: boolean) => {
-      if (code === 'Minus' && !isRepeat) {
-        if (!this.isTimeChangingEnabled) {
-          ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
-
-          return;
-        }
-
-        this.calculateSimulationTime();
-        this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountSmall);
-      }
-    });
+          this.applyPropRate_(newPropRate);
+          this.calculateSimulationTime();
+        },
+      },
+      {
+        key: '=',
+        code: 'Equal',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset + settingsManager.changeTimeWithKeyboardAmountSmall);
+        },
+      },
+      {
+        key: '-',
+        code: 'Minus',
+        callback: () => {
+          if (!this.guardTimeChange_()) {
+            return;
+          }
+          this.calculateSimulationTime();
+          this.changeStaticOffset(this.staticOffset - settingsManager.changeTimeWithKeyboardAmountSmall);
+        },
+      },
+    ]).init();
 
     this.isKeyboardBindingsInitialized_ = true;
+  }
+
+  private guardTimeChange_(): boolean {
+    if (!this.isTimeChangingEnabled) {
+      ServiceLocator.getUiManager().toast(t7e('errorMsgs.catalogNotFullyInitialized'), ToastMsgType.caution, true);
+
+      return false;
+    }
+
+    return true;
+  }
+
+  private applyPropRate_(newPropRate: number): void {
+    const calendarInstance = PluginRegistry.getPlugin(DateTimeManager)?.calendar;
+
+    if (calendarInstance) {
+      calendarInstance.updatePropRate(newPropRate);
+    } else {
+      this.changePropRate(newPropRate);
+    }
   }
 
   setNow(realTime: Milliseconds) {
@@ -409,20 +378,11 @@ export class TimeManager {
 
   synchronize() {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
-    const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
     EventBus.getInstance().emit(EventBusEvent.updateDateTime, new Date(this.dynamicOffsetEpoch + this.staticOffset));
 
-    const message = {
-      typ: CruncerMessageTypes.OFFSET,
-      type: CruncerMessageTypes.OFFSET,
-      staticOffset: this.staticOffset,
-      dynamicOffsetEpoch: this.dynamicOffsetEpoch,
-      propRate: this.propRate,
-    } as CruncherInMsgTimeSync;
-
-    catalogManagerInstance.satCruncher.postMessage(message);
-    orbitManagerInstance.orbitThreadMgr.postMessage(message);
+    // eslint-disable-next-line no-sync
+    catalogManagerInstance.satCruncherThread.sendTimeSync(this.staticOffset, this.dynamicOffsetEpoch, this.propRate);
   }
 
   private isLeapYear(date: Date): boolean {
@@ -439,15 +399,13 @@ export class TimeManager {
     const mn = doy.getUTCMonth();
     const dn = doy.getUTCDate();
     const dayCount = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let dayInYear = 365;
     let dayOfYear = dayCount[mn] + dn;
 
     if (mn > 1 && this.isLeapYear(doy)) {
       dayOfYear++;
-      dayInYear++;
     }
 
-    return dayOfYear % dayInYear;
+    return dayOfYear;
   }
 
   getUTCDateFromDayOfYear(year: number, dayOfYear: number): Date {

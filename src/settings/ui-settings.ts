@@ -20,11 +20,17 @@
 import type { MenuMode } from '@app/engine/core/interfaces';
 import { Milliseconds } from '@app/engine/ootk/src/main';
 
+export enum SatLabelMode {
+  OFF = 0,
+  FOV_ONLY = 1,
+  ALL = 2,
+}
+
 /**
  * User Interface and display settings
  */
 export class UiSettings {
-  activeMenuMode: MenuMode = 0; // MenuMode.BASIC
+  activeMenuMode: MenuMode = 0; // MenuMode.CATALOG
 
   // UI Enable/Disable
   /**
@@ -45,11 +51,21 @@ export class UiSettings {
    * The text and version number still appear.
    */
   isShowSplashScreen = true;
+  /**
+   * Whitelist of splash screen image filenames (without extension).
+   * - `null` (default): Show all bundled images.
+   * - `string[]`: Show only images whose filename matches an entry.
+   * - `[]`: Show no splash screen background image.
+   */
   splashScreenList: string[] | null = null;
   /** Flag to determine if loading hints are shown on splash screen*/
   isShowLoadingHints = true;
 
   // Logos
+  /**
+   * Flag for showing logos floating over canvas. This is separate from the splash screen and nav bar logos.
+   */
+  isShowFloatingLogos = false;
   /**
    * Flag for showing the primary logo
    */
@@ -58,11 +74,18 @@ export class UiSettings {
    * Flag for showing the secondary logo for partnerships
    */
   isShowSecondaryLogo = false;
+  /**
+   * URL for the small logo displayed in the nav bar next to the hamburger icon.
+   * When empty string, an empty spacer div is used instead.
+   */
+  navBarLogoUrl = '/img/logo.png';
 
   // Top Menu
   /** Flag to determine if the watchlist is shown in the top menu */
   isWatchlistTopMenuNotification = true;
   isUseJdayOnTopMenu = true;
+  /** When true, the jday label becomes a toggle button to switch between jday and date display */
+  isJdayToggleable = true;
 
   // Maps
   /**
@@ -141,12 +164,18 @@ export class UiSettings {
   // Labels
   /**
    * Determines whether or not to show the satellite labels.
+   * @deprecated Use satLabelMode instead. Kept for backward compatibility.
    */
   isSatLabelModeOn = true;
   /**
+   * Controls satellite label rendering mode.
+   * OFF = no labels, FOV_ONLY = labels for in-view watchlist sats, ALL = labels for all watchlist sats.
+   */
+  satLabelMode: SatLabelMode = SatLabelMode.FOV_ONLY;
+  /**
    * The maximum number of satellite labels to display on desktop devices.
    */
-  desktopMaxLabels = 500;
+  desktopMaxLabels = 2000;
   /**
    * Maximum number of satellite labels to display on mobile devices
    */

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LayersManager } from '@app/app/ui/layers-manager';
 import { CelestrakColorScheme } from '@app/engine/rendering/color-schemes/celestrak-color-scheme';
 import { GpAgeColorScheme } from '@app/engine/rendering/color-schemes/gp-age-color-scheme';
@@ -39,7 +40,7 @@ describe('LegendManager_class_mobile', () => {
     velocityFast: false,
   };
   const colorSchemeManagerInstance = {
-    resetObjectTypeFlags: jest.fn(),
+    resetObjectTypeFlags: vi.fn(),
     objectTypeFlags,
   };
 
@@ -102,10 +103,10 @@ describe('LegendManager_class_mobile', () => {
       currentSensors: [defaultSensor],
     };
     const colorSchemeManagerInstance = {
-      resetObjectTypeFlags: jest.fn(),
+      resetObjectTypeFlags: vi.fn(),
     };
 
-    Container.getInstance().get = jest.fn().mockImplementation((singleton) => {
+    Container.getInstance().get = vi.fn().mockImplementation((singleton) => {
       if (singleton === Singletons.CatalogManager) {
         return catalogManagerInstance;
       } else if (singleton === Singletons.SensorManager) {
@@ -130,7 +131,7 @@ describe('LegendManager_class_desktop', () => {
     velocityFast: false,
   };
   const colorSchemeManagerInstance = {
-    resetObjectTypeFlags: jest.fn(),
+    resetObjectTypeFlags: vi.fn(),
     objectTypeFlags,
   };
 
@@ -192,10 +193,10 @@ describe('LegendManager_class_desktop', () => {
       currentSensors: [defaultSensor],
     };
     const colorSchemeManagerInstance = {
-      resetObjectTypeFlags: jest.fn(),
+      resetObjectTypeFlags: vi.fn(),
     };
 
-    Container.getInstance().get = jest.fn().mockImplementation((singleton) => {
+    Container.getInstance().get = vi.fn().mockImplementation((singleton) => {
       if (singleton === Singletons.CatalogManager) {
         return catalogManagerInstance;
       } else if (singleton === Singletons.SensorManager) {

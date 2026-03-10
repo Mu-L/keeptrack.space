@@ -1,9 +1,13 @@
 import { Milliseconds } from '@ootk/src/main';
 import { PluginManager } from '../plugins/plugins';
+import { PosCruncherMsgType } from '../webworker/position-cruncher-messages';
+import { SoundManager } from './audio/sound-manager';
 import { Camera } from './camera/camera';
+import { CameraType } from './camera/camera-type';
 import { Container } from './core/container';
 import { Singletons } from './core/interfaces';
 import { Scene } from './core/scene';
+import { ServiceLocator } from './core/service-locator';
 import { TimeManager } from './core/time-manager';
 import { EventBus } from './events/event-bus';
 import { EventBusEvent } from './events/event-bus-events';
@@ -18,6 +22,8 @@ export interface Application {
 }
 
 export class Engine {
+  private static readonly CAMERA_DATA_SEND_INTERVAL_ = 200; // ms — matches worker propagation interval
+
   private isRunning_ = false;
   private isReady_ = false;
 
@@ -25,6 +31,7 @@ export class Engine {
   private isPaused: boolean = false;
   private isUpdateTimeThrottle_: boolean;
   private lastFrameTime_ = <Milliseconds>0;
+  private lastCameraDataSendTime_ = 0;
 
   // Core engine systems
   readonly renderer: WebGLRenderer;
@@ -34,6 +41,7 @@ export class Engine {
   readonly eventBus: EventBus;
   readonly pluginManager: PluginManager;
   readonly timeManager: TimeManager;
+  readonly soundManager: SoundManager;
 
   constructor(application: Application) {
     // Initialize core engine systems
@@ -45,6 +53,10 @@ export class Engine {
     this.timeManager = new TimeManager();
     this.inputManager = new InputManager();
     this.pluginManager = new PluginManager();
+    // Reuse existing SoundManager if already registered (e.g., test environments)
+    const existingSoundManager = Container.getInstance().get<SoundManager>(Singletons.SoundManager);
+
+    this.soundManager = existingSoundManager ?? new SoundManager();
 
     Container.getInstance().registerSingleton(Singletons.TimeManager, this.timeManager);
     Container.getInstance().registerSingleton(Singletons.WebGLRenderer, this.renderer);
@@ -52,6 +64,9 @@ export class Engine {
     Container.getInstance().registerSingleton(Singletons.Scene, this.scene);
     Container.getInstance().registerSingleton(Singletons.InputManager, this.inputManager);
     Container.getInstance().registerSingleton(Singletons.MainCamera, this.camera);
+    if (!existingSoundManager) {
+      Container.getInstance().registerSingleton(Singletons.SoundManager, this.soundManager);
+    }
   }
 
   init() {
@@ -60,6 +75,7 @@ export class Engine {
     this.eventBus.init();
     this.camera.init();
     this.timeManager.init();
+    this.soundManager.init();
 
     this.isReady_ = true;
   }
@@ -105,7 +121,7 @@ export class Engine {
 
   private update_(dt = <Milliseconds>0) {
     this.renderer.dt = dt;
-    this.renderer.dtAdjusted = <Milliseconds>(Math.min(this.renderer.dt / 1000.0, 1.0 / Math.max(this.timeManager.propRate, 0.001)) * this.timeManager.propRate);
+    this.renderer.dtAdjusted = <Milliseconds>(Math.min(this.renderer.dt / 1000.0, 0.1) * this.timeManager.propRate);
 
     this.timeManager.update();
     // Update official time for everyone else
@@ -127,11 +143,50 @@ export class Engine {
     this.camera.draw(this.renderer.sensorPos);
     this.renderer.render(this.scene, this.camera);
 
+    this.sendCameraDataToWorker_();
+
     if (Engine.isFpsAboveLimit(dt, 5) && !settingsManager.lowPerf && !settingsManager.isDragging && !settingsManager.isDemoModeOn) {
       this.eventBus.emit(EventBusEvent.highPerformanceRender, dt);
     }
 
     this.eventBus.emit(EventBusEvent.endOfDraw, dt);
+  }
+
+  /**
+   * Sends camera VP matrix and ECI position to the position cruncher worker
+   * for off-screen/occluded satellite throttling. Throttled to avoid flooding
+   * the worker message queue.
+   */
+  private sendCameraDataToWorker_(): void {
+    const now = performance.now();
+
+    if (now - this.lastCameraDataSendTime_ < Engine.CAMERA_DATA_SEND_INTERVAL_) {
+      return;
+    }
+    this.lastCameraDataSendTime_ = now;
+
+    let catalogManager;
+
+    try {
+      catalogManager = ServiceLocator.getCatalogManager();
+    } catch {
+      return; // CatalogManager not yet registered
+    }
+
+    if (!catalogManager?.satCruncher) {
+      return;
+    }
+
+    const mainCamera = ServiceLocator.getMainCamera();
+    const isFlatOrPolar = mainCamera.cameraType === CameraType.FLAT_MAP || mainCamera.cameraType === CameraType.POLAR_VIEW;
+    const camPos = mainCamera.getCamPosEarthCentered();
+
+    catalogManager.satCruncher.postMessage({
+      typ: PosCruncherMsgType.CAMERA_DATA,
+      vpMatrix: new Float32Array(this.renderer.projectionCameraMatrix),
+      camPosEci: new Float32Array([camPos[0], camPos[1], camPos[2]]),
+      isFrustumCullingEnabled: !isFlatOrPolar,
+    });
   }
 
   pause() {

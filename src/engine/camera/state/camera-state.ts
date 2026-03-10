@@ -1,10 +1,8 @@
 // app/keeptrack/camera/camera-state.ts
-import { SatMath } from '@app/app/analysis/sat-math';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
-import { alt2zoom } from '@app/engine/utils/transforms';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { Degrees, Kilometers, Radians } from '@ootk/src/main';
+import { Degrees, GreenwichMeanSiderealTime, Kilometers, Radians } from '@ootk/src/main';
 import { vec3 } from 'gl-matrix';
 
 /**
@@ -18,10 +16,14 @@ export class CameraState {
   camYaw: Radians = 0 as Radians;
 
   // ============ Zoom ============
-  private zoomLevel_ = 0.6925;
-  private zoomTarget_ = 0.6925;
-  private camDistBuffer_: Kilometers = 0 as Kilometers;
-  earthCenteredLastZoom = 0.6925;
+  static readonly DEFAULT_ZOOM = 0.4085;
+  private zoomLevel_ = CameraState.DEFAULT_ZOOM;
+  private zoomTarget_ = CameraState.DEFAULT_ZOOM;
+  static readonly MAX_CAM_DIST_BUFFER: Kilometers = 25 as Kilometers;
+  /** This buffer distance is used for close up camera positioning - it MUST match the MAX_CAM_DIST_BUFFER (25km)
+   */
+  private camDistBuffer_: Kilometers = CameraState.MAX_CAM_DIST_BUFFER;
+  earthCenteredLastZoom = CameraState.DEFAULT_ZOOM;
   isZoomIn = false;
 
   // ============ Rotation Speeds & Targets ============
@@ -39,6 +41,13 @@ export class CameraState {
   ftsPitch = 0;
   ftsYaw: Radians = 0 as Radians;
   ftsRotateReset = true;
+  // Previous frame's satellite angular position for Earth-relative compensation
+  prevSatPitch: Radians = 0 as Radians;
+  prevSatYaw: Radians = 0 as Radians;
+  hasPrevSatAngles = false;
+  // Previous frame's GMST for Earth rotation compensation in FIXED_TO_EARTH mode
+  prevGmst: GreenwichMeanSiderealTime = 0 as GreenwichMeanSiderealTime;
+  hasPrevGmst = false;
   /**
    * This was used when there was only one camera mode and the camera was always centered on the earth
    * It is the overall yaw of the camera?
@@ -127,6 +136,13 @@ export class CameraState {
   speedModifier = 1;
   isHoldingDownAKey = 1;
 
+  // Velocity tracking for touch momentum (EMA-filtered)
+  prevDragX = 0;
+  prevDragY = 0;
+  dragVelocityX = 0;
+  dragVelocityY = 0;
+  hasPrevDragPos = false;
+
   // ============ Auto Behaviors ============
   isAutoPitchYawToTarget = false;
   private isAutoRotate_ = true;
@@ -145,7 +161,7 @@ export class CameraState {
   }
 
   set zoomTarget(val: number) {
-    this.zoomTarget_ = Math.max(0.01, Math.min(1, val));
+    this.zoomTarget_ = Math.max(0.0001, Math.min(1, val));
     this.zoomTargetChange();
   }
 
@@ -154,7 +170,10 @@ export class CameraState {
   }
 
   set camDistBuffer(val: Kilometers) {
-    this.camDistBuffer_ = Math.max(val, settingsManager.minDistanceFromSatellite) as Kilometers;
+    this.camDistBuffer_ = Math.min(
+      Math.max(val, settingsManager.minDistanceFromSatellite),
+      settingsManager.maxZoomDistance,
+    ) as Kilometers;
   }
 
   get earthCenteredPitch(): Radians {
@@ -225,49 +244,27 @@ export class CameraState {
 
   zoomTargetChange(): void {
     const selectSatManagerInstance = PluginRegistry.getPlugin(SelectSatManager);
-    const maxCovarianceDistance = Math.min((selectSatManagerInstance?.primarySatCovMatrix?.[2] ?? 0) * 10, 10000);
+    const isNoSatSelected = (selectSatManagerInstance?.selectedSat ?? '-1') === '-1';
 
-    if ((settingsManager.isZoomStopsSnappedOnSat || (selectSatManagerInstance?.selectedSat ?? -1) === -1) || (this.camDistBuffer >= settingsManager.nearZoomLevel)) {
+    if (settingsManager.isZoomStopsSnappedOnSat || isNoSatSelected || !this.camZoomSnappedOnSat) {
+      const wasSnapped = this.camZoomSnappedOnSat;
 
+      // Earth-centered mode — no satellite snapped or snapping disabled
       settingsManager.selectedColor = settingsManager.selectedColorFallback;
       ServiceLocator.getRenderer().setFarRenderer();
-      this.earthCenteredLastZoom = this.zoomTarget;
       this.camZoomSnappedOnSat = false;
 
-      // calculate camera distance from target
-      const target = selectSatManagerInstance?.getSelectedSat();
-
-      if (target) {
-        const satAlt = SatMath.getAlt(target.position, SatMath.calculateTimeVariables(ServiceLocator.getTimeManager().simulationTimeObj).gmst);
-        const curMinZoomLevel = alt2zoom(satAlt, settingsManager.minZoomDistance, settingsManager.maxZoomDistance, settingsManager.minDistanceFromSatellite);
-
-        if (this.zoomTarget < this.zoomLevel && this.zoomTarget < curMinZoomLevel) {
-          this.camZoomSnappedOnSat = true;
-
-          if (settingsManager.isDrawCovarianceEllipsoid) {
-            this.camDistBuffer = <Kilometers>(Math.max(Math.max(this.camDistBuffer, settingsManager.nearZoomLevel), maxCovarianceDistance) - 1);
-          } else {
-            this.camDistBuffer =
-              <Kilometers>Math.min(Math.max(this.camDistBuffer, settingsManager.nearZoomLevel), settingsManager.minDistanceFromSatellite);
-          }
-        }
+      // When unsnapping, restore zoom to where the user was before selecting
+      // the satellite. Without this, zoomLevel stays near 0 (satellite altitude)
+      // where the exponential zoom curve is too flat for scrolling to work.
+      if (wasSnapped) {
+        this.zoomLevel_ = Math.max(0.0001, Math.min(1, this.earthCenteredLastZoom));
+        this.zoomTarget_ = this.zoomLevel_;
       }
 
-    } else {
-      ServiceLocator.getRenderer().setNearRenderer();
-
-      // Clamping camDistBuffer to be between minDistanceFromSatellite and maxZoomDistance
-      this.camDistBuffer = <Kilometers>Math.min(
-        Math.max(
-          this.camDistBuffer,
-          settingsManager.minDistanceFromSatellite,
-        ),
-        Math.max(
-          settingsManager.nearZoomLevel,
-          maxCovarianceDistance,
-        ),
-      );
+      this.earthCenteredLastZoom = this.zoomTarget;
     }
+    // When snapped to a satellite, renderer switching is handled by snapToSat()
   }
 
   /**
@@ -275,15 +272,17 @@ export class CameraState {
    * @param isHardReset - If true, also resets zoom level
    */
   reset(isHardReset = false): void {
-    // Reset zoom
+    // Reset zoom to initial level (not max zoom out)
+    const initZoom = settingsManager.initZoomLevel ?? CameraState.DEFAULT_ZOOM;
+
     if (isHardReset) {
-      this.zoomLevel_ = 0.6925;
+      this.zoomLevel_ = initZoom;
     }
-    this.zoomTarget_ = 0.6925;
+    this.zoomTarget_ = initZoom;
     this.isZoomIn = false;
     this.camZoomSnappedOnSat = false;
     this.camAngleSnappedOnSat = false;
-    this.camDistBuffer = 0 as Kilometers;
+    this.camDistBuffer = CameraState.MAX_CAM_DIST_BUFFER;
 
     // Reset position
     this.position = [0, 0, 0];
@@ -297,6 +296,10 @@ export class CameraState {
     this.camYawTarget = 0 as Radians;
     this.camYawSpeed = 0;
     this.camRotateSpeed = 0;
+
+    // Reset GMST tracking
+    this.prevGmst = 0 as GreenwichMeanSiderealTime;
+    this.hasPrevGmst = false;
 
     // Reset FPS state
     this.fpsPitch = 0 as Degrees;
@@ -345,6 +348,13 @@ export class CameraState {
     this.startMouseY = 0;
     this.speedModifier = 1;
     this.isHoldingDownAKey = 1;
+    // Reset velocity tracking
+    this.prevDragX = 0;
+    this.prevDragY = 0;
+    this.dragVelocityX = 0;
+    this.dragVelocityY = 0;
+    this.hasPrevDragPos = false;
+
     this.isAutoPitchYawToTarget = !!isHardReset;
   }
 

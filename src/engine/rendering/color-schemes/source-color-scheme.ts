@@ -1,11 +1,12 @@
 /* eslint-disable complexity */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
-import { html } from '@app/engine/utils/development/formatter';
-import { BaseObject, DetailedSatellite, Star } from '@ootk/src/main';
-import { CameraType } from '../../camera/camera';
-import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
+import { BaseObject, Satellite, Star } from '@ootk/src/main';
+import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
   sourceUssf: rgbaArray;
@@ -14,7 +15,7 @@ export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class SourceColorScheme extends ColorScheme {
-  readonly label = 'Data Source';
+  readonly label = t7e('colorSchemes.SourceColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'SourceColorScheme';
   static readonly id = 'SourceColorScheme';
 
@@ -78,7 +79,7 @@ export class SourceColorScheme extends ColorScheme {
     }
 
     // Check the source of the data
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
 
     if (sat.source) {
       switch (sat.source) {
@@ -109,6 +110,7 @@ export class SourceColorScheme extends ColorScheme {
           };
 
         case 'OEM Import':
+        case 'KeepTrack':
           if (this.objectTypeFlags.sourceOemImport === false) {
             return {
               color: this.colorTheme.deselected,

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { SatelliteFov } from '@app/plugins/satellite-fov/satellite-fov';
@@ -11,9 +12,10 @@ describe('SatelliteFov_class', () => {
     PluginRegistry.unregisterAllPlugins();
     setupStandardEnvironment([SelectSatManager]);
     ServiceLocator.getCatalogManager().getObject = () => defaultSat;
-    ServiceLocator.getCatalogManager().satCruncher = {
-      postMessage: jest.fn(),
-    } as unknown as Worker;
+    ServiceLocator.getCatalogManager().satCruncherThread = {
+      postMessage: vi.fn(),
+      sendMarkerUpdate: vi.fn(),
+    } as any;
   });
 
   standardPluginSuite(SatelliteFov);

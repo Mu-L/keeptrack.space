@@ -17,7 +17,7 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
-import { Radians, Kilometers } from '@app/engine/ootk/src/main';
+import { Kilometers, Radians } from '@app/engine/ootk/src/main';
 import { RADIUS_OF_EARTH } from '../engine/utils/constants';
 
 /**
@@ -35,14 +35,14 @@ export class CameraSettings {
    *
    * TODO: Implement this for FPS, Planetarium, Astronomy, and Satellite View
    */
-  fieldOfViewMax = 1.2 as Radians;
+  fieldOfViewMax = 1.75 as Radians;
   /**
    * @deprecated
    * The minimum value for the field of view setting.
    *
    * * TODO: Implement this for FPS, Planetarium, Astronomy, and Satellite View
    */
-  fieldOfViewMin = 0.04;
+  fieldOfViewMin = 0.04 as Radians;
 
   // Camera Movement
   /**
@@ -128,6 +128,32 @@ export class CameraSettings {
    */
   initZoomLevel: number;
 
+  // Touch-specific settings
+  /**
+   * @deprecated Use momentumDamping / touchMomentumDamping instead.
+   */
+  touchCameraDecayFactor = 2;
+  /**
+   * Base speed for touch camera rotation. Higher than mouse because
+   * touch movements are coarser.
+   */
+  touchCameraMovementSpeed = 0.005;
+
+  // Frame-rate independent momentum damping
+  /**
+   * Per-millisecond damping base for desktop momentum decay.
+   * Applied as `speed *= Math.pow(momentumDamping, dt)`.
+   * Range (0, 1). Closer to 1 = longer coast.
+   * 0.983 matches the prior 60fps desktop feel (~40ms half-life).
+   */
+  momentumDamping = 0.983;
+  /**
+   * Per-millisecond damping base for touch momentum decay.
+   * 0.996 gives ~173ms half-life — between current touch feel and three.js OrbitControls.
+   * Tune: 0.989 = short coast, 0.996 = medium, 0.9969 = three.js default.
+   */
+  touchMomentumDamping = 0.996;
+
   // Camera Controls
   /**
    * Currently only disables panning.
@@ -143,6 +169,10 @@ export class CameraSettings {
   // Camera Focus
   /** Center on a satellite when it is selected. */
   isFocusOnSatelliteWhenSelected = true;
+  /** Enable smooth camera transitions when selecting/deselecting satellites. */
+  isSmoothCameraTransitions = true;
+  /** Duration of camera transition animations in milliseconds (100-2000). */
+  cameraTransitionDuration = 1500;
 
   // Offset Camera Mode
   /**
@@ -179,6 +209,9 @@ export class CameraSettings {
    * Speed at which the camera twists (yaws) when in FPS mode.
    */
   fpsYawRate = 0.02;
+
+  /** Allows local rotation of the camera (roll, yaw, pitch) when in satellite view. */
+  isLocalRotateEnabled = true;
 
   /** Enables the camera widget */
   drawCameraWidget = false;

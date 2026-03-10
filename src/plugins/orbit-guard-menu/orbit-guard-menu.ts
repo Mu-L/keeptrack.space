@@ -2,6 +2,7 @@ import orbitguardPng from '@public/img/icons/orbitguard.png';
 import './orbit-guard-menu.css';
 
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -11,7 +12,6 @@ import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl } from '@app/engine/utils/get-el';
 import { showLoading } from '@app/engine/utils/showLoading';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 // Define the maneuver data interface based on orbitguard_output.json
 export interface OrbitGuardEvent {
@@ -42,7 +42,7 @@ export class OrbitGuardMenuPlugin extends KeepTrackPlugin {
   bottomIconImg = orbitguardPng;
   sideMenuElementName: string = 'maneuver-detection-menu';
   sideMenuElementHtml = html`
-    <div id="maneuver-detection-menu" class="side-menu-parent start-hidden text-select">
+    <div id="maneuver-detection-menu" class="side-menu-parent start-hidden">
       <div id="maneuver-detection-content" class="side-menu">
         <div class="row">
           <h1 class="center-align">OrbitGuard</h1>
@@ -57,7 +57,7 @@ export class OrbitGuardMenuPlugin extends KeepTrackPlugin {
       </div>
     </div>`;
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.EVENTS, MenuMode.ALL];
   dragOptions: ClickDragOptions = {
     isDraggable: true,
     minWidth: 1200,

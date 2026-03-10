@@ -1,15 +1,19 @@
+import { vi } from 'vitest';
+import { CatalogManager } from '@app/app/data/catalog-manager';
 import { GroupType } from '@app/app/data/object-group';
+import { UiManager } from '@app/app/ui/ui-manager';
 import { LayersManager } from '@app/app/ui/layers-manager';
 import { Pickable } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { ColorSchemeManager } from '@app/engine/rendering/color-scheme-manager';
 import { ColorScheme } from '@app/engine/rendering/color-schemes/color-scheme';
 import { ObjectTypeColorScheme } from '@app/engine/rendering/color-schemes/object-type-color-scheme';
+import { DotsManager } from '@app/engine/rendering/dots-manager';
 import { WebGLRenderer } from '@app/engine/rendering/webgl-renderer';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import * as getEl from '@app/engine/utils/get-el';
 import { settingsManager } from '@app/settings/settings';
-import { BaseObject, Degrees, DetailedSatellite, SpaceObjectType, TleLine1 } from '@ootk/src/main';
+import { BaseObject, Degrees, Satellite, SpaceObjectType, TleLine1 } from '@ootk/src/main';
 import { defaultSat } from './environment/apiMocks';
 
 const obj1 = defaultSat.clone();
@@ -297,7 +301,7 @@ const listOfSatsToTest = [
   obj62,
   obj63,
   obj64,
-] as DetailedSatellite[];
+] as Satellite[];
 
 const disableAllColorThemes = (colorSchemeManager: ColorSchemeManager) => {
   // eslint-disable-next-line guard-for-in
@@ -398,9 +402,16 @@ describe('ColorSchemeManager', () => {
     testMultipleSats(colorSchemeManager, listOfSatsToTest, test);
   });
 
-  // Test isPayloadOff color scheme
-  it('should be able to get isPayloadOff color scheme', () => {
-    const test = (sat: BaseObject) => colorSchemeManager.isPayloadOff(sat);
+  // Test isOperationalPayloadOff color scheme
+  it('should be able to get isOperationalPayloadOff color scheme', () => {
+    const test = (sat: BaseObject) => colorSchemeManager.isOperationalPayloadOff(sat);
+
+    testMultipleSats(colorSchemeManager, listOfSatsToTest, test);
+  });
+
+  // Test isNonOperationalPayloadOff color scheme
+  it('should be able to get isNonOperationalPayloadOff color scheme', () => {
+    const test = (sat: BaseObject) => colorSchemeManager.isNonOperationalPayloadOff(sat);
 
     testMultipleSats(colorSchemeManager, listOfSatsToTest, test);
   });
@@ -484,17 +495,17 @@ describe('ColorSchemeManager Block 2', () => {
   // Setting a color scheme updates the current scheme and recalculates color buffers
   it.skip('should update current color scheme and recalculate color buffers when setColorScheme is called', () => {
     // Arrange
-    const mockRenderer = { gl: { createBuffer: jest.fn().mockReturnValue({}), bindBuffer: jest.fn(), bufferData: jest.fn(), bufferSubData: jest.fn() } };
+    const mockRenderer = { gl: { createBuffer: vi.fn().mockReturnValue({}), bindBuffer: vi.fn(), bufferData: vi.fn(), bufferSubData: vi.fn() } };
     const mockDotsManager = { buffers: { color: null, pickability: null } };
-    const mockUiManager = { colorSchemeChangeAlert: jest.fn() };
-    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: jest.fn() } };
+    const mockUiManager = { colorSchemeChangeAlert: vi.fn() };
+    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: vi.fn() } };
 
-    ServiceLocator.getRenderer = jest.fn().mockReturnValue(mockRenderer);
-    ServiceLocator.getDotsManager = jest.fn().mockReturnValue(mockDotsManager);
-    ServiceLocator.getUiManager = jest.fn().mockReturnValue(mockUiManager);
-    ServiceLocator.getCatalogManager = jest.fn().mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getRenderer').mockReturnValue(mockRenderer as unknown as WebGLRenderer);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager as unknown as DotsManager);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
 
-    LayersManager.change = jest.fn();
+    LayersManager.change = vi.fn();
 
     const colorSchemeManager = new ColorSchemeManager();
     const renderer = new WebGLRenderer();
@@ -505,7 +516,7 @@ describe('ColorSchemeManager Block 2', () => {
     colorSchemeManager.init(renderer);
     colorSchemeManager.colorBuffer = {};
     colorSchemeManager.pickableBuffer = {};
-    colorSchemeManager.calculateColorBuffers = jest.fn();
+    colorSchemeManager.calculateColorBuffers = vi.fn();
 
     const mockColorScheme = new ObjectTypeColorScheme();
 
@@ -525,17 +536,17 @@ describe('ColorSchemeManager Block 2', () => {
   // Handling invalid or missing color schemes by falling back to default scheme
   it.skip('should fall back to default color scheme when an invalid scheme is provided', () => {
     // Arrange
-    const mockRenderer = { gl: { createBuffer: jest.fn().mockReturnValue({}), bindBuffer: jest.fn(), bufferData: jest.fn(), bufferSubData: jest.fn() } };
+    const mockRenderer = { gl: { createBuffer: vi.fn().mockReturnValue({}), bindBuffer: vi.fn(), bufferData: vi.fn(), bufferSubData: vi.fn() } };
     const mockDotsManager = { buffers: { color: null, pickability: null } };
-    const mockUiManager = { colorSchemeChangeAlert: jest.fn() };
-    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: jest.fn() } };
+    const mockUiManager = { colorSchemeChangeAlert: vi.fn() };
+    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: vi.fn() } };
 
-    ServiceLocator.getRenderer = jest.fn().mockReturnValue(mockRenderer);
-    ServiceLocator.getDotsManager = jest.fn().mockReturnValue(mockDotsManager);
-    ServiceLocator.getUiManager = jest.fn().mockReturnValue(mockUiManager);
-    ServiceLocator.getCatalogManager = jest.fn().mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getRenderer').mockReturnValue(mockRenderer as unknown as WebGLRenderer);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager as unknown as DotsManager);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
 
-    errorManagerInstance.log = jest.fn();
+    errorManagerInstance.log = vi.fn();
 
     const colorSchemeManager = new ColorSchemeManager();
     const renderer = new WebGLRenderer();
@@ -546,7 +557,7 @@ describe('ColorSchemeManager Block 2', () => {
     colorSchemeManager.init(renderer);
     colorSchemeManager.colorBuffer = {};
     colorSchemeManager.pickableBuffer = {};
-    colorSchemeManager.calculateColorBuffers = jest.fn();
+    colorSchemeManager.calculateColorBuffers = vi.fn();
 
     settingsManager.defaultColorScheme = 'DefaultColorScheme';
 
@@ -565,14 +576,14 @@ describe('ColorSchemeManager Block 2', () => {
   // Handling partial coloring when not all objects need to be recolored
   it.skip('should calculate color buffers partially when not all objects need recoloring', () => {
     // Arrange
-    const mockRenderer = { gl: { createBuffer: jest.fn().mockReturnValue({}), bindBuffer: jest.fn(), bufferData: jest.fn(), bufferSubData: jest.fn() } };
+    const mockRenderer = { gl: { createBuffer: vi.fn().mockReturnValue({}), bindBuffer: vi.fn(), bufferData: vi.fn(), bufferSubData: vi.fn() } };
     const mockDotsManager = { buffers: { color: null, pickability: null }, inViewData: {} };
-    const mockCatalogManager = { numObjects: 10, objectCache: Array(10).fill({}), satCruncher: { postMessage: jest.fn() } };
+    const mockCatalogManager = { numObjects: 10, objectCache: Array(10).fill({}), satCruncher: { postMessage: vi.fn() } };
     const mockSettingsManager = { dotsOnScreen: 10, dotsPerColor: 5, defaultColorScheme: 'DefaultColorScheme' };
 
-    ServiceLocator.getRenderer = jest.fn().mockReturnValue(mockRenderer);
-    ServiceLocator.getDotsManager = jest.fn().mockReturnValue(mockDotsManager);
-    ServiceLocator.getCatalogManager = jest.fn().mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getRenderer').mockReturnValue(mockRenderer as unknown as WebGLRenderer);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager as unknown as DotsManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
     settingsManager.dotsOnScreen = mockSettingsManager.dotsOnScreen;
     settingsManager.dotsPerColor = mockSettingsManager.dotsPerColor;
     settingsManager.defaultColorScheme = mockSettingsManager.defaultColorScheme;
@@ -586,28 +597,28 @@ describe('ColorSchemeManager Block 2', () => {
     colorSchemeManager.init(renderer);
     colorSchemeManager.colorBuffer = {};
     colorSchemeManager.pickableBuffer = {};
-    colorSchemeManager.calculateBufferData_ = jest.fn();
+    (colorSchemeManager as unknown as { calculateBufferData_: vi.Mock }).calculateBufferData_ = vi.fn();
 
     // Act
     colorSchemeManager.calculateColorBuffers(false);
 
     // Assert
-    expect(colorSchemeManager.calculateBufferData_).toHaveBeenCalledTimes(mockSettingsManager.dotsPerColor);
+    expect((colorSchemeManager as unknown as { calculateBufferData_: vi.Mock }).calculateBufferData_).toHaveBeenCalledTimes(mockSettingsManager.dotsPerColor);
   });
 
   // Handling disabled satellites based on various settings flags
   it.skip('should return null color information for disabled satellites based on settings flags', () => {
     // Arrange
-    jest.spyOn(settingsManager, 'isShowNotionalSats', 'get').mockReturnValue(false);
+    vi.spyOn(settingsManager, 'isShowNotionalSats', 'get').mockReturnValue(false);
 
     const mockSatellite = {
-      id: 1,
+      id: '1',
       name: 'STARLINK-1234',
       type: SpaceObjectType.PAYLOAD,
       apogee: 5000,
       perigee: 5000,
       eccentricity: 0.05,
-      isNotional: jest.fn().mockReturnValue(true),
+      isNotional: vi.fn().mockReturnValue(true),
     };
     const objectData = [mockSatellite];
 
@@ -627,22 +638,22 @@ describe('ColorSchemeManager Block 2', () => {
     // Arrange
     const mockRenderer = {
       gl: {
-        createBuffer: jest.fn().mockReturnValue(null), // Simulate buffer creation failure
-        bindBuffer: jest.fn(),
-        bufferData: jest.fn(),
-        bufferSubData: jest.fn(),
+        createBuffer: vi.fn().mockReturnValue(null), // Simulate buffer creation failure
+        bindBuffer: vi.fn(),
+        bufferData: vi.fn(),
+        bufferSubData: vi.fn(),
       },
     };
     const mockDotsManager = { buffers: { color: null, pickability: null } };
-    const mockUiManager = { colorSchemeChangeAlert: jest.fn() };
-    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: jest.fn() } };
+    const mockUiManager = { colorSchemeChangeAlert: vi.fn() };
+    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: vi.fn() } };
 
-    ServiceLocator.getRenderer = jest.fn().mockReturnValue(mockRenderer);
-    ServiceLocator.getDotsManager = jest.fn().mockReturnValue(mockDotsManager);
-    ServiceLocator.getUiManager = jest.fn().mockReturnValue(mockUiManager);
-    ServiceLocator.getCatalogManager = jest.fn().mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getRenderer').mockReturnValue(mockRenderer as unknown as WebGLRenderer);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager as unknown as DotsManager);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
 
-    LayersManager.change = jest.fn();
+    LayersManager.change = vi.fn();
 
     const colorSchemeManager = new ColorSchemeManager();
     const renderer = new WebGLRenderer();
@@ -666,14 +677,14 @@ describe('ColorSchemeManager Block 2', () => {
   // Handling velocity-specific coloring which requires additional data
   it.skip('should calculate buffer data with velocity when current color scheme is VelocityColorScheme', () => {
     // Arrange
-    const mockRenderer = { gl: { createBuffer: jest.fn().mockReturnValue({}), bindBuffer: jest.fn(), bufferData: jest.fn(), bufferSubData: jest.fn() } };
-    const mockDotsManager = { getSatVel: jest.fn().mockReturnValue(new Float32Array([1, 2, 3, 4, 5, 6])), buffers: { color: null, pickability: null } };
+    const mockRenderer = { gl: { createBuffer: vi.fn().mockReturnValue({}), bindBuffer: vi.fn(), bufferData: vi.fn(), bufferSubData: vi.fn() } };
+    const mockDotsManager = { getSatVel: vi.fn().mockReturnValue(new Float32Array([1, 2, 3, 4, 5, 6])), buffers: { color: null, pickability: null } };
     const mockCatalogManager = { objectCache: [{ id: 1 }, { id: 2 }], numObjects: 2 };
     const mockSettingsManager = { defaultColorScheme: 'VelocityColorScheme', dotsOnScreen: 2, dotsPerColor: 2 };
 
-    ServiceLocator.getRenderer = jest.fn().mockReturnValue(mockRenderer);
-    ServiceLocator.getDotsManager = jest.fn().mockReturnValue(mockDotsManager);
-    ServiceLocator.getCatalogManager = jest.fn().mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getRenderer').mockReturnValue(mockRenderer as unknown as WebGLRenderer);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager as unknown as DotsManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
     settingsManager.dotsOnScreen = mockSettingsManager.dotsOnScreen;
     settingsManager.dotsPerColor = mockSettingsManager.dotsPerColor;
 
@@ -697,18 +708,18 @@ describe('ColorSchemeManager Block 2', () => {
   // Dealing with color scheme changes during active searches or watchlist views
   it.skip('should revert to default color scheme when search is empty and watchlist is not active', () => {
     // Arrange
-    const mockRenderer = { gl: { createBuffer: jest.fn().mockReturnValue({}), bindBuffer: jest.fn(), bufferData: jest.fn(), bufferSubData: jest.fn() } };
+    const mockRenderer = { gl: { createBuffer: vi.fn().mockReturnValue({}), bindBuffer: vi.fn(), bufferData: vi.fn(), bufferSubData: vi.fn() } };
     const mockDotsManager = { buffers: { color: null, pickability: null } };
-    const mockUiManager = { searchManager: { getCurrentSearch: jest.fn().mockReturnValue('') } };
-    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: jest.fn() } };
+    const mockUiManager = { searchManager: { getCurrentSearch: vi.fn().mockReturnValue('') } };
+    const mockCatalogManager = { numObjects: 10, satCruncher: { postMessage: vi.fn() } };
     const mockWatchlistMenu = { style: { transform: 'translateX(-100px)' } };
 
-    ServiceLocator.getRenderer = jest.fn().mockReturnValue(mockRenderer);
-    ServiceLocator.getDotsManager = jest.fn().mockReturnValue(mockDotsManager);
-    ServiceLocator.getUiManager = jest.fn().mockReturnValue(mockUiManager);
-    ServiceLocator.getCatalogManager = jest.fn().mockReturnValue(mockCatalogManager);
+    vi.spyOn(ServiceLocator, 'getRenderer').mockReturnValue(mockRenderer as unknown as WebGLRenderer);
+    vi.spyOn(ServiceLocator, 'getDotsManager').mockReturnValue(mockDotsManager as unknown as DotsManager);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue(mockUiManager as unknown as UiManager);
+    vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue(mockCatalogManager as unknown as CatalogManager);
     // Spy on getEl and return mockWatchlistMenu
-    jest.spyOn(getEl, 'getEl').mockReturnValue(mockWatchlistMenu as HTMLElement);
+    vi.spyOn(getEl, 'getEl').mockReturnValue(mockWatchlistMenu as HTMLElement);
 
     const colorSchemeManager = new ColorSchemeManager();
     const renderer = new WebGLRenderer();
@@ -718,10 +729,10 @@ describe('ColorSchemeManager Block 2', () => {
 
     colorSchemeManager.init(renderer);
     colorSchemeManager.currentColorScheme = 'notDefault' as unknown as ColorScheme;
-    colorSchemeManager.colorData = [1, 2, 3, 4, 5] as unknown as Float32Array;
+    colorSchemeManager.colorData = new Float32Array([1, 2, 3, 4, 5]);
     colorSchemeManager.pickableData = new Int8Array(5);
     colorSchemeManager.isUseGroupColorScheme = true;
-    colorSchemeManager.setColorScheme = jest.fn();
+    colorSchemeManager.setColorScheme = vi.fn();
 
     // Act
     colorSchemeManager.calculateColorBuffers();

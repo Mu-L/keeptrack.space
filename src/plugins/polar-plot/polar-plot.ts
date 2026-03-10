@@ -3,15 +3,16 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import polarPlotPng from '@public/img/icons/polar-plot.png';
 
 
-import { EventBus } from '@app/engine/events/event-bus';
-import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { html } from '@app/engine/utils/development/formatter';
-import { BaseObject, Degrees, DetailedSatellite, MILLISECONDS_PER_SECOND, secondsPerDay } from '@ootk/src/main';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '../sounds/sounds';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { html } from '@app/engine/utils/development/formatter';
+import { BaseObject, Degrees, MILLISECONDS_PER_SECOND, Satellite, secondsPerDay } from '@ootk/src/main';
+import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 
 type PolarPlotData = Array<[Degrees, Degrees]>
 
@@ -40,7 +41,7 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
   isRequireSatelliteSelected = true;
   isRequireSensorSelected = true;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   bottomIconImg = polarPlotPng;
   bottomIconCallback: () => void = () => {
@@ -48,9 +49,18 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
   };
   isIconDisabledOnLoad = true;
   isIconDisabled = true;
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'P',
+        callback: () => this.togglePolarPlot_(),
+      },
+    ];
+  }
   sideMenuElementName: string = 'polar-plot-menu';
   sideMenuElementHtml: string = html`
-  <div id="polar-plot-menu" class="side-menu-parent start-hidden text-select">
+  <div id="polar-plot-menu" class="side-menu-parent start-hidden">
     <div id="polar-plot-content" class="side-menu" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
       <span id="polar-plot-warning" class="text-center">Satellite is not in view for the next ${(this.plotDuration_ * 24).toFixed(0)} hours</span>
       <canvas id="polar-plot" class="w-96" width="1000" height="1000"></canvas>
@@ -77,7 +87,7 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
           const link = document.createElement('a');
 
           link.href = image;
-          link.download = `sat-${(this.selectSatManager_.getSelectedSat() as DetailedSatellite).sccNum6}-polar-plot.png`;
+          link.download = `sat-${(this.selectSatManager_.getSelectedSat() as Satellite).sccNum6}-polar-plot.png`;
           link.click();
         });
       },
@@ -113,28 +123,27 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
       },
     );
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key: string, _code: string, isRepeat: boolean) => {
-      if (key === 'P' && !isRepeat) {
-        if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) === -1) {
-          return;
-        }
+  }
 
-        if (!ServiceLocator.getSensorManager().isSensorSelected()) {
-          return;
-        }
+  private togglePolarPlot_(): void {
+    if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
+      return;
+    }
 
-        if (!this.isMenuButtonActive) {
-          this.openSideMenu();
-          this.setBottomIconToSelected();
-          this.updatePlot_();
-          ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
-        } else {
-          this.closeSideMenu();
-          this.setBottomIconToUnselected();
-          ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
-        }
-      }
-    });
+    if (!ServiceLocator.getSensorManager().isSensorSelected()) {
+      return;
+    }
+
+    if (!this.isMenuButtonActive) {
+      this.openSideMenu();
+      this.setBottomIconToSelected();
+      this.updatePlot_();
+      ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+    } else {
+      this.closeSideMenu();
+      this.setBottomIconToUnselected();
+      ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_OFF);
+    }
   }
 
   private updatePlot_(): void {
@@ -157,7 +166,7 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
     this.passStopTime_ = null;
 
     const sensor = ServiceLocator.getSensorManager().getSensor();
-    const sat = this.selectSatManager_.getSelectedSat() as DetailedSatellite;
+    const sat = this.selectSatManager_.getSelectedSat() as Satellite;
 
     if (!sensor?.isSensor()) {
       return false;
@@ -214,7 +223,7 @@ export class PolarPlotPlugin extends KeepTrackPlugin {
     this.ctx_.textAlign = 'left';
     this.ctx_.textBaseline = 'top';
     const sensorName = ServiceLocator.getSensorManager().getSensor()?.name ?? 'Unknown Sensor';
-    const satNum = (this.selectSatManager_.getSelectedSat() as DetailedSatellite).sccNum;
+    const satNum = (this.selectSatManager_.getSelectedSat() as Satellite).sccNum;
     const timeRange = `${this.passStartTime_?.toISOString().slice(11, 19) ?? 'Unknown Start Time'} - ${this.passStopTime_?.toISOString().slice(11, 19) ?? 'Unknown Stop Time'}`;
 
     this.ctx_.fillText(sensorName, 10, 10);

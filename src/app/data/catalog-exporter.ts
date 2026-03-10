@@ -1,5 +1,5 @@
-import { saveCsv } from '@app/engine/utils/saveVariable';
-import { BaseObject, DetailedSatellite } from '@ootk/src/main';
+import { saveXlsx } from '@app/engine/utils/saveVariable';
+import { BaseObject, Satellite } from '@ootk/src/main';
 import { saveAs } from 'file-saver';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -35,7 +35,7 @@ export class CatalogExporter {
   static exportTle2Csv(objData: BaseObject[], isDeleteAnalysts = true) {
     try {
       const catalogTLE2 = [] as CatalogExportCsvFields[];
-      const satOnlyData = objData.filter((obj: BaseObject) => obj.isSatellite() && (obj as DetailedSatellite).tle1) as DetailedSatellite[];
+      const satOnlyData = objData.filter((obj: BaseObject) => obj.isSatellite() && (obj as Satellite).tle1) as Satellite[];
 
       if (satOnlyData.length === 0) {
         errorManagerInstance.info('No TLE data to export');
@@ -77,7 +77,7 @@ export class CatalogExporter {
           power: sat.power,
         });
       }
-      saveCsv(catalogTLE2, 'catalogInfo');
+      saveXlsx(catalogTLE2, 'catalogInfo');
     } catch {
       /*
        * DEBUG:
@@ -88,9 +88,9 @@ export class CatalogExporter {
 
   static exportSatInFov2Csv(objData: BaseObject[]) {
     const data = objData
-      .filter((obj) => obj.isSatellite() && (obj as DetailedSatellite).tle1 && ServiceLocator.getDotsManager().inViewData?.[obj.id] === 1)
+      .filter((obj) => obj.isSatellite() && (obj as Satellite).tle1 && ServiceLocator.getDotsManager().inViewData?.[obj.id] === 1)
       .map((obj) => {
-        const sat = obj as DetailedSatellite;
+        const sat = obj as Satellite;
 
 
         return {
@@ -102,13 +102,13 @@ export class CatalogExporter {
         };
       });
 
-    saveCsv(data, 'satInView');
+    saveXlsx(data, 'satInView');
   }
 
   static exportTle2Txt(objData: BaseObject[], numberOfLines = 2, isDeleteAnalysts = true) {
     try {
       const catalogTLE2 = [] as string[];
-      const satOnlyData = objData.filter((obj: BaseObject) => obj.isSatellite() && (obj as DetailedSatellite).tle1) as DetailedSatellite[];
+      const satOnlyData = objData.filter((obj: BaseObject) => obj.isSatellite() && (obj as Satellite).tle1) as Satellite[];
 
       if (satOnlyData.length === 0) {
         errorManagerInstance.info('No TLE data to export');
@@ -149,6 +149,43 @@ export class CatalogExporter {
        * DEBUG:
        * console.warn('Failed to Export TLEs!');
        */
+    }
+  }
+
+  static exportTce(objData: BaseObject[], isDeleteAnalysts = true) {
+    try {
+      const tleLines = [] as string[];
+      const satOnlyData = objData.filter((obj: BaseObject) => obj.isSatellite() && (obj as Satellite).tle1) as Satellite[];
+
+      if (satOnlyData.length === 0) {
+        errorManagerInstance.info('No TLE data to export');
+
+        return;
+      }
+
+      satOnlyData.sort((a, b) => parseInt(a.sccNum) - parseInt(b.sccNum));
+      for (const sat of satOnlyData) {
+        if (typeof sat.tle1 === 'undefined' || typeof sat.tle2 === 'undefined') {
+          continue;
+        }
+        if (isDeleteAnalysts && sat.country === 'ANALSAT') {
+          continue;
+        }
+        if (sat.tle1.includes('NO TLE') || sat.tle2.includes('NO TLE')) {
+          continue;
+        }
+
+        tleLines.push(sat.tle1);
+        tleLines.push(sat.tle2);
+      }
+
+      const blob = new Blob([tleLines.join('\n')], {
+        type: 'text/plain;charset=utf-8',
+      });
+
+      saveAs(blob, 'stkSatDb.tce');
+    } catch {
+      // intentionally empty
     }
   }
 }

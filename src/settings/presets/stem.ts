@@ -12,7 +12,7 @@ export const stemEnvironment = (settingsManager: SettingsManager) => {
   settingsManager.isBlockPersistence = true;
 
   settingsManager.disableAllPlugins();
-  settingsManager.plugins.SoundManager = { enabled: true };
+  settingsManager.plugins.SoundToggle = { enabled: true };
   settingsManager.plugins.SatInfoBoxCore = { enabled: true };
   settingsManager.plugins.SatInfoBoxObject = { enabled: true };
   settingsManager.plugins.EarthAtmosphere = { enabled: true };
@@ -45,7 +45,7 @@ export const stemEnvironment = (settingsManager: SettingsManager) => {
 
   settingsManager.isShowLoadingHints = false; // Disable Loading Hints
 
-  settingsManager.splashScreenList = ['epfl-1', 'epfl-2', 'thule', 'rocket', 'cubesat'];
+  settingsManager.splashScreenList = ['epfl-1', 'epfl-2', 'thule', 'rocket'];
 
   settingsManager.isDisableAsciiCatalog = true;
   settingsManager.defaultColorScheme = 'CelestrakColorScheme';

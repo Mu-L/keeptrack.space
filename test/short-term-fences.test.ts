@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable dot-notation */
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -59,8 +60,8 @@ describe('ShortTermFences_class', () => {
       ServiceLocator.getSensorManager().setCurrentSensor(null);
       expect(() => stf['stfOnObjectLinkClick_']()).not.toThrow();
 
-      ServiceLocator.getCatalogManager().getObject = jest.fn().mockReturnValue(defaultSat);
-      PluginRegistry.getPlugin(SelectSatManager).selectSat(0);
+      ServiceLocator.getCatalogManager().getObject = vi.fn().mockReturnValue(defaultSat);
+      PluginRegistry.getPlugin(SelectSatManager)!.selectSat(0);
       expect(() => stf['stfOnObjectLinkClick_']()).not.toThrow();
     });
   });

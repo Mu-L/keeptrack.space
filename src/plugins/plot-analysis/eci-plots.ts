@@ -1,15 +1,15 @@
 import { EChartsData, MenuMode } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { SatMathApi } from '@app/engine/math/sat-math-api';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
-import { DetailedSatellite } from '@ootk/src/main';
+import { Satellite } from '@ootk/src/main';
 import scatterPlot2Png from '@public/img/icons/scatter-plot2.png';
 import * as echarts from 'echarts';
 import 'echarts-gl';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 type EChartsOption = echarts.EChartsOption;
 
@@ -32,7 +32,7 @@ export class EciPlot extends KeepTrackPlugin {
   bottomIconImg = scatterPlot2Png;
   bottomIconCallback = () => {
     if (this.isMenuButtonActive) {
-      this.createPlot(this.getPlotData(), getEl(this.plotCanvasId));
+      this.createPlot(this.getPlotData(), getEl(this.plotCanvasId)!);
     }
   };
 
@@ -41,7 +41,7 @@ export class EciPlot extends KeepTrackPlugin {
 
   sideMenuElementName = 'eci-plots-menu';
   sideMenuElementHtml: string = html`
-  <div id="eci-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal">
+  <div id="eci-plots-menu" class="side-menu-parent start-hidden plot-analysis-menu-normal">
     <div id="plot-analysis-content" class="side-menu">
       <div id="${this.plotCanvasId}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
     </div>
@@ -52,7 +52,7 @@ export class EciPlot extends KeepTrackPlugin {
     minWidth: 800,
     maxWidth: 4096,
     callback: () => {
-      this.createPlot(this.getPlotData(), getEl(this.plotCanvasId));
+      this.createPlot(this.getPlotData(), getEl(this.plotCanvasId)!);
     },
   };
 
@@ -76,6 +76,9 @@ export class EciPlot extends KeepTrackPlugin {
     // Get the Data
     const positionData = data.slice(0, 3);
     const dataRange = positionData.reduce((range, sat) => {
+      if (!sat.value) {
+        return range;
+      }
       const minDataX = sat.value.reduce((min: number, item) => Math.min(min, item[0]), Infinity);
       const maxDataX = sat.value.reduce((max: number, item) => Math.max(max, item[0]), -Infinity);
       const minDataY = sat.value.reduce((min: number, item) => Math.min(min, item[1]), Infinity);
@@ -160,13 +163,13 @@ export class EciPlot extends KeepTrackPlugin {
           zoomSensitivity: 2,
         },
       },
-      series: data.map((sat) => ({
+      series: data.filter((sat) => sat.value).map((sat) => ({
         type: 'scatter3D',
         name: sat.name,
         dimensions: [app.config.xAxis3D, app.config.yAxis3D, app.config.zAxis3D],
-        data: sat.value.map((item, idx: number) => ({
+        data: sat.value!.map((item, idx: number) => ({
           itemStyle: {
-            opacity: 1 - idx / sat.value.length, // opacity by time
+            opacity: 1 - idx / sat.value!.length, // opacity by time
           },
           value: [item[app.fieldIndices[app.config.xAxis3D]], item[app.fieldIndices[app.config.yAxis3D]], item[app.fieldIndices[app.config.zAxis3D]], item[3]],
         })),
@@ -228,7 +231,7 @@ export class EciPlot extends KeepTrackPlugin {
 
     // Time management
     const now = ServiceLocator.getTimeManager().simulationTimeObj.getTime();
-    const curSatObj = catalogManagerInstance.getObject(this.selectSatManager_.selectedSat) as DetailedSatellite;
+    const curSatObj = catalogManagerInstance.getObject(this.selectSatManager_.selectedSat) as Satellite;
 
     const timeData: Date[] = [];
 
@@ -260,8 +263,8 @@ export class EciPlot extends KeepTrackPlugin {
 
     const lastSatId = this.selectSatManager_.lastSelectedSat();
 
-    if (lastSatId !== -1) {
-      const lastSatObj = catalogManagerInstance.getObject(lastSatId) as DetailedSatellite;
+    if (lastSatId !== null) {
+      const lastSatObj = catalogManagerInstance.getObject(lastSatId) as Satellite;
 
       for (let i = 0; i < NUMBER_OF_POINTS; i++) {
         const date = new Date(now + lastSatObj.period * 60 * i / (NUMBER_OF_POINTS) * 1000);

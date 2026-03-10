@@ -1,7 +1,7 @@
 {
   "SatInfoBoxManeuver": {
-    "noEventDetected": "No Event Detected",
-    "orbitOutOfFamily": "Orbit Out of Family",
-    "stabilityChange": "Stability Change"
+    "noEventDetected": "未检测到事件",
+    "orbitOutOfFamily": "轨道偏离族群",
+    "stabilityChange": "稳定性变化"
   }
 }

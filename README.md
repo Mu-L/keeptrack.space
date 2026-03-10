@@ -1,10 +1,4 @@
-![Latest Version](https://img.shields.io/badge/version-11.0.3-darkgreen?style=flat-square) 
-[![Discord](https://img.shields.io/discord/1451232817517166816?color=5865F2&label=discord&logo=discord&logoColor=white&style=flat-square)](https://discord.gg/G4tJfSkmzx)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/thkruz/keeptrack.space?style=flat-square) 
-![language](https://img.shields.io/github/languages/top/thkruz/keeptrack.space?style=flat-square) 
-![Languages](https://img.shields.io/github/languages/count/thkruz/keeptrack.space?style=flat-square) 
-![GitHub issues](https://img.shields.io/github/issues/thkruz/keeptrack.space?style=flat-square) 
-![License](https://img.shields.io/github/license/thkruz/keeptrack.space?style=flat-square)
+![Latest Version](https://img.shields.io/badge/version-12.0.0-darkgreen?style=flat-square) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/thkruz/keeptrack.space?style=flat-square) ![language](https://img.shields.io/github/languages/top/thkruz/keeptrack.space?style=flat-square) ![Languages](https://img.shields.io/github/languages/count/thkruz/keeptrack.space?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/thkruz/keeptrack.space?style=flat-square) ![License](https://img.shields.io/github/license/thkruz/keeptrack.space?style=flat-square)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./public/img/logo.png">
@@ -613,7 +607,7 @@ KeepTrack uses AI-assisted development tools to maintain a large codebase with a
 - Stable Diffusion - Splash screen generation
 - OpenAI - Translations for 7 languages
 
-Why? Managing 50,000+ lines of code, 50+ plugins, and 7 languages as a solo developer is unsustainable without assistance. These tools enable faster releases, better
+Why? Managing 50,000+ lines of code, 50+ plugins, and 12 languages as a solo developer is unsustainable without assistance. These tools enable faster releases, better
 internationalization, and more features while maintaining quality.
 
 Could KeepTrack exist without AI? Yes - it did for years. But as the project grew to serve commercial, military, and educational institutions worldwide, AI became the most cost-effective way to

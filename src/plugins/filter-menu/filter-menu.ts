@@ -1,15 +1,24 @@
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import {
+  IBottomIconConfig,
+  ICommandPaletteCommand,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
 import { t7e } from '@app/locales/keys';
 import filterPng from '@public/img/icons/filter.png';
+import restorePng from '@public/img/icons/restore.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '../sounds/sounds';
 import { TopMenu } from '../top-menu/top-menu';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+import './filter-menu.css';
 
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -42,11 +51,14 @@ declare module '@app/engine/core/interfaces' {
 export interface FilterPluginSettings {
   xGEOSatellites?: boolean;
   vLEOSatellites?: boolean;
-  payloads?: boolean;
+  operationalPayloads?: boolean;
+  nonOperationalPayloads?: boolean;
   rocketBodies?: boolean;
   debris?: boolean;
   unknownType?: boolean;
   agencies?: boolean;
+  groundSensors?: boolean;
+  launchFacilities?: boolean;
   starlinkSatellites?: boolean;
   hEOSatellites?: boolean;
   mEOSatellites?: boolean;
@@ -76,181 +88,439 @@ interface Filters {
   tooltip?: string;
   checked?: boolean;
   disabled?: boolean;
-  cb?: (e: Event) => void;
 }
 
 export class FilterMenuPlugin extends KeepTrackPlugin {
   readonly id = 'FilterMenuPlugin';
   dependencies_ = [TopMenu.name];
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.SETTINGS, MenuMode.ALL];
+  static get filters(): Filters[] {
+    return [
+      {
+        id: 'operationalPayloads',
+        name: t7e('filterMenu.operationalPayloads.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.operationalPayloads.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.operationalPayloads.tooltip' as Parameters<typeof t7e>[0]),
+      },
+      {
+        id: 'nonOperationalPayloads',
+        name: t7e('filterMenu.nonOperationalPayloads.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.nonOperationalPayloads.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.nonOperationalPayloads.tooltip' as Parameters<typeof t7e>[0]),
+      },
+      {
+        id: 'rocketBodies',
+        name: t7e('filterMenu.rocketBodies.name'),
+        category: t7e('filterMenu.rocketBodies.category'),
+        tooltip: t7e('filterMenu.rocketBodies.tooltip'),
+      },
+      {
+        id: 'debris',
+        name: t7e('filterMenu.debris.name'),
+        category: t7e('filterMenu.debris.category'),
+        tooltip: t7e('filterMenu.debris.tooltip'),
+      },
+      {
+        id: 'unknownType',
+        name: t7e('filterMenu.unknownType.name'),
+        category: t7e('filterMenu.unknownType.category'),
+        tooltip: t7e('filterMenu.unknownType.tooltip'),
+      },
+      {
+        id: 'notionalSatellites',
+        name: t7e('filterMenu.notionalSatellites.name'),
+        category: t7e('filterMenu.notionalSatellites.category'),
+        tooltip: t7e('filterMenu.notionalSatellites.tooltip'),
+      },
+      {
+        id: 'agencies',
+        name: t7e('filterMenu.agencies.name'),
+        category: t7e('filterMenu.agencies.category'),
+        tooltip: t7e('filterMenu.agencies.tooltip'),
+        checked: false,
+        disabled: true,
+      },
+      {
+        id: 'groundSensors',
+        name: t7e('filterMenu.groundSensors.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.groundSensors.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.groundSensors.tooltip' as Parameters<typeof t7e>[0]),
+      },
+      {
+        id: 'launchFacilities',
+        name: t7e('filterMenu.launchFacilities.name' as Parameters<typeof t7e>[0]),
+        category: t7e('filterMenu.launchFacilities.category' as Parameters<typeof t7e>[0]),
+        tooltip: t7e('filterMenu.launchFacilities.tooltip' as Parameters<typeof t7e>[0]),
+      },
+      {
+        id: 'vLEOSatellites',
+        name: t7e('filterMenu.vleoSatellites.name'),
+        category: t7e('filterMenu.vleoSatellites.category'),
+        tooltip: t7e('filterMenu.vleoSatellites.tooltip'),
+      },
+      {
+        id: 'lEOSatellites',
+        name: t7e('filterMenu.leoSatellites.name'),
+        category: t7e('filterMenu.leoSatellites.category'),
+        tooltip: t7e('filterMenu.leoSatellites.tooltip'),
+      },
+      {
+        id: 'hEOSatellites',
+        name: t7e('filterMenu.heoSatellites.name'),
+        category: t7e('filterMenu.heoSatellites.category'),
+        tooltip: t7e('filterMenu.heoSatellites.tooltip'),
+      },
+      {
+        id: 'mEOSatellites',
+        name: t7e('filterMenu.meoSatellites.name'),
+        category: t7e('filterMenu.meoSatellites.category'),
+        tooltip: t7e('filterMenu.meoSatellites.tooltip'),
+      },
+      {
+        id: 'gEOSatellites',
+        name: t7e('filterMenu.geoSatellites.name'),
+        category: t7e('filterMenu.geoSatellites.category'),
+        tooltip: t7e('filterMenu.geoSatellites.tooltip'),
+      },
+      {
+        id: 'xGEOSatellites',
+        name: t7e('filterMenu.xgeoSatellites.name'),
+        category: t7e('filterMenu.xgeoSatellites.category'),
+        tooltip: t7e('filterMenu.xgeoSatellites.tooltip'),
+      },
+      ...(settingsManager.isEnableJscCatalog ? [
+        {
+          id: 'vimpelSatellites',
+          name: t7e('filterMenu.vimpelSatellites.name'),
+          category: t7e('filterMenu.source.category'),
+          tooltip: t7e('filterMenu.vimpelSatellites.tooltip'),
+        },
+      ] : []),
+      {
+        id: 'celestrakSatellites',
+        name: t7e('filterMenu.celestrakSatellites.name'),
+        category: t7e('filterMenu.source.category'),
+        tooltip: t7e('filterMenu.celestrakSatellites.tooltip'),
+      },
+      {
+        id: 'unitedStates',
+        name: t7e('filterMenu.countries.unitedStates.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.unitedStates.tooltip'),
+      },
+      {
+        id: 'unitedKingdom',
+        name: t7e('filterMenu.countries.unitedKingdom.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.unitedKingdom.tooltip'),
+      },
+      {
+        id: 'france',
+        name: t7e('filterMenu.countries.france.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.france.tooltip'),
+      },
+      {
+        id: 'germany',
+        name: t7e('filterMenu.countries.germany.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.germany.tooltip'),
+      },
+      {
+        id: 'japan',
+        name: t7e('filterMenu.countries.japan.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.japan.tooltip'),
+      },
+      {
+        id: 'china',
+        name: t7e('filterMenu.countries.china.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.china.tooltip'),
+      },
+      {
+        id: 'india',
+        name: t7e('filterMenu.countries.india.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.india.tooltip'),
+      },
+      {
+        id: 'russia',
+        name: t7e('filterMenu.countries.russia.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.russia.tooltip'),
+      },
+      {
+        id: 'uSSR',
+        name: t7e('filterMenu.countries.ussr.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.ussr.tooltip'),
+      },
+      {
+        id: 'southKorea',
+        name: t7e('filterMenu.countries.southKorea.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.southKorea.tooltip'),
+      },
+      {
+        id: 'australia',
+        name: t7e('filterMenu.countries.australia.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.australia.tooltip'),
+      },
+      {
+        id: 'otherCountries',
+        name: t7e('filterMenu.countries.otherCountries.name'),
+        category: t7e('filterMenu.countries.category'),
+        tooltip: t7e('filterMenu.countries.otherCountries.tooltip'),
+      },
+      {
+        id: 'starlinkSatellites',
+        name: t7e('filterMenu.miscellaneous.starlinkSatellites.name'),
+        category: t7e('filterMenu.miscellaneous.category'),
+        tooltip: t7e('filterMenu.miscellaneous.starlinkSatellites.tooltip'),
+      },
+    ];
+  }
 
-  static filters: Filters[] = [
-    {
-      name: t7e('filterMenu.payloads.name'),
-      category: t7e('filterMenu.payloads.category'),
-      tooltip: t7e('filterMenu.payloads.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.rocketBodies.name'),
-      category: t7e('filterMenu.rocketBodies.category'),
-      tooltip: t7e('filterMenu.rocketBodies.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.debris.name'),
-      category: t7e('filterMenu.debris.category'),
-      tooltip: t7e('filterMenu.debris.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.unknownType.name'),
-      category: t7e('filterMenu.unknownType.category'),
-      tooltip: t7e('filterMenu.unknownType.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.unknownType.name'),
-      category: t7e('filterMenu.unknownType.category'),
-      tooltip: t7e('filterMenu.unknownType.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.notionalSatellites.name'),
-      category: t7e('filterMenu.notionalSatellites.category'),
-      tooltip: t7e('filterMenu.notionalSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.agencies.name'),
-      category: t7e('filterMenu.agencies.category'),
-      tooltip: t7e('filterMenu.agencies.tooltip'),
-      checked: false,
-      disabled: true,
-    },
-    {
-      name: t7e('filterMenu.vleoSatellites.name'),
-      category: t7e('filterMenu.vleoSatellites.category'),
-      tooltip: t7e('filterMenu.vleoSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.leoSatellites.name'),
-      category: t7e('filterMenu.leoSatellites.category'),
-      tooltip: t7e('filterMenu.leoSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.heoSatellites.name'),
-      category: t7e('filterMenu.heoSatellites.category'),
-      tooltip: t7e('filterMenu.heoSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.meoSatellites.name'),
-      category: t7e('filterMenu.meoSatellites.category'),
-      tooltip: t7e('filterMenu.meoSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.geoSatellites.name'),
-      category: t7e('filterMenu.geoSatellites.category'),
-      tooltip: t7e('filterMenu.geoSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.xgeoSatellites.name'),
-      category: t7e('filterMenu.xgeoSatellites.category'),
-      tooltip: t7e('filterMenu.xgeoSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.vimpelSatellites.name'),
-      category: 'Source',
-      tooltip: t7e('filterMenu.vimpelSatellites.tooltip'),
-    },
-    {
-      name: t7e('filterMenu.celestrakSatellites.name'),
-      category: 'Source',
-      tooltip: t7e('filterMenu.celestrakSatellites.tooltip'),
-    },
-    {
-      name: 'United States',
-      category: 'Countries',
-      tooltip: 'Includes satellites from the United States of America.',
-    },
-    {
-      name: 'United Kingdom',
-      category: 'Countries',
-      tooltip: 'Includes satellites from the United Kingdom.',
-    },
-    {
-      name: 'France',
-      category: 'Countries',
-      tooltip: 'Includes satellites from France.',
-    },
-    {
-      name: 'Germany',
-      category: 'Countries',
-      tooltip: 'Includes satellites from Germany.',
-    },
-    {
-      name: 'Japan',
-      category: 'Countries',
-      tooltip: 'Includes satellites from Japan.',
-    },
-    {
-      name: 'China',
-      category: 'Countries',
-      tooltip: 'Includes satellites from China.',
-    },
-    {
-      name: 'India',
-      category: 'Countries',
-      tooltip: 'Includes satellites from India.',
-    },
-    {
-      name: 'Russia',
-      category: 'Countries',
-      tooltip: 'Includes satellites from Russia.',
-    },
-    {
-      name: 'USSR',
-      category: 'Countries',
-      tooltip: 'Historical designation for satellites launched by the former Soviet Union.',
-    },
-    {
-      name: 'South Korea',
-      category: 'Countries',
-      tooltip: 'Includes satellites from South Korea.',
-    },
-    {
-      name: 'Australia',
-      category: 'Countries',
-      tooltip: 'Includes satellites from Australia.',
-    },
-    {
-      name: 'Other Countries',
-      category: 'Countries',
-      tooltip: 'Includes satellites from countries not listed above.',
-    },
-    {
-      name: 'Starlink Satellites',
-      category: 'Miscellaneous',
-      tooltip: 'Satellites that are part of SpaceX\'s Starlink constellation, which aims to provide global broadband internet coverage.',
-    },
-  ];
+  private static readonly FILTER_STORAGE_MAP: Record<string, StorageKey> = {
+    operationalPayloads: StorageKey.FILTER_SETTINGS_OPERATIONAL_PAYLOADS,
+    nonOperationalPayloads: StorageKey.FILTER_SETTINGS_NON_OPERATIONAL_PAYLOADS,
+    rocketBodies: StorageKey.FILTER_SETTINGS_ROCKET_BODIES,
+    debris: StorageKey.FILTER_SETTINGS_DEBRIS,
+    unknownType: StorageKey.FILTER_SETTINGS_UNKNOWN_TYPE,
+    agencies: StorageKey.FILTER_SETTINGS_AGENCIES,
+    vLEOSatellites: StorageKey.FILTER_SETTINGS_VLEO,
+    lEOSatellites: StorageKey.FILTER_SETTINGS_LEO,
+    hEOSatellites: StorageKey.FILTER_SETTINGS_HEO,
+    mEOSatellites: StorageKey.FILTER_SETTINGS_MEO,
+    gEOSatellites: StorageKey.FILTER_SETTINGS_GEO,
+    xGEOSatellites: StorageKey.FILTER_SETTINGS_X_GEO,
+    vimpelSatellites: StorageKey.FILTER_SETTINGS_VIMPEL,
+    celestrakSatellites: StorageKey.FILTER_SETTINGS_CELESTRAK,
+    notionalSatellites: StorageKey.FILTER_SETTINGS_NOTIONAL,
+    groundSensors: StorageKey.FILTER_SETTINGS_GROUND_SENSORS,
+    launchFacilities: StorageKey.FILTER_SETTINGS_LAUNCH_FACILITIES,
+    unitedStates: StorageKey.FILTER_SETTINGS_UNITED_STATES,
+    unitedKingdom: StorageKey.FILTER_SETTINGS_UNITED_KINGDOM,
+    france: StorageKey.FILTER_SETTINGS_FRANCE,
+    germany: StorageKey.FILTER_SETTINGS_GERMANY,
+    japan: StorageKey.FILTER_SETTINGS_JAPAN,
+    china: StorageKey.FILTER_SETTINGS_CHINA,
+    india: StorageKey.FILTER_SETTINGS_INDIA,
+    russia: StorageKey.FILTER_SETTINGS_RUSSIA,
+    uSSR: StorageKey.FILTER_SETTINGS_USSR,
+    southKorea: StorageKey.FILTER_SETTINGS_SOUTH_KOREA,
+    australia: StorageKey.FILTER_SETTINGS_AUSTRALIA,
+    otherCountries: StorageKey.FILTER_SETTINGS_OTHER_COUNTRIES,
+    starlinkSatellites: StorageKey.FILTER_SETTINGS_STARLINK,
+  };
 
-  bottomIconElementName: string = 'filter-menu-icon';
-  bottomIconImg = filterPng;
-  bottomIconLabel: string = 'Filter Menu';
-  sideMenuElementName: string = 'filter-menu';
-  sideMenuElementHtml: string = html`
-  <div id="filter-menu" class="side-menu-parent start-hidden text-select">
-    <div id="filter-content" class="side-menu">
-      <div class="row">
-        <form id="filter-form">
-          <div id="filter-general">
-            <div class="row center"></div>
-            </br>
-            <div class="row center">
-              <button id="filter-reset" class="btn btn-ui waves-effect waves-light" type="button" name="action">Reset to Defaults &#9658;</button>
-            </div>
-            ${this.generateFilterHtml()}
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'filter-menu-icon',
+      label: t7e('plugins.FilterMenuPlugin.bottomIconLabel'),
+      image: filterPng,
+      menuMode: [MenuMode.SETTINGS, MenuMode.ALL],
+    };
+  }
+
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'filter-menu',
+      title: t7e('plugins.FilterMenuPlugin.title'),
+      html: this.buildSideMenuHtml_(),
+      dragOptions: {
+        isDraggable: true,
+        minWidth: 350,
+      },
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.FilterMenuPlugin.title'),
+      body: t7e('plugins.FilterMenuPlugin.helpBody'),
+    };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'f',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const cmd = (key: string) => t7e(`plugins.FilterMenuPlugin.commands.${key}` as Parameters<typeof t7e>[0]);
+    const category = cmd('category');
+
+    return [
+      // General
+      {
+        id: 'FilterMenuPlugin.open',
+        label: cmd('open'),
+        category,
+        shortcutHint: 'F',
+        callback: () => this.bottomMenuClicked(),
+      },
+      {
+        id: 'FilterMenuPlugin.resetDefaults',
+        label: cmd('resetDefaults'),
+        category,
+        callback: () => this.resetToDefaults(),
+      },
+
+      // Object type toggles
+      {
+        id: 'FilterMenuPlugin.toggleDebris',
+        label: cmd('toggleDebris'),
+        category,
+        callback: () => this.toggleFilter_('debris'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleRocketBodies',
+        label: cmd('toggleRocketBodies'),
+        category,
+        callback: () => this.toggleFilter_('rocketBodies'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleUnknownType',
+        label: cmd('toggleUnknownType'),
+        category,
+        callback: () => this.toggleFilter_('unknownType'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleNotional',
+        label: cmd('toggleNotional'),
+        category,
+        callback: () => this.toggleFilter_('notionalSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleStarlink',
+        label: cmd('toggleStarlink'),
+        category,
+        callback: () => this.toggleFilter_('starlinkSatellites'),
+      },
+
+      // Object type presets
+      {
+        id: 'FilterMenuPlugin.showOnlyPayloads',
+        label: cmd('showOnlyPayloads'),
+        category,
+        callback: () => this.showOnlyPayloads_(),
+      },
+      {
+        id: 'FilterMenuPlugin.hideDebrisAndRocketBodies',
+        label: cmd('hideDebrisAndRocketBodies'),
+        category,
+        callback: () => this.setFilters_({ debris: false, rocketBodies: false }),
+      },
+      {
+        id: 'FilterMenuPlugin.showAllObjectTypes',
+        label: cmd('showAllObjectTypes'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.OBJECT_TYPE_FILTERS_, true),
+      },
+
+      // Orbital regime toggles
+      {
+        id: 'FilterMenuPlugin.toggleLEO',
+        label: cmd('toggleLEO'),
+        category,
+        callback: () => this.toggleFilter_('lEOSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleMEO',
+        label: cmd('toggleMEO'),
+        category,
+        callback: () => this.toggleFilter_('mEOSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleGEO',
+        label: cmd('toggleGEO'),
+        category,
+        callback: () => this.toggleFilter_('gEOSatellites'),
+      },
+      {
+        id: 'FilterMenuPlugin.toggleHEO',
+        label: cmd('toggleHEO'),
+        category,
+        callback: () => this.toggleFilter_('hEOSatellites'),
+      },
+
+      // Orbital regime presets
+      {
+        id: 'FilterMenuPlugin.showOnlyLEO',
+        label: cmd('showOnlyLEO'),
+        category,
+        callback: () => this.showOnlyInGroup_('lEOSatellites', FilterMenuPlugin.ORBITAL_REGIME_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showOnlyGEO',
+        label: cmd('showOnlyGEO'),
+        category,
+        callback: () => this.showOnlyInGroup_('gEOSatellites', FilterMenuPlugin.ORBITAL_REGIME_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showAllOrbitalRegimes',
+        label: cmd('showAllOrbitalRegimes'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.ORBITAL_REGIME_FILTERS_, true),
+      },
+
+      // Country presets
+      {
+        id: 'FilterMenuPlugin.showOnlyUS',
+        label: cmd('showOnlyUS'),
+        category,
+        callback: () => this.showOnlyInGroup_('unitedStates', FilterMenuPlugin.COUNTRY_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showOnlyRussia',
+        label: cmd('showOnlyRussia'),
+        category,
+        callback: () => this.showOnlyInGroup_('russia', FilterMenuPlugin.COUNTRY_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showOnlyChina',
+        label: cmd('showOnlyChina'),
+        category,
+        callback: () => this.showOnlyInGroup_('china', FilterMenuPlugin.COUNTRY_FILTERS_),
+      },
+      {
+        id: 'FilterMenuPlugin.showAllCountries',
+        label: cmd('showAllCountries'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.COUNTRY_FILTERS_, true),
+      },
+      {
+        id: 'FilterMenuPlugin.hideAllCountries',
+        label: cmd('hideAllCountries'),
+        category,
+        callback: () => this.enableGroup_(FilterMenuPlugin.COUNTRY_FILTERS_, false),
+      },
+    ];
+  }
+
+  private buildSideMenuHtml_(): string {
+    return html`
+    <div class="row">
+      <form id="filter-form">
+        <div id="filter-general">
+          <div class="row filter-reset-row">
+            <button id="filter-reset" class="btn btn-ui waves-effect waves-light icon-btn"
+              type="button" kt-tooltip="${t7e('plugins.FilterMenuPlugin.resetToDefaults')}">
+              <img src="${restorePng}" class="icon-btn-img" alt="" />
+            </button>
           </div>
-        </form>
-      </div>
-    </div>
-  </div>`;
+          ${this.generateFilterHtml()}
+        </div>
+      </form>
+    </div>`;
+  }
 
   private generateFilterHtml(): string {
     const categories: { [key: string]: Filters[] } = {};
@@ -272,14 +542,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
             (filter) => {
               filter.id ??= FilterMenuPlugin.generateFilterId_(filter.name);
               filter.checked ??= settingsManager.filter[filter.id] ?? true;
-              filter.tooltip ??= `Disable to hide ${filter.name}`;
-
-              filter.cb ??= (e: Event) => {
-                const checkbox = <HTMLInputElement>e.target;
-
-                settingsManager.filter[filter.id as string] = checkbox.checked;
-                ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
-              };
+              filter.tooltip ??= t7e('plugins.FilterMenuPlugin.defaultTooltip' as Parameters<typeof t7e>[0]).replace('{name}', filter.name);
 
               return html`
             <div class="switch row">
@@ -293,127 +556,63 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
           .join('');
 
 
-        // TODO: Move this to a CSS class
-        return `${categoryHtml}<div style="padding-top: 0.5rem;">${filtersHtml}</div>`;
+        return `${categoryHtml}<div class="filter-category">${filtersHtml}</div>`;
       })
       .join('');
   }
 
-  isNotColorPickerInitialSetup = false;
-
   addHtml(): void {
     super.addHtml();
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      () => {
-        getEl('filter-form')?.addEventListener('change', this.onFormChange_.bind(this));
-        getEl('filter-reset')?.addEventListener('click', this.resetToDefaults.bind(this));
-      },
-    );
-
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerInit,
-      () => {
-        getEl(TopMenu.TOP_RIGHT_ID)?.insertAdjacentHTML(
-          'afterbegin',
-          html`
-            <li id="top-menu-filter-li">
-              <a id="top-menu-filter-btn" class="top-menu-icons">
-                <div class="top-menu-icons bmenu-item-selected">
-                  <img id="top-menu-filter-btn-icon"
-                  src="" delayedsrc="${filterPng}" alt="" />
-                </div>
-              </a>
-            </li>
-          `,
-        );
-      },
-    );
-
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      () => {
-        getEl('top-menu-filter-btn')?.addEventListener('click', () => {
-          this.bottomMenuClicked();
-        });
-      },
-    );
+    EventBus.getInstance().on(EventBusEvent.uiManagerInit, this.uiManagerInitHtml_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinalHtml_.bind(this));
   }
 
   addJs(): void {
     super.addJs();
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      () => {
-        this.syncOnLoad_();
-      },
-    );
-
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, this.uiManagerFinalJs_.bind(this));
     EventBus.getInstance().on(EventBusEvent.saveSettings, this.saveSettings_.bind(this));
     EventBus.getInstance().on(EventBusEvent.loadSettings, this.loadSettings_.bind(this));
   }
-  private saveSettings_() {
-    const persistenceManagerInstance = PersistenceManager.getInstance();
 
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_PAYLOADS, (settingsManager.filter.payloads as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_ROCKET_BODIES, (settingsManager.filter.rocketBodies as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_DEBRIS, (settingsManager.filter.debris as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_UNKNOWN_TYPE, (settingsManager.filter.unknownType as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_AGENCIES, (settingsManager.filter.agencies as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_VLEO, (settingsManager.filter.vLEOSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_LEO, (settingsManager.filter.lEOSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_HEO, (settingsManager.filter.hEOSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_MEO, (settingsManager.filter.mEOSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_GEO, (settingsManager.filter.gEOSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_X_GEO, (settingsManager.filter.xGEOSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_VIMPEL, (settingsManager.filter.vimpelSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_CELESTRAK, (settingsManager.filter.celestrakSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_NOTIONAL, (settingsManager.filter.notionalSatellites as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_UNITED_STATES, (settingsManager.filter.unitedStates as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_UNITED_KINGDOM, (settingsManager.filter.unitedKingdom as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_FRANCE, (settingsManager.filter.france as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_GERMANY, (settingsManager.filter.germany as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_JAPAN, (settingsManager.filter.japan as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_CHINA, (settingsManager.filter.china as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_INDIA, (settingsManager.filter.india as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_RUSSIA, (settingsManager.filter.russia as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_USSR, (settingsManager.filter.uSSR as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_SOUTH_KOREA, (settingsManager.filter.southKorea as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_AUSTRALIA, (settingsManager.filter.australia as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_OTHER_COUNTRIES, (settingsManager.filter.otherCountries as boolean)?.toString() ?? 'true');
-    persistenceManagerInstance.saveItem(StorageKey.FILTER_SETTINGS_STARLINK, (settingsManager.filter.starlinkSatellites as boolean)?.toString() ?? 'true');
+  private uiManagerInitHtml_(): void {
+    getEl(TopMenu.TOP_RIGHT_ID)?.insertAdjacentHTML('afterbegin', this.buildTopMenuButtonHtml_());
   }
 
-  private loadSettings_() {
-    const persistenceManagerInstance = PersistenceManager.getInstance();
+  private uiManagerFinalHtml_(): void {
+    getEl('filter-form')?.addEventListener('change', this.onFormChange_.bind(this));
+    getEl('filter-reset')?.addEventListener('click', this.resetToDefaults.bind(this));
+    getEl('top-menu-filter-btn')?.addEventListener('click', () => this.bottomMenuClicked());
+  }
 
-    settingsManager.filter.payloads = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_PAYLOADS, settingsManager.filter.payloads);
-    settingsManager.filter.rocketBodies = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_ROCKET_BODIES, settingsManager.filter.rocketBodies);
-    settingsManager.filter.debris = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_DEBRIS, settingsManager.filter.debris);
-    settingsManager.filter.unknownType = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_UNKNOWN_TYPE, settingsManager.filter.unknownType);
-    settingsManager.filter.agencies = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_AGENCIES, settingsManager.filter.agencies);
-    settingsManager.filter.vLEOSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_VLEO, settingsManager.filter.vLEOSatellites);
-    settingsManager.filter.lEOSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_LEO, settingsManager.filter.lEOSatellites);
-    settingsManager.filter.hEOSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_HEO, settingsManager.filter.hEOSatellites);
-    settingsManager.filter.mEOSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_MEO, settingsManager.filter.mEOSatellites);
-    settingsManager.filter.gEOSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_GEO, settingsManager.filter.gEOSatellites);
-    settingsManager.filter.xGEOSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_X_GEO, settingsManager.filter.xGEOSatellites);
-    settingsManager.filter.vimpelSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_VIMPEL, settingsManager.filter.vimpelSatellites);
-    settingsManager.filter.celestrakSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_CELESTRAK, settingsManager.filter.celestrakSatellites);
-    settingsManager.filter.notionalSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_NOTIONAL, settingsManager.filter.notionalSatellites);
-    settingsManager.filter.unitedStates = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_UNITED_STATES, settingsManager.filter.unitedStates);
-    settingsManager.filter.unitedKingdom = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_UNITED_KINGDOM, settingsManager.filter.unitedKingdom);
-    settingsManager.filter.france = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_FRANCE, settingsManager.filter.france);
-    settingsManager.filter.germany = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_GERMANY, settingsManager.filter.germany);
-    settingsManager.filter.japan = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_JAPAN, settingsManager.filter.japan);
-    settingsManager.filter.china = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_CHINA, settingsManager.filter.china);
-    settingsManager.filter.india = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_INDIA, settingsManager.filter.india);
-    settingsManager.filter.russia = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_RUSSIA, settingsManager.filter.russia);
-    settingsManager.filter.uSSR = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_USSR, settingsManager.filter.uSSR);
-    settingsManager.filter.southKorea = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_SOUTH_KOREA, settingsManager.filter.southKorea);
-    settingsManager.filter.australia = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_AUSTRALIA, settingsManager.filter.australia);
-    settingsManager.filter.otherCountries = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_OTHER_COUNTRIES, settingsManager.filter.otherCountries);
-    settingsManager.filter.starlinkSatellites = persistenceManagerInstance.checkIfEnabled(StorageKey.FILTER_SETTINGS_STARLINK, settingsManager.filter.starlinkSatellites);
+  private uiManagerFinalJs_(): void {
+    this.syncOnLoad_();
+  }
+
+  private buildTopMenuButtonHtml_(): string {
+    return html`
+      <li id="top-menu-filter-li">
+        <a id="top-menu-filter-btn" class="top-menu-icons">
+          <div class="top-menu-icons bmenu-item-selected">
+            <img id="top-menu-filter-btn-icon" src="" delayedsrc="${filterPng}" alt="" />
+          </div>
+        </a>
+      </li>
+    `;
+  }
+  private saveSettings_(): void {
+    const persistence = PersistenceManager.getInstance();
+
+    for (const [key, storageKey] of Object.entries(FilterMenuPlugin.FILTER_STORAGE_MAP)) {
+      persistence.saveItem(storageKey, (settingsManager.filter[key] as boolean)?.toString() ?? 'true');
+    }
+  }
+
+  private loadSettings_(): void {
+    const persistence = PersistenceManager.getInstance();
+
+    for (const [key, storageKey] of Object.entries(FilterMenuPlugin.FILTER_STORAGE_MAP)) {
+      settingsManager.filter[key] = persistence.checkIfEnabled(storageKey, settingsManager.filter[key]);
+    }
   }
 
   syncOnLoad_() {
@@ -424,6 +623,13 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       if (checkbox) {
         checkbox.checked = typeof settingsManager.filter[id] !== 'undefined' ? settingsManager.filter[id] : checked ?? !disabled;
         settingsManager.filter[id] = checkbox.checked;
+
+        // Bridge ground-site toggles to existing settings flags
+        if (id === 'groundSensors') {
+          settingsManager.isDisableSensors = !checkbox.checked;
+        } else if (id === 'launchFacilities') {
+          settingsManager.isDisableLaunchSites = !checkbox.checked;
+        }
       }
     });
 
@@ -438,6 +644,8 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       (getEl('filter-reset') as HTMLDivElement).removeAttribute('disabled');
       showEl('top-menu-filter-li');
     }
+
+    EventBus.getInstance().emit(EventBusEvent.filterChanged);
   }
 
   private static generateFilterId_(name: string): string {
@@ -450,21 +658,26 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     }
 
     const checkbox = <HTMLInputElement>e.target;
-    const filterId = checkbox.id;
-    const filter = FilterMenuPlugin.filters.find((f) => f.id === filterId.replace('filter-', ''));
+    const filterId = checkbox.id.replace('filter-', '');
 
-    if (filter && filter.cb) {
-      filter.cb(e);
-      this.saveSettings_();
+    settingsManager.filter[filterId] = checkbox.checked;
+
+    // Bridge ground-site toggles to existing settings flags
+    if (filterId === 'groundSensors') {
+      settingsManager.isDisableSensors = !checkbox.checked;
+    } else if (filterId === 'launchFacilities') {
+      settingsManager.isDisableLaunchSites = !checkbox.checked;
     }
 
+    ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
+    this.saveSettings_();
     this.updateFilterUI_();
   }
 
   checkIfDefaults() {
     const filterForm = <HTMLFormElement>getEl('filter-form');
 
-    const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    const checkboxes: NodeListOf<HTMLInputElement> = filterForm.querySelectorAll('input[type="checkbox"]');
 
     let allDefault = true;
 
@@ -472,19 +685,86 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       const filterId = checkbox.id.replace('filter-', '');
       const filter = FilterMenuPlugin.filters.find((f) => f.id === filterId);
 
-      if (filter && filter.checked !== checkbox.checked) {
-        allDefault = false;
+      if (filter) {
+        const defaultChecked = filter.checked ?? !filter.disabled;
+
+        if (defaultChecked !== checkbox.checked) {
+          allDefault = false;
+        }
       }
     });
 
     return allDefault;
   }
 
+  private static readonly OBJECT_TYPE_FILTERS_ = [
+    'operationalPayloads', 'nonOperationalPayloads', 'rocketBodies', 'debris',
+    'unknownType', 'notionalSatellites', 'groundSensors', 'launchFacilities',
+  ];
+  private static readonly ORBITAL_REGIME_FILTERS_ = ['vLEOSatellites', 'lEOSatellites', 'mEOSatellites', 'gEOSatellites', 'hEOSatellites', 'xGEOSatellites'];
+  private static readonly COUNTRY_FILTERS_ = [
+    'unitedStates', 'unitedKingdom', 'france', 'germany', 'japan',
+    'china', 'india', 'russia', 'uSSR', 'southKorea', 'australia', 'otherCountries',
+  ];
+
+  private toggleFilter_(filterId: string): void {
+    const checkbox = <HTMLInputElement>getEl(`filter-${filterId}`);
+
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      settingsManager.filter[filterId] = checkbox.checked;
+      ServiceLocator.getSoundManager()?.play(checkbox.checked ? SoundNames.TOGGLE_ON : SoundNames.TOGGLE_OFF);
+      this.saveSettings_();
+      this.updateFilterUI_();
+    }
+  }
+
+  private setFilters_(settings: Record<string, boolean>): void {
+    for (const [filterId, checked] of Object.entries(settings)) {
+      const checkbox = <HTMLInputElement>getEl(`filter-${filterId}`);
+
+      if (checkbox && !checkbox.disabled) {
+        checkbox.checked = checked;
+        settingsManager.filter[filterId] = checked;
+      }
+    }
+    ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
+    this.saveSettings_();
+    this.updateFilterUI_();
+  }
+
+  private showOnlyInGroup_(targetId: string, groupIds: string[]): void {
+    const settings: Record<string, boolean> = {};
+
+    for (const id of groupIds) {
+      settings[id] = id === targetId;
+    }
+    this.setFilters_(settings);
+  }
+
+  private enableGroup_(groupIds: string[], enabled: boolean): void {
+    const settings: Record<string, boolean> = {};
+
+    for (const id of groupIds) {
+      settings[id] = enabled;
+    }
+    this.setFilters_(settings);
+  }
+
+  private showOnlyPayloads_(): void {
+    const settings: Record<string, boolean> = {};
+
+    for (const id of FilterMenuPlugin.OBJECT_TYPE_FILTERS_) {
+      settings[id] = id === 'operationalPayloads' || id === 'nonOperationalPayloads';
+    }
+    this.setFilters_(settings);
+  }
+
   resetToDefaults() {
     ServiceLocator.getSoundManager()?.play(SoundNames.BUTTON_CLICK);
     const filterForm = <HTMLFormElement>getEl('filter-form');
 
-    const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    const checkboxes: NodeListOf<HTMLInputElement> = filterForm.querySelectorAll('input[type="checkbox"]');
 
     checkboxes.forEach((checkbox) => {
       const filterId = checkbox.id.replace('filter-', '');
@@ -493,9 +773,15 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       if (filter) {
         checkbox.checked = filter.checked ?? !filter.disabled;
         settingsManager.filter[filterId] = checkbox.checked;
+
+        // Bridge ground-site toggles to existing settings flags
+        if (filterId === 'groundSensors') {
+          settingsManager.isDisableSensors = !checkbox.checked;
+        } else if (filterId === 'launchFacilities') {
+          settingsManager.isDisableLaunchSites = !checkbox.checked;
+        }
       }
     });
-
 
     this.saveSettings_();
     this.syncOnLoad_();

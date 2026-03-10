@@ -7,6 +7,7 @@ import { SensorManager } from '@app/app/sensors/sensorManager';
 import { BottomMenu } from '@app/app/ui/bottom-menu';
 import { SearchManager } from '@app/app/ui/search-manager';
 import { UiManager } from '@app/app/ui/ui-manager';
+import { SoundManager } from '@app/engine/audio/sound-manager';
 import { Camera } from '@app/engine/camera/camera';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { Scene } from '@app/engine/core/scene';
@@ -23,9 +24,9 @@ import { LineManager } from '@app/engine/rendering/line-manager';
 import { KeepTrack } from '@app/keeptrack';
 import { keepTrackApi } from '@app/keepTrackApi';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { SoundManager } from '@app/plugins/sounds/sound-manager';
 import { SettingsManager } from '@app/settings/settings';
 import { mat4 } from 'gl-matrix';
+import { vi } from 'vitest';
 import { OrbitManager } from '../../src/app/rendering/orbit-manager';
 import { Container } from '../../src/engine/core/container';
 import { Constructor, Singletons } from '../../src/engine/core/interfaces';
@@ -42,29 +43,12 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
   (global as unknown as Global).settingsManager = settingsManager;
   // Mock the Image class with a mock decode method and the ability to create new Image objects.
   // eslint-disable-next-line no-native-reassign, no-global-assign
-  Image = jest.fn().mockImplementation(() => ({
-    decode: () => Promise.resolve(new Uint8ClampedArray([0, 0, 0, 0])),
-  }));
+  Image = class MockImage {
+    decode = vi.fn(() => Promise.resolve(new Uint8ClampedArray([0, 0, 0, 0])));
+  } as unknown as typeof Image;
   KeepTrack.getInstance().containerRoot = null as unknown as HTMLDivElement;
   keepTrackApi.analytics = {
-    track: jest.fn(),
-    identify: jest.fn(),
-    page: jest.fn(),
-    user: jest.fn(),
-    reset: jest.fn(),
-    ready: jest.fn(),
-    on: jest.fn(),
-    once: jest.fn(),
-    getState: jest.fn(),
-    storage: {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    },
-    plugins: {
-      enable: jest.fn(),
-      disable: jest.fn(),
-    },
+    track: vi.fn(),
   };
   EventBus.getInstance().unregisterAllEvents();
   PluginRegistry.unregisterAllPlugins();
@@ -80,29 +64,43 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
   scene.init({ gl: global.mocks.glMock });
 
   scene.sensorFovFactory = {
-    drawAll: jest.fn(),
-    updateAll: jest.fn(),
-    generateSensorFovMesh: jest.fn(),
+    drawAll: vi.fn(),
+    updateAll: vi.fn(),
+    generateSensorFovMesh: vi.fn(),
     meshes: [],
   } as unknown as SensorFovMeshFactory;
 
   scene.coneFactory = {
-    drawAll: jest.fn(),
-    updateAll: jest.fn(),
-    generateMesh: jest.fn(),
-    editSettings: jest.fn(),
-    remove: jest.fn(),
-    removeByObjectId: jest.fn(),
+    drawAll: vi.fn(),
+    updateAll: vi.fn(),
+    generateMesh: vi.fn(),
+    editSettings: vi.fn(),
+    remove: vi.fn(),
+    removeByObjectId: vi.fn(),
     meshes: [],
   } as unknown as ConeMeshFactory;
 
   const catalogManagerInstance = new CatalogManager();
 
-  catalogManagerInstance.satCruncher = {
-    postMessage: jest.fn(),
-    addEventListener: jest.fn(),
-  } as unknown as Worker;
+  catalogManagerInstance.satCruncherThread = {
+    postMessage: vi.fn(),
+    sendSatEdit: vi.fn(),
+    sendSensorUpdate: vi.fn(),
+    sendSunlightViewToggle: vi.fn(),
+    sendSatelliteSelected: vi.fn(),
+    sendMarkerUpdate: vi.fn(),
+    sendCatalogData: vi.fn(),
+    sendTimeSync: vi.fn(),
+    sendNewMissile: vi.fn(),
+    worker: {
+      addEventListener: vi.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+    },
+  } as any;
   catalogManagerInstance.objectCache = [defaultSat];
+  // Set up sccIndex so sccNum2Id can find satellites by their catalog number
+  catalogManagerInstance.sccIndex = { '00005': 0 };
   catalogManagerInstance.satLinkManager = new SatLinkManager();
   Container.getInstance().registerSingleton(Singletons.CatalogManager, catalogManagerInstance);
 
@@ -135,14 +133,22 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
   mockUiManager.searchManager = new SearchManager();
   const soundManagerInstance = new SoundManager();
 
-  // Jest all Image class objects with a mock decode method.
-  Image.prototype.decode = jest.fn();
-
-  catalogManagerInstance.satCruncher = {
-    addEventListener: jest.fn(),
-    postMessage: jest.fn(),
-    terminate: jest.fn(),
-  } as unknown as Worker;
+  catalogManagerInstance.satCruncherThread = {
+    postMessage: vi.fn(),
+    sendSatEdit: vi.fn(),
+    sendSensorUpdate: vi.fn(),
+    sendSunlightViewToggle: vi.fn(),
+    sendSatelliteSelected: vi.fn(),
+    sendMarkerUpdate: vi.fn(),
+    sendCatalogData: vi.fn(),
+    sendTimeSync: vi.fn(),
+    sendNewMissile: vi.fn(),
+    worker: {
+      addEventListener: vi.fn(),
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+    },
+  } as any;
 
   // Pretend webGl works
   renderer.gl = global.mocks.glMock;
@@ -198,11 +204,11 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
   catalogManagerInstance.staticSet = [defaultSensor];
 
   window.M = {
-    AutoInit: jest.fn(),
+    AutoInit: vi.fn(),
     toast: () => ({
       $el: [
         {
-          addEventListener: jest.fn(),
+          addEventListener: vi.fn(),
           style: {
             background: 'red',
           },
@@ -210,7 +216,11 @@ export const setupStandardEnvironment = (dependencies?: Constructor<KeepTrackPlu
       ],
     }),
     Dropdown: {
-      init: jest.fn(),
+      init: vi.fn(),
+    },
+    Tabs: {
+      init: vi.fn(),
+      getInstance: vi.fn(() => ({ updateTabIndicator: vi.fn() })),
     },
   } as unknown as typeof window.M;
 
@@ -232,12 +242,12 @@ const backupConsoleError = {
 };
 
 export const disableConsoleErrors = () => {
-  // console.error = jest.fn();
+  // console.error = vi.fn();
 
-  // console.warn = jest.fn();
+  // console.warn = vi.fn();
 
-  // console.info = jest.fn();
-  console.log = jest.fn();
+  // console.info = vi.fn();
+  console.log = vi.fn();
 };
 
 export const enableConsoleErrors = () => {
@@ -270,19 +280,18 @@ export const setupMinimumHtml = () => {
 export const mockUiManager: UiManager = <UiManager>(<unknown>{
   isFooterVisible_: false,
   isInitialized_: true,
-  makeToast_: jest.fn(),
-  addSearchEventListeners_: jest.fn(),
+  makeToast_: vi.fn(),
+  addSearchEventListeners_: vi.fn(),
   activeToastList_: [],
-  dismissAllToasts: jest.fn(),
-  toast: jest.fn(),
+  dismissAllToasts: vi.fn(),
+  toast: vi.fn(),
   M: null,
-  bottomIconPress: jest.fn(),
-  hideSideMenus: jest.fn(),
-  isAnalysisMenuOpen: false,
+  bottomIconPress: vi.fn(),
+  hideSideMenus: vi.fn(),
   isCurrentlyTyping: false,
   isUiVisible: false,
   lastBoxUpdateTime: 0,
-  lastColorScheme: jest.fn(),
+  lastColorScheme: vi.fn(),
   lastNextPassCalcSatId: 0,
   lastNextPassCalcSensorShortName: '',
   lastToast: '',
@@ -290,21 +299,21 @@ export const mockUiManager: UiManager = <UiManager>(<unknown>{
   lookAtLatLon: null,
   searchManager: null,
   updateInterval: 0,
-  updateNextPassOverlay: jest.fn(),
-  colorSchemeChangeAlert: jest.fn(),
-  doSearch: jest.fn(),
-  footerToggle: jest.fn(),
-  hideUi: jest.fn(),
-  init: jest.fn(),
-  initMenuController: jest.fn(),
-  legendHoverMenuClick: jest.fn(),
-  onReady: jest.fn(),
-  updateSelectBox: jest.fn(),
+  updateNextPassOverlay: vi.fn(),
+  colorSchemeChangeAlert: vi.fn(),
+  doSearch: vi.fn(),
+  footerToggle: vi.fn(),
+  hideUi: vi.fn(),
+  init: vi.fn(),
+  initMenuController: vi.fn(),
+  legendHoverMenuClick: vi.fn(),
+  onReady: vi.fn(),
+  updateSelectBox: vi.fn(),
 });
 
 export const mockCameraManager = <Camera>(<unknown>{
   camAngleSnappedOnSat: false,
-  camMatrix: mat4.create().fill(0),
+  camMatrix: mat4.create(),
   camPitch: null,
   camPitchSpeed: 0,
   camPitchTarget: null,
@@ -357,33 +366,40 @@ export const mockCameraManager = <Camera>(<unknown>{
   startMouseX: 0,
   startMouseY: 0,
   zoomTarget: 0,
-  autoPan: jest.fn(),
-  autoRotate: jest.fn(),
-  camSnap: jest.fn(),
-  changeCameraType: jest.fn(),
-  changeZoom: jest.fn(),
-  draw: jest.fn(),
-  exitFixedToSat: jest.fn(),
-  getCamDist: jest.fn(),
-  getCamPos: jest.fn().mockReturnValue([0, 0, 0]),
-  getDistFromEarth: jest.fn(),
-  getForwardVector: jest.fn(),
-  init: jest.fn(),
-  lookAtLatLon: jest.fn(),
-  lookAtPosition: jest.fn(),
-  setCameraType: jest.fn(),
-  snapToSat: jest.fn(),
-  update: jest.fn(),
-  zoomLevel: jest.fn(),
-  drawAstronomy: jest.fn(),
-  drawFts: jest.fn(),
-  drawPlanetarium_: jest.fn(),
-  updateCameraSnapMode: jest.fn(),
+  autoPan: vi.fn(),
+  autoRotate: vi.fn(),
+  camSnap: vi.fn(),
+  changeCameraType: vi.fn(),
+  changeZoom: vi.fn(),
+  draw: vi.fn(),
+  exitFixedToSat: vi.fn(),
+  getCamDist: vi.fn(),
+  getCamPos: vi.fn().mockReturnValue([0, 0, 0]),
+  getDistFromEarth: vi.fn(),
+  getForwardVector: vi.fn(),
+  init: vi.fn(),
+  lookAtLatLon: vi.fn(),
+  lookAtPosition: vi.fn(),
+  setCameraType: vi.fn(),
+  snapToSat: vi.fn(),
+  update: vi.fn(),
+  zoomLevel: vi.fn(),
+  drawAstronomy: vi.fn(),
+  drawFts: vi.fn(),
+  drawPlanetarium_: vi.fn(),
+  updateCameraSnapMode: vi.fn(),
+  transition: {
+    isActive: false,
+    duration: 500,
+    begin: vi.fn(),
+    cancel: vi.fn(),
+    apply: vi.fn(),
+  },
 });
 
 export const setupDefaultHtml = () => {
   PluginRegistry.unregisterAllPlugins();
-  // ServiceLocator.getMainCamera = jest.fn().mockReturnValue(mockCameraManager);
+  // ServiceLocator.getMainCamera = vi.fn().mockReturnValue(mockCameraManager);
   Container.getInstance().registerSingleton(Singletons.MainCamera, mockCameraManager);
   KeepTrack.getInstance().containerRoot = document.body as HTMLDivElement;
   KeepTrack.getDefaultBodyHtml();
@@ -396,7 +412,6 @@ export const setupDefaultHtml = () => {
     <div id="sat-infobox"></div>
     <div id="sat-hoverbox1"></div>
     <div id="fullscreen-btn"></div>
-    <div id="tutorial-btn"></div>
     <div id="layers-btn"></div>
     <div id="sound-btn"></div>
     <div id="colors-rmb-menu"></div>

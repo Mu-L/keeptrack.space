@@ -29,6 +29,7 @@ declare global {
     settingsOverride: any;
     webkitAudioContext: any;
     adsbygoogle: any;
+    googletag: typeof googletag;
   }
   interface Global {
     settingsManager: SettingsManager;

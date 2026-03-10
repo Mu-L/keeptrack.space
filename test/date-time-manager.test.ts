@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { DateTimeManager } from '@app/plugins/date-time-manager/date-time-manager';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
 import { setupStandardEnvironment } from './environment/standard-env';
@@ -7,8 +8,8 @@ describe('DateTimeManager_class', () => {
   let dtm: DateTimeManager;
 
   beforeEach(() => {
-    // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = jest.fn();
+    // Mock DateTimeManager uiManagerFinal_ to prevent errors
+    (DateTimeManager.prototype as any).uiManagerFinal_ = vi.fn();
     setupStandardEnvironment([TopMenu]);
     dtm = new DateTimeManager();
   });

@@ -1,15 +1,22 @@
-import { EChartsData, GetSatType } from '@app/engine/core/interfaces';
+import { GetSatType, MenuMode } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { SatMathApi } from '@app/engine/math/sat-math-api';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
-import { Degrees, DetailedSatellite, SpaceObjectType } from '@ootk/src/main';
+import { Satellite, SpaceObjectType } from '@ootk/src/main';
 import scatterPlot4Png from '@public/img/icons/scatter-plot4.png';
 import * as echarts from 'echarts';
 import 'echarts-gl';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+import './lat2lon.css';
+
+interface SatPoint {
+  name: string;
+  satId: number;
+  value: [number, number];
+}
 
 export class Lat2LonPlots extends KeepTrackPlugin {
   readonly id = 'Lat2LonPlots';
@@ -26,6 +33,7 @@ export class Lat2LonPlots extends KeepTrackPlugin {
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
   }
 
+  menuMode: MenuMode[] = [MenuMode.ANALYSIS, MenuMode.ALL];
 
   bottomIconImg = scatterPlot4Png;
   bottomIconCallback = () => {
@@ -39,8 +47,8 @@ export class Lat2LonPlots extends KeepTrackPlugin {
 
   sideMenuElementName = 'lat2lon-plots-menu';
   sideMenuElementHtml: string = html`
-  <div id="lat2lon-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal plot-analysis-menu-maximized">
-    <div id="plot-analysis-content" class="side-menu" style="height: 80%">
+  <div id="lat2lon-plots-menu" class="side-menu-parent start-hidden">
+    <div id="plot-analysis-content" class="side-menu">
       <div id="${this.plotCanvasId}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
     </div>
   </div>`;
@@ -50,7 +58,7 @@ export class Lat2LonPlots extends KeepTrackPlugin {
   }
 
 
-  createPlot(data: EChartsData, chartDom: HTMLElement) {
+  createPlot(data: Record<string, SatPoint[]>, chartDom: HTMLElement) {
     // Dont Load Anything if the Chart is Closed
     if (!this.isMenuButtonActive) {
       return;
@@ -61,14 +69,17 @@ export class Lat2LonPlots extends KeepTrackPlugin {
       // Setup Configuration
       this.chart = echarts.init(chartDom);
       this.chart.on('click', (event) => {
-        if ((event.data as unknown as { id: number })?.id > -1) {
-          this.selectSatManager_.selectSat((event.data as unknown as { id: number })?.id);
+        const point = event.data as SatPoint | undefined;
+
+        if (point?.satId) {
+          this.selectSatManager_.selectSat(point.satId);
         }
       });
     }
 
     // Setup Chart
     this.chart.setOption({
+      animation: false,
       title: {
         text: 'Latitude vs Longitude Plot',
         textStyle: {
@@ -84,19 +95,17 @@ export class Lat2LonPlots extends KeepTrackPlugin {
       },
       tooltip: {
         formatter: (params) => {
-          const data = params.value;
+          const point = params.data as SatPoint;
           const color = params.color;
-          const name = params.name;
 
           return `
             <div style="display: flex; flex-direction: column; align-items: flex-start;">
               <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between; align-items: flex-end;">
                 <div style="width: 10px; height: 10px; background-color: ${color}; border-radius: 50%; margin-bottom: 5px;"></div>
-                <div style="font-weight: bold;"> ${name}</div>
+                <div style="font-weight: bold;"> ${point.name}</div>
               </div>
-              <div><bold>Latitude:</bold> ${data[1].toFixed(3)}°</div>
-              <div><bold>Longitude:</bold> ${data[0].toFixed(3)}°</div>
-              <div><bold>Time from now:</bold> ${data[2].toFixed(3)} min</div>
+              <div><bold>Latitude:</bold> ${point.value[1].toFixed(3)}°</div>
+              <div><bold>Longitude:</bold> ${point.value[0].toFixed(3)}°</div>
             </div>
           `;
         },
@@ -110,10 +119,6 @@ export class Lat2LonPlots extends KeepTrackPlugin {
         name: 'Latitude (°)',
         type: 'value',
         position: 'left',
-      },
-      zAxis: {
-        name: 'Mean Motion',
-        type: 'value',
       },
       dataZoom: [
         {
@@ -144,21 +149,12 @@ export class Lat2LonPlots extends KeepTrackPlugin {
           end: 50,
         },
       ],
-      series: data.map((item) => ({
-        type: 'line',
-        name: item.country,
-        data: item.data?.map((dataPoint: [number, number, (number | undefined)?]) => ({
-          name: item.name,
-          id: item.satId,
-          value: [dataPoint[2] ?? 0, dataPoint[1], dataPoint[0]],
-        })),
-        /*
-         * symbolSize: 8,
-         * itemStyle: {
-         * borderWidth: 1,
-         * borderColor: 'rgba(255,255,255,0.8)',
-         * },
-         */
+      series: Object.entries(data).map(([country, points]) => ({
+        type: 'scatter',
+        name: country,
+        large: true,
+        data: points,
+        symbolSize: 8,
         emphasis: {
           itemStyle: {
             color: '#fff',
@@ -168,14 +164,15 @@ export class Lat2LonPlots extends KeepTrackPlugin {
     });
   }
 
-  static getPlotData(): EChartsData {
-    const data = [] as EChartsData;
+  static getPlotData(): Record<string, SatPoint[]> {
+    const catalogManager = ServiceLocator.getCatalogManager();
+    const countryData: Record<string, SatPoint[]> = {};
 
-    ServiceLocator.getCatalogManager().objectCache.forEach((obj) => {
+    catalogManager.objectCache.forEach((obj) => {
       if (obj.type !== SpaceObjectType.PAYLOAD) {
         return;
       }
-      let sat = obj as DetailedSatellite;
+      let sat = obj as Satellite;
 
       // Only GEO objects
       if (sat.eccentricity > Lat2LonPlots.maxEccentricity_) {
@@ -191,21 +188,15 @@ export class Lat2LonPlots extends KeepTrackPlugin {
         return;
       }
 
-      // Compute LLA for each object
-      sat = ServiceLocator.getCatalogManager().getObject(sat.id, GetSatType.POSITION_ONLY) as DetailedSatellite;
-      const plotPoints = SatMathApi.getLlaOfCurrentOrbit(sat, 24);
-      const plotData: [number, Degrees, Degrees][] = [];
+      // Get current position (single orbit point)
+      sat = catalogManager.getObject(sat.id, GetSatType.POSITION_ONLY) as Satellite;
+      const llaPoints = SatMathApi.getLlaOfCurrentOrbit(sat, 1);
 
-      const now = ServiceLocator.getTimeManager().simulationTimeObj;
+      if (!llaPoints || llaPoints.length === 0) {
+        return;
+      }
+      const lla = llaPoints[0];
 
-      plotPoints.forEach((point) => {
-        const pointTime = (point.time - now.getTime()) / 1000 / 60;
-
-        if (pointTime > 1440 || pointTime < 0) {
-          return;
-        }
-        plotData.push([pointTime, point.lat, point.lon]);
-      });
       let country = '';
 
       switch (sat.country) {
@@ -232,14 +223,17 @@ export class Lat2LonPlots extends KeepTrackPlugin {
           country = 'Other';
           break;
       }
-      data.push({
+
+      if (!countryData[country]) {
+        countryData[country] = [];
+      }
+      countryData[country].push({
         name: sat.name,
         satId: sat.id,
-        country,
-        data: plotData,
+        value: [lla.lon, lla.lat],
       });
     });
 
-    return data;
+    return countryData;
   }
 }

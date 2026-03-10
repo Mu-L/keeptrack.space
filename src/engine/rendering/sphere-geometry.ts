@@ -203,8 +203,10 @@ export class SphereGeometry extends BufferGeometry {
       }
     }
 
-    // Store indices for sorting
-    this.indices_ = new Uint16Array(index);
+    // Store indices for sorting — use 32-bit when vertex count exceeds Uint16 range
+    const maxIndex = (this.heightSegments + 1) * (this.widthSegments + 1) - 1;
+
+    this.indices_ = maxIndex > 65535 ? new Uint32Array(index) : new Uint16Array(index);
     this.sortedIndices = [...index]; // Initialize sorted indices
 
     this.setIndex(this.gl, index);

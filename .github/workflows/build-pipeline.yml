@@ -1,17 +1,12 @@
 ---
 name: Build Pipeline
 
-on:
+"on":
   workflow_dispatch:
   pull_request:
     branches:
       - main
       - develop
-
-permissions:
-  contents: read
-  issues: write
-  actions: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,6 +16,8 @@ jobs:
   lint-yml:
     name: Yaml Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -33,6 +30,9 @@ jobs:
     needs: lint-yml
     name: NPM Audit Report
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -48,24 +48,30 @@ jobs:
     needs: compliance
     name: Lint and Unit Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
-        task: [eslint, unit-test]
+        task: [eslint, unit-test, typecheck]
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
 
       - name: Cache node modules
         uses: actions/cache@v4.2.3
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-build-node-modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-build-node-modules-${{ runner.os }}-
+          key: >-
+            ${{ runner.os }}-build-node-modules-${{
+            hashFiles('**/package-lock.json') }}
+          restore-keys: >-
+            ${{ runner.os }}-build-node-modules-${{
+            runner.os }}-
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -98,27 +104,44 @@ jobs:
           echo "Running Unit Tests..."
           npm test
           echo '### Unit Tests Passed' >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Type Check
+        if: matrix.task == 'typecheck'
+        run: |
+          echo "Creating translation files..."
+          npm run generate-t7e
+          echo "Running Type Check..."
+          npm run typecheck
+          echo '### Type Check Passed' >> $GITHUB_STEP_SUMMARY
   build:
     needs: [lint-and-test]
-    name: Build
+    name: Build (${{ matrix.profile }})
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [oss, pro, celestrak, embed, epfl, offline]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
-
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
+
       - name: Cache node modules
         uses: actions/cache@v4.2.3
-
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-build-node-modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-build-node-modules-${{ runner.os }}-
+          key: >-
+            ${{ runner.os }}-build-node-modules-${{
+            hashFiles('**/package-lock.json') }}
+          restore-keys: >-
+            ${{ runner.os }}-build-node-modules-${{
+            runner.os }}-
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -131,11 +154,25 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Build
-        run: npm run build
+        run: |
+          npx tsx ./build/generate-translation.ts
+          PROFILE=${{ matrix.profile }}
+          npx tsx ./build/build-manager.ts production \
+            --profile="$PROFILE"
+
+      - name: Verify output
+        run: |
+          test -f dist/index.html
+          test -f dist/settings/settingsOverride.js
+          MSG="### Build (${{ matrix.profile }}) Passed"
+          echo "$MSG" >> $GITHUB_STEP_SUMMARY
+
   trufflehog:
     needs: build
     name: TruffleHog Secrets Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -149,6 +186,9 @@ jobs:
     needs: build
     name: CodeQL Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -163,3 +203,19 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+
+  pipeline-complete:
+    if: always()
+    needs: [lint-and-test, build, trufflehog, codeql]
+    name: Build Pipeline Complete
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ needs.lint-and-test.result }}" == "failure" || \
+                "${{ needs.build.result }}" == "failure" || \
+                "${{ needs.codeql.result }}" == "failure" ]]; then
+            echo "One or more required jobs failed"
+            exit 1
+          fi
+          echo "All required jobs passed"

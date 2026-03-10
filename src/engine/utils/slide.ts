@@ -1,5 +1,8 @@
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 
+const EASING_EXIT = 'cubic-bezier(0.4, 0, 1, 1)';
+const EASING_ENTER = 'cubic-bezier(0, 0, 0.2, 1)';
+
 export const slideOutLeft = (el: HTMLElement | null, duration: number, callback?: (() => void) | null, offset?: number): void => {
   if (!el) {
     errorManagerInstance.debug('Element not found!');
@@ -10,7 +13,7 @@ export const slideOutLeft = (el: HTMLElement | null, duration: number, callback?
   if (el.style.display === 'none') {
     return;
   }
-  el.style.transition = `transform ${duration / 1000}s ease-in-out`;
+  el.style.transition = `transform ${duration / 1000}s ${EASING_EXIT}`;
   el.style.transform = `translateX(${offset ?? -100}%)`;
   setTimeout(() => {
     if (callback) {
@@ -32,12 +35,12 @@ export const slideInRight = (el: HTMLElement | null, duration: number, callback?
   // Start off the screen
   el.style.display = 'block';
   el.style.transform = 'translateX(-100%)';
-  el.style.transition = 'transform 0s ease-in-out';
+  el.style.transition = `transform 0s ${EASING_ENTER}`;
   setTimeout(() => {
     el.style.display = 'block';
-    el.style.transition = `transform ${duration / 1000}s ease-in-out`;
+    el.style.transition = `transform ${duration / 1000}s ${EASING_ENTER}`;
     el.style.transform = 'translateX(0)';
-  }, 50);
+  }, 16);
   setTimeout(() => {
     if (callback) {
       callback();
@@ -58,7 +61,7 @@ export const slideOutUp = (el: HTMLElement, duration: number, callback?: () => v
   if (el.style.display === 'none') {
     return;
   }
-  el.style.transition = `transform ${duration / 1000}s ease-in-out`;
+  el.style.transition = `transform ${duration / 1000}s ${EASING_EXIT}`;
   el.style.transform = `translateY(${-100}%)`;
   setTimeout(() => {
     if (callback) {
@@ -75,14 +78,14 @@ export const slideInDown = (el: HTMLElement, duration: number, callback?: () => 
   }
 
   el.style.transform = 'translateY(-100%)';
-  el.style.transition = 'transform 0s ease-in-out';
+  el.style.transition = `transform 0s ${EASING_ENTER}`;
   el.style.display = 'block';
   setTimeout(() => {
     el.style.display = 'block';
-    el.style.transition = `transform ${duration / 1000}s ease-in-out`;
+    el.style.transition = `transform ${duration / 1000}s ${EASING_ENTER}`;
     el.style.transform = 'translateY(0)';
     if (callback) {
       callback();
     }
-  }, 50);
+  }, 16);
 };

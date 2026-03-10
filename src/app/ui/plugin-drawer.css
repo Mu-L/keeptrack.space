@@ -1,0 +1,680 @@
+/* Plugin Drawer — unified drawer for both mobile and desktop */
+
+/* ===================================================================
+   Default: hide drawer elements until drawer-mode is active
+   =================================================================== */
+.drawer-hamburger {
+  display: none;
+}
+
+.plugin-drawer {
+  display: none;
+}
+
+.drawer-overlay {
+  display: none;
+}
+
+/* ===================================================================
+   Shared styles (active when body has .drawer-mode)
+   =================================================================== */
+body.drawer-mode {
+
+  /* ---- Hamburger Button ---- */
+  .drawer-hamburger {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 5px;
+    z-index: 2;
+  }
+
+  .drawer-hamburger:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .drawer-hamburger-bar {
+    display: block;
+    width: 22px;
+    height: 3px;
+    min-height: 3px;
+    background: white;
+    margin: 3px 0;
+    border-radius: 1px;
+    transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+      opacity var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+    transform-origin: center;
+  }
+
+  /* Animate bars into X when drawer is open */
+  .drawer-hamburger.open .drawer-hamburger-bar:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .drawer-hamburger.open .drawer-hamburger-bar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .drawer-hamburger.open .drawer-hamburger-bar:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* ---- Nav Logo ---- */
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--nav-bar-height);
+    padding-left: 1rem;
+    margin-right: auto;
+    flex-shrink: 0;
+  }
+
+  .nav-logo img {
+    height: 24px;
+    width: auto;
+  }
+
+  @media (min-width: 640px) {
+    .nav-logo img {
+      height: 32px;
+      width: auto;
+      display: block;
+    }
+  }
+
+  /* ---- Overlay ---- */
+  .drawer-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+    pointer-events: none;
+  }
+
+  .drawer-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---- Drawer Panel ---- */
+  .plugin-drawer {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--color-dark-background);
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
+    overflow: visible;
+    visibility: hidden;
+  }
+
+  .plugin-drawer.ready {
+    visibility: visible;
+  }
+
+  .plugin-drawer.open {
+    transform: translateX(0);
+  }
+
+  /* Drawer uses flex column so inner scrolls and utility footer pins to bottom */
+  .plugin-drawer {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Inner wrapper handles scroll — grows to fill available space above the utility footer */
+  .drawer-inner {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- Drawer Header ---- */
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--color-dark-border);
+    background: var(--color-dark-background);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .drawer-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ---- Drawer Content ---- */
+  .drawer-content {
+    padding-bottom: 20px;
+  }
+
+  /* ---- Collapsible Groups ---- */
+  .drawer-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: white;
+    background: var(--color-dark-border);
+    border-bottom: 1px solid var(--color-dark-border);
+    transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .drawer-group-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .drawer-group-label {}
+
+  .drawer-group-chevron {
+    transition: transform var(--kt-duration-normal, 200ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .drawer-group.collapsed .drawer-group-chevron {
+    transform: rotate(-90deg);
+  }
+
+  .drawer-group-items {
+    overflow: hidden;
+    transition: max-height var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+    max-height: 2000px;
+  }
+
+  .drawer-group.collapsed .drawer-group-items {
+    max-height: 0;
+  }
+
+  /* ---- Drawer Items ---- */
+  .drawer-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition:
+      background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+      transform var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .drawer-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .drawer-item:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .drawer-item:active .drawer-item-icon {
+    filter: hue-rotate(275deg) brightness(1.2);
+  }
+
+  .drawer-item:active .drawer-item-label {
+    color: var(--color-dark-text-accent);
+  }
+
+  .drawer-item-icon {
+    width: 28px;
+    height: 28px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    filter: var(--filter-icon-blue);
+  }
+
+  .drawer-item-label {
+    font-size: 14px;
+    color: white;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .drawer-item-shortcut {
+    margin-left: auto;
+    padding: 2px 6px;
+    border-radius: var(--kt-radius-sm, 4px);
+    font-size: var(--kt-font-xs, 11px);
+    font-family: 'Roboto Mono', monospace;
+    color: var(--kt-text-tertiary, rgba(255, 255, 255, 0.45));
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .drawer-item.active .drawer-item-icon {
+    filter: hue-rotate(275deg) brightness(1.2);
+  }
+
+  .drawer-item.active .drawer-item-label {
+    color: var(--color-dark-text-accent);
+  }
+
+  .drawer-item.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .drawer-item.disabled .drawer-item-icon {
+    filter: grayscale(1);
+  }
+
+  /* Pro-locked items — match bottom menu yellow tint */
+  .drawer-item.bmenu-item-pro .drawer-item-icon {
+    filter: hue-rotate(227deg) brightness(1.2);
+  }
+
+  .drawer-item.bmenu-item-pro:hover .drawer-item-icon {
+    filter: hue-rotate(227deg) brightness(1.8);
+  }
+
+  /* ---- User Account (pinned above utility footer) ---- */
+  .drawer-user-account:empty {
+    display: none;
+  }
+
+  .drawer-user-account {
+    flex-shrink: 0;
+    border-top: 2px solid var(--color-dark-border);
+    background: var(--color-dark-background);
+    padding: 10px 12px;
+  }
+
+  .drawer-user-account__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    color: white;
+    transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .drawer-user-account__row:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .drawer-user-account__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .drawer-user-account__avatar--default {
+    filter: grayscale(1);
+  }
+
+  .drawer-user-account__initials {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #aeaeae;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-dark-background);
+  }
+
+  .drawer-user-account__name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---- Utility Footer (fixed to bottom-right of viewport) ---- */
+  .drawer-utility-footer:empty {
+    display: none;
+  }
+
+  .drawer-utility-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 3;
+    background: var(--color-dark-background);
+    border-top: 2px solid var(--color-dark-border);
+    border-right: 2px solid var(--color-dark-border);
+    border-top-right-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .drawer-utility-section {
+    margin-bottom: 6px;
+  }
+
+  .drawer-utility-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .drawer-utility-section-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 2px 0;
+  }
+
+  .drawer-utility-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .drawer-utility-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+      opacity var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .drawer-utility-icon img {
+    width: 20px;
+    height: 20px;
+    filter: var(--filter-icon-blue);
+    opacity: 0.6;
+    transition: opacity var(--kt-duration-fast, 100ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  }
+
+  .drawer-utility-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .drawer-utility-icon:hover img {
+    opacity: 1;
+  }
+
+  .drawer-utility-icon:active img {
+    filter: hue-rotate(275deg) brightness(1.2);
+    opacity: 1;
+  }
+
+  .drawer-utility-icon.bmenu-item-selected img {
+    filter: hue-rotate(275deg) brightness(1.2);
+    opacity: 1;
+  }
+
+  .drawer-utility-icon.bmenu-item-disabled {
+    pointer-events: none;
+  }
+
+  .drawer-utility-icon.bmenu-item-disabled img {
+    opacity: 0.2;
+    filter: grayscale(1);
+  }
+
+}
+
+/* ===================================================================
+   Desktop-specific styles
+   =================================================================== */
+body.drawer-mode:not(.is-mobile-mode) {
+
+  .plugin-drawer.desktop-mode {
+    width: 320px;
+    top: var(--top-menu-height);
+    height: calc(100% - var(--top-menu-height));
+  }
+
+  /* Desktop hamburger lives in the nav bar */
+  .drawer-hamburger {
+    width: var(--nav-bar-height);
+    height: var(--nav-bar-height);
+    flex-shrink: 0;
+    border-radius: 0;
+    position: relative;
+  }
+
+  .drawer-hamburger:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .drawer-item {
+    padding: 8px 16px;
+  }
+
+  .drawer-item-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .drawer-item-label {
+    font-size: 13px;
+  }
+
+  /* Hide nav items that moved to the drawer utility footer or are redundant */
+  #sound-btn,
+  #layers-menu-btn,
+  #GithubLinkPlugin-root,
+  #search-btn,
+  .user-account__menu-item {
+    display: none !important;
+  }
+
+  /* Always-open search bar on desktop */
+  #search-holder {
+    display: flex !important;
+    width: 360px !important;
+    transition: none !important;
+  }
+
+  #search-holder.search-slide-up {
+    width: 360px !important;
+    border-left: 5px solid var(--color-dark-border);
+
+  }
+
+  #search-holder.search-slide-up input[type='search'] {
+    width: 100% !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+}
+
+/* ===================================================================
+   Mobile-specific styles (device-based, not viewport-based)
+   =================================================================== */
+body.is-mobile-mode {
+
+  /* Mobile hamburger is inside the drawer, acts as a tab on the right edge */
+  .drawer-hamburger {
+    position: absolute;
+    top: 0;
+    right: calc(-1 * var(--nav-bar-height));
+    width: var(--nav-bar-height);
+    height: var(--nav-bar-height);
+    background: var(--color-dark-background);
+    border-radius: 0 6px 6px 0;
+    transition: right var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1)),
+      border-radius var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
+  }
+
+  .plugin-drawer.open .drawer-hamburger {
+    right: 0;
+    border-radius: 0;
+    margin-top: -0.5rem;
+    padding-top: 1rem;
+  }
+
+  .plugin-drawer.mobile-mode {
+    width: 80%;
+    top: 0;
+    height: 100%;
+  }
+
+  .drawer-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .drawer-item {
+    padding: 12px 16px;
+  }
+
+  .drawer-item-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .drawer-item-label {
+    font-size: 14px;
+  }
+
+  /* ---- Hide desktop bottom menu on mobile ---- */
+  footer#nav-footer {
+    display: none !important;
+  }
+
+  /* ---- Hide top menu icon <li> items (they're in the drawer now) ---- */
+  #nav-top-right>li {
+    display: none !important;
+  }
+
+  /* ---- Always-open search on mobile ---- */
+  #search-holder {
+    display: flex !important;
+    width: 140px !important;
+    margin-left: auto;
+    transition: none !important;
+  }
+
+  #search-holder.search-slide-up {
+    width: 140px !important;
+  }
+
+  #search-holder.search-slide-up input[type='search'] {
+    width: 100% !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* Hide the search toggle button (search is always visible) */
+  #search-btn {
+    display: none !important;
+  }
+
+  /* ---- Nav wrapper mobile layout ---- */
+  #nav-wrapper {
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-left: var(--nav-bar-height) !important;
+  }
+
+  #nav-top-center {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #nav-top-right {
+    flex-shrink: 0;
+  }
+
+  /* ---- Force side menus to full-screen on mobile ---- */
+  .side-menu-parent {
+    position: fixed !important;
+    top: var(--top-menu-height) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+  }
+
+  /* Prevent wide content from expanding the side menu beyond viewport */
+  .side-menu {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  /* Make title text flexible so close button stays on-screen */
+  .side-menu-title-text {
+    width: auto !important;
+    flex: 1 1 0 !important;
+    min-width: 50% !important;
+    max-width: none !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(0.75rem, 3.5vw, 1rem);
+  }
+
+  /* Ensure close button section doesn't shrink below its content */
+  .side-menu-title-right {
+    flex-shrink: 0 !important;
+  }
+
+  /* Add right padding to close button so it's not cramped against the edge */
+  .side-menu-title-bar {
+    padding-right: 0.5rem;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  /* Allow horizontal scrolling inside the content area for wide tables */
+  .side-menu .row {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 2rem);
+  }
+
+  /* Force tables inside side menus to be scrollable */
+  .side-menu table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .side-menu thead,
+  .side-menu tbody {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+  }
+}

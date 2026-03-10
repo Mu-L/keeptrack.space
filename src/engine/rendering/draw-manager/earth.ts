@@ -34,6 +34,7 @@ import { ShaderMaterial } from '@app/engine/rendering/shader-material';
 import { SphereGeometry } from '@app/engine/rendering/sphere-geometry';
 import { RADIUS_OF_EARTH } from '@app/engine/utils/constants';
 import { glsl } from '@app/engine/utils/development/formatter';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { EpochUTC, J2000, Kilometers, KilometersPerSecond, Seconds, Sun, TEME, Vector3D } from '@ootk/src/main';
 import { BackdatePosition as backdatePosition, Body, KM_PER_AU } from 'astronomy-engine';
@@ -99,13 +100,15 @@ export class Earth {
     [EarthCloudTextureQuality.HIGH]: <WebGLTexture><unknown>null,
     [EarthCloudTextureQuality.ULTRA]: <WebGLTexture><unknown>null,
   };
+  /** 1x1 black transparent texture used as a placeholder for disabled texture units to suppress WebGL warnings. */
+  private placeholderTexture_: WebGLTexture | null = null;
   private vaoOcclusion_: WebGLVertexArrayObject;
   /** Normalized vector pointing to the sun. */
   lightDirection = <vec3>[0, 0, 0];
   surfaceMesh: Mesh;
   atmosphereMesh: Mesh | null = null;
   imageCache: Record<string, HTMLImageElement> = {};
-  cloudPosition_: number = Math.random() * 8192; // Randomize the cloud position
+  cloudPosition_: number = 0;
   RADIUS: number = RADIUS_OF_EARTH;
   position = <vec3>[0, 0, 0];
   planetObject: Planet | null = null;
@@ -133,6 +136,12 @@ export class Earth {
       this.drawEarthAtmosphere_(tgtBuffer);
     }
     this.drawBlackGpuPickingEarth_();
+  }
+
+  drawAtmosphereOnly(tgtBuffer: WebGLFramebuffer | null) {
+    if (settingsManager.isDrawAtmosphere === AtmosphereSettings.ON) {
+      this.drawEarthAtmosphere_(tgtBuffer);
+    }
   }
 
   changeEarthTextureStyle(style: EarthTextureStyle) {
@@ -170,7 +179,7 @@ export class Earth {
     occlusionPrgm.uniformSetup(this.modelViewMatrix_, pMatrix, camMatrix);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.surfaceMesh.geometry.getIndex());
-    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, this.surfaceMesh.geometry.indexType, 0);
 
     /*
      * DEBUG:
@@ -197,6 +206,7 @@ export class Earth {
         settingsManager.earthCloudTextureQuality ??= EarthCloudTextureQuality.OFF;
       }
 
+      this.initPlaceholderTexture_();
       this.initTextures_();
 
       // We only need to make the mesh once
@@ -214,6 +224,7 @@ export class Earth {
             uisGrayScale: <WebGLUniformLocation><unknown>null,
             uCloudPosition: <WebGLUniformLocation><unknown>null,
             uIsDrawAurora: <WebGLUniformLocation><unknown>null,
+            uShowGraticule: <WebGLUniformLocation><unknown>null,
             uLightDirection: <WebGLUniformLocation><unknown>null,
             uDayMap: <WebGLUniformLocation><unknown>null,
             uNightMap: <WebGLUniformLocation><unknown>null,
@@ -221,6 +232,7 @@ export class Earth {
             uSpecMap: <WebGLUniformLocation><unknown>null,
             uPoliticalMap: <WebGLUniformLocation><unknown>null,
             uCloudsMap: <WebGLUniformLocation><unknown>null,
+            uRawZoomLevel: <WebGLUniformLocation><unknown>null,
             uisDrawNightAsDay: <WebGLUniformLocation><unknown>null,
           },
           vertexShader: this.shaders.surfaceVert,
@@ -291,7 +303,7 @@ export class Earth {
    */
   update(): void {
     const gmst = ServiceLocator.getTimeManager().gmst;
-    const sunPos = Sun.position(EpochUTC.fromDateTime(ServiceLocator.getTimeManager().simulationTimeObj));
+    const sunPos = Sun.eci(ServiceLocator.getTimeManager().simulationTimeObj);
 
     if (this.isDrawOrbitPath && (settingsManager.centerBody !== SolarBody.Earth && settingsManager.centerBody !== SolarBody.Moon)) {
       this.drawFullOrbitPath();
@@ -302,7 +314,7 @@ export class Earth {
 
     this.modelViewMatrix_ = mat4.copy(mat4.create(), this.surfaceMesh.geometry.localMvMatrix);
 
-    if (settingsManager.centerBody !== SolarBody.Earth || (PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) !== -1) {
+    if (settingsManager.centerBody !== SolarBody.Earth || (PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') !== '-1') {
       const worldShift = Scene.getInstance().worldShift;
 
       mat4.translate(this.modelViewMatrix_, this.modelViewMatrix_, vec3.fromValues(worldShift[0], worldShift[1], worldShift[2]));
@@ -316,9 +328,11 @@ export class Earth {
     this.glowDirection_ = this.glowNumber_ > 1 ? -1 : this.glowDirection_;
     this.glowDirection_ = this.glowNumber_ < 0 ? 1 : this.glowDirection_;
 
-    // Update the cloud position
-    this.cloudPosition_ += 0.00000025 * ServiceLocator.getTimeManager().propRate; // Slowly drift the clouds, but enough to see the effect
-    this.cloudPosition_ = this.cloudPosition_ > 8192 ? 0 : this.cloudPosition_; // Reset the cloud position when it reaches 8192 - the width of the texture
+    const timeManager = ServiceLocator.getTimeManager();
+    // Derive cloud position from simulation time so clouds move correctly during time changes
+    const msPerFullRotation = 5 * 24 * 60 * 60 * 1000; // ~10 days for a full texture cycle
+
+    this.cloudPosition_ = (timeManager.simulationTimeObj.getTime() % msPerFullRotation) / msPerFullRotation;
   }
 
   private getSrc_(base: string, resolution: string | undefined, extension = 'jpg'): string {
@@ -403,7 +417,36 @@ export class Earth {
 
     gl.bindVertexArray(this.vaoOcclusion_);
 
-    gl.uniformMatrix4fv(dotsManagerInstance.programs.picking.uniforms.u_pMvCamMatrix, false, ServiceLocator.getRenderer().projectionCameraMatrix);
+    // Set ALL picking uniforms — stale values from the previous frame's satellite picking
+    // draw caused incorrect occlusion during view transitions and on mobile (no scissor).
+    const uniforms = dotsManagerInstance.programs.picking.uniforms;
+    const mainCam = ServiceLocator.getMainCamera();
+
+    gl.uniformMatrix4fv(uniforms.u_pMvCamMatrix, false, ServiceLocator.getRenderer().projectionCameraMatrix);
+    gl.uniform3fv(uniforms.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const isFlatMap = mainCam.cameraType === CameraType.FLAT_MAP;
+    const isPolarView = mainCam.cameraType === CameraType.POLAR_VIEW;
+
+    gl.uniform1i(uniforms.u_flatMapMode, isFlatMap ? 1 : 0);
+    gl.uniform1i(uniforms.u_polarViewMode, isPolarView ? 1 : 0);
+    gl.uniform1f(uniforms.u_gmst, dotsManagerInstance.cruncherGmst);
+    gl.uniform1f(uniforms.u_currentGmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1f(uniforms.u_earthRadius, RADIUS_OF_EARTH);
+
+    if (isFlatMap) {
+      gl.uniform1f(uniforms.u_flatMapCenterX, mainCam.flatMapPanX);
+      gl.uniform1f(uniforms.u_flatMapZoom, mainCam.flatMapZoom);
+      gl.uniform1f(uniforms.logDepthBufFC, 0.0);
+    } else if (isPolarView) {
+      gl.uniform3fv(uniforms.u_sensorEcef, dotsManagerInstance.sensorEcef);
+      gl.uniformMatrix3fv(uniforms.u_ecefToEnu, false, dotsManagerInstance.ecefToEnu);
+      gl.uniform1f(uniforms.u_polarRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(uniforms.u_polarZoom, mainCam.polarViewZoom);
+      gl.uniform1f(uniforms.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
 
     /*
      * no reason to render 100000s of pixels when
@@ -412,25 +455,20 @@ export class Earth {
     if (!settingsManager.isMobileModeEnabled) {
       gl.enable(gl.SCISSOR_TEST);
       gl.scissor(
-        ServiceLocator.getMainCamera().state.mouseX,
-        gl.drawingBufferHeight - ServiceLocator.getMainCamera().state.mouseY,
+        mainCam.state.mouseX,
+        gl.drawingBufferHeight - mainCam.state.mouseY,
         ServiceLocator.getDotsManager().PICKING_READ_PIXEL_BUFFER_SIZE,
         ServiceLocator.getDotsManager().PICKING_READ_PIXEL_BUFFER_SIZE,
       );
     }
 
-    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, this.surfaceMesh.geometry.indexType, 0);
 
     if (!settingsManager.isMobileModeEnabled) {
       gl.disable(gl.SCISSOR_TEST);
     }
 
     gl.bindVertexArray(null);
-    /*
-     * Disable attributes to avoid conflict with other shaders
-     * NOTE: This breaks satellite gpu picking.
-     * gl.disableVertexAttribArray(dotsManagerInstance.pickingProgram.aPos);
-     */
   }
 
   /**
@@ -445,12 +483,15 @@ export class Earth {
     this.setSurfaceUniforms_(gl);
     this.setTextures_(gl);
 
-    gl.disable(gl.BLEND);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.depthMask(true);
 
     gl.bindVertexArray(this.surfaceMesh.geometry.vao);
-    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.surfaceMesh.geometry.indexLength, this.surfaceMesh.geometry.indexType, 0);
     gl.bindVertexArray(null);
+
+    gl.disable(gl.BLEND);
   }
 
   private drawEarthAtmosphere_(tgtBuffer: WebGLFramebuffer | null) {
@@ -481,7 +522,7 @@ export class Earth {
     gl.polygonOffset(0.0, -RADIUS_OF_EARTH * 50 * (1 - ServiceLocator.getMainCamera().zoomLevel()));
 
     gl.bindVertexArray(this.atmosphereMesh.geometry.vao);
-    gl.drawElements(gl.TRIANGLES, this.atmosphereMesh.geometry.indexLength, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, this.atmosphereMesh.geometry.indexLength, this.atmosphereMesh.geometry.indexType, 0);
     gl.bindVertexArray(null);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -506,11 +547,16 @@ export class Earth {
     const isEarthCenterBody = settingsManager.centerBody === SolarBody.Earth;
 
     gl.uniform1f(this.surfaceMesh.material.uniforms.uZoomLevel, isEarthCenterBody ? (ServiceLocator.getMainCamera().zoomLevel() / 2) ** (1 / 2) : 1.0);
+    const camType = ServiceLocator.getMainCamera().cameraType;
+    const isSatMode = camType === CameraType.FIXED_TO_SAT_LVLH || camType === CameraType.FIXED_TO_SAT_ECI;
+
+    gl.uniform1f(this.surfaceMesh.material.uniforms.uRawZoomLevel, !isEarthCenterBody || isSatMode ? 1.0 : ServiceLocator.getMainCamera().zoomLevel());
     gl.uniform1f(this.surfaceMesh.material.uniforms.uisGrayScale, settingsManager.isEarthGrayScale ? 1.0 : 0.0);
     gl.uniform1f(this.surfaceMesh.material.uniforms.uCloudPosition, this.cloudPosition_);
     gl.uniform3fv(this.surfaceMesh.material.uniforms.uLightDirection, this.lightDirection);
     gl.uniform1f(this.surfaceMesh.material.uniforms.uisDrawNightAsDay, settingsManager.isDrawNightAsDay ? 1.0 : 0.0);
     gl.uniform1f(this.surfaceMesh.material.uniforms.uIsDrawAurora, settingsManager.isDrawAurora ? 1.0 : 0.0);
+    gl.uniform1f(this.surfaceMesh.material.uniforms.uShowGraticule, settingsManager.isDrawGraticule ? 1.0 : 0.0);
   }
 
   private setAtmosphereUniforms_(gl: WebGL2RenderingContext) {
@@ -525,6 +571,18 @@ export class Earth {
     gl.uniform1f(this.atmosphereMesh.material.uniforms.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
 
     gl.uniform3fv(this.atmosphereMesh.material.uniforms.uLightDirection, this.lightDirection);
+  }
+
+  private initPlaceholderTexture_(): void {
+    if (this.placeholderTexture_) {
+      return;
+    }
+    const gl = this.gl_;
+
+    this.placeholderTexture_ = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
   private initTextures_(): void {
@@ -665,7 +723,7 @@ export class Earth {
     if (this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthDayTextureQuality] && !settingsManager.isBlackEarth) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthDayTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Night Map
@@ -674,7 +732,7 @@ export class Earth {
 
     if ((!this.textureNight[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality] &&
       !this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality]) || settingsManager.isBlackEarth) {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     } else if (!settingsManager.isDrawNightAsDay && this.textureNight[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureNight[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality]);
     } else if (this.textureDay[settingsManager.earthTextureStyle + settingsManager.earthNightTextureQuality] && !settingsManager.isBlackEarth) {
@@ -687,7 +745,7 @@ export class Earth {
     if (settingsManager.isDrawBumpMap && this.textureBump[settingsManager.earthBumpTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureBump[settingsManager.earthBumpTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Specular Map
@@ -696,7 +754,7 @@ export class Earth {
     if (settingsManager.isDrawSpecMap && this.textureSpec[settingsManager.earthSpecTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureSpec[settingsManager.earthSpecTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Political Map
@@ -705,7 +763,7 @@ export class Earth {
     if (settingsManager.isDrawPoliticalMap && this.texturePolitical[settingsManager.earthPoliticalTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.texturePolitical[settingsManager.earthPoliticalTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
 
     // Clouds Map
@@ -714,7 +772,7 @@ export class Earth {
     if (settingsManager.isDrawCloudsMap && this.textureClouds[settingsManager.earthCloudTextureQuality]) {
       gl.bindTexture(gl.TEXTURE_2D, this.textureClouds[settingsManager.earthCloudTextureQuality]);
     } else {
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindTexture(gl.TEXTURE_2D, this.placeholderTexture_);
     }
   }
 
@@ -730,7 +788,9 @@ export class Earth {
     uniform float uCloudPosition;
     uniform vec3 uLightDirection;
     uniform float uIsDrawAurora;
+    uniform float uShowGraticule;
     uniform float uZoomLevel;
+    uniform float uRawZoomLevel;
     uniform float uisGrayScale;
     uniform float uisDrawNightAsDay;
 
@@ -765,10 +825,17 @@ export class Earth {
     void main(void) {
       float fragToLightAngle = dot( vNormal, uLightDirection ) * 0.5 + 0.5; //Remake -1 > 1 to 0 > 1
       vec3 fragToCamera = normalize(vVertToCamera);
-      // Use fragToCamera to determine if the fragment should be culled
-      if (dot(fragToCamera, vNormal) < 0.0) {
+      float NdotV = dot(fragToCamera, vNormal);
+
+      // Discard clearly backfacing fragments
+      float edgeWidth = fwidth(NdotV);
+      if (NdotV < -edgeWidth) {
         discard;
       }
+
+      // Smooth horizon fade — alpha blends the limb with the sky/atmosphere
+      // The wide range (0.06) creates a soft multi-pixel transition at the limb
+      float horizonAlpha = smoothstep(0.0, max(edgeWidth * 4.0, 0.06), NdotV);
 
       // .................................................
       // Diffuse lighting
@@ -798,20 +865,32 @@ export class Earth {
         nightColor = textureLod(uDayMap, vUv, -1.0).rgb * pow(1.0 - diffuse, 2.0);
       }
 
-      fragColor = vec4(dayTexColor + nightColor + bumpTexColor + specLightColor, 1.0);
-
-      // Political map (Draw before clouds and atmosphere)
-      fragColor += textureLod(uPoliticalMap, vUv, 1.0) * diffuse;
+      vec3 surfaceColor = dayTexColor + nightColor + bumpTexColor + specLightColor;
 
       // ................................................
-      // Clouds
-      // Add the clouds to the fragColor
-      // Slowly drift the clouds to the left
-        vec2 uv = vUv;
-        uv.x -= uCloudPosition;
+      // Clouds — alpha-blend over surface (clouds occlude what's beneath)
+      // Cloud texture luminance is used as opacity: white = dense cloud, black = clear sky
+      vec2 cloudUv = vUv;
+      cloudUv.x -= uCloudPosition;
+      float cloudDensity = textureLod(uCloudsMap, cloudUv, -1.0).r;
 
-        vec3 cloudsColor = textureLod(uCloudsMap, uv, -1.0).rgb * diffuse;
-        fragColor.rgb += cloudsColor * 2.0 * pow(uZoomLevel, 2.0);
+      // Clouds fade out when camera is near the surface (raw zoom 0 = close, 1 = far)
+      float cloudOpacity = cloudDensity * smoothstep(0.2, 0.35, uRawZoomLevel);
+
+      // Clouds are white when sunlit, dark on the night side
+      float cloudLight = (uisDrawNightAsDay > 0.5) ? 1.0 : max(diffuse, 0.02);
+      vec3 litCloudColor = vec3(cloudLight);
+
+      // Alpha blend: clouds replace surface proportionally to opacity
+      // This naturally masks specular under clouds without double-counting
+      fragColor = vec4(mix(surfaceColor, litCloudColor, cloudOpacity), horizonAlpha);
+
+      // Political map — drawn after clouds so boundaries are always visible
+      // Use full resolution (LOD -1) and don't multiply by diffuse so
+      // boundaries remain visible on the night side and when ambient
+      // lighting is off.
+      vec4 politicalColor = textureLod(uPoliticalMap, vUv, -1.0);
+      fragColor.rgb += politicalColor.rgb * politicalColor.a;
 
       // ...............................................
 
@@ -819,11 +898,12 @@ export class Earth {
       if (uisGrayScale > 0.5) {
         float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
         fragColor.rgb = vec3(gray);
+        fragColor.rgb *= 0.4;
       }
 
       // ...............................................
       // Aurora
-      if (uIsDrawAurora > 0.5) {
+      if (uIsDrawAurora > 0.5 && uisGrayScale < 0.5) {
         float latitude = vUv.y * 180.0 - 90.0; // Convert texture coordinate to latitude (-90 to 90)
         float noise = uGlow;
 
@@ -837,6 +917,29 @@ export class Earth {
         vec3 auroraColor = vec3(0.0, 0.8, 0.55 + noise / 20.0); // Color of the Aurora Borealis
 
         fragColor.rgb += auroraColor * auroraIntensity * auroraStrength;
+      }
+
+      // ...............................................
+      // Graticule (lat/lon grid lines)
+      if (uShowGraticule > 0.5) {
+        float gLatDeg = (0.5 - vUv.y) * 180.0;
+        float gLonDeg = (vUv.x - 0.5) * 360.0;
+        float wLat = fwidth(vUv.y) * 180.0;
+        float wLon = min(fwidth(vUv.x) * 360.0, 20.0);
+
+        float gSpacing = 15.0;
+        float dLat = abs(mod(gLatDeg + gSpacing * 0.5, gSpacing) - gSpacing * 0.5);
+        float dLon = abs(mod(gLonDeg + gSpacing * 0.5, gSpacing) - gSpacing * 0.5);
+
+        float lineLat = 1.0 - smoothstep(0.0, wLat * 1.5, dLat);
+        float lineLon = 1.0 - smoothstep(0.0, wLon * 1.5, dLon);
+        float gLine = max(lineLat, lineLon);
+
+        // Emphasize equator and prime meridian
+        gLine = max(gLine, 1.0 - smoothstep(0.0, wLat * 2.5, abs(gLatDeg)));
+        gLine = max(gLine, 1.0 - smoothstep(0.0, wLon * 2.5, abs(gLonDeg)));
+
+        fragColor.rgb = mix(fragColor.rgb, vec3(1.0), gLine * 0.15);
       }
 
       ${DepthManager.getLogDepthFragCode()}

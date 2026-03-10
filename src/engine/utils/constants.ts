@@ -84,9 +84,9 @@ export const GROUND_BUFFER_DISTANCE = <Kilometers>2.5;
 export const RADIUS_OF_SUN = <Kilometers>695700;
 
 /**
- * Artificial Star Distance - Lower number Reduces webgl depth buffer
+ * Star Distance - placed just inside the milkyway skybox sphere (3.0e10 km)
  */
-export const STAR_DISTANCE = <Kilometers>250000;
+export const STAR_DISTANCE = <Kilometers>3.0e10;
 
 /**
  * Distance from Earth to the Sun in kilometers

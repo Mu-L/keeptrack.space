@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { BottomMenu } from '@app/app/ui/bottom-menu';
 import { Constructor } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -6,11 +7,23 @@ import { Engine } from '@app/engine/engine';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import { IconPlacement } from '@app/engine/plugins/core/plugin-capabilities';
 import { getEl } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { SettingsManager } from '@app/settings/settings';
 import { defaultSat, defaultSensor } from './environment/apiMocks';
+
+/**
+ * Gets the clickable icon element for a plugin, whether it's in the bottom menu or utility panel.
+ */
+const getPluginIconEl = (plugin: KeepTrackPlugin): HTMLElement | null => {
+  if (plugin.iconPlacement === IconPlacement.UTILITY_ONLY) {
+    return getEl(`${plugin.id}-utility-icon`, true);
+  }
+
+  return getEl(plugin.bottomIconElementName, true);
+};
 
 export const standardPluginSuite = (Plugin: Constructor<KeepTrackPlugin>, pluginName?: string) => {
   pluginName ??= Plugin.name;
@@ -74,8 +87,13 @@ export const standardPluginInit = (Plugin: Constructor<KeepTrackPlugin>) => {
   expect(() => EventBus.getInstance().emit(EventBusEvent.uiManagerFinal)).not.toThrow();
 
   if (plugin.bottomIconImg && !plugin.bottomIconElementName?.startsWith('plugins.')) {
-    expect(getEl(plugin.bottomIconElementName)).toBeDefined();
-    expect(getEl(KeepTrackPlugin.bottomIconsContainerId)!.innerHTML).toContain(plugin.bottomIconElementName);
+    if (plugin.iconPlacement === IconPlacement.UTILITY_ONLY) {
+      expect(getEl(`${plugin.id}-utility-icon`)).toBeDefined();
+      expect(getEl(KeepTrackPlugin.utilityPanelContainerId)!.innerHTML).toContain(`${plugin.id}-utility-icon`);
+    } else {
+      expect(getEl(plugin.bottomIconElementName)).toBeDefined();
+      expect(getEl(KeepTrackPlugin.bottomIconsContainerId)!.innerHTML).toContain(plugin.bottomIconElementName);
+    }
   }
 };
 
@@ -99,10 +117,24 @@ export const websiteInit = (plugin: KeepTrackPlugin) => {
   EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
   EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
   EventBus.getInstance().emit(EventBusEvent.uiManagerOnReady);
-  ServiceLocator.getCatalogManager().satCruncher = {
-    addEventListener: jest.fn(),
-    postMessage: jest.fn(),
-  } as unknown as Worker;
+  ServiceLocator.getCatalogManager().satCruncherThread = {
+    postMessage: vi.fn(),
+    sendSatEdit: vi.fn(),
+    sendSensorUpdate: vi.fn(),
+    sendSunlightViewToggle: vi.fn(),
+    sendSatelliteSelected: vi.fn(),
+    sendMarkerUpdate: vi.fn(),
+    sendCatalogData: vi.fn(),
+    sendTimeSync: vi.fn(),
+    sendNewMissile: vi.fn(),
+    worker: {
+      addEventListener: vi.fn(),
+      postMessage: vi.fn(),
+    },
+  } as any;
+  // Set up sccIndex so sccNum2Id can find satellites by their catalog number
+  ServiceLocator.getCatalogManager().objectCache = [defaultSat];
+  ServiceLocator.getCatalogManager().sccIndex = { '00005': 0 };
 };
 
 export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugin>, pluginName?: string) => {
@@ -121,7 +153,7 @@ export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugi
 
     websiteInit(plugin);
 
-    const toggleButton = getEl(plugin.bottomIconElementName);
+    const toggleButton = getPluginIconEl(plugin);
 
     expect(toggleButton).toBeDefined();
     expect(toggleButton!.classList.contains(KeepTrackPlugin.iconSelectedClassString)).toBeFalsy();
@@ -134,7 +166,7 @@ export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugi
 
     websiteInit(plugin);
 
-    const toggleButton = getEl(plugin.bottomIconElementName);
+    const toggleButton = getPluginIconEl(plugin);
 
     expect(toggleButton).toBeDefined();
     expect(toggleButton!.classList.contains(KeepTrackPlugin.iconSelectedClassString)).toBeFalsy();
@@ -156,7 +188,7 @@ export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugi
     websiteInit(plugin);
     ServiceLocator.getSensorManager().setSensor(defaultSensor, 0);
 
-    const toggleButton = getEl(plugin.bottomIconElementName);
+    const toggleButton = getPluginIconEl(plugin);
 
     expect(toggleButton).toBeDefined();
 
@@ -187,7 +219,7 @@ export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugi
     ServiceLocator.getCatalogManager().objectCache = [defaultSat];
     PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
 
-    const toggleButton = getEl(plugin.bottomIconElementName);
+    const toggleButton = getPluginIconEl(plugin);
 
     expect(toggleButton).toBeDefined();
     expect(toggleButton!.classList.contains(KeepTrackPlugin.iconSelectedClassString)).toBeFalsy();
@@ -214,7 +246,7 @@ export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugi
     ServiceLocator.getCatalogManager().objectCache = [defaultSat];
     PluginRegistry.getPlugin(SelectSatManager)?.selectSat(0);
 
-    const toggleButton = getEl(plugin.bottomIconElementName);
+    const toggleButton = getPluginIconEl(plugin);
 
     expect(toggleButton).toBeDefined();
     expect(toggleButton!.classList.contains(KeepTrackPlugin.iconSelectedClassString)).toBeFalsy();
@@ -236,10 +268,17 @@ export const standardPluginMenuButtonTests = (Plugin: Constructor<KeepTrackPlugi
     websiteInit(plugin);
 
     if (plugin.bottomIconElementName !== null) {
-      const bottomIcons = getEl(KeepTrackPlugin.bottomIconsContainerId);
+      if (plugin.iconPlacement === IconPlacement.UTILITY_ONLY) {
+        const utilityPanel = getEl(KeepTrackPlugin.utilityPanelContainerId);
 
-      expect(bottomIcons).toBeDefined();
-      expect(bottomIcons!.innerHTML).toContain(plugin.bottomIconElementName);
+        expect(utilityPanel).toBeDefined();
+        expect(utilityPanel!.innerHTML).toContain(`${plugin.id}-utility-icon`);
+      } else {
+        const bottomIcons = getEl(KeepTrackPlugin.bottomIconsContainerId);
+
+        expect(bottomIcons).toBeDefined();
+        expect(bottomIcons!.innerHTML).toContain(plugin.bottomIconElementName);
+      }
     } else {
       expect(plugin.bottomIconLabel).toBeNull();
     }
@@ -267,9 +306,9 @@ export const standardPluginRmbTests = (Plugin: Constructor<KeepTrackPlugin>, plu
 
         websiteInit(plugin);
         expect(() => EventBus.getInstance().emit(EventBusEvent.rmbMenuActions, rmbOption, -1)).not.toThrow();
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
         expect(() => EventBus.getInstance().emit(EventBusEvent.rmbMenuActions, rmbOption, -1)).not.toThrow();
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       });
     });
   });
@@ -290,7 +329,7 @@ export const standardClickTests = (Plugin: Constructor<KeepTrackPlugin>) => {
       websiteInit(plugin);
       expect(getEl(buttonElement)).toBeDefined();
       expect(() => getEl(buttonElement)!.click()).not.toThrow();
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
   });
 };
@@ -314,7 +353,7 @@ export const standardChangeTests = (Plugin: Constructor<KeepTrackPlugin>) => {
       // Fire a change event
       expect(elementDom).toBeDefined();
       expect(() => elementDom!.dispatchEvent(new Event('change'))).not.toThrow();
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
   });
 };

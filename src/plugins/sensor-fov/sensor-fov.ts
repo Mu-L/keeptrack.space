@@ -23,62 +23,58 @@ import { MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { getEl } from '@app/engine/utils/get-el';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import { IBottomIconConfig, IconPlacement, UtilityGroup } from '@app/engine/plugins/core/plugin-capabilities';
 import fovPng from '@public/img/icons/fov.png';
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SensorListPlugin } from '../sensor-list/sensor-list';
 import { SensorSurvFence } from '../sensor-surv/sensor-surv-fence';
 
 export class SensorFov extends KeepTrackPlugin {
   readonly id = 'SensorFov';
   dependencies_: string[] = [SensorListPlugin.name];
-  bottomIconCallback = () => {
-    if (!this.isMenuButtonActive) {
-      this.disableFovView();
-    } else {
-      this.enableFovView();
-    }
-  };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
-
-  bottomIconImg = fovPng;
   isIconDisabledOnLoad = true;
   isIconDisabled = true;
   isRequireSensorSelected = true;
+
+  bottomIconCallback = (): void => {
+    this.onBottomIconClick();
+  };
+
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'sensor-fov-bottom-icon',
+      label: 'Sensor FOV',
+      image: fovPng,
+      menuMode: [MenuMode.SENSORS, MenuMode.ALL],
+      isDisabledOnLoad: true,
+      placement: IconPlacement.UTILITY_ONLY,
+      utilityGroup: UtilityGroup.LAYER_TOGGLE,
+    };
+  }
 
   addJs(): void {
     super.addJs();
 
     EventBus.getInstance().on(
-      EventBusEvent.setSensor,
-      (sensor): void => {
-        if (sensor) {
-          getEl(this.bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconDisabledClassString);
-          this.isIconDisabled = false;
-        } else {
-          getEl(this.bottomIconElementName)?.classList.add(KeepTrackPlugin.iconDisabledClassString);
-          this.isIconDisabled = true;
-          this.isMenuButtonActive = false;
-          getEl(this.bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
-        }
-      },
-    );
-
-    EventBus.getInstance().on(
       EventBusEvent.sensorDotSelected,
       (sensor): void => {
         if (sensor) {
-          getEl(this.bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconDisabledClassString);
-          this.isIconDisabled = false;
+          this.setBottomIconToEnabled();
         } else {
-          getEl(this.bottomIconElementName)?.classList.add(KeepTrackPlugin.iconDisabledClassString);
-          this.isIconDisabled = true;
-          this.isMenuButtonActive = false;
-          getEl(this.bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
+          this.setBottomIconToDisabled();
+          this.setBottomIconToUnselected();
         }
       },
     );
+  }
+
+  onBottomIconClick(): void {
+    if (!this.isMenuButtonActive) {
+      this.disableFovView();
+    } else {
+      this.enableFovView();
+    }
   }
 
   disableFovView() {
@@ -88,7 +84,6 @@ export class SensorFov extends KeepTrackPlugin {
 
   enableFovView() {
     PluginRegistry.getPlugin(SensorSurvFence)?.setBottomIconToUnselected();
-
     this.setBottomIconToSelected();
   }
 }

@@ -1,8 +1,9 @@
+import { vi } from 'vitest';
 import { CatalogManager } from '@app/app/data/catalog-manager';
 import { Container } from '@app/engine/core/container';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { SettingsManagerOverride } from '@app/settings/settings';
-import { DetailedSatellite, Milliseconds, Satellite } from '@ootk/src/main';
+import { Satellite, Milliseconds } from '@ootk/src/main';
 import { CatalogLoader } from '../src/app/data/catalog-loader';
 import { OrbitManager } from '../src/app/rendering/orbit-manager';
 import { UiManager } from '../src/app/ui/ui-manager';
@@ -50,27 +51,35 @@ const setupStandardEnvironment = () => {
   const uiManagerInstance = new UiManager();
 
   // Jest all Image class objects with a mock decode method.
-  Image.prototype.decode = jest.fn();
+  Image.prototype.decode = vi.fn();
 
-  catalogManagerInstance.init = jest.fn();
-  catalogManagerInstance.satCruncher = {
-    postMessage: jest.fn(),
-    terminate: jest.fn(),
-  } as unknown as Worker;
+  catalogManagerInstance.init = vi.fn();
+  catalogManagerInstance.satCruncherThread = {
+    postMessage: vi.fn(),
+    worker: {
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+      onmessage: null as ((ev: MessageEvent) => void) | null,
+    },
+  } as any;
 
   // eslint-disable-next-line require-await
-  jest.spyOn(CatalogLoader, 'load').mockImplementation(async () => {
+  vi.spyOn(CatalogLoader, 'load').mockImplementation(async () => {
     // Setup a mock catalog
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
     catalogManagerInstance.objectCache = [
-      new DetailedSatellite({ ...defaultSat, ...{ id: 0, type: 1 } }),
-      new DetailedSatellite({ ...defaultSat, ...{ id: 1, type: 2 } }),
+      new Satellite({ ...defaultSat, ...{ id: 0, type: 1 } }),
+      new Satellite({ ...defaultSat, ...{ id: 1, type: 2 } }),
     ] as Satellite[];
-    catalogManagerInstance.satCruncher = {
-      postMessage: jest.fn(),
-      terminate: jest.fn(),
-    } as unknown as Worker;
+    catalogManagerInstance.satCruncherThread = {
+      postMessage: vi.fn(),
+      worker: {
+        postMessage: vi.fn(),
+        terminate: vi.fn(),
+        onmessage: null as ((ev: MessageEvent) => void) | null,
+      },
+    } as any;
 
     // Call the onmessage handler only if it is set to avoid "possibly null" invocation.
     catalogManagerInstance.satCruncher.onmessage?.({ data: { type: 'satData', data: [] } as unknown as SatCruncherMessageData } as unknown as MessageEvent);
@@ -103,8 +112,8 @@ describe('code_snippet', () => {
   it.skip('test_constructor_initializes_objects_without_showErrorCode', () => {
     const drawManagerInstance = ServiceLocator.getRenderer();
 
-    drawManagerInstance.update = jest.fn();
-    ServiceLocator.getMainCamera().draw = jest.fn();
+    drawManagerInstance.update = vi.fn();
+    ServiceLocator.getMainCamera().draw = vi.fn();
 
     let keepTrack: KeepTrack;
     const initializationTest = async () => {
@@ -147,8 +156,8 @@ describe('code_snippet', () => {
     const drawManagerInstance = ServiceLocator.getRenderer();
 
     keepTrack.run().then(() => {
-      drawManagerInstance.update = jest.fn();
-      ServiceLocator.getMainCamera().draw = jest.fn();
+      drawManagerInstance.update = vi.fn();
+      ServiceLocator.getMainCamera().draw = vi.fn();
       settingsManager.cruncherReady = true;
       // keepTrack.engine.run();
       // eslint-disable-next-line dot-notation

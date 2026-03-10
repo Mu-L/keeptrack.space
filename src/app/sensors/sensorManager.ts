@@ -25,6 +25,7 @@
 
 import { SatMath, SunStatus } from '@app/app/analysis/sat-math';
 import { sensors } from '@app/app/data/catalogs/sensors';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import type { TearrData } from '@app/app/sensors/sensor-math';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -40,8 +41,8 @@ import { lat2pitch, lon2yaw } from '@app/engine/utils/transforms';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { t7e } from '@app/locales/keys';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
-import { DEG2RAD, DetailedSensor, EpochUTC, GreenwichMeanSiderealTime, Radians, SpaceObjectType, Sun, ZoomValue, calcGmst, lla2eci, spaceObjType2Str } from '@ootk/src/main';
+import { DEG2RAD, GreenwichMeanSiderealTime, Radians, SpaceObjectType, Sun, ZoomValue, calcGmst, lla2eci, spaceObjType2Str } from '@ootk/src/main';
+import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
 import { SensorFov } from '../../plugins/sensor-fov/sensor-fov';
 import { SensorSurvFence } from '../../plugins/sensor-surv/sensor-surv-fence';
 import { LookAnglesPlugin } from '../../plugins/sensor/look-angles-plugin';
@@ -50,6 +51,7 @@ import { sensorGroups } from '../data/catalogs/sensor-groups';
 
 export class SensorManager {
   lastMultiSiteArray: TearrData[];
+  private resetTimeoutId_: ReturnType<typeof setTimeout> | null = null;
 
   // TODO: There is a better way to handle this.
   currentTEARR = <TearrData>{
@@ -108,19 +110,33 @@ export class SensorManager {
   }
 
   addSecondarySensor(sensor: DetailedSensor, isReplaceSensor = false): void {
-    // If there is no primary sensor, make this the primary sensor
     const primarySensor = this.currentSensors[0];
 
     if (!primarySensor?.isSensor() || isReplaceSensor) {
+      // No primary sensor or replacing — make this the primary
       this.currentSensors = [sensor];
       this.setSensor(sensor);
+      // setSensor already handles updatePositionCruncher_, FOV meshes, and waitForCruncher
+      this.cameraToCurrentSensor_();
     } else {
+      // Primary exists — add as secondary
       this.secondarySensors.push(sensor);
+      this.updatePositionCruncher_();
+      // Camera to the newly added sensor, not the existing primary
+      this.cameraToCurrentSensor_(sensor);
+
+      // Wait for position cruncher to process new sensor data, then force full recolor
+      waitForCruncher({
+        cruncher: ServiceLocator.getCatalogManager().satCruncher,
+        cb: () => {
+          ServiceLocator.getColorSchemeManager().calculateColorBuffers(true);
+        },
+        validationFunc: (m: PositionCruncherOutgoingMsg) => !!((m.satInView?.length && m.satInView.length > 0)),
+        skipNumber: 2,
+        isRunCbOnFailure: true,
+        maxRetries: 5,
+      });
     }
-    this.updatePositionCruncher_();
-    this.cameraToCurrentSensor_();
-    // Force a recalculation of the color buffers on next cruncher
-    ServiceLocator.getColorSchemeManager().calcColorBufsNextCruncher();
   }
 
   /** Sensors that are currently selected/active */
@@ -269,22 +285,15 @@ export class SensorManager {
   resetSensorSelected() {
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-    // Remove satellite minibox hover
-    const satMinibox = getEl('sat-minibox');
-
-    if (satMinibox) {
-      satMinibox.innerHTML = '';
-    }
+    // Clear GPU satellite labels
+    ServiceLocator.getSatLabelManager()?.updateLabels([], []);
 
     // Return to default settings with nothing 'inview'
     SensorManager.updateSensorUiStyling(null);
     this.setSensor(null); // Pass sensorId to identify which sensor the user clicked
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
-    catalogManagerInstance.satCruncher.postMessage({
-      typ: CruncerMessageTypes.SENSOR,
-      sensor: [],
-    });
+    catalogManagerInstance.satCruncherThread.sendSensorUpdate([]);
 
     PluginRegistry.getPlugin(SensorFov)?.disableFovView();
     PluginRegistry.getPlugin(SensorSurvFence)?.disableSurvView();
@@ -306,7 +315,12 @@ export class SensorManager {
     PluginRegistry.getPluginByName('Astronomy')?.setBottomIconToUnselected();
     PluginRegistry.getPluginByName('Astronomy')?.setBottomIconToDisabled();
 
-    setTimeout(() => {
+    this.resetTimeoutId_ = setTimeout(() => {
+      this.resetTimeoutId_ = null;
+      // Guard: if a new sensor was selected before this fired, skip the reset
+      if (this.isSensorSelected()) {
+        return;
+      }
       const dotsManagerInstance = ServiceLocator.getDotsManager();
 
       dotsManagerInstance.resetSatInView();
@@ -343,6 +357,12 @@ export class SensorManager {
   }
 
   setSensor(selectedSensor: DetailedSensor | string | null, sensorId: number | null = null): void {
+    // Cancel any pending reset timeout from resetSensorSelected to prevent stale resets
+    if (this.resetTimeoutId_) {
+      clearTimeout(this.resetTimeoutId_);
+      this.resetTimeoutId_ = null;
+    }
+
     selectedSensor ??= SensorManager.getSensorFromsensorId(sensorId);
 
     if (selectedSensor === null && sensorId === null) {
@@ -440,11 +460,26 @@ export class SensorManager {
 
     // Run any callbacks
     if (settingsManager.offlineMode) {
-      PersistenceManager.getInstance().saveItem(StorageKey.CURRENT_SENSOR, JSON.stringify([selectedSensor, sensorId]));
+      let sensorData: string | { objName: string } | null = null;
+
+      if (typeof selectedSensor === 'string') {
+        sensorData = selectedSensor;
+      } else if (selectedSensor) {
+        sensorData = { objName: selectedSensor.objName };
+      }
+
+      PersistenceManager.getInstance().saveItem(StorageKey.CURRENT_SENSOR, JSON.stringify([sensorData, sensorId]));
     }
     EventBus.getInstance().emit(EventBusEvent.setSensor, selectedSensor, sensorId ?? null);
 
-    for (const sensor of this.currentSensors) {
+    // Re-fire satellite selection so plugins that need both sensor + satellite can reevaluate
+    const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+    if (selectSatManager && selectSatManager.selectedSat >= 0) {
+      EventBus.getInstance().emit(EventBusEvent.selectSatData, selectSatManager.primarySatObj, selectSatManager.selectedSat);
+    }
+
+    for (const sensor of this.getAllActiveSensors()) {
       ServiceLocator.getScene().sensorFovFactory.generateSensorFovMesh(sensor);
     }
 
@@ -560,7 +595,7 @@ export class SensorManager {
       alt: sensor.alt,
     };
     const { gmst } = calcGmst(now);
-    const sunPos = Sun.position(EpochUTC.fromDateTime(now));
+    const sunPos = Sun.eci(now);
     const sensorPos = lla2eci(lla, gmst);
 
     sensor.position = sensorPos;
@@ -611,16 +646,20 @@ export class SensorManager {
     };
   }
 
-  private cameraToCurrentSensor_() {
+  private cameraToCurrentSensor_(sensor?: DetailedSensor) {
     const timeManagerInstance = ServiceLocator.getTimeManager();
-    const primarySensor = this.currentSensors[0];
+    const targetSensor = sensor ?? this.currentSensors[0];
 
-    if (primarySensor.maxRng > 6000) {
+    if (!targetSensor) {
+      return;
+    }
+
+    if (targetSensor.maxRng > 6000) {
       ServiceLocator.getMainCamera().changeZoom(ZoomValue.GEO);
     } else {
       ServiceLocator.getMainCamera().changeZoom(ZoomValue.LEO);
     }
-    ServiceLocator.getMainCamera().camSnap(lat2pitch(primarySensor.lat), lon2yaw(primarySensor.lon, timeManagerInstance.selectedDate));
+    ServiceLocator.getMainCamera().camSnap(lat2pitch(targetSensor.lat), lon2yaw(targetSensor.lon, timeManagerInstance.selectedDate));
   }
 
   private updatePositionCruncher_(): void {
@@ -632,9 +671,6 @@ export class SensorManager {
       ServiceLocator.getScene().sensorFovFactory.generateSensorFovMesh(sensor);
     }
 
-    catalogManagerInstance.satCruncher.postMessage({
-      typ: CruncerMessageTypes.SENSOR,
-      sensor: combinedSensors,
-    });
+    catalogManagerInstance.satCruncherThread.sendSensorUpdate(combinedSensors);
   }
 }

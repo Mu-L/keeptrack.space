@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { KeepTrack } from '@app/keeptrack';
 import { ColorMenu } from '@app/plugins/colors-menu/colors-menu';
@@ -7,14 +8,14 @@ import { standardPluginMenuButtonTests, standardPluginRmbTests, standardPluginSu
 describe('ColorMenu_class', () => {
   beforeEach(() => {
     setupStandardEnvironment();
-    ServiceLocator.getCatalogManager().satCruncher = {
-      addEventListener: () => {
-        // Mock the addEventListener function
-      },
+    ServiceLocator.getCatalogManager().satCruncherThread = {
       postMessage: () => {
         // Mock the postMessage function
       },
-    } as unknown as Worker;
+      sendSunlightViewToggle: () => {
+        // Mock the sendSunlightViewToggle function
+      },
+    } as any;
   });
 
   standardPluginSuite(ColorMenu);
@@ -32,7 +33,7 @@ describe('ColorMenu_class', () => {
     elements.forEach((element) => {
       expect(() => {
         element.click();
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       }).not.toThrow();
     });
   }, 20000); // NOTE: Increase the timeout if there are more items in the menu in the future

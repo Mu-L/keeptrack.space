@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-undefined */
 import { Pickable } from '@app/engine/core/interfaces';
@@ -5,13 +6,13 @@ import { MissionColorScheme } from '@app/engine/rendering/color-schemes/mission-
 import { ColorSchemeTestUtils } from '../__helpers__/color-scheme-test-utils';
 
 // Mock dependencies
-jest.mock('@app/keepTrackApi', () => ({
+vi.mock('@app/keepTrackApi', () => ({
   keepTrackApi: {
     html: (strings: TemplateStringsArray) => strings[0],
   },
 }));
 
-jest.mock('@app/settings/settings', () => ({
+vi.mock('@app/settings/settings', () => ({
   settingsManager: {
     colors: {
       transparent: [0, 0, 0, 0],

@@ -41,9 +41,6 @@ describe('plugins', () => {
       ScreenRecorder: {
         enabled: true,
       },
-      SatChangesPlugin: {
-        enabled: true,
-      },
       StereoMap: {
         enabled: true,
       },
@@ -77,7 +74,10 @@ describe('plugins', () => {
       OrbitReferences: {
         enabled: true,
       },
-      AnalysisMenu: {
+      CatalogManagementPlugin: {
+        enabled: true,
+      },
+      CloseObjectsPlugin: {
         enabled: true,
       },
       SensorFov: {

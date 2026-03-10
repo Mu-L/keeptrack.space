@@ -2,12 +2,12 @@ import { MenuMode } from '@app/engine/core/interfaces';
 import { getEl } from '@app/engine/utils/get-el';
 import videoSettingsPng from '@public/img/icons/video-settings.png';
 
+import { SoundNames } from '@app/engine/audio/sounds';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '../sounds/sounds';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -51,7 +51,7 @@ export class VideoDirectorPlugin extends KeepTrackPlugin {
   bottomIconImg = videoSettingsPng;
   sideMenuElementName: string = 'video-director-menu';
   sideMenuElementHtml: string = html`
-  <div id="video-director-menu" class="side-menu-parent start-hidden text-select">
+  <div id="video-director-menu" class="side-menu-parent start-hidden">
     <div id="video-director-content" class="side-menu">
       <div class="row">
         <form id="video-director-form">

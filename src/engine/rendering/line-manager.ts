@@ -3,18 +3,21 @@
 /* eslint-disable camelcase */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { Singletons, SolarBody } from '@app/engine/core/interfaces';
 import { BufferAttribute } from '@app/engine/rendering/buffer-attribute';
 import { WebGlProgramHelper } from '@app/engine/rendering/webgl-program';
-import { BaseObject, Degrees, DetailedSatellite, DetailedSensor, Kilometers, RaeVec3 } from '@ootk/src/main';
+import { settingsManager } from '@app/settings/settings';
+import { BaseObject, Degrees, Kilometers, RaeVec3, Satellite } from '@ootk/src/main';
 import { mat4, vec3, vec4 } from 'gl-matrix';
+import { CameraType } from '../camera/camera-type';
 import { Container } from '../core/container';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { getTemeToJ2000Matrix, ReferenceFrame } from '../math/reference-frames';
-import { EARTH_OBLIQUITY_RADIANS } from '../utils/constants';
+import { EARTH_OBLIQUITY_RADIANS, RADIUS_OF_EARTH } from '../utils/constants';
 import { glsl } from '../utils/development/formatter';
 import { DepthManager } from './depth-manager';
 import { Line, LineColor, LineColors } from './line-manager/line';
@@ -47,6 +50,19 @@ export class LineManager {
     u_pCamMatrix: null as unknown as WebGLUniformLocation,
     worldOffset: null as unknown as WebGLUniformLocation,
     logDepthBufFC: null as unknown as WebGLUniformLocation,
+    u_flatMapMode: null as unknown as WebGLUniformLocation,
+    u_gmst: null as unknown as WebGLUniformLocation,
+    u_earthRadius: null as unknown as WebGLUniformLocation,
+    u_flatMapCenterX: null as unknown as WebGLUniformLocation,
+    u_ecfMode: null as unknown as WebGLUniformLocation,
+  };
+
+  /** Polar view uniforms assigned separately — some ANGLE backends strip them from conditional branches. */
+  private polarUniforms_ = {
+    u_polarViewMode: null as WebGLUniformLocation | null,
+    u_sensorEcef: null as WebGLUniformLocation | null,
+    u_ecefToEnu: null as WebGLUniformLocation | null,
+    u_polarRadius: null as WebGLUniformLocation | null,
   };
   program: WebGLProgram;
 
@@ -63,8 +79,8 @@ export class LineManager {
     EventBus.getInstance().emit(EventBusEvent.onLineAdded, this);
   }
 
-  createSatRicFrame(sat: DetailedSatellite | MissileObject | OemSatellite | null): void {
-    if (!sat || !(sat instanceof DetailedSatellite)) {
+  createSatRicFrame(sat: Satellite | MissileObject | OemSatellite | null): void {
+    if (!sat || !(sat instanceof Satellite)) {
       return;
     }
 
@@ -73,24 +89,24 @@ export class LineManager {
     this.add(new SatRicLine(sat, 'C', LineColors.BLUE));
   }
 
-  createSatToRef(sat: DetailedSatellite | OemSatellite | MissileObject | null, ref: vec3, color = LineColors.PURPLE): void {
-    if (!sat || !(sat instanceof DetailedSatellite || sat instanceof OemSatellite)) {
+  createSatToRef(sat: Satellite | OemSatellite | MissileObject | null, ref: vec3, color = LineColors.PURPLE): void {
+    if (!sat || !(sat instanceof Satellite || sat instanceof OemSatellite)) {
       return;
     }
 
     this.add(new SatToRefLine(sat, ref, color));
   }
 
-  createSat2Sun(sat: DetailedSatellite | MissileObject | OemSatellite | null): void {
-    if (!sat || !(sat instanceof DetailedSatellite || sat instanceof OemSatellite)) {
+  createSat2Sun(sat: Satellite | MissileObject | OemSatellite | null): void {
+    if (!sat || !(sat instanceof Satellite || sat instanceof OemSatellite)) {
       return;
     }
 
     this.add(new SatToSunLine(sat));
   }
 
-  createSat2CelestialBody(sat: DetailedSatellite | MissileObject | OemSatellite | null, body: SolarBody): void {
-    if (!sat || !(sat instanceof DetailedSatellite || sat instanceof OemSatellite)) {
+  createSat2CelestialBody(sat: Satellite | MissileObject | OemSatellite | null, body: SolarBody): void {
+    if (!sat || !(sat instanceof Satellite || sat instanceof OemSatellite)) {
       return;
     }
 
@@ -127,7 +143,7 @@ export class LineManager {
     this.add(new SensorToMoonLine(sensor));
   }
 
-  createSatScanEarth(sat: DetailedSatellite | null, color?: vec4): void {
+  createSatScanEarth(sat: Satellite | null, color?: vec4): void {
     if (!sat) {
       return;
     }
@@ -150,22 +166,22 @@ export class LineManager {
     this.add(new SensorToRaeLine(sensor, rae, color));
   }
 
-  createSensorToSat(sensor: DetailedSensor | null, sat: DetailedSatellite | MissileObject | OemSatellite | null, color?: vec4): void {
-    if (!sensor || !sat || !(sat instanceof DetailedSatellite || sat instanceof OemSatellite)) {
+  createSensorToSat(sensor: DetailedSensor | null, sat: Satellite | MissileObject | OemSatellite | null, color?: vec4): void {
+    if (!sensor || !sat || !(sat instanceof Satellite || sat instanceof OemSatellite)) {
       return;
     }
 
     this.add(new SensorToSatLine(sensor, sat, color));
   }
 
-  createObjToObj(obj1: DetailedSatellite | OemSatellite | MissileObject | null, obj2: DetailedSatellite | MissileObject | OemSatellite | null, color?: vec4): void {
+  createObjToObj(obj1: Satellite | OemSatellite | MissileObject | null, obj2: Satellite | MissileObject | OemSatellite | null, color?: vec4): void {
     if (!obj1 || !obj2) {
       return;
     }
     this.add(new ObjToObjLine(obj1, obj2, color));
   }
 
-  createSensorToSatFovOnly(sensor: DetailedSensor | null, sat: DetailedSatellite | null, color?: vec4): void {
+  createSensorToSatFovOnly(sensor: DetailedSensor | null, sat: Satellite | null, color?: vec4): void {
     if (!sensor || !sat) {
       return;
     }
@@ -176,8 +192,8 @@ export class LineManager {
     this.add(line);
   }
 
-  createSensorToSatFovAndSelectedOnly(sensor: DetailedSensor | null, sat: DetailedSatellite | null, color?: vec4): void {
-    if (!sensor || !sat || !(sat instanceof DetailedSatellite)) {
+  createSensorToSatFovAndSelectedOnly(sensor: DetailedSensor | null, sat: Satellite | null, color?: vec4): void {
+    if (!sensor || !sat || !(sat instanceof Satellite)) {
       return;
     }
 
@@ -188,7 +204,7 @@ export class LineManager {
     this.add(line);
   }
 
-  createSensorsToSatFovOnly(sat: DetailedSatellite, color?: vec4): void {
+  createSensorsToSatFovOnly(sat: Satellite, color?: vec4): void {
     const sensorManagerInstance = ServiceLocator.getSensorManager();
 
     for (const sensor of sensorManagerInstance.getAllSensors()) {
@@ -497,13 +513,20 @@ export class LineManager {
 
     this.program = new WebGlProgramHelper(gl, this.shaders_.vert, this.shaders_.frag, this.attribs, this.uniforms_).program;
 
+    // Assign polar view uniforms separately — some ANGLE backends strip these from conditional branches
+    for (const name of Object.keys(this.polarUniforms_) as (keyof typeof this.polarUniforms_)[]) {
+      this.polarUniforms_[name] = gl.getUniformLocation(this.program, name);
+    }
+
     EventBus.getInstance().on(
       EventBusEvent.selectSatData,
       (sat: BaseObject) => {
-        if (sat) {
+        const camType = ServiceLocator.getMainCamera().cameraType;
+
+        if (sat && camType !== CameraType.POLAR_VIEW && camType !== CameraType.PLANETARIUM && camType !== CameraType.ASTRONOMY) {
           const sensor = ServiceLocator.getSensorManager().getSensor();
 
-          this.createSensorToSatFovAndSelectedOnly(sensor, sat as DetailedSatellite);
+          this.createSensorToSatFovAndSelectedOnly(sensor, sat as Satellite);
         }
       },
     );
@@ -537,11 +560,44 @@ export class LineManager {
 
   setWorldUniforms(modelViewMatrix: mat4, projectionCameraMatrix: mat4) {
     const gl = ServiceLocator.getRenderer().gl;
+    const mainCamera = ServiceLocator.getMainCamera();
 
     gl.uniformMatrix4fv(this.uniforms_.u_pCamMatrix, false, projectionCameraMatrix);
     gl.uniformMatrix4fv(this.uniforms_.u_mVMatrix, false, modelViewMatrix);
-    gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
     gl.uniform3fv(this.uniforms_.worldOffset, Scene.getInstance().worldShift ?? [0, 0, 0]);
+
+    const isFlatMap = mainCamera.cameraType === CameraType.FLAT_MAP;
+    const isPolarView = mainCamera.cameraType === CameraType.POLAR_VIEW;
+
+    // Always set u_gmst — needed by flat map, polar view, AND ECF mode
+    gl.uniform1f(this.uniforms_.u_gmst, ServiceLocator.getTimeManager().gmst);
+    gl.uniform1i(this.uniforms_.u_ecfMode, settingsManager.isOrbitCruncherInEcf ? 1 : 0);
+
+    gl.uniform1i(this.uniforms_.u_flatMapMode, isFlatMap ? 1 : 0);
+    if (this.polarUniforms_.u_polarViewMode) {
+      gl.uniform1i(this.polarUniforms_.u_polarViewMode, isPolarView ? 1 : 0);
+    }
+    if (isFlatMap) {
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      gl.uniform1f(this.uniforms_.u_flatMapCenterX, mainCamera.flatMapPanX);
+      gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
+    } else if (isPolarView) {
+      const dotsManager = ServiceLocator.getDotsManager();
+
+      gl.uniform1f(this.uniforms_.u_earthRadius, RADIUS_OF_EARTH);
+      if (this.polarUniforms_.u_sensorEcef) {
+        gl.uniform3fv(this.polarUniforms_.u_sensorEcef, dotsManager.sensorEcef);
+      }
+      if (this.polarUniforms_.u_ecefToEnu) {
+        gl.uniformMatrix3fv(this.polarUniforms_.u_ecefToEnu, false, dotsManager.ecefToEnu);
+      }
+      if (this.polarUniforms_.u_polarRadius) {
+        gl.uniform1f(this.polarUniforms_.u_polarRadius, RADIUS_OF_EARTH);
+      }
+      gl.uniform1f(this.uniforms_.logDepthBufFC, 0.0);
+    } else {
+      gl.uniform1f(this.uniforms_.logDepthBufFC, DepthManager.getConfig().logDepthBufFC);
+    }
   }
 
   private readonly shaders_ = {
@@ -550,12 +606,42 @@ export class LineManager {
 
       in vec4 vColor;
       in float vAlpha;
+      in vec3 v_eciPos;
+      in float v_flatX;
+      in float v_polarR;
 
       uniform float logDepthBufFC;
+      uniform bool u_flatMapMode;
+      uniform bool u_ecfMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_flatMapCenterX;
 
       out vec4 fragColor;
 
       void main(void) {
+        // Discard line fragments below the horizon in polar view
+        if (v_polarR > 1.0) discard;
+
+        // Discard line fragments that cross the antimeridian.
+        // The interpolated ECI position stays near the actual satellite path,
+        // but the interpolated flat X diverges across the map for crossing segments.
+        if (u_flatMapMode) {
+          float PI = 3.14159265359;
+          float mapW = 2.0 * PI * u_earthRadius;
+          float recomputedLon;
+          if (u_ecfMode) {
+            recomputedLon = atan(v_eciPos.y, v_eciPos.x);
+          } else {
+            recomputedLon = atan(v_eciPos.y, v_eciPos.x) - u_gmst;
+          }
+          recomputedLon = mod(recomputedLon + PI, 2.0 * PI) - PI;
+          float recomputedFlatX = recomputedLon * u_earthRadius;
+          // Wrap to camera center to match vertex shader wrapping
+          recomputedFlatX = u_flatMapCenterX + mod(recomputedFlatX - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+          if (abs(v_flatX - recomputedFlatX) > 50.0) discard;
+        }
+
         fragColor = vec4(vColor[0],vColor[1],vColor[2], vColor[3] * vAlpha);
 
         ${DepthManager.getLogDepthFragCode()}
@@ -571,20 +657,127 @@ export class LineManager {
       uniform mat4 u_pCamMatrix;
       uniform vec3 worldOffset;
       uniform float logDepthBufFC;
+      uniform bool u_flatMapMode;
+      uniform bool u_ecfMode;
+      uniform float u_gmst;
+      uniform float u_earthRadius;
+      uniform float u_flatMapCenterX;
+      uniform bool u_polarViewMode;
+      uniform vec3 u_sensorEcef;
+      uniform mat3 u_ecefToEnu;
+      uniform float u_polarRadius;
 
       out vec4 vColor;
       out float vAlpha;
+      out vec3 v_eciPos;
+      out float v_flatX;
+      out float v_polarR;
 
       void main(void) {
           // Apply offset in world space, then transform
           vec4 worldPosition = u_mVMatrix * vec4(a_position.xyz, 1.0);
-          vec4 position = u_pCamMatrix * vec4(worldPosition.xyz + worldOffset, 1.0);
+          vec3 eciPos = worldPosition.xyz + worldOffset;
+          vec4 position;
+
+          v_eciPos = vec3(0.0);
+          v_flatX = 0.0;
+          v_polarR = 0.0;
+
+          if (u_flatMapMode) {
+              float PI = 3.14159265359;
+              float eciDist = length(eciPos);
+
+              // Filter out distant objects
+              if (eciDist > 1.0e7) {
+                  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                  vColor = u_color;
+                  vAlpha = 0.0;
+                  return;
+              }
+
+              float lon;
+              if (u_ecfMode) {
+                  lon = atan(eciPos.y, eciPos.x);
+              } else {
+                  lon = atan(eciPos.y, eciPos.x) - u_gmst;
+              }
+              lon = mod(lon + PI, 2.0 * PI) - PI;
+              float lat = atan(eciPos.z, length(eciPos.xy));
+              float alt = eciDist - u_earthRadius;
+              vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+
+              // Wrap X to nearest copy of camera center for seamless scrolling
+              float mapW = 2.0 * PI * u_earthRadius;
+              flatPos.x = u_flatMapCenterX + mod(flatPos.x - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
+
+              position = u_pCamMatrix * vec4(flatPos, 1.0);
+
+              // Pass ECI position and flat X for antimeridian detection in fragment shader
+              v_eciPos = eciPos;
+              v_flatX = flatPos.x;
+          } else if (u_polarViewMode) {
+              float PI = 3.14159265359;
+              float eciDist = length(eciPos);
+
+              if (eciDist > 1.0e8) {
+                  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                  vColor = u_color;
+                  vAlpha = 0.0;
+                  v_polarR = 2.0;
+                  return;
+              }
+
+              // Orbit data is already in ECEF (per-vertex GMST applied in orbit cruncher)
+              vec3 ecef = eciPos;
+
+              // ECEF to ENU
+              vec3 d = ecef - u_sensorEcef;
+              vec3 enu = u_ecefToEnu * d;
+
+              // ENU to azimuth/elevation
+              float az = atan(enu.x, enu.y);
+              float el = atan(enu.z, length(enu.xy));
+
+              // r=0 at zenith, r=1 at horizon, r>1 below horizon
+              float r = (PI / 2.0 - el) / (PI / 2.0);
+              v_polarR = r;
+
+              vec3 polarPos = vec3(
+                  r * sin(az) * u_polarRadius,
+                  r * cos(az) * u_polarRadius,
+                  0.1
+              );
+
+              position = u_pCamMatrix * vec4(polarPos, 1.0);
+          } else {
+              if (u_ecfMode) {
+                  if (a_position.w < 0.0) {
+                      // First orbit point stored in ECI (negative alpha flag)
+                      // — skip ECEF→ECI rotation to avoid float32 roundtrip jitter
+                      position = u_pCamMatrix * vec4(eciPos, 1.0);
+                  } else {
+                      // Rotate raw ECEF → ECI before adding worldOffset
+                      vec3 ecefPos = worldPosition.xyz;
+                      float c = cos(u_gmst);
+                      float s = sin(u_gmst);
+                      vec3 rotated = vec3(
+                          ecefPos.x * c - ecefPos.y * s,
+                          ecefPos.x * s + ecefPos.y * c,
+                          ecefPos.z
+                      );
+                      position = u_pCamMatrix * vec4(rotated + worldOffset, 1.0);
+                  }
+              } else {
+                  position = u_pCamMatrix * vec4(eciPos, 1.0);
+              }
+          }
+
           gl_Position = position;
 
           ${DepthManager.getLogDepthVertCode()}
 
           vColor = u_color;
-          vAlpha = a_position[3];
+          vAlpha = abs(a_position[3]);
       }
       `,
   };

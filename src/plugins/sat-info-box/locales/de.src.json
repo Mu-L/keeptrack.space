@@ -1,29 +1,29 @@
 {
   "satInfoBox": {
-    "title": "識別子",
+    "title": "Kennungen",
     "Cospar": {
       "label": "COSPAR",
-      "tooltip": "国際デザイン番号"
+      "tooltip": "Internationaler Designator"
     },
     "Norad": {
       "label": "NORAD",
-      "tooltip": "北米航空宇宙防衛司令部のカタログ番号"
+      "tooltip": "Katalognummer des Nordamerikanischen Luft- und Weltraumverteidigungskommandos"
     },
     "AltName": {
-      "label": "別名",
-      "tooltip": "衛星の別名"
+      "label": "Alt. Name",
+      "tooltip": "Alternativer Satellitenname"
     },
     "AltId": {
-      "label": "別ID",
-      "tooltip": "衛星の別ID"
+      "label": "Alt. ID",
+      "tooltip": "Alternative Satelliten-ID"
     },
     "Source": {
-      "label": "情報源",
-      "tooltip": "衛星情報のデータソース"
+      "label": "Quelle",
+      "tooltip": "Datenquelle für die Satelliteninformationen"
     },
     "Confidence": {
-      "label": "信頼度",
-      "tooltip": "データの信頼度（高いほど良い）、1～10のスケール。情報源とデータの新しさに基づく"
+      "label": "Vertrauen",
+      "tooltip": "Vertrauensniveau der Daten (je höher, desto besser) auf einer Skala von 1-10. Basierend auf Quelle und Alter der Daten"
     }
   }
 }

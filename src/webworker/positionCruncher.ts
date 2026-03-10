@@ -23,15 +23,11 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import {
-  Celestial,
   DEG2RAD,
   Degrees,
-  DetailedSatellite,
-  DetailedSensor,
-  EcfVec3,
-  EciVec3,
-  EpochUTC,
+  EcefVec3,
   GreenwichMeanSiderealTime,
   Kilometers,
   KilometersPerSecond,
@@ -41,19 +37,21 @@ import {
   PI,
   Radians,
   RaeVec3,
+  Satellite,
   Sgp4,
   SpaceObjectType,
   Sun,
   TAU,
+  TemeVec3,
   Vector3D,
-  ecfRad2rae,
-  eci2ecf,
+  ecefRad2rae,
+  eci2ecef,
   eci2lla,
   lla2eci,
-  rae2eci,
 } from '@ootk/src/main';
 import { GROUND_BUFFER_DISTANCE, RADIUS_OF_EARTH, STAR_DISTANCE } from '../engine/utils/constants';
 import { PosCruncherCachedObject, PositionCruncherIncomingMsg, PositionCruncherOutgoingMsg } from './constants';
+import { MarkerMode, PosCruncherMsgType } from './position-cruncher-messages';
 import { setupTimeVariables } from './positionCruncher/calculations';
 import { resetPosition, resetVelocity } from './positionCruncher/satCache';
 
@@ -94,18 +92,12 @@ export enum CruncerMessageTypes {
   SENSOR = 'SENSOR',
   UPDATE_MARKERS = 'UPDATE_MARKERS',
   SUNLIGHT_VIEW = 'SUNLIGHT_VIEW',
+  CAMERA_DATA = 'CAMERA_DATA',
 }
 
-export enum MarkerMode {
-  OFF,
-}
 
 const EMPTY_FLOAT32_ARRAY = new Float32Array(0);
 const EMPTY_INT8_ARRAY = new Int8Array(0);
-const STAR_LAT = <Degrees>0;
-const STAR_LON = <Degrees>188; // TODO: This is a hack.
-
-let isResponseCount = 0;
 
 /** ARRAYS */
 let objCache = <PosCruncherCachedObject[]>[]; // Cache of Satellite Data from TLE.json and Static Data from variable.js
@@ -116,19 +108,17 @@ let satInView = EMPTY_INT8_ARRAY; // Array of booleans showing if current Satell
 let satInSun = EMPTY_INT8_ARRAY; // Array of booleans showing if current Satellite is in sunlight
 const sensorMarkerArray = [0]; // Array of Markers used to show sensor fence and FOV
 
-let satelliteSelected = [-1]; // Array used to determine which satellites are selected
 
-let isInterupted = false; // Boolean used to determine if the worker is interupted
+let isInterrupted = false; // Boolean used to determine if the worker is interupted
 
 /** TIME VARIABLES */
 const PROPAGATION_INTERVAL = 1000 as Milliseconds; // Limits how often the propagation loop runs
 let propagationRunning = false; // Prevent Propagation From Running Twice
-// let timeSyncRunning = false; // Prevent Time Sync Loop From Running Twice
 let divisor = 1; // When running at high speeds, allow faster propagation
 let dynamicOffsetEpoch = Date.now();
 let staticOffset = 0;
-let propRate = 1; // vars us run time faster (or slower) than normal
-// let propChangeTime = Date.now(); // vars us run time faster (or slower) than normal
+let propRate = 1;
+let lastGmst = 0; // GMST used for the last position computation
 
 /** Settings */
 let isSensor = false;
@@ -138,19 +128,53 @@ let isSunlightView = false;
 let isLowPerf = false;
 let markerMode = MarkerMode.OFF;
 
+let catalogSeqNum = 0; // Catalog version — echoed back in outgoing messages so main thread can discard stale data
+
 let isResetFOVBubble = false;
 let isResetSatOverfly = false;
-let isResetMarker = false;
-let isResetInView = false;
 
 let fieldOfViewSetLength = 0;
 let len: number;
-let MAX_DIFFERENCE_BETWEEN_POS = 50;
+
+/** TIERED UPDATE SYSTEM */
+let vpMatrix_: Float32Array | null = null;
+let camPosEci_: Float32Array | null = null;
+let isFrustumCullingEnabled_ = true;
+let tierCycleCounter_ = 0;
+let isOnScreen_ = new Uint8Array(0); // 1 = on-screen (update every cycle), 0 = off-screen or occluded
+let lastTierUpdateCycle_ = -1;
+let skipNextVisibilityUpdate_ = false; // Set on time change so fill(1) survives one full cycle
+let lastPropSimTime_ = 0; // ms — simulation time of the last propagation cycle
+const TIER_RECOMPUTE_INTERVAL_ = 5;
+const OFF_SCREEN_UPDATE_INTERVAL_ = 10; // Off-screen/occluded satellites update every 10th cycle (~2s)
+// Slightly larger than Earth radius to account for atmosphere and avoid popping
+const EARTH_OCCLUSION_RADIUS_SQ_ = 6471 * 6471;
 
 /** OBSERVER VARIABLES */
 let sensors: DetailedSensor[] = [];
 
 const isThisJest = typeof process !== 'undefined' && process?.release?.name;
+
+/**
+ * Reset mutable state that can become stale during a catalog swap.
+ * Called from the OBJ_DATA handler before the first propagation of the new catalog.
+ */
+const resetForCatalogSwap = (newLen: number, fovSetLength: number, seqNum: number) => {
+  satPos = new Float32Array(newLen * 3);
+  satVel = new Float32Array(newLen * 3);
+  satInView = EMPTY_INT8_ARRAY;
+  satInSun = EMPTY_INT8_ARRAY;
+  catalogSeqNum = seqNum;
+  fieldOfViewSetLength = fovSetLength;
+  isInterrupted = false;
+  isResetFOVBubble = false;
+  isResetSatOverfly = false;
+  // Reset tier state so all objects propagate on first cycle after swap
+  tierCycleCounter_ = 0;
+  lastTierUpdateCycle_ = -1;
+  lastPropSimTime_ = 0;
+  isOnScreen_ = new Uint8Array(0);
+};
 
 // Handles Incomming Messages to sat-cruncher from main thread
 try {
@@ -183,55 +207,68 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
   let i = 0;
   let extraData = [] as ExtraDataMessage[];
   const extra = {
-    isLowAlt: <boolean>null,
-    inclination: <Radians>null,
-    eccentricity: <number>null,
-    raan: <Radians>null,
-    argOfPerigee: <Radians>null,
-    meanMotion: <number>null,
-    semiMajorAxis: <Kilometers>null,
-    semiMinorAxis: <Kilometers>null,
-    apogee: <Kilometers>null,
-    perigee: <Kilometers>null,
-    period: <Minutes>null,
-    tle1: <string>null,
-    tle2: <string>null,
+    isLowAlt: false,
+    inclination: 0 as Radians,
+    eccentricity: 0,
+    raan: 0 as Radians,
+    argOfPerigee: 0 as Radians,
+    meanMotion: 0,
+    semiMajorAxis: 0 as Kilometers,
+    semiMinorAxis: 0 as Kilometers,
+    apogee: 0 as Kilometers,
+    perigee: 0 as Kilometers,
+    period: 0 as Minutes,
+    tle1: '',
+    tle2: '',
   };
 
   switch (m.data.typ) {
-    case CruncerMessageTypes.OFFSET:
-      staticOffset = m.data.staticOffset;
-      dynamicOffsetEpoch = m.data.dynamicOffsetEpoch;
-      propRate = m.data.propRate;
-      isInterupted = true;
+    case PosCruncherMsgType.OFFSET:
+      staticOffset = m.data.staticOffset ?? 0;
+      dynamicOffsetEpoch = m.data.dynamicOffsetEpoch ?? Date.now();
+      propRate = m.data.propRate ?? 1;
+      isInterrupted = true;
 
-      // Changing this to 0.1 caused issues...
-      divisor = 1;
+      // Scale propagation frequency linearly with propRate
+      divisor = Math.max(1, Math.abs(propRate));
+
+      // Force all satellites to propagate on next cycle (time jump invalidates extrapolated positions)
+      if (isOnScreen_.length > 0) {
+        isOnScreen_.fill(1);
+      }
+      skipNextVisibilityUpdate_ = true;
+      lastPropSimTime_ = 0;
 
       return;
-    case CruncerMessageTypes.OBJ_DATA:
+    case PosCruncherMsgType.OBJ_DATA:
       satData = JSON.parse(m.data.dat);
       len = satData.length;
 
+      // Clear previous catalog data for catalog swap support
+      objCache = [];
+
       while (i < len) {
         const extraRec = {
-          isLowAlt: <boolean>null,
-          inclination: <Radians>null,
-          eccentricity: <number>null,
-          raan: <Radians>null,
-          argOfPerigee: <Radians>null,
-          meanMotion: <number>null,
-          semiMajorAxis: <number>null,
-          semiMinorAxis: <number>null,
-          apogee: <Kilometers>null,
-          perigee: <Kilometers>null,
-          period: <Minutes>null,
+          isLowAlt: false,
+          inclination: 0 as Radians,
+          eccentricity: 0,
+          raan: 0 as Radians,
+          argOfPerigee: 0 as Radians,
+          meanMotion: 0,
+          semiMajorAxis: 0,
+          semiMinorAxis: 0,
+          apogee: 0 as Kilometers,
+          perigee: 0 as Kilometers,
+          period: 0 as Minutes,
         };
         // Satellites always have a tle1
 
-        if (satData[i]?.tle1) {
+        const tle1 = satData[i]?.tle1;
+        const tle2 = satData[i]?.tle2;
+
+        if (tle1 && tle2) {
           // perform and store sat init calcs
-          const satrec = Sgp4.createSatrec(satData[i].tle1, satData[i].tle2);
+          const satrec = Sgp4.createSatrec(tle1, tle2);
 
           extraRec.isLowAlt = satrec.isimp;
           extraRec.inclination = <Radians>satrec.inclo;
@@ -268,15 +305,17 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
         }
       }
 
-      satPos = new Float32Array(len * 3);
-      satVel = new Float32Array(len * 3);
+      resetForCatalogSwap(len, m.data.fieldOfViewSetLength ?? 0, m.data.seqNum ?? 0);
 
       if (m.data.isLowPerf) {
         isLowPerf = true;
       }
       break;
-    case CruncerMessageTypes.SAT_EDIT:
+    case PosCruncherMsgType.SAT_EDIT:
       {
+        if (m.data.id === undefined) {
+          break;
+        }
         // replace old TLEs
         const satrec = Sgp4.createSatrec(m.data.tle1, m.data.tle2);
 
@@ -304,7 +343,7 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
         objCache[m.data.id].active = true;
         objCache[m.data.id].apogee = extra.apogee;
         objCache[m.data.id].perigee = extra.perigee;
-        objCache[i].isUpdated = true;
+        objCache[m.data.id].isUpdated = true;
 
         if (isThisJest) {
           return;
@@ -315,30 +354,29 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
           extraData: JSON.stringify(extraData),
           satId: m.data.id,
         });
-        isInterupted = true;
+        isInterrupted = true;
       }
       break;
-    case CruncerMessageTypes.NEW_MISSILE:
-      objCache[m.data.id] = <PosCruncherCachedObject>(<unknown>m.data);
+    case PosCruncherMsgType.NEW_MISSILE:
+      if (m.data.id !== undefined) {
+        objCache[m.data.id] = <PosCruncherCachedObject>(<unknown>m.data);
+      }
       break;
-    case CruncerMessageTypes.SATELLITE_SELECTED:
-      satelliteSelected = m.data.satelliteSelected;
-      if (satelliteSelected[0] === -1) {
-        isResetSatOverfly = true;
-        if (!isResetMarker) {
-          isResetMarker = true;
+    case PosCruncherMsgType.SATELLITE_SELECTED:
+      {
+        const ids = m.data.satelliteSelected ?? [-1];
+
+        if (ids[0] === -1) {
+          isResetSatOverfly = true;
         }
       }
       break;
-    case CruncerMessageTypes.SENSOR:
-      sensors = m.data.sensor.filter((s) => s).map((s) => new DetailedSensor(s));
+    case PosCruncherMsgType.SENSOR:
+      sensors = (m.data.sensor ?? []).filter((s) => s).map((s) => new DetailedSensor(s));
       isSensor = sensors.length > 0;
       isSensors = sensors.length > 1;
-      if (!isResetInView) {
-        isResetInView = true;
-      }
       break;
-    case CruncerMessageTypes.UPDATE_MARKERS:
+    case PosCruncherMsgType.UPDATE_MARKERS:
       if (m.data.fieldOfViewSetLength) {
         fieldOfViewSetLength = m.data.fieldOfViewSetLength;
       }
@@ -348,11 +386,23 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
       }
 
       break;
-    case CruncerMessageTypes.SUNLIGHT_VIEW:
+    case PosCruncherMsgType.SUNLIGHT_VIEW:
       if (m.data.isSunlightView) {
         isSunlightView = m.data.isSunlightView;
       }
       break;
+    case PosCruncherMsgType.CAMERA_DATA:
+      if (m.data.vpMatrix) {
+        vpMatrix_ = m.data.vpMatrix;
+      }
+      if (m.data.camPosEci) {
+        camPosEci_ = m.data.camPosEci;
+      }
+      if (typeof m.data.isFrustumCullingEnabled === 'boolean') {
+        isFrustumCullingEnabled_ = m.data.isFrustumCullingEnabled;
+      }
+
+return;
     default:
       // NOTE: For debugging turn this on
 
@@ -362,10 +412,123 @@ export const onmessageProcessing = (m: PositionCruncherIncomingMsg) => {
   }
 
   // Don't start before getting satData!
-  if (!propagationRunning && m.data.typ === CruncerMessageTypes.OBJ_DATA) {
+  if (!propagationRunning && m.data.typ === PosCruncherMsgType.OBJ_DATA) {
     len = -1; // propagteCruncher needs to start at -1 not 0
     propagationLoop();
     propagationRunning = true;
+  }
+};
+
+/**
+ * Tests if a point is inside the view frustum by multiplying by the VP matrix
+ * and checking if NDC coordinates are in range.
+ * Uses a generous margin to account for satellite movement between tier recomputations.
+ *
+ * VP matrix is column-major (gl-matrix convention):
+ *   vp[0..3] = column 0, vp[4..7] = column 1, vp[8..11] = column 2, vp[12..15] = column 3
+ * For row-dot-column: clip.x = vp[0]*x + vp[4]*y + vp[8]*z + vp[12]
+ */
+const isInFrustum_ = (x: number, y: number, z: number, vp: Float32Array): boolean => {
+  const w = vp[3] * x + vp[7] * y + vp[11] * z + vp[15];
+
+  if (w <= 0) {
+    return false; // Behind camera
+  }
+
+  const invW = 1.0 / w;
+  const ndcX = (vp[0] * x + vp[4] * y + vp[8] * z + vp[12]) * invW;
+  const ndcY = (vp[1] * x + vp[5] * y + vp[9] * z + vp[13]) * invW;
+
+  // 1.3 margin accounts for satellites drifting into view between recomputation cycles
+  return ndcX >= -1.3 && ndcX <= 1.3 && ndcY >= -1.3 && ndcY <= 1.3;
+};
+
+/**
+ * Checks if a satellite is occluded by Earth from the camera's perspective.
+ * Uses closest-point-on-segment test: project Earth center (origin) onto
+ * the camera→satellite segment and check distance to Earth surface.
+ */
+const isOccludedByEarth_ = (
+  satX: number, satY: number, satZ: number,
+  camX: number, camY: number, camZ: number,
+): boolean => {
+  const dx = satX - camX;
+  const dy = satY - camY;
+  const dz = satZ - camZ;
+
+  const lenSq = dx * dx + dy * dy + dz * dz;
+
+  if (lenSq === 0) {
+    return false;
+  }
+
+  const dot = -(camX * dx + camY * dy + camZ * dz);
+  const t = dot / lenSq;
+
+  // Earth must be between camera and satellite (0 < t < 1)
+  if (t <= 0 || t >= 1) {
+    return false;
+  }
+
+  const closestX = camX + t * dx;
+  const closestY = camY + t * dy;
+  const closestZ = camZ + t * dz;
+
+  const distSq = closestX * closestX + closestY * closestY + closestZ * closestZ;
+
+  return distSq < EARTH_OCCLUSION_RADIUS_SQ_;
+};
+
+/**
+ * Marks each satellite as on-screen (1) or off-screen/occluded (0).
+ *
+ * On-screen satellites are propagated every cycle.
+ * Off-screen and occluded satellites are propagated every Nth cycle
+ * (staggered by index) and linearly extrapolated in between.
+ *
+ * Only TLE satellites are throttled; stars, land objects, and missiles are always on-screen.
+ */
+const computeScreenVisibility_ = (): void => {
+  if (isOnScreen_.length !== objCache.length) {
+    isOnScreen_ = new Uint8Array(objCache.length);
+    isOnScreen_.fill(1);
+  }
+
+  // If culling is disabled (flat map, polar view) or no camera data yet, mark everything on-screen
+  if (!isFrustumCullingEnabled_ || !vpMatrix_ || !camPosEci_) {
+    isOnScreen_.fill(1);
+
+    return;
+  }
+
+  const cx = camPosEci_[0];
+  const cy = camPosEci_[1];
+  const cz = camPosEci_[2];
+
+  for (let i = 0; i <= len; i++) {
+    // Non-TLE objects are cheap — always on-screen
+    if (!objCache[i]?.satrec) {
+      isOnScreen_[i] = 1;
+      continue;
+    }
+
+    const px = satPos[i * 3];
+    const py = satPos[i * 3 + 1];
+    const pz = satPos[i * 3 + 2];
+
+    // Objects at origin haven't been propagated yet — need initial propagation
+    if (px === 0 && py === 0 && pz === 0) {
+      isOnScreen_[i] = 1;
+      continue;
+    }
+
+    // Occluded by Earth or outside frustum → off-screen
+    // Skip occlusion at high prop rates — satellites move too fast for stale occlusion to be accurate
+    if (propRate <= 60 && isOccludedByEarth_(px, py, pz, cx, cy, cz)) {
+      isOnScreen_[i] = 0;
+    } else {
+      isOnScreen_[i] = isInFrustum_(px, py, pz, vpMatrix_) ? 1 : 0;
+    }
   }
 };
 
@@ -374,6 +537,13 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
   objCache = mockSatCache || objCache;
 
   const { now, j, gmst, gmstNext, isSunExclusion } = setupTimeVariables(dynamicOffsetEpoch, staticOffset, propRate, isSunlightView, sensors);
+
+  // Compute simulation-time delta for velocity extrapolation of tier-skipped satellites
+  const nowMs = now.getTime();
+  const cycleDtSec = lastPropSimTime_ > 0 ? (nowMs - lastPropSimTime_) / 1000 : 0;
+
+  lastPropSimTime_ = nowMs;
+  lastGmst = gmst;
 
   len = isCanSkipMarkers() ? objCache.length - 1 - fieldOfViewSetLength : objCache.length - 1;
 
@@ -386,7 +556,17 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
     satInSun = isSunlightView && (!satInSun || satInSun === EMPTY_INT8_ARRAY) ? new Int8Array(objCache.length) : EMPTY_INT8_ARRAY;
   }
 
-  updateSatCache(now, j, gmst, gmstNext, isSunExclusion);
+  // Recompute screen visibility periodically (not every cycle to save CPU)
+  // Skip one cycle after a time change so the fill(1) survives and all sats get propagated
+  if (skipNextVisibilityUpdate_) {
+    skipNextVisibilityUpdate_ = false;
+    lastTierUpdateCycle_ = tierCycleCounter_;
+  } else if (tierCycleCounter_ - lastTierUpdateCycle_ >= TIER_RECOMPUTE_INTERVAL_ || lastTierUpdateCycle_ < 0) {
+    computeScreenVisibility_();
+    lastTierUpdateCycle_ = tierCycleCounter_;
+  }
+
+  updateSatCache(now, j, gmst, gmstNext, isSunExclusion, cycleDtSec);
   if (isResetFOVBubble) {
     isResetFOVBubble = false;
     len -= fieldOfViewSetLength;
@@ -394,10 +574,12 @@ export const propagationLoop = (mockSatCache?: PosCruncherCachedObject[]) => {
 
   checkForNaN(satPos, satVel);
 
-  if (!isInterupted) {
+  if (!isInterrupted) {
     sendDataToSatSet();
   }
-  isInterupted = false;
+  isInterrupted = false;
+
+  tierCycleCounter_++;
 
   // Allow more time for propagation if there are multiple sensors
   const delay = isSensors ? 2 : 1;
@@ -420,12 +602,12 @@ export const checkForNaN = (satPos: Float32Array, satVel: Float32Array): void =>
   }
 };
 
-export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSiderealTime, gmstNext: number, isSunExclusion: boolean) => {
+export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSiderealTime, gmstNext: number, isSunExclusion: boolean, cycleDtSec = 0) => {
   let i = -1;
   // Using a while loop since some methods may update multiple cache objects
 
   while (i < len) {
-    if (isInterupted) {
+    if (isInterrupted) {
       break;
     }
     i++; // At the beginning so i starts at 0
@@ -433,6 +615,18 @@ export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSidereal
 
     // Don't use satnum because of VIMPEL objects
     if (objCache[i].satrec) {
+      // Off-screen satellites: skip SGP4 most cycles, extrapolate with velocity instead
+      // Stagger by satellite index so SGP4 corrections are spread across cycles
+      if (isOnScreen_.length > i && !isOnScreen_[i] && ((tierCycleCounter_ + i) % OFF_SCREEN_UPDATE_INTERVAL_) !== 0) {
+        if (cycleDtSec > 0) {
+          const i3 = i * 3;
+
+          satPos[i3] += satVel[i3] * cycleDtSec;
+          satPos[i3 + 1] += satVel[i3 + 1] * cycleDtSec;
+          satPos[i3 + 2] += satVel[i3 + 2] * cycleDtSec;
+        }
+        continue;
+      }
       isContinue = !updateSatellite(now, i, gmst, j, isSunExclusion);
     } else if (objCache[i].ra) {
       updateStar(i, now, gmst);
@@ -460,61 +654,58 @@ export const updateSatCache = (now: Date, j: number, gmst: GreenwichMeanSidereal
   }
 };
 
-export const updateStar = (i: number, now: Date, gmst: GreenwichMeanSiderealTime): void => {
-  /*
-   * INFO: 0 Latitude returns upside down results. Using 180 looks right, but more verification needed.
-   * WARNING: 180 and 0 really matter...unclear why
-   */
-  const starPosition = Celestial.azEl(now, STAR_LAT, STAR_LON, objCache[i].ra, objCache[i].dec);
-  const rae = { az: starPosition.az, el: starPosition.el, rng: STAR_DISTANCE };
-  const pos = rae2eci(rae, { lat: <Degrees>0, lon: <Degrees>0, alt: <Kilometers>0 }, gmst);
+export const updateStar = (i: number, _now: Date, _gmst: GreenwichMeanSiderealTime): void => {
+  const ra = objCache[i].ra!;
+  const dec = objCache[i].dec!;
 
-  /*
-   * Reduce Random Jitter by Requiring New Positions to be Similar to Old
-   * THIS MIGHT BE A HORRIBLE
-   */
-  satPos[i * 3] = pos.x;
-  satPos[i * 3 + 1] = pos.y;
-  satPos[i * 3 + 2] = pos.z;
-  /*
-   * if (satPos[i * 3] === 0 || (satPos[i * 3] - pos.x < 0.1 && satPos[i * 3] - pos.x > -0.1)) satPos[i * 3] = pos.x;
-   * if (satPos[i * 3 + 1] === 0 || (satPos[i * 3 + 1] - pos.y < 0.1 && satPos[i * 3 + 1] - pos.y > -0.1)) satPos[i * 3 + 1] = pos.y;
-   * if (satPos[i * 3 + 2] === 0 || (satPos[i * 3 + 2] - pos.z < 0.1 && satPos[i * 3 + 2] - pos.z > -0.1)) satPos[i * 3 + 2] = pos.z;
-   */
+  // J2000 RA/Dec → cartesian (already in the inertial frame, no GMST rotation needed)
+  const cosDec = Math.cos(dec);
+
+  satPos[i * 3] = STAR_DISTANCE * cosDec * Math.cos(ra);
+  satPos[i * 3 + 1] = STAR_DISTANCE * cosDec * Math.sin(ra);
+  satPos[i * 3 + 2] = STAR_DISTANCE * Math.sin(dec);
 };
 export const updateMissile = (i: number, now: Date, gmstNext: number, gmst: GreenwichMeanSiderealTime): boolean => {
-  if (!objCache[i].active) {
+  const missile = objCache[i];
+
+  if (!missile.active) {
     satPos[i * 3] = 0;
     satPos[i * 3 + 1] = 0;
     satPos[i * 3 + 2] = 0;
 
     return false; // Skip inactive missiles
   }
+
+  // Guard: Ensure missile has required properties
+  if (!missile.altList || !missile.latList || !missile.lonList || missile.startTime === undefined) {
+    return false;
+  }
+
   let cosLat: number, cosLon: number, sinLat: number, sinLon: number;
 
-  const tLen = objCache[i].altList.length;
-  let curMissivarTime: number;
+  const tLen = missile.altList.length;
+  let curMissivarTime = 0;
 
   for (let t = 0; t < tLen; t++) {
-    if (objCache[i].startTime * 1 + t * 1000 >= now.getTime()) {
+    if (missile.startTime * 1 + t * 1000 >= now.getTime()) {
       curMissivarTime = t;
       break;
     }
   }
 
-  objCache[i].lastTime = objCache[i].lastTime >= 0 ? objCache[i].lastTime : 0;
+  missile.lastTime = missile.lastTime !== undefined && missile.lastTime >= 0 ? missile.lastTime : 0;
 
-  const timeIndex = objCache[i].lastTime + 1;
-  const lat = objCache[i].latList[timeIndex];
-  const lon = objCache[i].lonList[timeIndex];
-  const alt = objCache[i].altList[timeIndex];
+  const timeIndex = missile.lastTime + 1;
+  const lat = missile.latList[timeIndex];
+  const lon = missile.lonList[timeIndex];
+  const alt = missile.altList[timeIndex];
 
   cosLat = Math.cos(lat * DEG2RAD);
   sinLat = Math.sin(lat * DEG2RAD);
   cosLon = Math.cos(lon * DEG2RAD + gmstNext);
   sinLon = Math.sin(lon * DEG2RAD + gmstNext);
 
-  if (objCache[i].lastTime === 0) {
+  if (missile.lastTime === 0) {
     resetVelocity(satVel, i);
   } else if (satVel[i * 3] === 0 && satVel[i * 3 + 1] === 0 && satVel[i * 3 + 2] === 0) {
     satVel[i * 3] = (6371 + alt) * cosLat * cosLon - satPos[i * 3];
@@ -529,25 +720,25 @@ export const updateMissile = (i: number, now: Date, gmstNext: number, gmst: Gree
     satVel[i * 3 + 2] *= 0.5;
   }
 
-  cosLat = Math.cos(objCache[i].latList[curMissivarTime] * DEG2RAD);
-  sinLat = Math.sin(objCache[i].latList[curMissivarTime] * DEG2RAD);
-  cosLon = Math.cos(objCache[i].lonList[curMissivarTime] * DEG2RAD + gmst);
-  sinLon = Math.sin(objCache[i].lonList[curMissivarTime] * DEG2RAD + gmst);
+  cosLat = Math.cos(missile.latList[curMissivarTime] * DEG2RAD);
+  sinLat = Math.sin(missile.latList[curMissivarTime] * DEG2RAD);
+  cosLon = Math.cos(missile.lonList[curMissivarTime] * DEG2RAD + gmst);
+  sinLon = Math.sin(missile.lonList[curMissivarTime] * DEG2RAD + gmst);
 
-  satPos[i * 3] = (6371 + objCache[i].altList[curMissivarTime]) * cosLat * cosLon;
-  satPos[i * 3 + 1] = (6371 + objCache[i].altList[curMissivarTime]) * cosLat * sinLon;
-  satPos[i * 3 + 2] = (6371 + objCache[i].altList[curMissivarTime]) * sinLat;
+  satPos[i * 3] = (6371 + missile.altList[curMissivarTime]) * cosLat * cosLon;
+  satPos[i * 3 + 1] = (6371 + missile.altList[curMissivarTime]) * cosLat * sinLon;
+  satPos[i * 3 + 2] = (6371 + missile.altList[curMissivarTime]) * sinLat;
 
-  objCache[i].lastTime = curMissivarTime;
+  missile.lastTime = curMissivarTime;
 
   const x = <Kilometers>satPos[i * 3];
   const y = <Kilometers>satPos[i * 3 + 1];
   const z = <Kilometers>satPos[i * 3 + 2];
 
-  const positionEcf = eci2ecf({ x, y, z }, gmst);
+  const positionEcf = eci2ecef({ x, y, z }, gmst);
 
-  if (eci2lla({ x, y, z }, gmst).alt <= 150 && !objCache[i].latList) {
-    objCache[i].active = false;
+  if (eci2lla({ x, y, z }, gmst).alt <= 150 && !missile.latList) {
+    missile.active = false;
   }
 
   if (sensors.length > 0) {
@@ -555,9 +746,9 @@ export const updateMissile = (i: number, now: Date, gmstNext: number, gmst: Gree
       if (satInView[i] === 1) {
         break;
       }
-      const rae = ecfRad2rae(sensor.llaRad(), positionEcf);
+      const rae = ecefRad2rae(sensor.llaRad(), positionEcf);
 
-      satInView[i] = sensor.isRaeInFov(rae) ? 1 : 0;
+      satInView[i] = sensor.isRaeInFov(rae.az, rae.el, rae.rng) ? 1 : 0;
     }
   } else {
     satInView[i] = 0;
@@ -581,31 +772,29 @@ export const updateLandObject = (i: number, gmst: GreenwichMeanSiderealTime): vo
 };
 
 export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderealTime, j: number, isSunExclusion: boolean): boolean => {
-  let positionEcf: EcfVec3;
+  let positionEcf: EcefVec3 | null;
   let rae: RaeVec3<Kilometers, Degrees>;
-  const satelliteData = objCache[i] as unknown as DetailedSatellite; // This is checked in updateSatCache
+  const satelliteData = objCache[i] as unknown as Satellite; // This is checked in updateSatCache
 
   // Skip reentries
   if (!satelliteData.active) {
     return false;
   }
   const m = (j - satelliteData.satrec.jdsatepoch) * 1440.0; // 1440 = minutes_per_day
-  const pv = Sgp4.propagate(satelliteData.satrec, m) as { position: EciVec3; velocity: EciVec3<KilometersPerSecond> };
+  const pv = Sgp4.propagate(satelliteData.satrec, m) as { position: TemeVec3; velocity: TemeVec3<KilometersPerSecond> };
 
   try {
-    if (isResponseCount < 5 && isResponseCount > 1 && !objCache[i].isUpdated) {
-      MAX_DIFFERENCE_BETWEEN_POS = Math.max(MAX_DIFFERENCE_BETWEEN_POS, MAX_DIFFERENCE_BETWEEN_POS * propRate);
-      if (
-        Math.abs(pv.position.x - satPos[i * 3]) > MAX_DIFFERENCE_BETWEEN_POS ||
-        Math.abs(pv.position.y - satPos[i * 3 + 1]) > MAX_DIFFERENCE_BETWEEN_POS ||
-        Math.abs(pv.position.z - satPos[i * 3 + 2]) > MAX_DIFFERENCE_BETWEEN_POS
-      ) {
-        throw new Error('Impossible orbit');
-      }
-    }
-
     if (isNaN(pv.position.x) || isNaN(pv.position.y) || isNaN(pv.position.z)) {
       return false;
+    }
+
+    // Specific orbital energy: E = v²/2 - μ/r. Positive = unbound (impossible for cataloged satellite).
+    // Also reject positions inside Earth (rMag < 6350 km, below polar radius).
+    const rMag = Math.sqrt(pv.position.x * pv.position.x + pv.position.y * pv.position.y + pv.position.z * pv.position.z);
+    const vMagSq = pv.velocity.x * pv.velocity.x + pv.velocity.y * pv.velocity.y + pv.velocity.z * pv.velocity.z;
+
+    if (0.5 * vMagSq - 398600.4418 / rMag > 0 || rMag < 6350) {
+      throw new Error('Impossible orbit');
     }
 
     satPos[i * 3] = pv.position.x;
@@ -615,10 +804,6 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
     satVel[i * 3] = pv.velocity.x;
     satVel[i * 3 + 1] = pv.velocity.y;
     satVel[i * 3 + 2] = pv.velocity.z;
-
-    if (objCache[i].isUpdated) {
-      objCache[i].isUpdated = false;
-    }
 
     /*
      * Make sure that objects with an imprecise orbit or an old elset
@@ -643,7 +828,7 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
       const kmax = 20;
       let k = 0;
       let lat = Math.atan2(pv.position.z, Math.sqrt(pv.position.x * pv.position.x + pv.position.y * pv.position.y));
-      let C: number;
+      let C = 1 / Math.sqrt(1 - e2 * (Math.sin(lat) * Math.sin(lat)));
 
       while (k < kmax) {
         C = 1 / Math.sqrt(1 - e2 * (Math.sin(lat) * Math.sin(lat)));
@@ -652,7 +837,10 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
       }
       const alt = R / Math.cos(lat) - a * C;
 
-      if (alt > objCache[i].apogee + 1000 || alt < objCache[i].perigee - 100) {
+      const apogee = objCache[i].apogee ?? Infinity;
+      const perigee = objCache[i].perigee ?? 0;
+
+      if (alt > apogee + 1000 || alt < perigee - 100) {
         throw new Error('Impossible orbit');
       }
     }
@@ -673,11 +861,11 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
     satVel[i * 3 + 2] = 0;
 
     positionEcf = null;
-    rae = null;
+    rae = { az: 0 as Degrees, el: 0 as Degrees, rng: 0 as Kilometers };
   }
 
   if (isSunlightView) {
-    const sunPos = Sun.position(EpochUTC.fromDateTime(now));
+    const sunPos = Sun.eci(now);
     const lighting = Sun.lightingRatio(new Vector3D(pv.position.x, pv.position.y, pv.position.z), sunPos);
 
     satInSun[i] = SunStatus.SUN;
@@ -700,20 +888,20 @@ export const updateSatellite = (now: Date, i: number, gmst: GreenwichMeanSiderea
             break;
           }
           try {
-            positionEcf = eci2ecf(pv.position, gmst); // pv.position is called positionEci originally
-            rae = ecfRad2rae(sensor.llaRad(), positionEcf);
+            positionEcf = eci2ecef(pv.position, gmst); // pv.position is called positionEci originally
+            rae = ecefRad2rae(sensor.llaRad(), positionEcf);
           } catch {
             continue;
           }
-          satInView[i] = sensor.isRaeInFov(rae) ? 1 : 0;
+          satInView[i] = sensor.isRaeInFov(rae.az, rae.el, rae.rng) ? 1 : 0;
         }
       }
       // Skip Calculating Lookangles if No Sensor is Selected
     } else if (isSensor) {
-      rae = ecfRad2rae(sensors[0].llaRad(), eci2ecf(pv.position, gmst));
+      rae = ecefRad2rae(sensors[0].llaRad(), eci2ecef(pv.position, gmst));
       // If it is an optical sensor and the satellite is in the dark, skip it
       if (!(sensors[0].type === SpaceObjectType.OPTICAL && satInSun[i] === SunStatus.UMBRAL)) {
-        satInView[i] = sensors[0].isRaeInFov(rae) ? 1 : 0;
+        satInView[i] = sensors[0].isRaeInFov(rae.az, rae.el, rae.rng) ? 1 : 0;
       }
     }
   }
@@ -734,12 +922,10 @@ export const resetInactiveMarkers = (i: number) => {
 };
 
 export const sendDataToSatSet = () => {
-  if (isResponseCount < 5) {
-    isResponseCount++;
-  }
-
   const postMessageArray = <PositionCruncherOutgoingMsg>{
     satPos,
+    gmst: lastGmst,
+    seqNum: catalogSeqNum,
   };
   // Add In View Data if Sensor Selected
 

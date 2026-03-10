@@ -1,38 +1,97 @@
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { WebWorkerThreadManager } from '@app/engine/threads/web-worker-thread';
-import { OrbitCruncherInMsgs, OrbitCruncherMsgType, OrbitCruncherOutMsgPoints, OrbitCruncherOutMsgReady } from '@app/webworker/orbit-cruncher-interfaces';
+import {
+  OrbitCruncherInMsgs,
+  OrbitCruncherMsgType,
+  OrbitCruncherOutMsgPoints,
+  OrbitDrawTypes,
+} from '@app/webworker/orbit-cruncher-messages';
+import { Degrees, Kilometers } from '@ootk/src/main';
 
 export class OrbitCruncherThreadManager extends WebWorkerThreadManager {
   readonly WEB_WORKER_CODE: string = 'js/orbitCruncher.js';
 
-  protected onMessage(m: MessageEvent<OrbitCruncherOutMsgPoints | OrbitCruncherOutMsgReady>) {
-    const { data } = m;
+  // ─── Typed Send Methods ─────────────────────────────────────────────
 
-    if (!data) {
+  sendInit(objData: string, numSegs: number, orbitFadeFactor?: number, numberOfOrbitsToDraw?: number): void {
+    this.postMessage({
+      typ: OrbitCruncherMsgType.INIT,
+      objData,
+      numSegs,
+      orbitFadeFactor,
+      numberOfOrbitsToDraw,
+    });
+  }
+
+  sendSatelliteUpdate(
+    id: number, simulationTime: number,
+    isEcfOutput: boolean, isPolarViewEcf?: boolean, tle1?: string, tle2?: string,
+  ): void {
+    this.postMessage({
+      typ: OrbitCruncherMsgType.SATELLITE_UPDATE,
+      id,
+      simulationTime,
+      isEcfOutput,
+      isPolarViewEcf,
+      tle1,
+      tle2,
+    });
+  }
+
+  sendMissileUpdate(
+    id: number, simulationTime: number,
+    isEcfOutput: boolean, isPolarViewEcf?: boolean,
+    latList?: Degrees[], lonList?: Degrees[], altList?: Kilometers[],
+  ): void {
+    this.postMessage({
+      typ: OrbitCruncherMsgType.MISSILE_UPDATE,
+      id,
+      simulationTime,
+      isEcfOutput,
+      isPolarViewEcf,
+      latList,
+      lonList,
+      altList,
+    });
+  }
+
+  sendChangeOrbitType(orbitType: OrbitDrawTypes): void {
+    this.postMessage({
+      typ: OrbitCruncherMsgType.CHANGE_ORBIT_TYPE,
+      orbitType,
+    });
+  }
+
+  sendSettingsUpdate(numberOfOrbitsToDraw: number): void {
+    this.postMessage({
+      typ: OrbitCruncherMsgType.SETTINGS_UPDATE,
+      numberOfOrbitsToDraw,
+    });
+  }
+
+  // ─── Incoming Message Handler ───────────────────────────────────────
+
+  protected onMessage(m: MessageEvent) {
+    // Handle 'ready' string from base class pattern
+    if (m.data === 'ready') {
+      this.isReady_ = true;
+
       return;
     }
 
-    switch (data.type) {
-      case OrbitCruncherMsgType.RESPONSE_READY:
-        this.handleResponseReady_();
-        break;
-      case OrbitCruncherMsgType.RESPONSE_DATA:
-        this.handleResponseData_(data);
-        break;
-      default:
-        throw new Error('Unknown message type from Orbit Cruncher Worker');
+    const data = m.data as OrbitCruncherOutMsgPoints;
+
+    if (!data || data.typ !== OrbitCruncherMsgType.RESPONSE_DATA) {
+      return;
     }
 
+    this.handleResponseData_(data);
   }
 
   postMessage(message: OrbitCruncherInMsgs) {
     if (this.worker_) {
       this.worker_.postMessage(message);
     }
-  }
-
-  private handleResponseReady_() {
-    this.isReady_ = true;
   }
 
   private handleResponseData_(data: OrbitCruncherOutMsgPoints) {
@@ -49,7 +108,6 @@ export class OrbitCruncherThreadManager extends WebWorkerThreadManager {
       pointsOut = cachedOrbitData;
     }
 
-
     const gl = ServiceLocator.getRenderer().gl;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, ServiceLocator.getOrbitManager().glBuffers_[satId]);
@@ -58,4 +116,3 @@ export class OrbitCruncherThreadManager extends WebWorkerThreadManager {
     ServiceLocator.getOrbitManager().inProgress_[satId] = false;
   }
 }
-

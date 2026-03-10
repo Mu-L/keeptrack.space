@@ -1,12 +1,14 @@
 /* eslint-disable max-lines */
 import { BottomMenu } from '@app/app/ui/bottom-menu';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, Singletons } from '@app/engine/core/interfaces';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
+import { KeepTrack } from '@app/keeptrack';
 import { t7e, TranslationKey } from '@app/locales/keys';
+import { OfflineIconBehavior } from '@app/settings/core-settings';
 import { BaseObject } from '@ootk/src/main';
 import Module from 'module';
-import type { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
-import { SoundNames } from '../../plugins/sounds/sounds';
+import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
@@ -17,7 +19,39 @@ import { errorManagerInstance } from '../utils/errorManager';
 import { getEl, hideEl } from '../utils/get-el';
 import { shake } from '../utils/shake';
 import { slideInRight, slideOutLeft } from '../utils/slide';
-// TODO: Utilize the event bus to remove dependencies
+
+// Component imports for composition-based architecture
+import { BottomIconComponent } from './components/bottom-icon/bottom-icon-component';
+import { ContextMenuComponent } from './components/context-menu/context-menu-component';
+import { HelpComponent } from './components/help/help-component';
+import { KeyboardComponent } from './components/keyboard/keyboard-component';
+import { SecondaryMenuComponent } from './components/secondary-menu/secondary-menu-component';
+import { SideMenuComponent } from './components/side-menu/side-menu-component';
+
+import downloadPng from '@public/img/icons/download.png';
+import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
+import settingsPng from '@public/img/icons/settings.png';
+export { default as fileExcelPng } from '@public/img/icons/file-excel.png';
+
+// Type guard imports for capability detection
+import {
+  hasBottomIcon,
+  hasContextMenu,
+  hasDownload,
+  hasFormSubmit,
+  hasHelp,
+  hasKeyboardShortcuts,
+  hasSecondaryMenu,
+  hasSideMenu,
+  IconPlacement,
+  UtilityGroup,
+} from './core/plugin-capabilities';
+
+/**
+ * Symbol-keyed property for the login gate token.
+ * Not enumerable — resistant to Object.keys() and devtools property listing.
+ */
+const LOGIN_GATE_KEY = Symbol('loginGate');
 
 export interface ClickDragOptions {
   leftOffset?: number;
@@ -114,7 +148,7 @@ export abstract class KeepTrackPlugin {
   sideMenuSecondaryHtml: string;
 
   sideMenuSecondaryOptions: SideMenuSettingsOptions = {
-    width: 300,
+    width: 400,
     leftOffset: null,
     zIndex: 3,
   };
@@ -124,6 +158,12 @@ export abstract class KeepTrackPlugin {
    * Download icon is automatically added if this is defined.
    */
   downloadIconCb: (() => void) | null = null;
+
+  /**
+   * The image source for the download button icon.
+   * Defaults to the generic download icon. Set to `fileExcelPng` for XLSX exports.
+   */
+  downloadIconSrc: string = downloadPng;
 
   /**
    * Whether the side menu settings are open.
@@ -145,6 +185,19 @@ export abstract class KeepTrackPlugin {
    * Whether the bottom icon is disabled by default.
    */
   isIconDisabledOnLoad = false;
+
+  /**
+   * Whether this plugin requires internet connectivity to function.
+   * When true, the icon will be disabled or hidden when offline,
+   * based on settingsManager.offlineIconBehavior.
+   */
+  requiresInternet = false;
+
+  /**
+   * Whether the icon is currently disabled due to being offline.
+   * Prevents sensor/satellite enable handlers from re-enabling an offline-disabled icon.
+   */
+  private isOfflineDisabled_ = false;
 
   /**
    * The image to use for the bottom icon.
@@ -216,6 +269,12 @@ export abstract class KeepTrackPlugin {
   menuMode: MenuMode[] = [MenuMode.ALL];
 
   /**
+   * When true, the engine render loop is paused while the side menu is open.
+   * This improves performance when the canvas is fully hidden behind a full-width menu.
+   */
+  isRenderPausedOnOpen = false;
+
+  /**
    * The callback to run when the bottom icon is deselected for any reason
    */
   onSetBottomIconToUnselected: () => void;
@@ -226,12 +285,124 @@ export abstract class KeepTrackPlugin {
    */
   secondaryMenuIcon = 'settings';
   bottomIconOrder: number | null = null;
+
+  /**
+   * Where this plugin's icon should appear.
+   * @default IconPlacement.BOTTOM_ONLY
+   */
+  iconPlacement: IconPlacement = IconPlacement.BOTTOM_ONLY;
+
+  /**
+   * Which section of the utility panel this icon belongs to.
+   * Only relevant when iconPlacement is UTILITY_ONLY or BOTH.
+   */
+  utilityGroup: UtilityGroup | null = null;
+
   /**
    * The maximum order for the bottom icon.
    * This is used to ensure that the bottom icons are sorted correctly.
    */
   static readonly MAX_BOTTOM_ICON_ORDER: number = 600;
   private isInitialized_ = false;
+
+  // ============================================================================
+  // Login gate — anti-spoofing token system
+  // ============================================================================
+
+  /**
+   * Whether this plugin requires login to use.
+   * Set by PluginManager when loading a gated pro plugin.
+   */
+  isLoginRequired = false;
+
+  /**
+   * Symbol-keyed rotating token slot. Set by LoginGateService via setLoginGateToken().
+   * Not visible in Object.keys(), for...in, or devtools property list.
+   */
+  private [LOGIN_GATE_KEY]: string | null = null;
+
+  /**
+   * Callback provided by LoginGateService (pro-only) to get the current valid token.
+   * null in OSS builds where LoginGateService does not exist.
+   */
+  static loginGateTokenProvider: (() => string | null) | null = null;
+
+  /**
+   * Callback provided by LoginGateService (pro-only) to open the login modal.
+   * null in OSS builds where ModalLogin does not exist.
+   */
+  static loginGateOpenModal: (() => void) | null = null;
+
+  /**
+   * Sets the login gate token on a plugin instance. Called by LoginGateService
+   * to distribute or clear rotating tokens.
+   */
+  static setLoginGateToken(plugin: KeepTrackPlugin, token: string | null): void {
+    plugin[LOGIN_GATE_KEY] = token;
+  }
+
+  /**
+   * Checks whether the login gate allows this plugin to be used.
+   * Returns true if the plugin is not gated or if the token matches.
+   */
+  isLoginGateValid_(): boolean {
+    if (!this.isLoginRequired) {
+      return true;
+    }
+
+    if (settingsManager.isDisableLoginGate) {
+      return true;
+    }
+
+    const expectedToken = KeepTrackPlugin.loginGateTokenProvider?.() ?? null;
+
+    if (!expectedToken) {
+      return false;
+    }
+
+    return this[LOGIN_GATE_KEY] === expectedToken;
+  }
+
+  // ============================================================================
+  // Component instances for composition-based architecture
+  // These are initialized when config methods are detected on the plugin
+  // ============================================================================
+
+  /**
+   * Bottom icon component instance (when using composition pattern).
+   */
+  protected bottomIconComponent_: BottomIconComponent | null = null;
+
+  /**
+   * Side menu component instance (when using composition pattern).
+   */
+  protected sideMenuComponent_: SideMenuComponent | null = null;
+
+  /**
+   * Secondary menu component instance (when using composition pattern).
+   */
+  protected secondaryMenuComponent_: SecondaryMenuComponent | null = null;
+
+  /**
+   * Context menu component instance (when using composition pattern).
+   */
+  protected contextMenuComponent_: ContextMenuComponent | null = null;
+
+  /**
+   * Help component instance (when using composition pattern).
+   */
+  protected helpComponent_: HelpComponent | null = null;
+
+  /**
+   * Keyboard component instance (when using composition pattern).
+   */
+  protected keyboardComponent_: KeyboardComponent | null = null;
+
+  /**
+   * Whether this plugin uses the new composition-based architecture.
+   * This is automatically set based on the presence of config methods.
+   */
+  protected usesCompositionPattern_ = false;
 
   /**
    * Creates a new instance of the KeepTrackPlugin class.
@@ -279,10 +450,23 @@ export abstract class KeepTrackPlugin {
 
     this.bottomIconOrder = settingsManager.plugins?.[this.id]?.order ?? null;
 
+    // Check if this plugin uses the new composition-based architecture
+    this.detectAndInitializeComponents_();
+
     this.addHtml();
     this.addJs();
 
-    if (this.helpTitle && this.helpBody) {
+    // Register help - prefer config method, fall back to properties
+    if (hasHelp(this)) {
+      const helpConfig = this.getHelpConfig();
+
+      this.helpComponent_ = new HelpComponent(
+        this.id,
+        helpConfig,
+        () => this.isMenuButtonActive,
+      );
+      this.helpComponent_.init();
+    } else if (this.helpTitle && this.helpBody) {
       this.registerHelp(this.helpTitle, this.helpBody);
     } else if (this.helpBody) {
       throw new Error(`${this.id} help title and body must both be defined.`);
@@ -293,6 +477,187 @@ export abstract class KeepTrackPlugin {
     this.isInitialized_ = true;
   }
 
+  /**
+   * Detect if this plugin uses config methods and initialize components accordingly.
+   * This enables the composition-based architecture when config methods are present.
+   */
+  private detectAndInitializeComponents_(): void {
+    // Check for any config methods to determine if using composition pattern
+    this.usesCompositionPattern_ = hasBottomIcon(this) || hasSideMenu(this) ||
+      hasSecondaryMenu(this) || hasContextMenu(this) || hasHelp(this) ||
+      hasKeyboardShortcuts(this);
+
+    if (!this.usesCompositionPattern_) {
+      return;
+    }
+
+    // Initialize bottom icon component if config method exists
+    if (hasBottomIcon(this)) {
+      const config = this.getBottomIconConfig();
+
+      // Sync with legacy properties for backwards compatibility
+      this.bottomIconElementName = config.elementName;
+      this.bottomIconLabel = config.label;
+      this.bottomIconImg = config.image as unknown as Module;
+      this.isIconDisabledOnLoad = config.isDisabledOnLoad ?? this.isIconDisabledOnLoad;
+      if (config.menuMode) {
+        this.menuMode = config.menuMode;
+      }
+      if (config.order !== undefined) {
+        this.bottomIconOrder = config.order;
+      }
+      if (config.placement) {
+        this.iconPlacement = config.placement;
+      }
+      if (config.utilityGroup) {
+        this.utilityGroup = config.utilityGroup;
+      }
+
+      this.bottomIconComponent_ = new BottomIconComponent(
+        this.id,
+        config,
+        {
+          onClick: () => {
+            if ('onBottomIconClick' in this && typeof this.onBottomIconClick === 'function') {
+              return this.onBottomIconClick();
+            }
+
+            return undefined;
+          },
+          onDeselect: () => {
+            if ('onBottomIconDeselect' in this && typeof this.onBottomIconDeselect === 'function') {
+              this.onBottomIconDeselect();
+            }
+          },
+        },
+      );
+    }
+
+    // Initialize side menu component if config method exists
+    if (hasSideMenu(this)) {
+      const config = this.getSideMenuConfig();
+
+      // Sync with legacy properties for backwards compatibility
+      this.sideMenuElementName = config.elementName;
+      this.sideMenuTitle = config.title;
+      this.sideMenuElementHtml = config.html;
+      if (config.dragOptions) {
+        this.dragOptions = config.dragOptions as ClickDragOptions;
+      }
+
+      this.sideMenuComponent_ = new SideMenuComponent(
+        this.id,
+        config,
+        {
+          onOpen: () => {
+            if ('onSideMenuOpen' in this && typeof this.onSideMenuOpen === 'function') {
+              this.onSideMenuOpen();
+            }
+          },
+          onClose: () => {
+            if ('onSideMenuClose' in this && typeof this.onSideMenuClose === 'function') {
+              this.onSideMenuClose();
+            }
+          },
+        },
+      );
+    }
+
+    // Initialize secondary menu component if config method exists
+    if (hasSecondaryMenu(this) && hasSideMenu(this)) {
+      const config = this.getSecondaryMenuConfig();
+      const sideMenuConfig = this.getSideMenuConfig();
+
+      // Sync with legacy properties for backwards compatibility
+      this.sideMenuSecondaryHtml = config.html;
+      this.sideMenuSecondaryOptions = {
+        width: config.width ?? 300,
+        leftOffset: config.leftOffset ?? null,
+        zIndex: config.zIndex ?? 3,
+      };
+      if (config.icon) {
+        this.secondaryMenuIcon = config.icon;
+      }
+      if (config.dragOptions) {
+        this.dragOptionsSecondary = config.dragOptions as ClickDragOptions;
+      }
+
+      this.secondaryMenuComponent_ = new SecondaryMenuComponent(
+        this.id,
+        sideMenuConfig.elementName,
+        config,
+        {
+          onOpen: () => {
+            if ('onSecondaryMenuOpen' in this && typeof this.onSecondaryMenuOpen === 'function') {
+              this.onSecondaryMenuOpen();
+            }
+          },
+          onClose: () => {
+            if ('onSecondaryMenuClose' in this && typeof this.onSecondaryMenuClose === 'function') {
+              this.onSecondaryMenuClose();
+            }
+          },
+          onDownload: hasDownload(this) ? () => this.onDownload() : undefined,
+        },
+      );
+    }
+
+    // Initialize context menu component if config method exists
+    if (hasContextMenu(this)) {
+      const config = this.getContextMenuConfig();
+
+      // Sync with legacy properties for backwards compatibility
+      this.rmbL1Html = config.level1Html;
+      this.rmbL1ElementName = config.level1ElementName;
+      this.rmbL2Html = config.level2Html;
+      this.rmbL2ElementName = config.level2ElementName;
+      this.rmbMenuOrder = config.order ?? 100;
+      this.isRmbOnEarth = config.isVisibleOnEarth ?? false;
+      this.isRmbOffEarth = config.isVisibleOffEarth ?? false;
+      this.isRmbOnSat = config.isVisibleOnSatellite ?? false;
+
+      this.contextMenuComponent_ = new ContextMenuComponent(
+        this.id,
+        config,
+        {
+          onAction: (targetId: string, clickedSatId?: number) => {
+            this.onContextMenuAction(targetId, clickedSatId);
+          },
+        },
+      );
+    }
+
+    // Initialize keyboard component if config method exists
+    if (hasKeyboardShortcuts(this)) {
+      const shortcuts = this.getKeyboardShortcuts();
+
+      this.keyboardComponent_ = new KeyboardComponent(
+        this.id,
+        shortcuts,
+        this.isLoginRequired ? () => this.isLoginGateValid_() : undefined,
+        this.isLoginRequired ? () => {
+          errorManagerInstance.warn(
+            t7e('errorMsgs.LoginRequired' as TranslationKey) ?? 'This feature requires login. Please sign in to continue.',
+            true,
+          );
+          this.shakeBottomIcon();
+          KeepTrackPlugin.loginGateOpenModal?.();
+        } : undefined,
+      );
+      this.keyboardComponent_.init();
+    }
+
+    // Sync form submit callback if present
+    if (hasFormSubmit(this)) {
+      this.submitCallback = () => this.onFormSubmit();
+    }
+
+    // Sync download callback if present (and no secondary menu to handle it)
+    if (hasDownload(this) && !hasSecondaryMenu(this)) {
+      this.downloadIconCb = () => this.onDownload();
+    }
+  }
+
   protected isSettingsMenuEnabled_ = true;
 
 
@@ -300,6 +665,7 @@ export abstract class KeepTrackPlugin {
    * Adds HTML for the KeepTrackPlugin.
    * @throws {Error} If HTML has already been added.
    */
+  // eslint-disable-next-line complexity
   addHtml(): void {
     if (this.isHtmlAdded) {
       throw new Error(`${this.id} HTML already added.`);
@@ -307,10 +673,10 @@ export abstract class KeepTrackPlugin {
 
     this.sideMenuSecondaryOptions.leftOffset = typeof this.sideMenuSecondaryOptions.leftOffset === 'number' ? this.sideMenuSecondaryOptions.leftOffset : null;
 
-    this.helpTitle = t7e(`plugins.${[this.id]}.title` as TranslationKey) ?? this.helpTitle ?? this.sideMenuTitle;
-    this.helpBody = t7e(`plugins.${[this.id]}.helpBody` as TranslationKey) ?? this.helpBody;
-    this.sideMenuTitle = t7e(`plugins.${[this.id]}.title` as TranslationKey) ?? this.sideMenuTitle;
-    this.bottomIconLabel = t7e(`plugins.${[this.id]}.bottomIconLabel` as TranslationKey) ?? this.bottomIconLabel;
+    this.helpTitle = this.t7eIfFound_(`plugins.${this.id}.title`) ?? this.helpTitle ?? this.sideMenuTitle;
+    this.helpBody = this.t7eIfFound_(`plugins.${this.id}.helpBody`) ?? this.helpBody;
+    this.sideMenuTitle = this.t7eIfFound_(`plugins.${this.id}.title`) ?? this.sideMenuTitle;
+    this.bottomIconLabel = this.t7eIfFound_(`plugins.${this.id}.bottomIconLabel`) ?? this.bottomIconLabel;
 
     if (this.bottomIconLabel) {
       const bottomIconSlug = this.bottomIconLabel.toLowerCase().replace(' ', '-');
@@ -325,30 +691,43 @@ export abstract class KeepTrackPlugin {
     }
 
     if (this.bottomIconImg && this.bottomIconElementName) {
-      this.addBottomIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
+      if (this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
+        this.addBottomIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
+      }
+      if (this.iconPlacement === IconPlacement.UTILITY_ONLY || this.iconPlacement === IconPlacement.BOTH) {
+        this.addUtilityIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
+      }
+      this.isIconDisabled = this.isIconDisabledOnLoad;
     }
 
     if (this.sideMenuElementName && this.sideMenuElementHtml) {
-      if (this.sideMenuSecondaryHtml) {
-        const sideMenuHtmlWrapped = this.generateSideMenuHtml_();
-
-        this.addSideMenu(sideMenuHtmlWrapped);
-      } else {
-        this.addSideMenu(this.sideMenuElementHtml);
-      }
+      this.addSideMenuWithCloseButton_();
     } else if (this.sideMenuElementName || this.sideMenuElementHtml) {
       throw new Error(`${this.id} side menu element name and html must both be defined.`);
     }
 
     if (this.sideMenuSecondaryHtml) {
+      const secondaryWidthStyle = settingsManager.isMobileModeEnabled
+        ? ''
+        : `width: ${this.sideMenuSecondaryOptions.width.toString()}px;`;
+
       const sideMenuHtmlWrapped = html`
         <div id="${this.sideMenuElementName}-secondary"
-          class="side-menu-parent start-hidden text-select"
+          class="side-menu-parent start-hidden"
           style="z-index: ${this.sideMenuSecondaryOptions.zIndex.toString()};
-          width: ${this.sideMenuSecondaryOptions.width.toString()}px;"
+          ${secondaryWidthStyle}"
         >
           <div id="${this.sideMenuElementName}-secondary-content" class="side-menu-settings" style="padding: 0px 10px;">
-            <div class="row"></div>
+            <div class="side-menu-title-bar secondary-title-bar">
+              <div class="side-menu-title-left"></div>
+              <div class="side-menu-title-right">
+                <button id="${this.sideMenuElementName}-secondary-close-btn"
+                  class="center-align btn btn-ui waves-effect waves-light icon-btn"
+                  type="button">
+                  <img src="${leftPanelClosePng}" alt="Close" class="icon-btn-img" />
+                </button>
+              </div>
+            </div>
             ${this.sideMenuSecondaryHtml}
           </div>
         </div>
@@ -385,15 +764,30 @@ export abstract class KeepTrackPlugin {
             }
           });
 
-          if (this.downloadIconCb) {
-            getEl(`${this.sideMenuElementName}-download-btn`)?.addEventListener('click', () => {
-              ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
+          getEl(`${this.sideMenuElementName}-secondary-close-btn`)?.addEventListener('click', () => {
+            this.closeSecondaryMenu();
 
-              if (this.downloadIconCb) {
-                this.downloadIconCb();
-              }
-            });
-          }
+            const settingsButtonElement = getEl(`${this.sideMenuElementName}-secondary-btn`);
+
+            if (settingsButtonElement) {
+              settingsButtonElement.style.color = 'var(--color-dark-text-accent)';
+            }
+          });
+        },
+      );
+    }
+
+    if (this.downloadIconCb) {
+      EventBus.getInstance().on(
+        EventBusEvent.uiManagerFinal,
+        () => {
+          getEl(`${this.sideMenuElementName}-download-btn`)?.addEventListener('click', () => {
+            ServiceLocator.getSoundManager()?.play(SoundNames.EXPORT);
+
+            if (this.downloadIconCb) {
+              this.downloadIconCb();
+            }
+          });
         },
       );
     }
@@ -449,48 +843,96 @@ export abstract class KeepTrackPlugin {
    */
   isRmbOnSat = false;
 
-  private generateSideMenuHtml_() {
-    const menuWidthStr = `${this.sideMenuSecondaryOptions.width.toString()} px !important`;
+  private addSideMenuWithCloseButton_() {
+    if (this.sideMenuElementHtml.includes('side-menu-parent')) {
+      // Legacy: plugin provides full wrapper HTML — inject title bar, preserving existing IDs
+      const titleBarHtml = this.generateTitleBarHtml_();
+
+      // Extract title from existing h5 if sideMenuTitle isn't set
+      if (!this.sideMenuTitle) {
+        const titleMatch = this.sideMenuElementHtml.match(/<h5[^>]*class="[^"]*center-align[^"]*"[^>]*>(?<title>[^<]*)<\/h5>/u);
+
+        if (titleMatch?.groups?.title) {
+          this.sideMenuTitle = titleMatch.groups.title.trim();
+        }
+      }
+
+      // Remove the first center-aligned h5 to avoid duplication with title bar
+      let modified = this.sideMenuElementHtml.replace(/<h5[^>]*class="[^"]*center-align[^"]*"[^>]*>[^<]*<\/h5>/u, '');
+
+      // Inject title bar after the inner side-menu div opening tag
+      // Use (?![-\w]) to match class "side-menu" but NOT "side-menu-parent" etc.
+      modified = modified.replace(
+        /(?<openTag><div[^>]*class="[^"]*\bside-menu\b(?![-\w])[^"]*"[^>]*>)/u,
+        `$<openTag>${titleBarHtml}`,
+      );
+
+      this.addSideMenu(modified);
+    } else {
+      // Modern: plugin provides inner content only — wrap with standard wrapper
+      const sideMenuHtmlWrapped = this.generateSideMenuHtml_();
+
+      this.addSideMenu(sideMenuHtmlWrapped);
+    }
+
+    // Register close button click handler (same pattern as secondary-btn handler)
+    EventBus.getInstance().on(
+      EventBusEvent.uiManagerFinal,
+      () => {
+        getEl(`${this.sideMenuElementName}-close-btn`)?.addEventListener('click', () => {
+          this.hideSideMenus();
+        });
+      },
+    );
+  }
+
+  private generateTitleBarHtml_(): string {
     const downloadIconHtml = this.downloadIconCb ? html`
-      <button id="${this.sideMenuElementName}-download-btn";
-        class="center-align btn btn-ui waves-effect waves-light"
-        style="padding: 2px; margin: 0px 0px 0px 5px; color: var(--color-dark-text-accent); background-color: rgba(0, 0, 0, 0);box-shadow: none;"
+      <button id="${this.sideMenuElementName}-download-btn"
+        class="center-align btn btn-ui waves-effect waves-light icon-btn"
         type="button">
-        <i class="material-icons" style="font-size: 2em;height: 30px;width: 30px;display: flex;justify-content: center;align-items: center;">
-          file_download
-        </i>
+        <img src="${this.downloadIconSrc}" alt="Download" class="icon-btn-img" />
       </button>
     ` : '';
-    const settingsIconHtml = html`
+    const secondaryIconSrc = this.secondaryMenuIcon !== 'settings' ? this.secondaryMenuIcon : settingsPng;
+    const settingsIconHtml = this.sideMenuSecondaryHtml ? html`
       <button id="${this.sideMenuElementName}-secondary-btn"
-        class="center-align btn btn-ui waves-effect waves-light"
-        style="padding: 2px; margin: 0px 0px 0px 5px; color: var(--color-dark-text-accent); background-color: rgba(0, 0, 0, 0);box-shadow: none;"
+        class="center-align btn btn-ui waves-effect waves-light icon-btn"
         type="button">
-        <i class="material-icons" style="font-size: 2em;height: 30px;width: 30px;display: flex;justify-content: center;align-items: center;">
-          ${this.secondaryMenuIcon}
-        </i>
+        <img src="${secondaryIconSrc}" alt="Settings" class="icon-btn-img" />
+      </button>` : '';
+    const closeIconHtml = html`
+      <button id="${this.sideMenuElementName}-close-btn"
+        class="center-align btn btn-ui waves-effect waves-light icon-btn"
+        type="button">
+        <img src="${leftPanelClosePng}" alt="Close" class="icon-btn-img" />
       </button>`;
-    const spacerDiv = html`<div style="width: 30px; height: 30px; display: block; margin: 0px 5px 0px 0px;"></div>`;
 
-    const sideMenuHtmlWrapped = html`
-          <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden text-select"
-            style="z-index: 5; width: ${menuWidthStr};">
+    return html`
+      <div class="side-menu-title-bar">
+        <div class="side-menu-title-left"></div>
+        <h5 class="side-menu-title-text">${this.sideMenuTitle}</h5>
+        <div class="side-menu-title-right">
+          ${downloadIconHtml}
+          ${settingsIconHtml}
+          ${closeIconHtml}
+        </div>
+      </div>`;
+  }
+
+  private generateSideMenuHtml_() {
+    const widthStyle = settingsManager.isMobileModeEnabled
+      ? ''
+      : `width: ${this.sideMenuSecondaryOptions.width.toString()}px !important;`;
+
+    return html`
+          <div id="${this.sideMenuElementName}" class="side-menu-parent start-hidden"
+            style="z-index: 5; ${widthStyle}">
             <div id="${this.sideMenuElementName}-content" class="side-menu">
-              <div class="row" style="margin-top: 5px;margin-bottom: 0px;display: flex;justify-content: space-evenly;align-items: center;flex-direction: row;flex-wrap: nowrap;">
-                ${spacerDiv}
-                ${this.downloadIconCb ? spacerDiv : ''}
-                <h5 class="center-align" style="margin: 0px auto">${this.sideMenuTitle}</h5>
-                ${downloadIconHtml}
-                ${settingsIconHtml}
-              </div>
-              <li class="divider" style="padding: 2px !important;"></li>
-              <div class="row"></div>
+              ${this.generateTitleBarHtml_()}
               ${this.sideMenuElementHtml}
             </div>
           </div>`;
-
-
-    return sideMenuHtmlWrapped;
   }
 
   /**
@@ -522,40 +964,60 @@ export abstract class KeepTrackPlugin {
       this.registerRmbCallback(this.rmbCallback);
     }
 
-    if (this.bottomIconElementName) {
+    if (this.bottomIconElementName && this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
       this.registerMenuMode();
       this.menuMode.forEach((menuMode) => {
         KeepTrackPlugin.registeredMenus[menuMode].push(this.bottomIconElementName);
       });
     }
 
+    if (this.requiresInternet) {
+      this.registerConnectivityHandlers_();
+    }
+
     this.isJsAdded = true;
   }
 
   static readonly registeredMenus = {
-    [MenuMode.BASIC]: [] as string[],
-    [MenuMode.ADVANCED]: [] as string[],
+    [MenuMode.CATALOG]: [] as string[],
+    [MenuMode.SENSORS]: [] as string[],
+    [MenuMode.EVENTS]: [] as string[],
+    [MenuMode.CREATE]: [] as string[],
     [MenuMode.ANALYSIS]: [] as string[],
-    [MenuMode.EXPERIMENTAL]: [] as string[],
+    [MenuMode.DISPLAY]: [] as string[],
+    [MenuMode.TOOLS]: [] as string[],
     [MenuMode.SETTINGS]: [] as string[],
+    [MenuMode.EXPERIMENTAL]: [] as string[],
     [MenuMode.ALL]: [] as string[],
   };
 
   static hideUnusedMenuModes(): void {
     for (const menuMode in Object.keys(KeepTrackPlugin.registeredMenus)) {
-      if (Object.prototype.hasOwnProperty.call(KeepTrackPlugin.registeredMenus, menuMode)) {
+      if (Object.hasOwn(KeepTrackPlugin.registeredMenus, menuMode)) {
         const menuElements = KeepTrackPlugin.registeredMenus[menuMode];
 
         if (menuElements.length === 0) {
           switch (parseInt(menuMode)) {
-            case MenuMode.BASIC:
-              hideEl(BottomMenu.basicMenuId);
+            case MenuMode.CATALOG:
+              hideEl(BottomMenu.catalogMenuId);
               break;
-            case MenuMode.ADVANCED:
-              hideEl(BottomMenu.advancedMenuId);
+            case MenuMode.SENSORS:
+              hideEl(BottomMenu.sensorsMenuId);
+              break;
+            case MenuMode.EVENTS:
+              hideEl(BottomMenu.eventsMenuId);
+              break;
+            case MenuMode.CREATE:
+              hideEl(BottomMenu.createMenuId);
               break;
             case MenuMode.ANALYSIS:
               hideEl(BottomMenu.analysisMenuId);
+              break;
+            case MenuMode.DISPLAY:
+              hideEl(BottomMenu.displayMenuId);
+              break;
+            case MenuMode.TOOLS:
+              hideEl(BottomMenu.toolsMenuId);
               break;
             case MenuMode.SETTINGS:
               hideEl(BottomMenu.settingsMenuId);
@@ -574,7 +1036,7 @@ export abstract class KeepTrackPlugin {
   registerMenuMode(): void {
     EventBus.getInstance().on(EventBusEvent.bottomMenuModeChange, (): void => {
       this.hideBottomIcon();
-      if (this.menuMode.includes(settingsManager.activeMenuMode)) {
+      if (this.menuMode.includes(settingsManager.activeMenuMode) && !this.isOfflineDisabled_) {
         this.showBottomIcon();
       }
     });
@@ -664,6 +1126,11 @@ export abstract class KeepTrackPlugin {
         if (isDisabled) {
           button.classList.add('bmenu-item-disabled');
         }
+        if (this.isLoginRequired && !settingsManager.isDisableLoginGate) {
+          button.classList.add('bmenu-item-pro');
+          button.setAttribute('data-pro-gated', '');
+        }
+
         button.innerHTML = `
           <div class="bmenu-item-inner">
             <img
@@ -679,8 +1146,80 @@ export abstract class KeepTrackPlugin {
     );
   }
 
+  static readonly utilityPanelContainerId = 'bottom-icons-utility';
+  static readonly utilityCameraContainerId = 'utility-camera-icons';
+  static readonly utilityLayerContainerId = 'utility-layer-icons';
+  static readonly utilitySettingsContainerId = 'utility-settings-icons';
+
+  /**
+   * Adds a utility panel icon for this plugin.
+   * The icon uses the same click flow as the bottom icon (emits bottomMenuClick).
+   */
+  addUtilityIcon(icon: Module, isDisabled = false): void {
+    EventBus.getInstance().on(
+      EventBusEvent.uiManagerInit,
+      () => {
+        // In drawer mode the PluginDrawer creates its own utility icons with this ID
+        if (document.body.classList.contains('drawer-mode')) {
+          return;
+        }
+
+        const item = document.createElement('div');
+
+        item.id = `${this.id}-utility-icon`;
+        item.setAttribute('data-order', this.bottomIconOrder?.toString() ?? '100');
+        item.classList.add('bmenu-filter-item');
+        if (isDisabled) {
+          item.classList.add('bmenu-item-disabled');
+        }
+        if (this.isLoginRequired && !settingsManager.isDisableLoginGate) {
+          item.classList.add('bmenu-item-pro');
+          item.setAttribute('data-pro-gated', '');
+        }
+
+        item.innerHTML = `
+          <div class="bmenu-filter-item-inner">
+            <img
+              alt="${this.id}"
+              src=""
+              delayedsrc="${icon}"
+              kt-tooltip="${this.bottomIconLabel}"
+            />
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          if (item.classList.contains(KeepTrackPlugin.iconDisabledClassString)) {
+            shake(item);
+
+            return;
+          }
+          ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+          EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, this.bottomIconElementName);
+        });
+
+        let containerId: string;
+
+        if (this.utilityGroup === UtilityGroup.CAMERA_MODE) {
+          containerId = KeepTrackPlugin.utilityCameraContainerId;
+        } else if (this.utilityGroup === UtilityGroup.SETTINGS_TOGGLE) {
+          containerId = KeepTrackPlugin.utilitySettingsContainerId;
+        } else {
+          containerId = KeepTrackPlugin.utilityLayerContainerId;
+        }
+
+        const container = getEl(containerId) ?? getEl(KeepTrackPlugin.utilityPanelContainerId);
+
+        container?.appendChild(item);
+      },
+    );
+  }
+
   shakeBottomIcon(): void {
-    shake(getEl(this.bottomIconElementName));
+    if (this.iconPlacement === IconPlacement.UTILITY_ONLY) {
+      shake(getEl(`${this.id}-utility-icon`, true));
+    } else {
+      shake(getEl(this.bottomIconElementName));
+    }
   }
 
   setBottomIconToSelected(): void {
@@ -688,7 +1227,9 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isMenuButtonActive = true;
-    getEl(this.bottomIconElementName)?.classList.add('bmenu-item-selected');
+    this.bottomIconComponent_?.select();
+    getEl(this.bottomIconElementName, true)?.classList.add('bmenu-item-selected');
+    getEl(`${this.id}-utility-icon`, true)?.classList.add('bmenu-item-selected');
   }
 
   setBottomIconToUnselected(isHideSideMenus = true): void {
@@ -696,13 +1237,15 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isMenuButtonActive = false;
+    this.bottomIconComponent_?.deselect(false);
     if (this.onSetBottomIconToUnselected) {
       this.onSetBottomIconToUnselected();
     }
     if (isHideSideMenus) {
       EventBus.getInstance().emit(EventBusEvent.hideSideMenus);
     }
-    getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-selected');
+    getEl(this.bottomIconElementName, true)?.classList.remove('bmenu-item-selected');
+    getEl(`${this.id}-utility-icon`, true)?.classList.remove('bmenu-item-selected');
   }
 
   setBottomIconToDisabled(isHideSideMenus = true): void {
@@ -711,7 +1254,9 @@ export abstract class KeepTrackPlugin {
     }
     this.setBottomIconToUnselected(isHideSideMenus);
     this.isIconDisabled = true;
-    getEl(this.bottomIconElementName)?.classList.add('bmenu-item-disabled');
+    this.bottomIconComponent_?.disable(false);
+    getEl(this.bottomIconElementName, true)?.classList.add('bmenu-item-disabled');
+    getEl(`${this.id}-utility-icon`, true)?.classList.add('bmenu-item-disabled');
   }
 
   setBottomIconToEnabled(): void {
@@ -719,7 +1264,88 @@ export abstract class KeepTrackPlugin {
       return;
     }
     this.isIconDisabled = false;
-    getEl(this.bottomIconElementName)?.classList.remove('bmenu-item-disabled');
+    this.bottomIconComponent_?.enable();
+    getEl(this.bottomIconElementName, true)?.classList.remove('bmenu-item-disabled');
+    getEl(`${this.id}-utility-icon`, true)?.classList.remove('bmenu-item-disabled');
+  }
+
+  /**
+   * Returns the translated string if the key exists in locale data,
+   * or null if t7e returned the raw key (meaning no translation found).
+   */
+  private t7eIfFound_(key: string): string | null {
+    const result = t7e(key as TranslationKey);
+
+    return result === key ? null : result;
+  }
+
+  private registerConnectivityHandlers_(): void {
+    // Check initial state after icons are in the DOM
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, (): void => {
+      if (!navigator.onLine || settingsManager.offlineMode) {
+        this.setBottomIconToDisabledForOffline_();
+      }
+    });
+
+    // React to runtime connectivity changes
+    EventBus.getInstance().on(EventBusEvent.connectivityChange, (isOnline: boolean): void => {
+      if (isOnline) {
+        this.setBottomIconToEnabledForOnline_();
+      } else {
+        this.setBottomIconToDisabledForOffline_();
+      }
+    });
+  }
+
+  private setBottomIconToDisabledForOffline_(): void {
+    this.isOfflineDisabled_ = true;
+
+    if (settingsManager.offlineIconBehavior === OfflineIconBehavior.HIDE) {
+      if (this.isMenuButtonActive) {
+        this.hideSideMenus();
+      }
+      this.hideBottomIcon();
+    } else {
+      this.setBottomIconToDisabled();
+    }
+  }
+
+  /**
+   * Re-enables the bottom icon when the plugin comes back online.
+   *
+   * Checks various conditions before re-enabling:
+   * - If a sensor selection is required, verifies that a sensor is currently selected
+   * - If a satellite selection is required, verifies that a satellite is currently selected
+   *
+   * Once prerequisites are met, the icon visibility depends on the offline icon behavior setting:
+   * - If set to HIDE: Only shows the icon if it's relevant to the current menu mode
+   * - Otherwise: Fully enables the icon
+   *
+   * @private
+   */
+  private setBottomIconToEnabledForOnline_(): void {
+    this.isOfflineDisabled_ = false;
+
+    // Don't re-enable if other conditions still block this icon
+    if (this.isRequireSensorSelected && !ServiceLocator.getSensorManager().isSensorSelected()) {
+      return;
+    }
+    if (this.isRequireSatelliteSelected) {
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (!selectSatManager || selectSatManager.selectedSat === -1) {
+        return;
+      }
+    }
+
+    if (settingsManager.offlineIconBehavior === OfflineIconBehavior.HIDE) {
+      // Only show if this icon should be visible in the current menu mode
+      if (this.menuMode.includes(settingsManager.activeMenuMode)) {
+        this.showBottomIcon();
+      }
+    } else {
+      this.setBottomIconToEnabled();
+    }
   }
 
   /**
@@ -730,8 +1356,8 @@ export abstract class KeepTrackPlugin {
   verifySensorSelected(isMakeToast = true): boolean {
     if (!ServiceLocator.getSensorManager().isSensorSelected()) {
       if (isMakeToast) {
-        errorManagerInstance.warn(t7e('errorMsgs.SelectSensorFirst'), true);
-        shake(getEl(this.bottomIconElementName));
+        errorManagerInstance.warnToast(t7e('errorMsgs.SelectSensorFirst'));
+        this.shakeBottomIcon();
       }
 
       return false;
@@ -750,9 +1376,9 @@ export abstract class KeepTrackPlugin {
      * const searchDom = getEl('search', true);
      * if (!selectSatManagerInstance || (selectSatManagerInstance?.selectedSat === -1 && (!searchDom || (<HTMLInputElement>searchDom).value === ''))) {
      */
-    if (!(((PluginRegistry.getPluginByName('SelectSatManager') as SelectSatManager)?.selectedSat ?? -1) > -1)) {
-      errorManagerInstance.warn(t7e('errorMsgs.SelectSatelliteFirst'), true);
-      shake(getEl(this.bottomIconElementName));
+    if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
+      errorManagerInstance.warnToast(t7e('errorMsgs.SelectSatelliteFirst'));
+      this.shakeBottomIcon();
 
       return false;
     }
@@ -781,7 +1407,7 @@ export abstract class KeepTrackPlugin {
           if (!obj?.isSatellite() || !ServiceLocator.getSensorManager().isSensorSelected()) {
             this.setBottomIconToDisabled();
             this.setBottomIconToUnselected();
-          } else {
+          } else if (!this.isOfflineDisabled_) {
             this.setBottomIconToEnabled();
           }
         },
@@ -794,7 +1420,7 @@ export abstract class KeepTrackPlugin {
           if (!obj) {
             this.setBottomIconToDisabled();
             this.setBottomIconToUnselected();
-          } else {
+          } else if (!this.isOfflineDisabled_) {
             this.setBottomIconToEnabled();
           }
         },
@@ -808,7 +1434,7 @@ export abstract class KeepTrackPlugin {
           if (!sensor && !sensorId) {
             this.setBottomIconToDisabled();
             this.setBottomIconToUnselected();
-          } else {
+          } else if (!this.isOfflineDisabled_) {
             this.setBottomIconToEnabled();
           }
         },
@@ -824,9 +1450,22 @@ export abstract class KeepTrackPlugin {
               this.hideSideMenus();
             }
             this.isMenuButtonActive = false;
-            getEl(this.bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
+            getEl(this.bottomIconElementName, true)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
+            getEl(`${this.id}-utility-icon`, true)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
           } else {
-            // Verifiy that the user has selected a sensor and/or satellite if required
+            // Check login gate before any other activation logic
+            if (this.isLoginRequired && !this.isLoginGateValid_()) {
+              errorManagerInstance.warn(
+                t7e('errorMsgs.LoginRequired' as TranslationKey) ?? 'This feature requires login. Please sign in to continue.',
+                true,
+              );
+              this.shakeBottomIcon();
+              KeepTrackPlugin.loginGateOpenModal?.();
+
+              return;
+            }
+
+            // Verify that the user has selected a sensor and/or satellite if required
             if (this.isRequireSensorSelected) {
               if (!this.verifySensorSelected()) {
                 return;
@@ -848,7 +1487,8 @@ export abstract class KeepTrackPlugin {
 
               // Show the bottom icon as selected
               this.isMenuButtonActive = true;
-              getEl(this.bottomIconElementName)?.classList.add(KeepTrackPlugin.iconSelectedClassString);
+              getEl(this.bottomIconElementName, true)?.classList.add(KeepTrackPlugin.iconSelectedClassString);
+              getEl(`${this.id}-utility-icon`, true)?.classList.add(KeepTrackPlugin.iconSelectedClassString);
             }
           }
 
@@ -863,6 +1503,9 @@ export abstract class KeepTrackPlugin {
   }
 
   bottomMenuClicked() {
+    if (!this.isSettingsMenuEnabled_) {
+      return;
+    }
     ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, this.bottomIconElementName);
   }
@@ -885,19 +1528,11 @@ export abstract class KeepTrackPlugin {
 
   openSideMenu() {
     this.hideSideMenus();
-    slideInRight(getEl(this.sideMenuElementName), 1000);
-    KeepTrackPlugin.openSideMenu_();
-  }
+    slideInRight(getEl(this.sideMenuElementName), 300);
 
-  /**
-   * This runs after a side menu is opened.
-   */
-  private static openSideMenu_() {
-    getEl('tutorial-btn', true)?.classList.remove('bmenu-item-disabled');
-  }
-
-  private static closeSideMenu_() {
-    getEl('tutorial-btn', true)?.classList.add('bmenu-item-disabled');
+    if (this.isRenderPausedOnOpen) {
+      KeepTrack.getInstance().engine.pause();
+    }
   }
 
   openSecondaryMenu() {
@@ -906,20 +1541,24 @@ export abstract class KeepTrackPlugin {
 
     if (secondaryMenuElement) {
       this.isSideMenuSettingsOpen = true;
-      if (this.sideMenuSecondaryOptions.leftOffset !== null) {
-        secondaryMenuElement.style.left = `${this.sideMenuSecondaryOptions.leftOffset}px`;
+      let leftPos: number;
+
+      if (this.sideMenuSecondaryOptions.leftOffset !== null && typeof this.sideMenuSecondaryOptions.leftOffset === 'number') {
+        leftPos = this.sideMenuSecondaryOptions.leftOffset;
       } else {
-        secondaryMenuElement.style.left = `${sideMenuElement?.getBoundingClientRect().right ?? 0}px`;
+        leftPos = sideMenuElement?.getBoundingClientRect().right ?? 0;
       }
-      slideInRight(secondaryMenuElement, 1000);
+      secondaryMenuElement.style.left = `${leftPos}px`;
+      // Constrain width so the right edge doesn't exceed the viewport
+      secondaryMenuElement.style.maxWidth = `${window.innerWidth - leftPos}px`;
+      slideInRight(secondaryMenuElement, 300);
     }
   }
 
   closeSideMenu() {
     const settingsMenuElement = getEl(`${this.sideMenuElementName}`);
 
-    slideOutLeft(settingsMenuElement, 1000);
-    KeepTrackPlugin.closeSideMenu_();
+    slideOutLeft(settingsMenuElement, 300);
   }
 
   closeSecondaryMenu() {
@@ -957,6 +1596,11 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
+        // Skip drag-to-resize on mobile — side menus are forced to full-screen width
+        if (settingsManager.isMobileModeEnabled) {
+          return;
+        }
+
         if (this.sideMenuSecondaryHtml) {
           opts.attachedElement = getEl(`${this.sideMenuElementName}-secondary`);
         }
@@ -972,6 +1616,11 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
+        // Skip drag-to-resize on mobile — side menus are forced to full-screen width
+        if (settingsManager.isMobileModeEnabled) {
+          return;
+        }
+
         const edgeEl = clickAndDragWidth(getEl(`${this.sideMenuElementName}-secondary`), opts);
 
         if (edgeEl) {
@@ -1011,6 +1660,9 @@ export abstract class KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.hideSideMenus,
       (): void => {
+        if (this.isRenderPausedOnOpen && this.isMenuButtonActive) {
+          KeepTrack.getInstance().engine.resume();
+        }
         slideCb();
         getEl(bottomIconElementName)?.classList.remove(KeepTrackPlugin.iconSelectedClassString);
         this.isMenuButtonActive = false;

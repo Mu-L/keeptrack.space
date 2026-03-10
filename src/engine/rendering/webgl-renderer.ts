@@ -2,18 +2,22 @@ import { SatMath } from '@app/app/analysis/sat-math';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrack } from '@app/keeptrack';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { WatchlistPlugin } from '@app/plugins/watchlist/watchlist';
-import { BaseObject, CatalogSource, DetailedSatellite, GreenwichMeanSiderealTime, Kilometers, Milliseconds } from '@ootk/src/main';
+import { BaseObject, CatalogSource, GreenwichMeanSiderealTime, Kilometers, Milliseconds, Satellite, TemeVec3 } from '@ootk/src/main';
 import { mat4, vec2, vec4 } from 'gl-matrix';
 import { GroupType } from '../../app/data/object-group';
 import { SettingsManager } from '../../settings/settings';
-import { Camera, CameraType } from '../camera/camera';
+import { SatLabelMode } from '../../settings/ui-settings';
+import { Camera } from '../camera/camera';
+import { CameraType } from '../camera/camera-type';
 import { GetSatType } from '../core/interfaces';
 import { PluginRegistry } from '../core/plugin-registry';
 import { Scene } from '../core/scene';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
+import { RADIUS_OF_EARTH } from '../utils/constants';
 import { errorManagerInstance } from '../utils/errorManager';
 import { getEl } from '../utils/get-el';
 import { isThisNode } from '../utils/isThisNode';
@@ -21,16 +25,11 @@ import { DepthManager } from './depth-manager';
 import { PostProcessingManager } from './draw-manager/post-processing';
 import { Sun } from './draw-manager/sun';
 import { MeshManager } from './mesh-manager';
-import { KeepTrack } from '@app/keeptrack';
+import { showFatalError } from './show-fatal-error';
 
 export class WebGLRenderer {
-  private hoverBoxOnSatMiniElements_: HTMLElement | null = null;
   private isRotationEvent_: boolean;
-  private isSatMiniBoxInUse_ = false;
-  private labelCount_ = 0;
-  private satHoverMiniDOM_: HTMLDivElement;
   private satLabelModeLastTime_ = 0;
-  private satMiniBox_: HTMLDivElement;
   private settings_: SettingsManager;
   isContextLost = false;
 
@@ -91,9 +90,14 @@ export class WebGLRenderer {
     if (EventBus.getInstance().methods.altCanvasResize()) {
       this.resizeCanvas(true);
       this.isAltCanvasSize_ = true;
+      // Re-invoke camera draw so delegates (flat-map, polar-view) recompute projection for the new canvas size.
+      // resizeCanvas calls updatePMatrix which overwrites projectionMatrix with a perspective matrix,
+      // but delegates need their own orthographic projection.
+      camera.draw(this.sensorPos);
     } else if (this.isAltCanvasSize_) {
       this.resizeCanvas(false);
       this.isAltCanvasSize_ = false;
+      camera.draw(this.sensorPos);
     }
 
     const mainCamera = ServiceLocator.getMainCamera();
@@ -132,7 +136,17 @@ export class WebGLRenderer {
     this.domElement = <HTMLCanvasElement>getEl('keeptrack-canvas');
 
     if (!this.domElement) {
-      throw new Error('The canvas DOM is missing. This could be due to a firewall (ex. Menlo). Contact your LAN Office or System Adminstrator.');
+      showFatalError({
+        title: 'Canvas Element Missing',
+        description:
+          'KeepTrack could not find its drawing surface. This usually means a browser extension, corporate firewall, or content-security policy is stripping elements from the page.',
+        recommendations: [
+          'Disable browser extensions (ad-blockers, privacy tools) and reload.',
+          'On a managed network? Contact your LAN Office or System Administrator to whitelist this site.',
+          'Try a different browser (Chrome, Edge, or Firefox recommended).',
+        ],
+        technicalDetail: 'document.getElementById("keeptrack-canvas") returned null.',
+      });
     }
 
     EventBus.getInstance().on(
@@ -172,7 +186,19 @@ export class WebGLRenderer {
 
     // Check for WebGL Issues
     if (gl === null) {
-      throw new Error('WebGL is not available. Contact your LAN Office or System Administrator.');
+      showFatalError({
+        title: 'WebGL 2 Not Available',
+        description:
+          'KeepTrack requires WebGL 2 to render the 3D scene. Your browser or device does not support it, or it has been disabled.',
+        recommendations: [
+          'Update your browser to the latest version.',
+          'Enable hardware acceleration in your browser settings.',
+          'Update your graphics drivers.',
+          'Try a different browser (Chrome, Edge, or Firefox recommended).',
+          'On a managed device? Contact your System Administrator.',
+        ],
+        technicalDetail: 'canvas.getContext("webgl2") returned null.',
+      });
     }
 
     this.gl = gl;
@@ -196,7 +222,6 @@ export class WebGLRenderer {
     this.settings_ = settings;
     this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
 
-    this.satMiniBox_ = <HTMLDivElement>(<unknown>getEl('sat-minibox'));
     ServiceLocator.getHoverManager()?.init();
     this.startWithOrbits();
 
@@ -234,12 +259,29 @@ export class WebGLRenderer {
     const timeManagerInstance = ServiceLocator.getTimeManager();
     const sensorManagerInstance = ServiceLocator.getSensorManager();
     const watchlistPluginInstance = PluginRegistry.getPlugin(WatchlistPlugin);
+    const cameraType = ServiceLocator.getMainCamera().cameraType;
+    const labelMode = settingsManager.satLabelMode;
+    const hasWatchlistSats = (watchlistPluginInstance?.watchlistList?.length ?? 0) > 0;
 
-    if (
-      ServiceLocator.getMainCamera().cameraType === CameraType.ASTRONOMY ||
-      ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM ||
-      watchlistPluginInstance?.hasAnyInView()
-    ) {
+    const shouldEnter =
+      cameraType === CameraType.ASTRONOMY ||
+      cameraType === CameraType.PLANETARIUM ||
+      cameraType === CameraType.FLAT_MAP ||
+      watchlistPluginInstance?.hasAnyInView() ||
+      (labelMode === SatLabelMode.ALL && hasWatchlistSats);
+
+    if (!shouldEnter) {
+      this.sensorPos = null;
+      this.isDrawOrbitsAbove = false;
+      ServiceLocator.getSatLabelManager()?.updateLabels([], []);
+
+      return;
+    }
+
+    // Calculate sensor position (not needed for FLAT_MAP or ALL label mode)
+    if (cameraType === CameraType.FLAT_MAP || labelMode === SatLabelMode.ALL) {
+      this.sensorPos = null;
+    } else {
       // Catch race condition where sensor has been reset but camera hasn't been updated
       try {
         this.sensorPos = sensorManagerInstance.calculateSensorPos(timeManagerInstance.simulationTimeObj, sensorManagerInstance.currentSensors);
@@ -250,203 +292,111 @@ export class WebGLRenderer {
 
         return;
       }
-      if (!this.isDrawOrbitsAbove) {
-        /*
-         * Don't do this until the scene is redrawn with a new camera or thousands of satellites will
-         * appear to be in the field of view
-         */
-        this.isDrawOrbitsAbove = true;
+    }
 
-        return;
-      }
-      // Previously called showOrbitsAbove();
-      if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
-        if (this.isSatMiniBoxInUse_) {
-          this.hoverBoxOnSatMiniElements_ = getEl('sat-minibox');
-
-          if (this.hoverBoxOnSatMiniElements_) {
-            this.hoverBoxOnSatMiniElements_.innerHTML = '';
-          }
-        }
-        this.isSatMiniBoxInUse_ = false;
-
-        return;
-      }
-
-      if (sensorManagerInstance?.currentSensors[0]?.lat === null) {
-        return;
-      }
-      if (timeManagerInstance.realTime - this.satLabelModeLastTime_ < settingsManager.minTimeBetweenSatLabels) {
-        return;
-      }
-
-      const orbitManagerInstance = ServiceLocator.getOrbitManager();
-
-      orbitManagerInstance.clearInViewOrbit();
-
-      let obj: BaseObject | null;
-
-      this.labelCount_ = 0;
-
-      this.hoverBoxOnSatMiniElements_ = getEl('sat-minibox');
-
-      /**
-       * @todo Reuse hoverBoxOnSatMini DOM Elements
-       * @body Currently are writing and deleting the nodes every draw element. Reusuing them with a transition effect will make it smoother
+    if (!this.isDrawOrbitsAbove) {
+      /*
+       * Don't do this until the scene is redrawn with a new camera or thousands of satellites will
+       * appear to be in the field of view
        */
-      this.hoverBoxOnSatMiniElements_.innerHTML = '';
-      if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM) {
-        const catalogManagerInstance = ServiceLocator.getCatalogManager();
+      this.isDrawOrbitsAbove = true;
 
-        for (let i = 0; i < catalogManagerInstance.orbitalSats && this.labelCount_ < settingsManager.maxLabels; i++) {
-          obj = catalogManagerInstance.getObject(i, GetSatType.POSITION_ONLY);
+      return;
+    }
 
-          if (!obj?.isSatellite()) {
-            continue;
-          }
-          const sat = <DetailedSatellite>obj;
-          const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
+    // Check if labels should be cleared
+    const shouldClearLabels =
+      labelMode === SatLabelMode.OFF ||
+      (cameraType !== CameraType.PLANETARIUM &&
+        cameraType !== CameraType.FLAT_MAP &&
+        labelMode !== SatLabelMode.ALL &&
+        !watchlistPluginInstance?.hasAnyInView());
 
-          if (colorSchemeManagerInstance.isPayloadOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isRocketBodyOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isDebrisOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isJscVimpelSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isNotionalSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isvLeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isGeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isLeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isMeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isHeoSatOff(sat)) {
-            continue;
-          }
-          if (colorSchemeManagerInstance.isXGeoSatOff(sat)) {
-            continue;
-          }
+    if (shouldClearLabels) {
+      ServiceLocator.getSatLabelManager()?.updateLabels([], []);
 
-          const satScreenPositionArray = this.getScreenCoords(sat);
+      return;
+    }
 
-          if (satScreenPositionArray.error) {
-            continue;
-          }
-          if (typeof satScreenPositionArray.x === 'undefined' || typeof satScreenPositionArray.y === 'undefined') {
-            continue;
-          }
-          if (satScreenPositionArray.x > window.innerWidth || satScreenPositionArray.y > window.innerHeight) {
-            continue;
-          }
+    // Sensor lat check — skip for FLAT_MAP and ALL label mode (no sensor needed)
+    if (cameraType !== CameraType.FLAT_MAP && labelMode !== SatLabelMode.ALL && sensorManagerInstance?.currentSensors[0]?.lat === null) {
+      return;
+    }
 
-          // Draw Orbits
-          if (!settingsManager.isShowSatNameNotOrbit) {
-            orbitManagerInstance.addInViewOrbit(i);
-          }
+    // Rate limiting
+    if (timeManagerInstance.realTime - this.satLabelModeLastTime_ < settingsManager.minTimeBetweenSatLabels) {
+      return;
+    }
 
-          /*
-           * Draw Sat Labels
-           * if (!settingsManager.enableHoverOverlay) continue
-           */
-          this.satHoverMiniDOM_ = document.createElement('div');
-          this.satHoverMiniDOM_.id = `sat-minibox-${i}`;
-          if (sat.source === CatalogSource.VIMPEL) {
-            this.satHoverMiniDOM_.textContent = `JSC${sat.altId}`;
-          } else {
-            this.satHoverMiniDOM_.textContent = sat.sccNum;
-          }
+    const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
-          this.satHoverMiniDOM_.style.display = 'block';
-          this.satHoverMiniDOM_.style.position = 'absolute';
-          this.satHoverMiniDOM_.style.textShadow = '-2px -2px 5px #000, 2px -2px 5px #000, -2px 2px 5px #000, 2px 2px 5px #000';
-          this.satHoverMiniDOM_.style.left = `${satScreenPositionArray.x + 20}px`;
-          this.satHoverMiniDOM_.style.top = `${satScreenPositionArray.y}px`;
+    orbitManagerInstance.clearInViewOrbit();
 
-          this.hoverBoxOnSatMiniElements_.appendChild(this.satHoverMiniDOM_);
-          this.labelCount_++;
+    const visibleSatIds: number[] = [];
+    const labelTexts: string[] = [];
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+
+    // Skip FOV check for PLANETARIUM, FLAT_MAP, or ALL label mode
+    const skipFovCheck =
+      cameraType === CameraType.PLANETARIUM ||
+      cameraType === CameraType.FLAT_MAP ||
+      labelMode === SatLabelMode.ALL;
+
+    if (skipFovCheck) {
+      watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
+        if (visibleSatIds.length >= settingsManager.maxLabels) {
+          return;
         }
-      } else {
-        const catalogManagerInstance = ServiceLocator.getCatalogManager();
-        const dotsManagerInstance = ServiceLocator.getDotsManager();
+        const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY);
 
-        if (!dotsManagerInstance.inViewData) {
+        if (!obj?.isSatellite()) {
+          return;
+        }
+        const sat = <Satellite>obj;
+
+        visibleSatIds.push(id);
+        labelTexts.push(sat.source === CatalogSource.VIMPEL ? `JSC${sat.altId}` : sat.sccNum);
+      });
+    } else {
+      // FOV_ONLY: check inViewData
+      const dotsManagerInstance = ServiceLocator.getDotsManager();
+
+      if (!dotsManagerInstance.inViewData) {
+        return;
+      }
+
+      watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
+        const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY) as Satellite;
+
+        if (dotsManagerInstance.inViewData[id] === 0) {
+          return;
+        }
+        const satScreenPositionArray = this.getScreenCoords(obj);
+
+        if (satScreenPositionArray.error) {
+          return;
+        }
+        if (typeof satScreenPositionArray.x === 'undefined' || typeof satScreenPositionArray.y === 'undefined') {
+          return;
+        }
+        if (satScreenPositionArray.x > window.innerWidth || satScreenPositionArray.y > window.innerHeight) {
           return;
         }
 
-        watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
-          const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY) as DetailedSatellite;
+        // Draw Orbits
+        if (!settingsManager.isShowSatNameNotOrbit) {
+          orbitManagerInstance.addInViewOrbit(id);
+        }
 
-          if (dotsManagerInstance.inViewData[id] === 0) {
-            return;
-          }
-          const satScreenPositionArray = this.getScreenCoords(obj);
-
-          if (satScreenPositionArray.error) {
-            return;
-          }
-          if (typeof satScreenPositionArray.x === 'undefined' || typeof satScreenPositionArray.y === 'undefined') {
-            return;
-          }
-          if (satScreenPositionArray.x > window.innerWidth || satScreenPositionArray.y > window.innerHeight) {
-            return;
-          }
-
-          /*
-           * Draw Sat Labels
-           * if (!settingsManager.enableHoverOverlay) continue
-           */
-          this.satHoverMiniDOM_ = document.createElement('div');
-          this.satHoverMiniDOM_.id = `sat-minibox-${id}`;
-          if (obj.source === CatalogSource.VIMPEL) {
-            this.satHoverMiniDOM_.textContent = `JSC${obj.altId}`;
-          } else {
-            this.satHoverMiniDOM_.textContent = obj.sccNum;
-          }
-
-          // Draw Orbits
-          if (!settingsManager.isShowSatNameNotOrbit) {
-            orbitManagerInstance.addInViewOrbit(id);
-          }
-
-          this.satHoverMiniDOM_.style.display = 'block';
-          this.satHoverMiniDOM_.style.position = 'absolute';
-          this.satHoverMiniDOM_.style.textShadow = '-2px -2px 5px #000, 2px -2px 5px #000, -2px 2px 5px #000, 2px 2px 5px #000';
-          this.satHoverMiniDOM_.style.left = `${satScreenPositionArray.x + 20}px`;
-          this.satHoverMiniDOM_.style.top = `${satScreenPositionArray.y}px`;
-
-          this.hoverBoxOnSatMiniElements_.appendChild(this.satHoverMiniDOM_);
-          this.labelCount_++;
-        });
-      }
-      this.isSatMiniBoxInUse_ = true;
-      this.satLabelModeLastTime_ = timeManagerInstance.realTime;
-    } else {
-      this.sensorPos = null;
-      this.isDrawOrbitsAbove = false;
+        visibleSatIds.push(id);
+        labelTexts.push(obj.source === CatalogSource.VIMPEL ? `JSC${obj.altId}` : obj.sccNum);
+      });
     }
 
-    // Hide satMiniBoxes When Not in Use
-    if (!settingsManager.isSatLabelModeOn || (ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM && !watchlistPluginInstance?.hasAnyInView())) {
-      if (this.isSatMiniBoxInUse_) {
-        this.satMiniBox_ = <HTMLDivElement>(<unknown>getEl('sat-minibox'));
-        this.satMiniBox_.innerHTML = '';
-      }
-      this.isSatMiniBoxInUse_ = false;
-    }
+    // Update GPU label manager with visible satellite data
+    ServiceLocator.getSatLabelManager()?.updateLabels(visibleSatIds, labelTexts);
+
+    this.satLabelModeLastTime_ = timeManagerInstance.realTime;
   }
 
   setNearRenderer() {
@@ -487,7 +437,8 @@ export class WebGLRenderer {
     const screenPos = { x: 0, y: 0, z: 0, error: false };
 
     try {
-      const pos = obj.position;
+      const objWithPos = obj as unknown as { position: TemeVec3 };
+      const pos = objWithPos.position;
 
       if (!pos) {
         throw new Error(`No Position for Sat ${obj.id}`);
@@ -498,7 +449,37 @@ export class WebGLRenderer {
       pos.y = pos.y + Scene.getInstance().worldShift[1] as Kilometers;
       pos.z = pos.z + Scene.getInstance().worldShift[2] as Kilometers;
 
-      const posVec4 = <[number, number, number, number]>vec4.fromValues(pos.x, pos.y, pos.z, 1);
+      let px = pos.x as number;
+      let py = pos.y as number;
+      let pz = pos.z as number;
+
+      // In flat map mode, convert ECI to flat map coordinates (must match the shader)
+      if (mainCamera.cameraType === CameraType.FLAT_MAP) {
+        const eciDist = Math.sqrt(px * px + py * py + pz * pz);
+
+        if (eciDist > 1e7) {
+          screenPos.error = true;
+
+          return screenPos;
+        }
+        const gmst = ServiceLocator.getTimeManager().gmst;
+        let lon = Math.atan2(py, px) - gmst;
+
+        lon = ((lon + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const lat = Math.atan2(pz, Math.sqrt(px * px + py * py));
+        const alt = eciDist - RADIUS_OF_EARTH;
+
+        px = lon * RADIUS_OF_EARTH;
+        py = lat * RADIUS_OF_EARTH;
+        pz = alt * 0.001;
+
+        // Wrap X to nearest copy of camera center (matches shader logic)
+        const mapW = 2 * Math.PI * RADIUS_OF_EARTH;
+
+        px = mainCamera.flatMapPanX + ((px - mainCamera.flatMapPanX + mapW * 0.5) % mapW + mapW) % mapW - mapW * 0.5;
+      }
+
+      const posVec4 = <[number, number, number, number]>vec4.fromValues(px, py, pz, 1);
 
       vec4.transformMat4(posVec4, posVec4, camMatrix);
       vec4.transformMat4(posVec4, posVec4, pMatrix);
@@ -510,7 +491,14 @@ export class WebGLRenderer {
       screenPos.x = (screenPos.x + 1) * 0.5 * window.innerWidth;
       screenPos.y = (-screenPos.y + 1) * 0.5 * window.innerHeight;
 
-      screenPos.error = !(screenPos.x >= 0 && screenPos.y >= 0 && screenPos.z >= 0 && screenPos.z <= 1);
+      // In flat map (ortho) mode the z check is meaningless: the ortho projection maps
+      // the tiny positive z (altitude above the map plane) to a slightly negative NDC z,
+      // which would always fail the z >= 0 test meant for perspective projections.
+      if (mainCamera.cameraType === CameraType.FLAT_MAP) {
+        screenPos.error = !(screenPos.x >= 0 && screenPos.y >= 0);
+      } else {
+        screenPos.error = !(screenPos.x >= 0 && screenPos.y >= 0 && screenPos.z >= 0 && screenPos.z <= 1);
+      }
     } catch {
       screenPos.error = true;
     }
@@ -617,7 +605,7 @@ export class WebGLRenderer {
 
     if (this.selectSatManager_?.primarySatObj.id !== -1) {
       const timeManagerInstance = ServiceLocator.getTimeManager();
-      const primarySat = ServiceLocator.getCatalogManager().getObject(this.selectSatManager_.primarySatObj.id, GetSatType.POSITION_ONLY) as DetailedSatellite | MissileObject;
+      const primarySat = ServiceLocator.getCatalogManager().getObject(this.selectSatManager_.primarySatObj.id, GetSatType.POSITION_ONLY) as Satellite | MissileObject;
       const satelliteOffset = ServiceLocator.getDotsManager().getPositionArray(this.selectSatManager_.primarySatObj.id).map((coord) => -coord);
 
       sceneInstance.worldShift = satelliteOffset as [number, number, number];
@@ -625,16 +613,18 @@ export class WebGLRenderer {
       // sceneInstance.worldShift[1] = satelliteOffset[1] - sceneInstance.worldShift[1];
       // sceneInstance.worldShift[2] = satelliteOffset[2] - sceneInstance.worldShift[2];
 
-      this.meshManager.update(timeManagerInstance.selectedDate, primarySat as DetailedSatellite);
+      this.meshManager.update(timeManagerInstance.selectedDate, primarySat as Satellite);
       ServiceLocator.getMainCamera().snapToSat(primarySat, timeManagerInstance.simulationTimeObj);
       if (primarySat.isMissile()) {
         ServiceLocator.getOrbitManager().setSelectOrbit(primarySat.id);
       }
 
       // If in satellite view the orbit buffer needs to be updated every time
+      // Skip alignment in ECF mode — the shader rotates ECEF data per-frame using GMST
       if (
+        !settingsManager.isOrbitCruncherInEcf &&
         !primarySat.isMissile() &&
-        (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT)
+        (ServiceLocator.getMainCamera().cameraType === CameraType.SATELLITE_FIRST_PERSON || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_LVLH || ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_ECI)
       ) {
         /*
          * Force an update so that the orbit is always using recent data - this
@@ -643,14 +633,14 @@ export class WebGLRenderer {
         // ServiceLocator.getOrbitManager().updateOrbitBuffer(this.selectSatManager_.primarySatObj.id);
 
         // Now we can fix this draw call
-        const firstPointOut = ServiceLocator.getDotsManager().getPositionArray(this.selectSatManager_.primarySatObj.id);
+        const firstPointOut = ServiceLocator.getDotsManager().getPositionArray(Number(this.selectSatManager_.primarySatObj.id));
         const firstRelativePointOut = SatMath.getPositionFromCenterBody({
           x: firstPointOut[0] as Kilometers,
           y: firstPointOut[1] as Kilometers,
           z: firstPointOut[2] as Kilometers,
         });
 
-        if (primarySat instanceof DetailedSatellite) {
+        if (primarySat instanceof Satellite) {
           ServiceLocator.getOrbitManager().alignOrbitSelectedObject(
             this.selectSatManager_.primarySatObj.id, [firstRelativePointOut.x, firstRelativePointOut.y, firstRelativePointOut.z],
           );
@@ -674,11 +664,25 @@ export class WebGLRenderer {
       sceneInstance.primaryCovBubble.update(primarySat);
     } else {
       sceneInstance.searchBox.update(null);
+
+      // Update mesh for deep-space satellite when centered (no satellite selected)
+      const deepSpaceSat = sceneInstance.deepSpaceSatellites?.[settingsManager.centerBody];
+
+      if (deepSpaceSat) {
+        this.meshManager.updateForBody(deepSpaceSat.position, deepSpaceSat.getModelName());
+      }
     }
   }
 
   private updateSecondarySatellite_() {
-    const secondarySat = PluginRegistry.getPlugin(SelectSatManager)?.secondarySatObj;
+    const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+    if (!selectSatManager || selectSatManager.secondarySat === -1) {
+      return;
+    }
+
+    // Fetch with POSITION_ONLY so the position is current (same as primary)
+    const secondarySat = ServiceLocator.getCatalogManager().getObject(selectSatManager.secondarySat, GetSatType.POSITION_ONLY);
 
     if (!secondarySat) {
       return;

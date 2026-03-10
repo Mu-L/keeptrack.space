@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { DateTimeManager } from '@app/plugins/date-time-manager/date-time-manager';
 import { SensorListPlugin } from '@app/plugins/sensor-list/sensor-list';
 import { CustomSensorPlugin } from '@app/plugins/sensor/custom-sensor-plugin';
@@ -7,19 +8,16 @@ import { setupStandardEnvironment } from './environment/standard-env';
 import { standardChangeTests, standardClickTests, standardPluginMenuButtonTests, standardPluginSuite } from './generic-tests';
 
 describe('CustomSensorPlugin_class', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let customSensorPlugin: CustomSensorPlugin;
-
-  // eslint-disable-next-line no-console
-  console.debug(customSensorPlugin);
 
   beforeEach(() => {
     setupStandardEnvironment([TopMenu, DateTimeManager, SensorInfoPlugin, SensorListPlugin]);
     customSensorPlugin = new CustomSensorPlugin();
+    void customSensorPlugin; // Variable is used indirectly by plugin suite tests
   });
 
   afterEach(() => {
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   standardPluginSuite(CustomSensorPlugin);

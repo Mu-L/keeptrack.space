@@ -28,17 +28,23 @@ import { errorManagerInstance } from '../utils/errorManager';
 import { getEl, hideEl } from '../utils/get-el';
 
 import { DensityBin } from '@app/app/data/catalog-manager';
+import { ColorCruncherThreadManager } from '@app/app/threads/color-cruncher-thread-manager';
 import { LayersManager } from '@app/app/ui/layers-manager';
 import { UrlManager } from '@app/engine/input/url-manager';
+import { WebWorkerThreadManager } from '@app/engine/threads/web-worker-thread';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { PositionCruncherOutgoingMsg } from '@app/webworker/constants';
-import { CatalogSource, DetailedSatellite, SpaceObjectType } from '@ootk/src/main';
+import { CatalogSource, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import { TimeMachine } from '../../plugins/time-machine/time-machine';
+import { PluginRegistry } from '../core/plugin-registry';
+import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { BaseObject } from '../ootk/src/objects';
 import { PersistenceManager, StorageKey } from '../utils/persistence-manager';
+import { buildColorDataArrays } from './color-worker/color-data-builder';
+import { FilterState, SettingsFlags } from './color-worker/color-worker-messages';
 import { CelestrakColorScheme } from './color-schemes/celestrak-color-scheme';
 import { ColorScheme, ColorSchemeColorMap, ColorSchemeParams } from './color-schemes/color-scheme';
 import { ConfidenceColorScheme } from './color-schemes/confidence-color-scheme';
@@ -56,8 +62,6 @@ import { StarlinkColorScheme } from './color-schemes/starlink-color-scheme';
 import { SunlightColorScheme } from './color-schemes/sunlight-color-scheme';
 import { VelocityColorScheme } from './color-schemes/velocity-color-scheme';
 import { WebGLRenderer } from './webgl-renderer';
-import { PluginRegistry } from '../core/plugin-registry';
-import { ServiceLocator } from '../core/service-locator';
 
 export class ColorSchemeManager {
   // This is where you confiure addon color schemes
@@ -107,6 +111,48 @@ export class ColorSchemeManager {
   pickableBuffer: WebGLBuffer | null = null;
   pickableBufferOneTime = false;
   pickableData = new Int8Array(0);
+  private hasRegisteredOffsetListener_ = false;
+
+  // ─── Worker Mode ───────────────────────────────────────────────────────
+  private colorCruncher_: ColorCruncherThreadManager | null = null;
+  private useWorkerMode_ = false;
+  private workerReady_ = false; // true once worker has received catalog; useWorkerMode_ can be toggled per-scheme
+  private catalogSeqNum_ = 0;
+
+  /** Scheme IDs the color worker knows how to compute. Plugin schemes not in this set fall back to main-thread. */
+  private static readonly WORKER_SUPPORTED_SCHEMES_ = new Set([
+    'ObjectTypeColorScheme',
+    'CelestrakColorScheme',
+    'CountryColorScheme',
+    'VelocityColorScheme',
+    'SunlightColorScheme',
+    'RcsColorScheme',
+    'ConfidenceColorScheme',
+    'GpAgeColorScheme',
+    'MissionColorScheme',
+    'ReentryRiskColorScheme',
+    'SpatialDensityColorScheme',
+    'OrbitalPlaneDensityColorScheme',
+    'SourceColorScheme',
+    'StarlinkColorScheme',
+    'SmallSatColorScheme',
+  ]);
+
+  /**
+   * Resets buffer flags and color data so that the next onCruncherReady
+   * event re-creates everything for a new catalog.
+   */
+  resetForCatalogSwap(): void {
+    this.colorBufferOneTime = false;
+    this.pickableBufferOneTime = false;
+    this.colorData = new Float32Array(0);
+    this.pickableData = new Int8Array(0);
+    this.isReady = false;
+    this.lastDotColored = 0;
+    // Worker will receive new catalog on next onCruncherReady
+    this.useWorkerMode_ = false;
+    this.workerReady_ = false;
+  }
 
   calcColorBufsNextCruncher(): void {
     waitForCruncher({
@@ -128,6 +174,16 @@ export class ColorSchemeManager {
        * are loaded into catalogManagerInstance. Don't move the buffer data creation into the constructor!
        */
       if (this.pickableData.length === 0 || this.colorData.length === 0) {
+        return;
+      }
+
+      // In worker mode, delegate to the color worker instead of running main-thread loop
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        if (isForceRecolor) {
+          this.sendAllStateToWorker_();
+          this.colorCruncher_.sendForceRecolor();
+        }
+
         return;
       }
 
@@ -192,7 +248,7 @@ export class ColorSchemeManager {
     }
   }
 
-  init(renderer: WebGLRenderer): void {
+  init(renderer: WebGLRenderer, threadsRegistry?: WebWorkerThreadManager[]): void {
     this.gl_ = renderer.gl;
     this.colorTheme = settingsManager.colors ?? <ColorSchemeColorMap & ObjectTypeColorSchemeColorMap>{
       transparent: [0, 0, 0, 0] as rgbaArray,
@@ -217,6 +273,11 @@ export class ColorSchemeManager {
     this.colorBuffer = renderer.gl.createBuffer();
     this.pickableBuffer = renderer.gl.createBuffer();
 
+    // Initialize color worker if registry is provided
+    if (threadsRegistry) {
+      this.initColorWorker_(threadsRegistry);
+    }
+
     // Create the color buffers as soon as the position cruncher is ready
     EventBus.getInstance().on(
       EventBusEvent.onCruncherReady,
@@ -239,18 +300,64 @@ export class ColorSchemeManager {
         // Generate some buffers
         this.colorData = new Float32Array(catalogManagerInstance.numObjects * 4);
         this.pickableData = new Int8Array(catalogManagerInstance.numObjects);
+
+        // Send catalog data to color worker
+        if (this.colorCruncher_?.isReady) {
+          this.sendCatalogToWorker_();
+          this.sendAllStateToWorker_();
+          this.workerReady_ = true;
+          this.useWorkerMode_ = ColorSchemeManager.WORKER_SUPPORTED_SCHEMES_.has(this.currentColorScheme?.id);
+        }
+
         this.calculateColorBuffers(true);
         this.isReady = true;
 
         // This helps keep the inview colors up to date
-        EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
-          setTimeout(() => {
-            this.calcColorBufsNextCruncher();
-          }, 1000);
-        });
+        if (!this.hasRegisteredOffsetListener_) {
+          this.hasRegisteredOffsetListener_ = true;
+          EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
+            setTimeout(() => {
+              if (this.useWorkerMode_) {
+                this.colorCruncher_?.sendForceRecolor();
+              } else {
+                this.calcColorBufsNextCruncher();
+              }
+            }, 1000);
+          });
+        }
 
       },
     );
+
+    // Handle color buffer results from worker
+    EventBus.getInstance().on(EventBusEvent.onColorBufferReady, () => {
+      if (!this.colorCruncher_) {
+        return;
+      }
+      const data = this.colorCruncher_.consumeColorData();
+
+      if (data && data.colorData.length === this.colorData.length) {
+        this.colorData.set(data.colorData);
+        this.pickableData.set(data.pickableData);
+        this.setSelectedAndHoverBuffer_();
+        this.sendColorBufferToGpu();
+      }
+    });
+
+    // Forward position cruncher data to color worker
+    EventBus.getInstance().on(EventBusEvent.onCruncherMessage, () => {
+      if (!this.useWorkerMode_ || !this.colorCruncher_) {
+        return;
+      }
+      const dotsManager = ServiceLocator.getDotsManager();
+
+      this.colorCruncher_.sendDynamicUpdate(
+        dotsManager.inViewData,
+        dotsManager.inSunData,
+        dotsManager.getSatVel(),
+        settingsManager.dotsOnScreen,
+      );
+    });
 
     EventBus.getInstance().on(EventBusEvent.layerUpdated, () => {
       if (settingsManager.isDisableSensors) {
@@ -273,9 +380,39 @@ export class ColorSchemeManager {
           hideEl(launchSiteBox);
         }
       }
+
+      // Forward updated layer/flag state to worker
+      this.forwardObjectTypeFlagsToWorker_();
+    });
+
+    // Forward filter changes (from FilterMenuPlugin) to worker
+    EventBus.getInstance().on(EventBusEvent.filterChanged, () => {
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        this.forwardFiltersToWorker_();
+      }
+    });
+
+    // Forward sensor changes to worker so isSensorManagerLoaded/sensorType stay current
+    EventBus.getInstance().on(EventBusEvent.setSensor, () => {
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        this.forwardSettingsToWorker_();
+      }
+    });
+    EventBus.getInstance().on(EventBusEvent.resetSensor, () => {
+      if (this.useWorkerMode_ && this.colorCruncher_) {
+        this.forwardSettingsToWorker_();
+      }
     });
 
     EventBus.getInstance().on(EventBusEvent.update, () => {
+      // In worker mode, colors arrive asynchronously via onColorBufferReady
+      if (this.useWorkerMode_) {
+        // Still need to apply selected/hover overlay each frame for responsiveness
+        this.setSelectedAndHoverBuffer_();
+        this.sendColorBufferToGpu();
+
+        return;
+      }
       /*
        * Update Colors
        * NOTE: We used to skip this when isDragging was true, but its so efficient that doesn't seem necessary anymore
@@ -287,13 +424,18 @@ export class ColorSchemeManager {
   }
 
   isInView(obj: BaseObject) {
-    return ServiceLocator.getDotsManager().inViewData?.[obj.id] === 1 && this.currentColorScheme?.objectTypeFlags.inFOV;
+    return ServiceLocator.getDotsManager().inViewData?.[Number(obj.id)] === 1 && this.currentColorScheme?.objectTypeFlags.inFOV;
   }
   isInViewOff(obj: BaseObject) {
-    return ServiceLocator.getDotsManager().inViewData?.[obj.id] === 1 && !this.currentColorScheme?.objectTypeFlags.inFOV;
+    return ServiceLocator.getDotsManager().inViewData?.[Number(obj.id)] === 1 && !this.currentColorScheme?.objectTypeFlags.inFOV;
   }
-  isPayloadOff(obj: BaseObject) {
-    return settingsManager.filter?.payloads === false && obj.type === SpaceObjectType.PAYLOAD;
+  isOperationalPayloadOff(obj: BaseObject) {
+    return settingsManager.filter?.operationalPayloads === false && obj.type === SpaceObjectType.PAYLOAD &&
+      (obj as Satellite).status !== PayloadStatus.NONOPERATIONAL && (obj as Satellite).status !== PayloadStatus.UNKNOWN;
+  }
+  isNonOperationalPayloadOff(obj: BaseObject) {
+    return settingsManager.filter?.nonOperationalPayloads === false && obj.type === SpaceObjectType.PAYLOAD &&
+      ((obj as Satellite).status === PayloadStatus.NONOPERATIONAL || (obj as Satellite).status === PayloadStatus.UNKNOWN);
   }
   isRocketBodyOff(obj: BaseObject) {
     return settingsManager.filter?.rocketBodies === false && obj.type === SpaceObjectType.ROCKET_BODY;
@@ -308,69 +450,69 @@ export class ColorSchemeManager {
     return settingsManager.filter?.notionalSatellites === false && obj.type === SpaceObjectType.NOTIONAL;
   }
   isvLeoSatOff(obj: BaseObject) {
-    return settingsManager.filter?.vLEOSatellites === false && (obj as DetailedSatellite).apogee < 400;
+    return settingsManager.filter?.vLEOSatellites === false && (obj as Satellite).apogee < 400;
   }
   isLeoSatOff(obj: BaseObject) {
-    return settingsManager.filter?.lEOSatellites === false && (obj as DetailedSatellite).apogee < 6000 && (obj as DetailedSatellite).apogee >= 400;
+    return settingsManager.filter?.lEOSatellites === false && (obj as Satellite).apogee < 6000 && (obj as Satellite).apogee >= 400;
   }
   isMeoSatOff(obj: BaseObject) {
-    return settingsManager.filter?.mEOSatellites === false && (obj as DetailedSatellite).eccentricity < 0.1 && ((obj as DetailedSatellite).apogee >= 6000 &&
-      (obj as DetailedSatellite).apogee < 34786);
+    return settingsManager.filter?.mEOSatellites === false && (obj as Satellite).eccentricity < 0.1 && ((obj as Satellite).apogee >= 6000 &&
+      (obj as Satellite).apogee < 34786);
   }
   isHeoSatOff(obj: BaseObject) {
     return settingsManager.filter?.hEOSatellites === false &&
-      (obj as DetailedSatellite).eccentricity >= 0.1 && ((obj as DetailedSatellite).apogee <= 39786);
+      (obj as Satellite).eccentricity >= 0.1 && ((obj as Satellite).apogee <= 39786);
   }
   isGeoSatOff(obj: BaseObject) {
-    return settingsManager.filter?.gEOSatellites === false && (obj as DetailedSatellite).eccentricity < 0.1 && ((obj as DetailedSatellite).apogee >= 34786 &&
-      (obj as DetailedSatellite).apogee < 36786);
+    return settingsManager.filter?.gEOSatellites === false && (obj as Satellite).eccentricity < 0.1 && ((obj as Satellite).apogee >= 34786 &&
+      (obj as Satellite).apogee < 36786);
   }
   isXGeoSatOff(obj: BaseObject) {
     return settingsManager.filter?.xGEOSatellites === false &&
-      (((obj as DetailedSatellite).eccentricity < 0.1 && ((obj as DetailedSatellite).apogee > 36786)) || ((obj as DetailedSatellite).apogee > 39786));
+      (((obj as Satellite).eccentricity < 0.1 && ((obj as Satellite).apogee > 36786)) || ((obj as Satellite).apogee > 39786));
   }
   isUnitedStatesOff(obj: BaseObject) {
-    return settingsManager.filter?.unitedStates === false && (obj as DetailedSatellite)?.country === 'US';
+    return settingsManager.filter?.unitedStates === false && (obj as Satellite)?.country === 'US';
   }
   isUnitedKingdomOff(obj: BaseObject) {
-    return settingsManager.filter?.unitedKingdom === false && (obj as DetailedSatellite)?.country === 'UK';
+    return settingsManager.filter?.unitedKingdom === false && (obj as Satellite)?.country === 'UK';
   }
   isFranceOff(obj: BaseObject) {
-    return settingsManager.filter?.france === false && (obj as DetailedSatellite)?.country === 'F';
+    return settingsManager.filter?.france === false && (obj as Satellite)?.country === 'F';
   }
   isGermanyOff(obj: BaseObject) {
-    return settingsManager.filter?.germany === false && (obj as DetailedSatellite)?.country === 'D';
+    return settingsManager.filter?.germany === false && (obj as Satellite)?.country === 'D';
   }
   isJapanOff(obj: BaseObject) {
-    return settingsManager.filter?.japan === false && (obj as DetailedSatellite)?.country === 'J';
+    return settingsManager.filter?.japan === false && (obj as Satellite)?.country === 'J';
   }
   isChinaOff(obj: BaseObject) {
-    return settingsManager.filter?.china === false && (obj as DetailedSatellite)?.country === 'CN';
+    return settingsManager.filter?.china === false && (obj as Satellite)?.country === 'CN';
   }
   isIndiaOff(obj: BaseObject) {
-    return settingsManager.filter?.india === false && (obj as DetailedSatellite)?.country === 'IN';
+    return settingsManager.filter?.india === false && (obj as Satellite)?.country === 'IN';
   }
   isRussiaOff(obj: BaseObject) {
-    return settingsManager.filter?.russia === false && (obj as DetailedSatellite)?.country === 'RU';
+    return settingsManager.filter?.russia === false && (obj as Satellite)?.country === 'RU';
   }
   isUssrOff(obj: BaseObject) {
-    return settingsManager.filter?.uSSR === false && (obj as DetailedSatellite)?.country === 'SU';
+    return settingsManager.filter?.uSSR === false && (obj as Satellite)?.country === 'SU';
   }
   isSouthKoreaOff(obj: BaseObject) {
-    return settingsManager.filter?.southKorea === false && (obj as DetailedSatellite)?.country === 'KR';
+    return settingsManager.filter?.southKorea === false && (obj as Satellite)?.country === 'KR';
   }
   isAustraliaOff(obj: BaseObject) {
-    return settingsManager.filter?.australia === false && (obj as DetailedSatellite)?.country === 'AU';
+    return settingsManager.filter?.australia === false && (obj as Satellite)?.country === 'AU';
   }
   isOtherCountriesOff(obj: BaseObject) {
     return settingsManager.filter?.otherCountries === false &&
-      !['US', 'UK', 'F', 'D', 'J', 'CN', 'IN', 'RU', 'SU', 'KR', 'AU'].includes((obj as DetailedSatellite)?.country);
+      !['US', 'UK', 'F', 'D', 'J', 'CN', 'IN', 'RU', 'SU', 'KR', 'AU'].includes((obj as Satellite)?.country);
   }
   isJscVimpelSatOff(obj: BaseObject) {
-    return settingsManager.filter?.vimpelSatellites === false && (obj as DetailedSatellite)?.source === CatalogSource.VIMPEL;
+    return settingsManager.filter?.vimpelSatellites === false && (obj as Satellite)?.source === CatalogSource.VIMPEL;
   }
   isCelestrakSatOff(obj: BaseObject) {
-    return settingsManager.filter?.celestrakSatellites === false && (obj as DetailedSatellite)?.source === CatalogSource.CELESTRAK;
+    return settingsManager.filter?.celestrakSatellites === false && (obj as Satellite)?.source === CatalogSource.CELESTRAK;
   }
   isStarlinkSatOff(obj: BaseObject) {
     return settingsManager.filter?.starlinkSatellites === false && obj.name?.includes('STARLINK');
@@ -409,6 +551,20 @@ export class ColorSchemeManager {
         throw new Error('Color scheme is not a valid color scheme');
       }
 
+      // Toggle worker mode based on whether this scheme is worker-supported
+      if (this.workerReady_ && this.colorCruncher_) {
+        const isSupported = ColorSchemeManager.WORKER_SUPPORTED_SCHEMES_.has(scheme.id);
+
+        this.useWorkerMode_ = isSupported;
+        if (isSupported) {
+          this.colorCruncher_.sendSchemeChange(scheme.id, this.isUseGroupColorScheme);
+          this.forwardObjectTypeFlagsToWorker_();
+          this.forwardParamsToWorker_();
+          this.forwardColorThemeToWorker_();
+          this.forwardSettingsToWorker_();
+        }
+      }
+
       this.calculateColorBuffers(isForceRecolor);
       if (this.colorBuffer && this.pickableBuffer) {
         dotsManagerInstance.buffers.color = this.colorBuffer;
@@ -416,6 +572,8 @@ export class ColorSchemeManager {
       } else {
         throw new Error('Color or pickable buffer is not initialized');
       }
+
+      EventBus.getInstance().emit(EventBusEvent.colorSchemeChanged, scheme);
     } catch (error) {
       // If we can't load the color scheme, just use the default
       errorManagerInstance.log(error);
@@ -426,10 +584,15 @@ export class ColorSchemeManager {
 
   setToGroupColorScheme() {
     this.isUseGroupColorScheme = true;
+    // Forward to worker
+    if (this.useWorkerMode_ && this.colorCruncher_) {
+      this.colorCruncher_.sendSchemeChange(this.currentColorScheme.id, true);
+      this.forwardGroupToWorker_();
+    }
   }
 
   private getColorIfDisabledSat_(objectData: BaseObject[], i: number): ColorInformation | null {
-    const sat = objectData[i] as DetailedSatellite;
+    const sat = objectData[i] as Satellite;
 
     // Optimize for the most common cases first
 
@@ -547,7 +710,13 @@ export class ColorSchemeManager {
         pickable: Pickable.No,
       };
     }
-    if (this.isPayloadOff(sat)) {
+    if (this.isOperationalPayloadOff(sat)) {
+      return {
+        color: [0, 0, 0, 0],
+        pickable: Pickable.No,
+      };
+    }
+    if (this.isNonOperationalPayloadOff(sat)) {
       return {
         color: [0, 0, 0, 0],
         pickable: Pickable.No,
@@ -626,7 +795,9 @@ export class ColorSchemeManager {
     params: ColorSchemeParams,
   ) {
     for (let i = firstDotToColor; i < lastDotToColor; i++) {
-      satData[i].totalVelocity = Math.sqrt(satVel[i * 3] * satVel[i * 3] + satVel[i * 3 + 1] * satVel[i * 3 + 1] + satVel[i * 3 + 2] * satVel[i * 3 + 2]);
+      (satData[i] as unknown as { totalVelocity: number }).totalVelocity = Math.sqrt(
+        satVel[i * 3] * satVel[i * 3] + satVel[i * 3 + 1] * satVel[i * 3 + 1] + satVel[i * 3 + 2] * satVel[i * 3 + 2],
+      );
       this.calculateBufferData_(i, satData, params);
     }
   }
@@ -746,15 +917,22 @@ export class ColorSchemeManager {
     }
   }
 
+  /** Plugin-provided override for selected satellite dot color (e.g. flat map uses red since mesh is hidden). */
+  static selectedColorOverride: rgbaArray | null = null;
+
   private setSelectedAndHoverBuffer_() {
     const selSat = PluginRegistry.getPlugin(SelectSatManager)?.selectedSat;
 
-    if (typeof selSat !== 'undefined' && selSat > -1) {
+    if (typeof selSat !== 'undefined' && selSat !== -1) {
       // Selected satellites are always one color so forget whatever we just did
-      this.colorData[selSat * 4] = settingsManager.selectedColor[0]; // R
-      this.colorData[selSat * 4 + 1] = settingsManager.selectedColor[1]; // G
-      this.colorData[selSat * 4 + 2] = settingsManager.selectedColor[2]; // B
-      this.colorData[selSat * 4 + 3] = settingsManager.selectedColor[3]; // A
+      const selSatNum = selSat;
+
+      const color = ColorSchemeManager.selectedColorOverride ?? settingsManager.selectedColor;
+
+      this.colorData[selSatNum * 4] = color[0]; // R
+      this.colorData[selSatNum * 4 + 1] = color[1]; // G
+      this.colorData[selSatNum * 4 + 2] = color[2]; // B
+      this.colorData[selSatNum * 4 + 3] = color[3]; // A
     }
 
     const hovSat = ServiceLocator.getHoverManager().hoveringSat;
@@ -766,9 +944,211 @@ export class ColorSchemeManager {
      * Hover satellites are always one color so forget whatever we just did
      * We check this last so you can hover over the selected satellite
      */
-    this.colorData[hovSat * 4] = settingsManager.hoverColor[0]; // R
-    this.colorData[hovSat * 4 + 1] = settingsManager.hoverColor[1]; // G
-    this.colorData[hovSat * 4 + 2] = settingsManager.hoverColor[2]; // B
-    this.colorData[hovSat * 4 + 3] = settingsManager.hoverColor[3];
+    const hovSatNum = hovSat;
+
+    this.colorData[hovSatNum * 4] = settingsManager.hoverColor[0]; // R
+    this.colorData[hovSatNum * 4 + 1] = settingsManager.hoverColor[1]; // G
+    this.colorData[hovSatNum * 4 + 2] = settingsManager.hoverColor[2]; // B
+    this.colorData[hovSatNum * 4 + 3] = settingsManager.hoverColor[3];
+  }
+
+  // ─── Color Worker Integration ────────────────────────────────────────
+
+  private initColorWorker_(threadsRegistry: WebWorkerThreadManager[]): void {
+    try {
+      this.colorCruncher_ = new ColorCruncherThreadManager(threadsRegistry);
+      this.colorCruncher_.init();
+    } catch (e) {
+      errorManagerInstance.debug(e);
+      this.colorCruncher_ = null;
+      this.useWorkerMode_ = false;
+    }
+  }
+
+  private sendCatalogToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+    const catalogManager = ServiceLocator.getCatalogManager();
+
+    this.catalogSeqNum_++;
+    const data = buildColorDataArrays(catalogManager.objectCache);
+
+    this.colorCruncher_.sendCatalogData(data, this.catalogSeqNum_);
+  }
+
+  /** Send all current state to the worker — used after catalog init */
+  private sendAllStateToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    // Scheme
+    this.colorCruncher_.sendSchemeChange(this.currentColorScheme.id, this.isUseGroupColorScheme);
+
+    // Filters
+    this.forwardFiltersToWorker_();
+
+    // Settings
+    this.forwardSettingsToWorker_();
+
+    // Object type flags
+    this.forwardObjectTypeFlagsToWorker_();
+
+    // Color theme
+    this.forwardColorThemeToWorker_();
+
+    // Params (density, year/jday)
+    this.forwardParamsToWorker_();
+
+    // Group
+    this.forwardGroupToWorker_();
+
+    // Dynamic data (inView, inSun, velocity)
+    const dotsManager = ServiceLocator.getDotsManager();
+
+    this.colorCruncher_.sendDynamicUpdate(
+      dotsManager.inViewData,
+      dotsManager.inSunData,
+      dotsManager.getSatVel(),
+      settingsManager.dotsOnScreen,
+    );
+  }
+
+  private forwardFiltersToWorker_(): void {
+    if (!this.colorCruncher_ || !settingsManager.filter) {
+      return;
+    }
+
+    const f = settingsManager.filter;
+    const filter: FilterState = {
+      debris: f.debris ?? true,
+      operationalPayloads: f.operationalPayloads ?? true,
+      nonOperationalPayloads: f.nonOperationalPayloads ?? true,
+      rocketBodies: f.rocketBodies ?? true,
+      unknownType: f.unknownType ?? true,
+      notionalSatellites: f.notionalSatellites ?? true,
+      vLEOSatellites: f.vLEOSatellites ?? true,
+      lEOSatellites: f.lEOSatellites ?? true,
+      mEOSatellites: f.mEOSatellites ?? true,
+      hEOSatellites: f.hEOSatellites ?? true,
+      gEOSatellites: f.gEOSatellites ?? true,
+      xGEOSatellites: f.xGEOSatellites ?? true,
+      unitedStates: f.unitedStates ?? true,
+      unitedKingdom: f.unitedKingdom ?? true,
+      france: f.france ?? true,
+      germany: f.germany ?? true,
+      japan: f.japan ?? true,
+      china: f.china ?? true,
+      india: f.india ?? true,
+      russia: f.russia ?? true,
+      uSSR: f.uSSR ?? true,
+      southKorea: f.southKorea ?? true,
+      australia: f.australia ?? true,
+      otherCountries: f.otherCountries ?? true,
+      vimpelSatellites: f.vimpelSatellites ?? true,
+      celestrakSatellites: f.celestrakSatellites ?? true,
+      starlinkSatellites: f.starlinkSatellites ?? true,
+    };
+
+    this.colorCruncher_.sendFilterUpdate(filter);
+  }
+
+  private forwardSettingsToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    const sensorManager = ServiceLocator.getSensorManager();
+    const catalogManager = ServiceLocator.getCatalogManager();
+
+    const flags: SettingsFlags = {
+      cameraType: ServiceLocator.getMainCamera().cameraType,
+      isShowPayloads: settingsManager.isShowPayloads,
+      isShowRocketBodies: settingsManager.isShowRocketBodies,
+      isShowDebris: settingsManager.isShowDebris,
+      isShowAgencies: settingsManager.isShowAgencies,
+      isDisableLaunchSites: settingsManager.isDisableLaunchSites,
+      isDisableSensors: settingsManager.isDisableSensors,
+      isSensorManagerLoaded: catalogManager.isSensorManagerLoaded,
+      sensorType: sensorManager?.currentSensors?.[0]?.type ?? 0,
+      maxZoomDistance: settingsManager.maxZoomDistance,
+      isMissilePluginEnabled: !!settingsManager.plugins?.MissilePlugin?.enabled,
+    };
+
+    this.colorCruncher_.sendSettingsUpdate(flags);
+  }
+
+  private forwardObjectTypeFlagsToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    // Merge global objectTypeFlags with the current scheme's flags
+    const flags = {
+      ...this.objectTypeFlags,
+      ...this.currentColorScheme?.objectTypeFlags,
+    };
+
+    this.colorCruncher_.sendObjectTypeFlags(flags);
+  }
+
+  private forwardColorThemeToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    // Send only array-valued entries from colorTheme
+    const theme: Record<string, number[]> = {};
+
+    for (const key in this.colorTheme) {
+      if (Array.isArray(this.colorTheme[key])) {
+        theme[key] = this.colorTheme[key] as number[];
+      }
+    }
+
+    // Also include current scheme's unique color theme
+    if (this.currentColorScheme?.colorTheme) {
+      for (const key in this.currentColorScheme.colorTheme) {
+        if (Array.isArray(this.currentColorScheme.colorTheme[key])) {
+          theme[key] = this.currentColorScheme.colorTheme[key] as number[];
+        }
+      }
+    }
+
+    this.colorCruncher_.sendColorTheme(theme);
+  }
+
+  private forwardParamsToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    const params = this.calculateParams_();
+
+    this.colorCruncher_.sendParamsUpdate(params);
+  }
+
+  private forwardGroupToWorker_(): void {
+    if (!this.colorCruncher_) {
+      return;
+    }
+
+    const groupsManager = ServiceLocator.getGroupsManager();
+    const group = groupsManager?.selectedGroup;
+
+    if (group) {
+      // Extract object ids from the group
+      const ids: number[] = [];
+
+      if (group.ids) {
+        for (const id of group.ids) {
+          ids.push(Number(id));
+        }
+      }
+      this.colorCruncher_.sendGroupUpdate(ids);
+    } else {
+      this.colorCruncher_.sendGroupUpdate(null);
+    }
   }
 }

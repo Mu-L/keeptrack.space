@@ -53,6 +53,7 @@ export class CameraControlWidget {
     this.canvas.style.top = 'calc(var(--top-menu-height) + 10px)';
     this.canvas.style.right = '10px';
     this.canvas.style.zIndex = '-1';
+    this.canvas.style.pointerEvents = 'none';
     // append to canvas-holder
     document.getElementById('canvas-holder')?.appendChild(this.canvas);
 
@@ -205,8 +206,11 @@ export class CameraControlWidget {
 
   private draw() {
     if (!settingsManager.drawCameraWidget || !this.ctx) {
+      this.canvas.style.pointerEvents = 'none';
+
       return;
     }
+    this.canvas.style.pointerEvents = 'auto';
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     const camera = ServiceLocator.getMainCamera();

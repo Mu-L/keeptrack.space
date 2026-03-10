@@ -3,14 +3,46 @@
     "FilterMenuPlugin": {
       "title": "Filtermenü",
       "bottomIconLabel": "Filtermenü",
-      "helpBody": "Dieses Menü ermöglicht es Ihnen, die auf dem Globus angezeigten Objekte nach Typ, orbitalen Bereichen und Datenquellen zu filtern."
+      "helpBody": "Dieses Menü ermöglicht es Ihnen, die auf dem Globus angezeigten Objekte nach Typ, orbitalen Bereichen und Datenquellen zu filtern.",
+      "resetToDefaults": "Auf Standard zurücksetzen",
+      "defaultTooltip": "Deaktivieren, um {name} auszublenden",
+      "commands": {
+        "category": "Filter",
+        "open": "Filtermenü öffnen",
+        "resetDefaults": "Filter auf Standardwerte zurücksetzen",
+        "toggleDebris": "Trümmer ein-/ausblenden",
+        "toggleRocketBodies": "Raketenstufen ein-/ausblenden",
+        "toggleUnknownType": "Unbekannten Typ ein-/ausblenden",
+        "toggleNotional": "Konzeptionelle Satelliten ein-/ausblenden",
+        "toggleStarlink": "Starlink ein-/ausblenden",
+        "showOnlyPayloads": "Nur Nutzlasten anzeigen",
+        "hideDebrisAndRocketBodies": "Trümmer und Raketenstufen ausblenden",
+        "showAllObjectTypes": "Alle Objekttypen anzeigen",
+        "toggleLEO": "LEO ein-/ausblenden",
+        "toggleMEO": "MEO ein-/ausblenden",
+        "toggleGEO": "GEO ein-/ausblenden",
+        "toggleHEO": "HEO ein-/ausblenden",
+        "showOnlyLEO": "Nur LEO-Satelliten anzeigen",
+        "showOnlyGEO": "Nur GEO-Satelliten anzeigen",
+        "showAllOrbitalRegimes": "Alle orbitalen Bereiche anzeigen",
+        "showOnlyUS": "Nur US-Objekte anzeigen",
+        "showOnlyRussia": "Nur russische Objekte anzeigen",
+        "showOnlyChina": "Nur chinesische Objekte anzeigen",
+        "showAllCountries": "Alle Länder anzeigen",
+        "hideAllCountries": "Alle Länder ausblenden"
+      }
     }
   },
   "filterMenu": {
-    "payloads": {
-      "name": "Nutzlasten",
+    "operationalPayloads": {
+      "name": "Betriebsfähige Nutzlasten",
       "category": "Objekttypen",
-      "tooltip": "Objekte, die hauptsächlich zum Transport einer Nutzlast verwendet werden, wie Kommunikations- oder Wettersatelliten. Dies umfasst sowohl betriebsfähige als auch außer Betrieb gesetzte Satelliten."
+      "tooltip": "Satelliten, die derzeit in Betrieb sind, einschließlich solcher im Standby-, Reserve- oder erweiterten Missionsstatus."
+    },
+    "nonOperationalPayloads": {
+      "name": "Außer Betrieb gesetzte Nutzlasten",
+      "category": "Objekttypen",
+      "tooltip": "Satelliten, die nicht mehr in Betrieb sind oder deren Status unbekannt ist."
     },
     "rocketBodies": {
       "name": "Raketenstufen",
@@ -38,6 +70,16 @@
       "tooltip": "Geplante Funktion – Dies wird Agenturen auf dem Globus anzeigen.",
       "checked": false,
       "disabled": true
+    },
+    "groundSensors": {
+      "name": "Bodensensoren",
+      "category": "Objekttypen",
+      "tooltip": "Bodengestützte Radar- und optische Sensoren zur Verfolgung von Weltraumobjekten."
+    },
+    "launchFacilities": {
+      "name": "Startanlagen",
+      "category": "Objekttypen",
+      "tooltip": "Weltraumbahnhöfe und Startrampen, von denen Raketen gestartet werden."
     },
     "vleoSatellites": {
       "name": "vLEO-Satelliten",
@@ -69,15 +111,74 @@
       "category": "Orbitale Bereiche",
       "tooltip": "Satelliten im Ex-Geosynchronen Orbit mit einer Exzentrizität unter 0,1 und einem Apogäum über 36786 km oder einer Exzentrizität von 0,1 oder mehr und einem Apogäum über 39786 km."
     },
+    "source": {
+      "category": "Quelle"
+    },
     "vimpelSatellites": {
       "name": "Vimpel-Satelliten",
-      "category": "Quelle",
       "tooltip": "Der Vimpel-Satellitenkatalog wird von der russischen Aktiengesellschaft JSC Vimpel in Zusammenarbeit mit dem Keldysh-Institut für Angewandte Mathematik gepflegt."
     },
     "celestrakSatellites": {
       "name": "Celestrak-Satelliten",
-      "category": "Quelle",
       "tooltip": "Celestrak ist eine beliebte Quelle für Satellitenbahndaten und bietet TLEs für eine Vielzahl von Satelliten und Trümmern."
+    },
+    "countries": {
+      "category": "Länder",
+      "unitedStates": {
+        "name": "Vereinigte Staaten",
+        "tooltip": "Umfasst Satelliten aus den Vereinigten Staaten von Amerika."
+      },
+      "unitedKingdom": {
+        "name": "Vereinigtes Königreich",
+        "tooltip": "Umfasst Satelliten aus dem Vereinigten Königreich."
+      },
+      "france": {
+        "name": "Frankreich",
+        "tooltip": "Umfasst Satelliten aus Frankreich."
+      },
+      "germany": {
+        "name": "Deutschland",
+        "tooltip": "Umfasst Satelliten aus Deutschland."
+      },
+      "japan": {
+        "name": "Japan",
+        "tooltip": "Umfasst Satelliten aus Japan."
+      },
+      "china": {
+        "name": "China",
+        "tooltip": "Umfasst Satelliten aus China."
+      },
+      "india": {
+        "name": "Indien",
+        "tooltip": "Umfasst Satelliten aus Indien."
+      },
+      "russia": {
+        "name": "Russland",
+        "tooltip": "Umfasst Satelliten aus Russland."
+      },
+      "ussr": {
+        "name": "UdSSR",
+        "tooltip": "Historische Bezeichnung für Satelliten, die von der ehemaligen Sowjetunion gestartet wurden."
+      },
+      "southKorea": {
+        "name": "Südkorea",
+        "tooltip": "Umfasst Satelliten aus Südkorea."
+      },
+      "australia": {
+        "name": "Australien",
+        "tooltip": "Umfasst Satelliten aus Australien."
+      },
+      "otherCountries": {
+        "name": "Andere Länder",
+        "tooltip": "Umfasst Satelliten aus nicht aufgeführten Ländern."
+      }
+    },
+    "miscellaneous": {
+      "category": "Sonstiges",
+      "starlinkSatellites": {
+        "name": "Starlink-Satelliten",
+        "tooltip": "Satelliten der SpaceX Starlink-Konstellation, die weltweite Breitband-Internetabdeckung bieten soll."
+      }
     }
   }
 }

@@ -3,6 +3,7 @@
 import dotenv from 'dotenv';
 import { existsSync } from 'fs';
 import { BuildError, ConsoleStyles, ErrorCodes, logWithStyle } from './build-error';
+import { ProfileLoader } from './profile-loader';
 
 export interface BuildConfig {
   primaryLogoPath: string;
@@ -15,6 +16,8 @@ export interface BuildConfig {
   styleCssPath: string;
   loadingScreenCssPath: string;
   isPro: boolean;
+  /** Path to the env file for dotenv-webpack (relative to project root). Defaults to '.env'. */
+  envFilePath: string;
 
   PUBLIC_SUPABASE_URL?: string;
   PUBLIC_SUPABASE_ANON_KEY?: string;
@@ -25,6 +28,9 @@ export interface BuildConfig {
  */
 export class ConfigManager {
   private config: BuildConfig;
+  private profileName_: string | null = null;
+  private cliMode_: BuildConfig['mode'] | null = null;
+  private cliWatch_ = false;
 
   constructor() {
     // Default configuration
@@ -39,34 +45,63 @@ export class ConfigManager {
       primaryLogoPath: 'public/img/logo-primary.png',
       secondaryLogoPath: 'public/img/logo-secondary.png',
       isPro: false,
+      envFilePath: '.env',
     };
   }
 
   /**
-   * Loads configuration from environment variables and command line arguments
+   * Loads configuration from environment variables and command line arguments.
+   * When --profile=<name> is used, loads from configs/<name>/ instead of .env.
    * @param args Command line arguments
+   * @param rootDir Project root directory (for resolving profile paths)
    * @returns The build configuration
    */
-  public loadConfig(args: string[]): BuildConfig {
+  public loadConfig(args: string[], rootDir?: string): BuildConfig {
     try {
-      // Load environment variables from .env file if it exists
-      const envFilePath = './.env';
-      const envConfig = existsSync(envFilePath)
-        ? dotenv.config({ path: envFilePath })
-        : { parsed: null } as unknown as dotenv.DotenvConfigOutput;
-
-      if (envConfig.error) {
-        throw new BuildError(
-          `Error loading .env file: ${envConfig.error.message}`,
-          ErrorCodes.ENV_CONFIG,
-        );
-      }
-
-      // Process command line arguments
+      // Process command line arguments first (to detect --profile)
       this.parseCommandLineArgs(args);
 
-      // Load environment variables (environment variables take precedence over .env)
-      this.loadEnvironmentVariables(envConfig.parsed || {});
+      if (this.profileName_) {
+        // Profile mode: load from configs/<name>/
+        const profileLoader = new ProfileLoader(rootDir ?? process.cwd());
+        const errors = profileLoader.validateProfile(this.profileName_);
+
+        if (errors.length > 0) {
+          throw new BuildError(
+            `Profile validation failed:\n  ${errors.join('\n  ')}`,
+            ErrorCodes.PROFILE_NOT_FOUND,
+          );
+        }
+
+        const profileOverrides = profileLoader.loadProfile(this.profileName_);
+
+        Object.assign(this.config, profileOverrides);
+
+        // CLI args override profile settings (e.g., "production --profile=celestrak")
+        if (this.cliMode_) {
+          this.config.mode = this.cliMode_;
+        }
+        this.config.isWatch = this.cliWatch_;
+
+        // process.env still wins (allows CI/CD overrides)
+        this.applyProcessEnvOverrides_();
+      } else {
+        // Legacy mode: load from .env file
+        const envFilePath = './.env';
+        const envConfig = existsSync(envFilePath)
+          ? dotenv.config({ path: envFilePath })
+          : { parsed: null } as unknown as dotenv.DotenvConfigOutput;
+
+        if (envConfig.error) {
+          throw new BuildError(
+            `Error loading .env file: ${envConfig.error.message}`,
+            ErrorCodes.ENV_CONFIG,
+          );
+        }
+
+        // Load environment variables (environment variables take precedence over .env)
+        this.loadEnvironmentVariables_(envConfig.parsed || {});
+      }
 
       // Log the configuration
       this.logConfiguration();
@@ -84,34 +119,35 @@ export class ConfigManager {
   }
 
   /**
-   * Parses command line arguments
+   * Parses command line arguments (supports both positional and flag-based)
    * @param args Command line arguments
    */
   private parseCommandLineArgs(args: string[]): void {
-    // Parse build mode
-    if (args.length > 0) {
-      const mode = args[0];
-
-      if (mode !== 'none' && mode !== 'development' && mode !== 'production') {
-        throw new BuildError(
-          `Invalid build mode: ${mode}. Use "none", "development", or "production".`,
-          ErrorCodes.INVALID_MODE,
-        );
+    for (const arg of args) {
+      if (arg === '--watch') {
+        this.cliWatch_ = true;
+        this.config.isWatch = true;
+      } else if (arg.startsWith('--profile=')) {
+        this.profileName_ = arg.split('=')[1];
+      } else if (arg === 'none' || arg === 'development' || arg === 'production') {
+        this.cliMode_ = arg;
+        this.config.mode = arg;
       }
-      this.config.mode = mode;
-    }
-
-    // Parse watch flag
-    if (args.length > 1) {
-      this.config.isWatch = args[1] === '--watch';
     }
   }
 
   /**
-   * Loads configuration from environment variables
+   * Returns the active profile name, or null if using legacy .env mode.
+   */
+  get profileName(): string | null {
+    return this.profileName_;
+  }
+
+  /**
+   * Loads configuration from .env file + process.env (legacy mode)
    * @param envVars Environment variables from .env file
    */
-  private loadEnvironmentVariables(envVars: Record<string, string>): void {
+  private loadEnvironmentVariables_(envVars: Record<string, string>): void {
     // Environment variables take precedence over .env variables
     this.config.settingsPath = process.env.SETTINGS_PATH ?? envVars.SETTINGS_PATH ?? this.config.settingsPath;
     this.config.favIconPath = process.env.FAVICON_PATH ?? envVars.FAVICON_PATH ?? this.config.favIconPath;
@@ -129,6 +165,45 @@ export class ConfigManager {
     this.config.PUBLIC_SUPABASE_ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY ?? envVars.PUBLIC_SUPABASE_ANON_KEY;
 
     this.config.isPro = isPro === 'true';
+  }
+
+  /**
+   * Applies process.env overrides on top of profile config (for CI/CD)
+   */
+  private applyProcessEnvOverrides_(): void {
+    if (process.env.SETTINGS_PATH) {
+      this.config.settingsPath = process.env.SETTINGS_PATH;
+    }
+    if (process.env.FAVICON_PATH) {
+      this.config.favIconPath = process.env.FAVICON_PATH;
+    }
+    if (process.env.TEXT_LOGO_PATH) {
+      this.config.textLogoPath = process.env.TEXT_LOGO_PATH;
+    }
+    if (process.env.STYLE_CSS_PATH) {
+      this.config.styleCssPath = process.env.STYLE_CSS_PATH;
+    }
+    if (process.env.LOADING_SCREEN_CSS_PATH) {
+      this.config.loadingScreenCssPath = process.env.LOADING_SCREEN_CSS_PATH;
+    }
+    if (process.env.PRIMARY_LOGO_PATH) {
+      this.config.primaryLogoPath = process.env.PRIMARY_LOGO_PATH;
+    }
+    if (process.env.SECONDARY_LOGO_PATH) {
+      this.config.secondaryLogoPath = process.env.SECONDARY_LOGO_PATH;
+    }
+    if (process.env.MODE) {
+      this.config.mode = process.env.MODE as BuildConfig['mode'];
+    }
+    if (process.env.IS_PRO) {
+      this.config.isPro = process.env.IS_PRO === 'true';
+    }
+    if (process.env.PUBLIC_SUPABASE_URL) {
+      this.config.PUBLIC_SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL;
+    }
+    if (process.env.PUBLIC_SUPABASE_ANON_KEY) {
+      this.config.PUBLIC_SUPABASE_ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY;
+    }
   }
 
   /**

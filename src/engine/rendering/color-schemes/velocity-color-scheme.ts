@@ -1,12 +1,13 @@
 /* eslint-disable complexity */
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, Star } from '@ootk/src/main';
 import { ColorScheme } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class VelocityColorScheme extends ColorScheme {
-  readonly label = 'Velocity';
+  readonly label = t7e('colorSchemes.VelocityColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'VelocityColorScheme';
   static readonly id = 'VelocityColorScheme';
   isOptionInRmbMenu = false;
@@ -69,19 +70,21 @@ export class VelocityColorScheme extends ColorScheme {
       };
 
     }
-    if (obj.totalVelocity > 5.5 && this.objectTypeFlags.velocityFast === false) {
+    const totalVelocity = (obj as unknown as { totalVelocity: number }).totalVelocity;
+
+    if (totalVelocity > 5.5 && this.objectTypeFlags.velocityFast === false) {
       return {
         color: this.colorTheme.deselected,
         pickable: Pickable.No,
       };
     }
-    if (obj.totalVelocity >= 2.5 && obj.totalVelocity <= 5.5 && this.objectTypeFlags.velocityMed === false) {
+    if (totalVelocity >= 2.5 && totalVelocity <= 5.5 && this.objectTypeFlags.velocityMed === false) {
       return {
         color: this.colorTheme.deselected,
         pickable: Pickable.No,
       };
     }
-    if (obj.totalVelocity < 2.5 && this.objectTypeFlags.velocitySlow === false) {
+    if (totalVelocity < 2.5 && this.objectTypeFlags.velocitySlow === false) {
       return {
         color: this.colorTheme.deselected,
         pickable: Pickable.No,
@@ -89,7 +92,7 @@ export class VelocityColorScheme extends ColorScheme {
     }
 
     return {
-      color: [1.0 - Math.min(obj.totalVelocity / 15, 1.0), Math.min(obj.totalVelocity / 15, 1.0), 0.0, 1.0],
+      color: [1.0 - Math.min(totalVelocity / 15, 1.0), Math.min(totalVelocity / 15, 1.0), 0.0, 1.0],
       pickable: Pickable.Yes,
     };
   }

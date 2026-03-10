@@ -1,6 +1,8 @@
 import { country2flagIcon } from '@app/app/data/catalogs/countries';
-import { CameraType } from '@app/engine/camera/camera';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { SolarBody } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -8,7 +10,7 @@ import { ColorSchemeManager } from '@app/engine/rendering/color-scheme-manager';
 import { html } from '@app/engine/utils/development/formatter';
 import { t7e } from '@app/locales/keys';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { CatalogSource, DetailedSatellite, DetailedSensor, KM_PER_AU, LandObject, SpaceObjectType, spaceObjType2Str, Star } from '@ootk/src/main';
+import { CatalogSource, KM_PER_AU, LandObject, Satellite, SpaceObjectType, spaceObjType2Str, Star } from '@ootk/src/main';
 import i18next from 'i18next';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { getEl } from '../../engine/utils/get-el';
@@ -17,7 +19,6 @@ import { MissileObject } from '../data/catalog-manager/MissileObject';
 import { Planet as PlanetDot } from '../objects/planet';
 import { SensorMath } from '../sensors/sensor-math';
 import { StringExtractor } from './string-extractor';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 export class HoverManager {
   /** The id of the object currently being hovered */
@@ -75,7 +76,7 @@ export class HoverManager {
     }
   }
 
-  private controlFacility_(obj: LandObject) {
+  private controlFacility_(obj: LandObject | LaunchSite) {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
     this.satHoverBoxNode1.textContent = obj.name;
@@ -106,6 +107,20 @@ export class HoverManager {
     }
   }
 
+  private star_(star: Star): void {
+    const name = star.pname ||
+      (star.bayer && star.constellation ? `${star.bayer} ${star.constellation}` : '') ||
+      (star.flamsteed && star.constellation ? `${star.flamsteed} ${star.constellation}` : '') ||
+      (star.hr ? `HR ${star.hr}` : star.name);
+
+    this.satHoverBoxNode1.textContent = name;
+    this.satHoverBoxNode2.textContent = star.constellation
+      ? `${star.constellation} · Mag ${star.vmag?.toFixed(2) ?? '?'}`
+      : `Mag ${star.vmag?.toFixed(2) ?? '?'}`;
+    this.satHoverBoxNode3.textContent = star.colorTemp
+      ? `${star.colorTemp.toLocaleString()}K` : '';
+  }
+
   private hoverOverNothing_() {
     this.satHoverBoxDOM = <HTMLDivElement>(<unknown>getEl('sat-hoverbox'));
     if (this.satHoverBoxDOM.style.display === 'none' || !settingsManager.enableHoverOverlay) {
@@ -134,23 +149,32 @@ export class HoverManager {
         return;
       }
 
-      const satScreenPositionArray = renderer.getScreenCoords(obj);
+      // In polar view, getScreenCoords projects ECI positions which don't match
+      // the shader-transformed polar positions — use the mouse position directly.
+      const isPolarView = ServiceLocator.getMainCamera().cameraType === CameraType.POLAR_VIEW;
 
-      if (
-        satScreenPositionArray.error ||
-        typeof satScreenPositionArray.x === 'undefined' ||
-        typeof satScreenPositionArray.y === 'undefined' ||
-        satScreenPositionArray.x > window.innerWidth ||
-        satScreenPositionArray.y > window.innerHeight
-      ) {
-        // If the mouse moves off the screen there is an intermittent error finding the screen position
-        this.satHoverBoxDOM.style.display = 'none';
+      if (!isPolarView || typeof screenX === 'undefined' || typeof screenY === 'undefined') {
+        const satScreenPositionArray = renderer.getScreenCoords(obj);
 
-        /*
-         * This happens when we are zoomed in and can't see the object being hovered over in the search bar.
-         * errorManagerInstance.debug('Issue drawing hover box, skipping');
-         */
-        return;
+        if (
+          satScreenPositionArray.error ||
+          typeof satScreenPositionArray.x === 'undefined' ||
+          typeof satScreenPositionArray.y === 'undefined' ||
+          satScreenPositionArray.x > window.innerWidth ||
+          satScreenPositionArray.y > window.innerHeight
+        ) {
+          // If the mouse moves off the screen there is an intermittent error finding the screen position
+          this.satHoverBoxDOM.style.display = 'none';
+
+          /*
+           * This happens when we are zoomed in and can't see the object being hovered over in the search bar.
+           * errorManagerInstance.debug('Issue drawing hover box, skipping');
+           */
+          return;
+        }
+
+        screenX ??= satScreenPositionArray.x;
+        screenY ??= satScreenPositionArray.y;
       }
 
       this.init();
@@ -158,13 +182,10 @@ export class HoverManager {
       if (obj.isMissile()) {
         this.missile_(obj as MissileObject);
       } else if (obj.isSatellite()) {
-        this.satObj_(obj as DetailedSatellite);
+        this.satObj_(obj as Satellite);
       } else {
         this.staticObj_(obj as LandObject);
       }
-
-      screenX ??= satScreenPositionArray.x;
-      screenY ??= satScreenPositionArray.y;
 
       const style = {
         display: 'flex',
@@ -184,7 +205,7 @@ export class HoverManager {
     this.satHoverBoxNode3.textContent = launchSite.country ?? 'Unknown Country';
   }
 
-  private launchFacility_(landObj: LandObject) {
+  private launchFacility_(landObj: LandObject | LaunchSite) {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
     const launchSite = StringExtractor.extractLaunchSite(landObj.name);
@@ -206,25 +227,8 @@ export class HoverManager {
     this.satHoverBoxNode3.style.display = 'none';
   }
 
-  private planetariumView_(satId: number) {
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && !settingsManager.isDemoModeOn) {
-      this.satHoverBoxDOM.style.display = 'none';
 
-      const renderer = ServiceLocator.getRenderer();
-
-      if (satId !== -1) {
-        renderer.setCursor('pointer');
-      } else {
-        renderer.setCursor('default');
-      }
-
-      return true;
-    }
-
-    return false;
-  }
-
-  private satObj_(sat: DetailedSatellite) {
+  private satObj_(sat: Satellite) {
     if (!settingsManager.enableHoverOverlay) {
       return;
     }
@@ -283,7 +287,7 @@ export class HoverManager {
     }
   }
 
-  private updateSatObjMinimal_(sat: DetailedSatellite) {
+  private updateSatObjMinimal_(sat: Satellite) {
     this.satHoverBoxNode1.textContent = sat.name;
     this.satHoverBoxNode2.textContent = settingsManager.isEPFL ? HoverManager.getLaunchYear(sat) : sat.sccNum;
     let country = StringExtractor.extractCountry(sat.country);
@@ -299,7 +303,7 @@ export class HoverManager {
     getEl('hoverbox-fi')!.classList.value = `fi ${country2flagIcon(sat.country)}`;
   }
 
-  private static getLaunchYear(sat: DetailedSatellite) {
+  private static getLaunchYear(sat: Satellite) {
     if (sat.type === SpaceObjectType.NOTIONAL) {
       return t7e('hoverManager.launchedPlanned');
     }
@@ -329,7 +333,7 @@ export class HoverManager {
 
   }
 
-  private showEciVel_(sat: DetailedSatellite) {
+  private showEciVel_(sat: Satellite) {
     this.satHoverBoxNode3.innerHTML = `
       <div style="display: flex; gap: 32px;">
         <div>
@@ -357,10 +361,6 @@ export class HoverManager {
       return;
     }
 
-    if (this.planetariumView_(id)) {
-      return;
-    }
-
     if (id === -1) {
       this.hoverOverNothing_();
     } else {
@@ -368,13 +368,13 @@ export class HoverManager {
     }
   }
 
-  private staticObj_(obj: DetailedSensor | LandObject | Star) {
+  private staticObj_(obj: DetailedSensor | LandObject | LaunchSite | Star) {
     if (obj.type === SpaceObjectType.LAUNCH_SITE) {
-      this.launchSite_(obj as LandObject);
+      this.launchSite_(obj as LaunchSite);
     } else if (obj.type === SpaceObjectType.LAUNCH_FACILITY) {
-      this.launchFacility_(obj as LandObject);
+      this.launchFacility_(obj as LaunchSite);
     } else if (obj.type === SpaceObjectType.CONTROL_FACILITY) {
-      this.controlFacility_(obj as LandObject);
+      this.controlFacility_(obj as LaunchSite);
     } else if (
       obj.type === SpaceObjectType.TERRESTRIAL_PLANET ||
       obj.type === SpaceObjectType.GAS_GIANT ||
@@ -384,7 +384,7 @@ export class HoverManager {
     ) {
       this.planet_(obj as unknown as PlanetDot);
     } else if (obj.type === SpaceObjectType.STAR) {
-      // Do nothing
+      this.star_(obj as Star);
     } else {
       // It is a Sensor at this point
       const sensor = obj as DetailedSensor;
@@ -406,6 +406,7 @@ export class HoverManager {
     const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
     this.currentHoverId = id;
+
     if (id !== -1 && catalogManagerInstance.objectCache[id]?.type !== SpaceObjectType.STAR) {
       orbitManagerInstance.setHoverOrbit(id);
     } else {
@@ -415,21 +416,17 @@ export class HoverManager {
   }
 
   setHover(i: number): void {
-    if (typeof i === 'undefined' || i === null || isNaN(i)) {
+    if (typeof i === 'undefined' || i === null) {
       errorManagerInstance.debug('setHover called with no id');
 
       return;
     }
 
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
-    const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const gl = ServiceLocator.getRenderer().gl;
 
     this.hoveringSat = i;
     if (i === this.lasthoveringSat) {
-      return;
-    }
-    if (i !== -1 && catalogManagerInstance.objectCache[i].type === SpaceObjectType.STAR) {
       return;
     }
 

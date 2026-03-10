@@ -3,53 +3,12 @@
     "unknown": "Unbekannt"
   },
   "loadingScreen": {
-    "startButton": "Klicken Sie, um zu Beginnen"
-  },
-  "time": {
-    "days": {
-      "0": "Sonntag",
-      "1": "Montag",
-      "2": "Dienstag",
-      "3": "Mittwoch",
-      "4": "Donnerstag",
-      "5": "Freitag",
-      "6": "Samstag"
-    },
-    "days-short": {
-      "0": "So",
-      "1": "Mo",
-      "2": "Di",
-      "3": "Mi",
-      "4": "Do",
-      "5": "Fr",
-      "6": "Sa"
-    },
-    "months": {
-      "1": "Januar",
-      "2": "Februar",
-      "3": "März",
-      "4": "April",
-      "5": "Mai",
-      "6": "Juni",
-      "7": "Juli",
-      "8": "August",
-      "9": "September",
-      "10": "Oktober",
-      "11": "November",
-      "12": "Dezember"
-    },
-    "calendar": {
-      "time": "Zeit",
-      "hour": "Stunde",
-      "minute": "Minute",
-      "second": "Sekunde",
-      "now": "Jetzt",
-      "done": "Fertig",
-      "pause": "Pause",
-      "propagation": "Ausbreitung"
-    }
+    "startButton": "Klicken Sie, um zu Beginnen",
+    "hint": "Tipp:",
+    "downloadingScience": "Wissenschaft wird heruntergeladen..."
   },
   "errorMsgs": {
+    "LoginRequired": "Diese Funktion erfordert eine Anmeldung. Bitte melden Sie sich an, um fortzufahren.",
     "catalogNotFullyInitialized": "Der Katalog ist noch nicht vollständig initialisiert. Bitte warten Sie ein paar Sekunden und versuchen Sie es erneut.",
     "sensorGroupsApiEmpty": "Keine Sensorgruppen in der API gefunden, es wird auf die mitgelieferte Sensorgruppen-Datenbank zurückgegriffen.",
     "SelectSensorFirst": "Wählen Sie zuerst einen Sensor aus!",
@@ -64,25 +23,6 @@
       "disablingMoon": "Ihr Computer hat Schwierigkeiten! Mond wird deaktiviert.",
       "disablingMilkyWay": "Ihr Computer hat Schwierigkeiten! Milchstraße wird deaktiviert.",
       "disablingSun": "Ihr Computer hat Schwierigkeiten! Sonne wird deaktiviert."
-    },
-    "Breakup": {
-      "CannotCreateBreakupForNonCircularOrbits": "Für nicht-kreisförmige Umlaufbahnen kann kein Zerfall erstellt werden. Wir arbeiten an einer Lösung.",
-      "CannotCalcDirectionOfSatellite": "Die Richtung des Satelliten kann nicht berechnet werden. Versuchen Sie es später erneut.",
-      "ErrorCreatingBreakup": "Fehler beim Erstellen des Zerfalls!",
-      "InvalidStartNum": "Ungültige Satellitenstartnummer! Standardmäßig auf 90000 gesetzt!",
-      "BreakupGeneratorFailed": "Zerfallsgenerator fehlgeschlagen!",
-      "SatelliteNotFound": "Satellit nicht gefunden!"
-    },
-    "Collisions": {
-      "noCollisionsData": "Keine Kollisionsdaten gefunden!",
-      "errorProcessingCollisions": "Fehler bei der Verarbeitung der SOCRATES-Daten!"
-    },
-    "EditSat": {
-      "errorReadingFile": "Fehler beim Lesen der Datei!",
-      "satelliteNotFound": "Satellit nicht gefunden!"
-    },
-    "CreateSat": {
-      "errorCreatingSat": "Fehler beim Erstellen des Satelliten!"
     },
     "Reports": {
       "popupBlocker": "Bitte erlauben Sie Popups für diese Seite, um Berichte anzuzeigen."
@@ -136,39 +76,20 @@
       "title": "Sensor-Zeitachsen-Menü",
       "helpBody": "Das Sensor-Zeitachsen-Menü zeigt, wann eine Liste von Sensoren Sichtbarkeit zu einem Satelliten hat. Die Zeitachse ist farbcodiert, um die Qualität des Durchgangs anzuzeigen. Rot ist ein schlechter Durchgang, Gelb ist ein durchschnittlicher Durchgang und Grün ist ein guter Durchgang. Klicken Sie auf einen Durchgang, um den Sensor und die Zeit für diesen Durchgang zu ändern. <br><br> Die Zeitachse kann durch Ändern der Start- und Endzeit der Simulation modifiziert werden. Zusätzlich kann die Zeitachse durch Ändern der Längen- und Intervalloptionen modifiziert werden."
     },
-    "ProximityOps": {
-      "bottomIconLabel": "Rendezvous- und Annäherungsoperationen",
-      "title": "Rendezvous- und Annäherungsoperationen (RPO)",
-      "titleSecondary": "RPO-Liste",
-      "helpBody": "Finde bevorstehende Annäherungen zwischen Satelliten",
-      "noradId": "NORAD-ID",
-      "maxDistThreshold": "Maximaler Abstandsschwellenwert (km)",
-      "maxRelativeVelocity": "Maximale Relativgeschwindigkeit (km/s)",
-      "searchDuration": "Suchdauer (Stunden)",
-      "geoText": "Geostationär",
-      "leoText": "Niedrige Erdumlaufbahn",
-      "orbitType": "Orbittyp",
-      "geoAllVsAll": "Geostationär Alle gegen Alle",
-      "geoAllVsAllTooltip": "Suche nach RPOs zwischen allen geostationären Satelliten",
-      "comparePayloadsOnly": "Nur Nutzlasten vergleichen",
-      "comparePayloadsOnlyTooltip": "Nur nach RPOs zwischen Nutzlasten suchen",
-      "ignoreVimpelRso": "Vimpel-RSO ignorieren",
-      "ignoreVimpelRsoTooltip": "RSOs aus dem Vimpel-Katalog ignorieren"
-    },
     "SatelliteTimeline": {
       "bottomIconLabel": "Satelliten-Zeitachse",
       "title": "Satelliten-Zeitachsen-Menü",
       "helpBody": "Das Satelliten-Zeitachsen-Menü zeigt, wann ein einzelner Sensor Sichtbarkeit zu einer Liste von Satelliten hat. Die Zeitachse ist farbcodiert, um die Qualität des Durchgangs anzuzeigen. Rot ist ein schlechter Durchgang, Gelb ist ein durchschnittlicher Durchgang und Grün ist ein guter Durchgang. Klicken Sie auf einen Durchgang, um den Satelliten und die Zeit für diesen Durchgang zu ändern. <br><br> Die Zeitachse kann durch Ändern der Start- und Endzeit der Simulation modifiziert werden. Zusätzlich kann die Zeitachse durch Ändern der Längen- und Intervalloptionen modifiziert werden."
     },
     "WatchlistPlugin": {
-      "bottomIconLabel": "Beobachtungsliste",
-      "title": "Beobachtungslisten-Menü",
-      "helpBody": "Das Beobachtungslisten-Menü ermöglicht es Ihnen, eine Liste von Prioritätssatelliten zu erstellen, die Sie verfolgen möchten. Dies ermöglicht es Ihnen, schnell auf die Satelliten zuzugreifen, die Sie am meisten interessieren. Die Liste wird im lokalen Speicher Ihres Browsers gespeichert und steht Ihnen beim nächsten Besuch der Website zur Verfügung. <br><br> Wenn Satelliten auf der Beobachtungsliste in das Sichtfeld des ausgewählten Sensors eintreten, wird eine Benachrichtigung angezeigt, eine Linie vom Sensor zum Satelliten gezogen und die Nummer des Satelliten auf dem Globus angezeigt. <br><br> Die Überlagerung-Funktion basiert darauf, dass die Beobachtungsliste gefüllt ist."
+      "bottomIconLabel": "Satellitenliste",
+      "title": "Satellitenliste",
+      "helpBody": "Das Satellitenliste-Menü ermöglicht es Ihnen, eine Liste von Prioritätssatelliten zu erstellen, die Sie verfolgen möchten. Dies ermöglicht es Ihnen, schnell auf die Satelliten zuzugreifen, die Sie am meisten interessieren. Die Liste wird im lokalen Speicher Ihres Browsers gespeichert und steht Ihnen beim nächsten Besuch der Website zur Verfügung. <br><br> Wenn Satelliten auf der Satellitenliste in das Sichtfeld des ausgewählten Sensors eintreten, wird eine Benachrichtigung angezeigt, eine Linie vom Sensor zum Satelliten gezogen und die Nummer des Satelliten auf dem Globus angezeigt. <br><br> Die Überlagerung-Funktion basiert darauf, dass die Satellitenliste gefüllt ist."
     },
     "WatchlistOverlay": {
       "bottomIconLabel": "Überlagerung",
       "title": "Überlagerung-Menü",
-      "helpBody": "<p> Das Beobachtungslisten-Überlagerung zeigt die nächste Durchgangszeit für jeden Satelliten in Ihrer Beobachtungsliste an. Das Überlagerung wird alle 10 Sekunden aktualisiert. </p> <p> Das Überlagerung ist farbcodiert, um die Zeit bis zum nächsten Durchgang anzuzeigen. Die Farben sind wie folgt: </p> <ul> <li>Gelb - In Sicht</li> <li>Blau - Zeit bis zum nächsten Durchgang beträgt bis zu 30 Minuten nach der aktuellen Zeit oder 10 Minuten vor der aktuellen Zeit</li> <li>Weiß - Jeder zukünftige Durchgang, der nicht die obigen Anforderungen erfüllt</li> </ul> <p> Durch Klicken auf einen Satelliten im Überlagerung wird die Karte auf diesen Satelliten zentriert. </p>"
+      "helpBody": "<p> Das Satellitenliste-Überlagerung zeigt die nächste Durchgangszeit für jeden Satelliten in Ihrer Satellitenliste an. Das Überlagerung wird alle 10 Sekunden aktualisiert. </p> <p> Das Überlagerung ist farbcodiert, um die Zeit bis zum nächsten Durchgang anzuzeigen. Die Farben sind wie folgt: </p> <ul> <li>Gelb - In Sicht</li> <li>Blau - Zeit bis zum nächsten Durchgang beträgt bis zu 30 Minuten nach der aktuellen Zeit oder 10 Minuten vor der aktuellen Zeit</li> <li>Weiß - Jeder zukünftige Durchgang, der nicht die obigen Anforderungen erfüllt</li> </ul> <p> Durch Klicken auf einen Satelliten im Überlagerung wird die Karte auf diesen Satelliten zentriert. </p>"
     },
     "ReportsPlugin": {
       "bottomIconLabel": "Berichte",
@@ -195,20 +116,10 @@
       "title": "Kurzzeit-Zäune (STF) Menü",
       "helpBody": "Das Kurzzeit-Zäune (STF) Menü wird verwendet, um Sensor-Suchboxen zu visualisieren. <br><br> Dies ist wahrscheinlich nicht sehr hilfreich, es sei denn, Sie besitzen/betreiben einen Sensor mit einer Suchbox-Funktionalität."
     },
-    "Collisions": {
-      "bottomIconLabel": "Kollisionen",
-      "title": "Kollisionen-Menü",
-      "helpBody": "Das Kollisionen-Menü zeigt Satelliten mit einer hohen Kollisionswahrscheinlichkeit. <br><br> Durch Klicken auf eine Zeile werden die beiden an der Kollision beteiligten Satelliten ausgewählt und die Zeit auf den Zeitpunkt der Kollision geändert."
-    },
-    "TrackingImpactPredict": {
+    "Reentries": {
       "bottomIconLabel": "Wiedereintrittsvorhersage",
       "title": "Menü für Verfolgung und Einschlagsvorhersage",
       "helpBody": "Das Menü für Verfolgung und Einschlagsvorhersage (TIP) zeigt die neuesten Nachrichten zur Verfolgung und Einschlagsvorhersage für Satelliten an. Die Tabelle zeigt die folgenden Spalten:<br><br> <b>NORAD</b>: Die NORAD-Katalog-ID des Satelliten.<br><br> <b>Zerfallsdatum</b>: Das Datum des vorhergesagten Zerfalls des Satelliten.<br><br> <b>Breitengrad</b>: Der Breitengrad des Satelliten zum Zeitpunkt des Zerfalls.<br><br> <b>Längengrad</b>: Der Längengrad des Satelliten zum Zeitpunkt des Zerfalls.<br><br> <b>Fenster (min)</b>: Das Zeitfenster in Minuten für die Vorhersage.<br><br> <b>Nächster Bericht (Std)</b>: Die Zeit in Stunden bis zum nächsten Bericht.<br><br> <b>Wiedereintrittswinkel (deg)</b>: Der Wiedereintrittswinkel des Satelliten in Grad.<br><br> <b>RCS (m²)</b>: Der Radarquerschnitt des Satelliten in Quadratmetern.<br><br> <b>GP-Alter (Std)</b>: Das Alter des neuesten Elementsatzes in Stunden.<br><br> <b>Trockenmasse (kg)</b>: Die Trockenmasse des Satelliten in Kilogramm.<br><br> <b>Volumen (m³)</b>: Das geschätzte Volumen des Satelliten in Kubikmetern.<br><br>"
-    },
-    "Breakup": {
-      "bottomIconLabel": "Zerfall erstellen",
-      "title": "Zerfall-Menü",
-      "helpBody": "Das Zerfall-Menü ist ein Werkzeug zur Simulation des Zerfalls eines Satelliten. <br><br> Durch Duplizieren und Modifizieren der Umlaufbahn eines Satelliten können wir den Zerfall eines Satelliten modellieren. Nach Auswahl eines Satelliten und Öffnen des Menüs kann der Benutzer Folgendes auswählen: <ul style=\"margin-left: 40px;\"> <li>Inklinationsvariation</li> <li>RAAN-Variation</li> <li>Periodenvariation</li> <li>Anzahl der Zerfallsteile</li> </ul> Je größer die Variation, desto größer ist die Streuung im simulierten Zerfall. Die Standardvariationen reichen aus, um einen Zerfall mit angemessener Streuung zu simulieren."
     },
     "DebrisScreening": {
       "bottomIconLabel": "Trümmer-Screening",
@@ -220,11 +131,6 @@
       "title": "Satelliten-Transponder- und Kanalinformationen",
       "helpBody": "<p>Diese Tabelle enthält technische Details zu Satellitenkanälen, einschließlich TV-, Radio- und anderen Kommunikationsdiensten:</p><ul><li><strong>Satellit:</strong> Name des Satelliten, der den Kanal überträgt</li><li><strong>TV-Kanal:</strong> Name des TV-/Radiokanals oder Kommunikationsdienstes</li><li><strong>Ausleuchtzone:</strong> Richtung des Satellitenbeams (z.B. Westhemisphäre)</li><li><strong>Freq:</strong> Transponderfrequenz und Polarisation (z.B. 3840 V)</li><li><strong>System:</strong> Übertragungssystem (z.B. DVB-S2 8PSK)</li><li><strong>SRFEC:</strong> Symbolrate und FEC-Verhältnis (z.B. 30000 3/4)</li><li><strong>Video:</strong> Video-/Datenkompressionsformat (z.B. MPEG-4/HD)</li><li><strong>Sprache:</strong> Verfügbare Audio-/Kommunikationssprachen (z.B. Eng, Chi)</li><li><strong>Verschlüsselung:</strong> Verwendetes Verschlüsselungssystem (z.B. PowerVu)</li></ul><p>Diese Informationen sind nützlich für Satellitenkommunikationsfachleute, Techniker, Enthusiasten und jeden, der Satellitenempfangsgeräte einrichtet oder Probleme damit behebt.</p>"
     },
-    "EditSat": {
-      "bottomIconLabel": "Satellit bearbeiten",
-      "title": "Satellit bearbeiten Menü",
-      "helpBody": "Das Menü 'Satellit bearbeiten' wird verwendet, um die Satellitendaten zu bearbeiten. <br><br> <ul> <li> Satellit SCC# - Eine eindeutige Nummer, die jedem Satelliten von der US Space Force zugewiesen wird. </li> <li> Epochenjahr - Das Jahr der letzten Bahnaktualisierung des Satelliten. </li> <li> Epochentag - Der Tag des Jahres der letzten Bahnaktualisierung des Satelliten. </li> <li> Inklination - Der Winkel zwischen der Bahnebene des Satelliten und der Äquatorebene. </li> <li> Rektaszension - Der Winkel zwischen dem aufsteigenden Knoten und der Position des Satelliten zum Zeitpunkt der letzten Bahnaktualisierung. </li> <li> Exzentrizität - Das Maß, um das die Umlaufbahn des Satelliten von einem perfekten Kreis abweicht. </li> <li> Argument des Perigäums - Der Winkel zwischen dem aufsteigenden Knoten und dem erdnächsten Punkt des Satelliten. </li> <li> Mittlere Anomalie - Der Winkel zwischen der Position des Satelliten zum Zeitpunkt der letzten Bahnaktualisierung und dem erdnächsten Punkt des Satelliten. </li> <li> Mittlere Bewegung - Die Geschwindigkeit, mit der sich die mittlere Anomalie des Satelliten ändert. </li> </ul>"
-    },
     "NewLaunch": {
       "bottomIconLabel": "Neuer Start",
       "title": "Neuer Start Menü",
@@ -234,11 +140,6 @@
       "bottomIconLabel": "Rakete",
       "title": "Raketen-Menü",
       "helpBody": "Das Raketen-Menü wird verwendet, um fiktive Raketenstarts zwischen Ländern zu generieren. <br><br> Bei U-Boot-gestützten Raketen ist der Startpunkt ein benutzerdefinierter Breiten- und Längengrad. Bei landgestützten Raketen ist der Startpunkt ein fester Breiten- und Längengrad, der auf öffentlich zugänglichen Berichten basiert. <br><br> Zusätzlich zu benutzerdefinierten Raketen sind einige vordefinierte Szenarien mit Hunderten von Raketen verfügbar. <br><br> Alle Raketenstarts sind fiktiv und sollen keine realen Ereignisse darstellen. Die Startflugbahnen basieren alle auf dem gleichen ballistischen Modell, verwenden aber unterschiedliche Mindest- und Höchstreichweiten."
-    },
-    "StereoMap": {
-      "bottomIconLabel": "Stereokarte",
-      "title": "Stereografisches Karten-Menü",
-      "helpBody": "Das Stereografische Karten-Menü wird verwendet, um Satellitenbodenspuren in einer stereografischen Projektion zu visualisieren. <br/><br/> Sie können auf einen Punkt entlang der Bodenspur klicken, um die Zeit der Simulation zu ändern, wenn der Satellit diesen Punkt erreicht. <br/><br/> Die gelben Punkte zeigen an, wann der Satellit im Sichtfeld des Sensors ist. Die roten Punkte zeigen an, wann der Satellit nicht im Sichtfeld des Sensors ist. Der Punkt, der dem Satelliten am nächsten ist, ist die aktuelle Zeit."
     },
     "SensorFov": {
       "bottomIconLabel": "Sensor-Sichtfeld"
@@ -254,7 +155,7 @@
     },
     "SatelliteFov": {
       "bottomIconLabel": "Satelliten-Sichtfeld",
-      "title": "Satelliten-Sichtfeld-Menü",
+      "title": "Satelliten-Sichtfeld",
       "helpBody": "Das Satelliten-Sichtfeld-Plugin ermöglicht es Ihnen, das Sichtfeld eines Satelliten zu steuern."
     },
     "Planetarium": {
@@ -263,16 +164,6 @@
     "NightToggle": {
       "bottomIconLabel": "Nachtumschaltung"
     },
-    "SatConstellations": {
-      "bottomIconLabel": "Konstellationen",
-      "title": "Konstellationen-Menü",
-      "helpBody": "Das Konstellationen-Menü ermöglicht es Ihnen, Gruppen von Satelliten anzuzeigen. <br><br> Für einige Konstellationen werden fiktive Uplinks/Downlinks und/oder Crosslinks zwischen Satelliten in der Konstellation gezeichnet."
-    },
-    "CountriesMenu": {
-      "bottomIconLabel": "Länder",
-      "title": "Länder-Menü",
-      "helpBody": "Das Länder-Menü ermöglicht es Ihnen, die Satelliten nach Herkunftsland zu filtern."
-    },
     "ColorMenu": {
       "bottomIconLabel": "Farbschemata",
       "title": "Farbschema-Menü",
@@ -280,9 +171,6 @@
     },
     "Screenshot": {
       "bottomIconLabel": "Foto machen"
-    },
-    "LaunchCalendar": {
-      "bottomIconLabel": "Startkalender"
     },
     "TimeMachine": {
       "bottomIconLabel": "Zeitmaschine"
@@ -297,11 +185,6 @@
     },
     "Astronomy": {
       "bottomIconLabel": "Sternenhimmel"
-    },
-    "AnalysisMenu": {
-      "bottomIconLabel": "Analyse",
-      "title": "Analyse-Menü",
-      "helpBody": "Das Analyse-Menü bietet eine Reihe von Werkzeugen, die Ihnen helfen, die Daten in der aktuellen Ansicht zu analysieren. Die Werkzeuge sind: <ul style=\"margin-left: 40px;\"> <li>Offizielle TLEs exportieren - Exportieren Sie echte Two-Line Element Sets.</li> <li>3LES exportieren - Exportieren Sie Three-Line Element Sets.</li> <li>KeepTrack TLEs exportieren - Exportieren Sie alle KeepTrack Two-Line Element Sets einschließlich Analysten.</li> <li>KeepTrack 3LES exportieren - Exportieren Sie alle KeepTrack Three-Line Element Sets einschließlich Analysten.</li> <li>Nahe Objekte finden - Finden Sie Objekte, die sich nahe beieinander befinden.</li> <li>Wiedereintritte finden - Finden Sie Objekte, die wahrscheinlich wieder in die Atmosphäre eintreten werden.</li> <li>Beste Durchgänge - Finden Sie die besten Durchgänge für einen Satelliten basierend auf dem aktuell ausgewählten Sensor.</li> </ul>"
     },
     "Calculator": {
       "bottomIconLabel": "Referenzrahmen-Transformationen",
@@ -322,16 +205,6 @@
       "bottomIconLabel": "Video-Direktor",
       "title": "Video-Direktor-Menü",
       "helpBody": "Das Video-Direktor-Menü wird verwendet, um die Kamera und Objekte in der Szene zu manipulieren, um ein Video zu erstellen."
-    },
-    "CreateSat": {
-      "bottomIconLabel": "Satellit erstellen",
-      "title": "Satellit erstellen",
-      "helpBody": "Das Menü 'Satellit erstellen' wird verwendet, um einen Satelliten aus seinen Kepler-Elementen zu erstellen"
-    },
-    "DopsPlugin": {
-      "bottomIconLabel": "DOPs anzeigen",
-      "title": "Präzisionsverdünnungs-Menü",
-      "helpBody": "Das Präzisionsverdünnungs-Menü (DOP) wird verwendet, um DOP-Werte für einen Satelliten und Sensor zu berechnen. <br><br> Die DOP-Werte sind: <ul style=\"margin-left: 40px;\"> <li> GDOP - Geometrische Präzisionsverdünnung </li> <li> PDOP - Positions-Präzisionsverdünnung </li> <li> HDOP - Horizontale Präzisionsverdünnung </li> <li> VDOP - Vertikale Präzisionsverdünnung </li> <li> TDOP - Zeit-Präzisionsverdünnung </li> <li> NDOP - Satellitenzahl-Präzisionsverdünnung </li> </ul>"
     },
     "EciPlot": {
       "bottomIconLabel": "ECI-Diagramm",
@@ -357,11 +230,6 @@
       "bottomIconLabel": "Lat vs Lon-Diagramm",
       "title": "Breitengrad-zu-Längengrad-Diagramm-Menü",
       "helpBody": "Das Breitengrad-zu-Längengrad-Diagramm-Menü wird verwendet, um den Breitengrad gegen den Längengrad im GEO-Gürtel darzustellen."
-    },
-    "Inc2AltPlots": {
-      "bottomIconLabel": "Ink vs Höhe-Diagramm",
-      "title": "Inklination-zu-Höhe-Diagramm-Menü",
-      "helpBody": "Das Inklination-zu-Höhe-Diagramm-Menü wird verwendet, um die Inklination des Satelliten gegen seine Höhe darzustellen."
     },
     "Inc2LonPlots": {
       "bottomIconLabel": "Ink vs Lon-Diagramm",
@@ -653,5 +521,26 @@
     "BH": "Bahrain",
     "BW": "Botswana",
     "ESA/JAXA": "ESA/JAXA"
+  },
+  "pluginDrawer": {
+    "modeCatalog": "Katalog",
+    "modeSensors": "Sensoren",
+    "modeEvents": "Ereignisse",
+    "modeCreate": "Erstellen",
+    "modeAnalysis": "Analyse",
+    "modeDisplay": "Anzeige",
+    "modeTools": "Werkzeuge",
+    "modeSettings": "Einstellungen",
+    "modeExperimental": "Experimentell",
+    "groupCameraModes": "Kameramodi",
+    "groupLayerToggles": "Ebenen-Schalter",
+    "groupSettingsToggles": "Einstellungen-Schalter",
+    "groupAbout": "Über"
+  },
+  "rightClickMenu": {
+    "pauseClock": "Uhr anhalten",
+    "resetCamera": "Kamera zurücksetzen",
+    "clearLines": "Linien löschen",
+    "clearScreen": "Bildschirm löschen"
   }
 }

@@ -21,23 +21,42 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { MenuMode } from '@app/engine/core/interfaces';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import { IBottomIconConfig, ICommandPaletteCommand, IHelpConfig } from '@app/engine/plugins/core/plugin-capabilities';
 import { openColorbox } from '@app/engine/utils/colorbox';
 import { getEl } from '@app/engine/utils/get-el';
-
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-
-import { MenuMode } from '@app/engine/core/interfaces';
+import { t7e } from '@app/locales/keys';
 import calendarPng from '@public/img/icons/calendar.png';
 
 export class LaunchCalendar extends KeepTrackPlugin {
   readonly id = 'LaunchCalendar';
   dependencies_ = [];
-  bottomIconImg = calendarPng;
+  requiresInternet = true;
   isForceHideSideMenus = true;
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'launch-calendar-bottom-icon',
+      label: t7e('plugins.LaunchCalendar.bottomIconLabel' as Parameters<typeof t7e>[0]),
+      image: calendarPng,
+      menuMode: [MenuMode.EVENTS, MenuMode.ALL],
+    };
+  }
 
-  bottomIconCallback = () => {
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.LaunchCalendar.title' as Parameters<typeof t7e>[0]),
+      body: t7e('plugins.LaunchCalendar.helpBody' as Parameters<typeof t7e>[0]),
+    };
+  }
+
+  // Bridge to onBottomIconClick until base class wires up component callbacks
+  bottomIconCallback = (): void => {
+    this.onBottomIconClick();
+  };
+
+  onBottomIconClick(): void {
     if (this.isMenuButtonActive) {
       settingsManager.isPreventColorboxClose = true;
       setTimeout(() => {
@@ -49,7 +68,18 @@ export class LaunchCalendar extends KeepTrackPlugin {
         callback: this.closeColorbox_.bind(this),
       });
     }
-  };
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    return [
+      {
+        id: 'LaunchCalendar.open',
+        label: t7e('plugins.LaunchCalendar.commands.open' as Parameters<typeof t7e>[0]),
+        category: 'Plugins',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
 
   private closeColorbox_() {
     if (this.isMenuButtonActive) {

@@ -1,6 +1,8 @@
 import type { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import type { OemSatellite } from '@app/app/objects/oem-satellite';
 import type { User } from '@supabase/supabase-js';
-import type { BaseObject, DetailedSatellite, DetailedSensor, Milliseconds } from '@ootk/src/main';
+import type { BaseObject, Satellite, Milliseconds } from '@ootk/src/main';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import type { PanTouchEvent, TapTouchEvent } from '../input/input-manager/touch-input';
 import type { LineManager } from '../rendering/line-manager';
 import { errorManagerInstance } from '../utils/errorManager';
@@ -13,6 +15,7 @@ export interface EngineEventMap {
   [EventBusEvent.orbitManagerInit]: [];
   [EventBusEvent.drawManagerLoadScene]: [];
   [EventBusEvent.drawOptionalScenery]: [];
+  [EventBusEvent.drawOverlay]: [];
   [EventBusEvent.updateLoop]: [];
   [EventBusEvent.rmbMenuActions]: [string, number];
   [EventBusEvent.rightBtnMenuOpen]: [boolean, number];
@@ -41,14 +44,16 @@ export interface EngineEventMap {
   [EventBusEvent.onCruncherReady]: [];
   [EventBusEvent.onHelpMenuClick]: [];
   [EventBusEvent.onKeepTrackReady]: [];
-  [EventBusEvent.selectSatData]: [DetailedSatellite | MissileObject | BaseObject, number];
-  [EventBusEvent.setSecondarySat]: [DetailedSatellite | null, number];
+  [EventBusEvent.selectSatData]: [Satellite | MissileObject | BaseObject, number];
+  [EventBusEvent.setSecondarySat]: [Satellite | null, number];
   [EventBusEvent.uiManagerInit]: [];
   [EventBusEvent.uiManagerOnReady]: [];
-  [EventBusEvent.updateSelectBox]: [DetailedSatellite | MissileObject];
+  [EventBusEvent.updateSelectBox]: [Satellite | MissileObject | OemSatellite];
   [EventBusEvent.ConeMeshUpdate]: [];
+  [EventBusEvent.FrustumMeshUpdate]: [];
   [EventBusEvent.bottomMenuModeChange]: [];
   [EventBusEvent.saveSettings]: [];
+  [EventBusEvent.filterChanged]: [];
   [EventBusEvent.loadSettings]: [];
   [EventBusEvent.KeyDown]: [string, string, boolean, boolean, boolean]; // key, code, isRepeat, isShiftKey, isCtrlKey
   [EventBusEvent.KeyUp]: [string, string, boolean, boolean, boolean]; // key, code, isRepeat, isShiftKey, isCtrlKey
@@ -65,6 +70,20 @@ export interface EngineEventMap {
   [EventBusEvent.userLogout]: []; // no arguments
   [EventBusEvent.SceneReady]: []; // no arguments
   [EventBusEvent.highPerformanceRender]: [Milliseconds]; // delta time
+  [EventBusEvent.soundMuteChanged]: [boolean]; // isMuted
+  [EventBusEvent.renderCustomBackground]: [];
+  [EventBusEvent.shouldSkipEarthDraw]: [];
+  [EventBusEvent.shouldSkipSatelliteModels]: [];
+  [EventBusEvent.shouldSkipTransparentObjects]: [];
+  [EventBusEvent.screenshotComposite]: [CanvasRenderingContext2D, number, number];
+  [EventBusEvent.screenshotShouldCropSquare]: [];
+  [EventBusEvent.catalogReloaded]: [];
+  [EventBusEvent.connectivityChange]: [boolean]; // isOnline
+  [EventBusEvent.loginGateStateChange]: [boolean]; // isAuthenticated
+  [EventBusEvent.colorSchemeChanged]: [unknown]; // scheme instance
+  [EventBusEvent.scenarioBoundsChanged]: [unknown]; // ScenarioData
+  [EventBusEvent.cameraTypeChanged]: [string]; // camera type name
+  [EventBusEvent.onColorBufferReady]: [];
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {
@@ -91,6 +110,11 @@ export class EventBus {
 
   methods = {
     altCanvasResize: (): boolean => this.events.altCanvasResize.some((cb) => cb.cb()),
+    renderCustomBackground: (): boolean => (this.events[EventBusEvent.renderCustomBackground] || []).some((cb: any) => cb.cb()),
+    shouldSkipEarthDraw: (): boolean => (this.events[EventBusEvent.shouldSkipEarthDraw] || []).some((cb: any) => cb.cb()),
+    shouldSkipSatelliteModels: (): boolean => (this.events[EventBusEvent.shouldSkipSatelliteModels] || []).some((cb: any) => cb.cb()),
+    shouldSkipTransparentObjects: (): boolean => (this.events[EventBusEvent.shouldSkipTransparentObjects] || []).some((cb: any) => cb.cb()),
+    screenshotShouldCropSquare: (): boolean => (this.events[EventBusEvent.screenshotShouldCropSquare] || []).some((cb: any) => cb.cb()),
   };
 
   emit<T extends EventBusEvent>(event: T, ...args: EngineEventMap[T]) {

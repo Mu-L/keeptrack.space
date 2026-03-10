@@ -1,14 +1,14 @@
 /* eslint-disable no-console */
 /* eslint-disable class-methods-use-this */
-import { CameraType } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ToastMsgType } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { Radians } from '@ootk/src/main';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 export class GamepadPlugin {
   readonly id = 'GamepadPlugin';
@@ -294,7 +294,8 @@ export class GamepadPlugin {
 
     switch (ServiceLocator.getMainCamera().cameraType) {
       case CameraType.FIXED_TO_EARTH:
-      case CameraType.FIXED_TO_SAT:
+      case CameraType.FIXED_TO_SAT_LVLH:
+      case CameraType.FIXED_TO_SAT_ECI:
         zoomTarget += (zoomOut / 500) * renderer.dt;
         zoomTarget -= (zoomIn / 500) * renderer.dt;
         ServiceLocator.getMainCamera().state.zoomTarget = zoomTarget;
@@ -308,7 +309,7 @@ export class GamepadPlugin {
         }
         break;
       case CameraType.FPS:
-      case CameraType.SATELLITE:
+      case CameraType.SATELLITE_FIRST_PERSON:
       case CameraType.PLANETARIUM:
       case CameraType.ASTRONOMY:
         if (zoomOut !== 0) {
@@ -340,14 +341,15 @@ export class GamepadPlugin {
 
       switch (ServiceLocator.getMainCamera().cameraType) {
         case CameraType.FIXED_TO_EARTH:
-        case CameraType.FIXED_TO_SAT:
+        case CameraType.FIXED_TO_SAT_LVLH:
+        case CameraType.FIXED_TO_SAT_ECI:
           ServiceLocator.getMainCamera().state.camAngleSnappedOnSat = false;
           ServiceLocator.getMainCamera().state.isAutoPitchYawToTarget = false;
           ServiceLocator.getMainCamera().state.camPitchSpeed -= (y ** 3 / 200) * drawManagerInstance.dt * settingsManager.cameraMovementSpeed;
           ServiceLocator.getMainCamera().state.camYawSpeed += (x ** 3 / 200) * drawManagerInstance.dt * settingsManager.cameraMovementSpeed;
           break;
         case CameraType.FPS:
-        case CameraType.SATELLITE:
+        case CameraType.SATELLITE_FIRST_PERSON:
         case CameraType.PLANETARIUM:
         case CameraType.ASTRONOMY:
           if (y > this.deadzone || y < -this.deadzone) {
@@ -378,13 +380,14 @@ export class GamepadPlugin {
       ServiceLocator.getMainCamera().autoRotate(false);
       switch (ServiceLocator.getMainCamera().cameraType) {
         case CameraType.FIXED_TO_EARTH:
-        case CameraType.FIXED_TO_SAT:
+        case CameraType.FIXED_TO_SAT_LVLH:
+        case CameraType.FIXED_TO_SAT_ECI:
           ServiceLocator.getMainCamera().state.isLocalRotateOverride = true;
           ServiceLocator.getMainCamera().state.localRotateDif.pitch = <Radians>(-y * 200);
           ServiceLocator.getMainCamera().state.localRotateDif.yaw = <Radians>(-x * 200);
           break;
         case CameraType.FPS:
-        case CameraType.SATELLITE:
+        case CameraType.SATELLITE_FIRST_PERSON:
         case CameraType.PLANETARIUM:
         case CameraType.ASTRONOMY:
           ServiceLocator.getMainCamera().state.camPitchSpeed += (y / 100) * drawManagerInstance.dt * settingsManager.cameraMovementSpeed;

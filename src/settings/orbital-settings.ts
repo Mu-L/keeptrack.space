@@ -51,7 +51,7 @@ export class OrbitalSettings {
    */
   orbitSegments = 255;
   /** Number of segments to use when drawing OEM orbits */
-  oemOrbitSegments = 64;
+  oemOrbitSegments = 128;
 
   // Orbit Limits
   /**
@@ -83,11 +83,10 @@ export class OrbitalSettings {
    */
   orbitFadeFactor = 0.6;
 
-  // ECF Orbits
   /**
-   * Show GEO Orbits in ECF vs ECI
+   * Show Orbits in ECF vs ECI
    */
-  isOrbitCruncherInEcf = true;
+  isOrbitCruncherInEcf = false;
   /**
    * If ECF Orbits are drawn, this is the number of orbits to draw.
    */
@@ -100,7 +99,7 @@ export class OrbitalSettings {
    * 2 = 95.45% confidence
    * 3 = 99.73% confidence
    */
-  covarianceConfidenceLevel: number = 2;
+  covarianceConfidenceLevel: number = 1;
   /**
    * Flag to determine if the covariance ellipsoid should be drawn.
    */

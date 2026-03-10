@@ -7,13 +7,13 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
-import { BaseObject, DetailedSatellite, Star } from '@ootk/src/main';
+import { BaseObject, Satellite, Star } from '@ootk/src/main';
+import { t7e } from '@app/locales/keys';
 import { ColorScheme } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class SunlightColorScheme extends ColorScheme {
-  readonly label = 'Sunlight Status';
+  readonly label = t7e('colorSchemes.SunlightColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'SunlightColorScheme';
   static readonly id = 'SunlightColorScheme';
 
@@ -46,10 +46,7 @@ export class SunlightColorScheme extends ColorScheme {
         const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
         if (colorSchemeManagerInstance.currentColorScheme === this) {
-          catalogManagerInstance.satCruncher.postMessage({
-            isSunlightView: true,
-            typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-          });
+          catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(true);
         }
       },
     );
@@ -70,10 +67,7 @@ export class SunlightColorScheme extends ColorScheme {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
 
-    catalogManagerInstance.satCruncher.postMessage({
-      isSunlightView: true,
-      typ: CruncerMessageTypes.SUNLIGHT_VIEW,
-    });
+    catalogManagerInstance.satCruncherThread.sendSunlightViewToggle(true);
     waitForCruncher({
       cruncher: catalogManagerInstance.satCruncher,
       cb: () => {
@@ -86,7 +80,7 @@ export class SunlightColorScheme extends ColorScheme {
   update(obj: BaseObject): ColorInformation {
     const dotsManagerInstance = ServiceLocator.getDotsManager();
 
-    if ((dotsManagerInstance.inSunData?.length ?? -1) < obj.id) {
+    if ((dotsManagerInstance.inSunData?.length ?? -1) < Number(obj.id)) {
       return {
         color: this.colorTheme.deselected,
         pickable: Pickable.No,
@@ -126,31 +120,38 @@ export class SunlightColorScheme extends ColorScheme {
     }
 
     // In FOV
-    if (dotsManagerInstance.inViewData?.[obj.id] === 1 && dotsManagerInstance.inSunData[obj.id] > 0 && this.objectTypeFlags.sunlightFov) {
-      if (dotsManagerInstance.inSunData[obj.id] === 0) {
-        if (this.objectTypeFlags.satLow) {
-          return {
-            color: this.colorTheme.umbral,
-            pickable: Pickable.No,
-          };
-        }
-
+    if (dotsManagerInstance.inViewData?.[obj.id] === 1) {
+      if (this.objectTypeFlags.sunlightFov === false) {
         return {
           color: this.colorTheme.deselected,
           pickable: Pickable.No,
         };
-
       }
 
-      // TODO: Work out a system for vmag filtering
+      if (dotsManagerInstance.inSunData[obj.id] > 0) {
+        // TODO: Work out a system for vmag filtering
+        return {
+          color: this.colorTheme.sunlightInview,
+          pickable: Pickable.Yes,
+        };
+      }
+
+      // In FOV but in umbral
+      if (this.objectTypeFlags.satLow) {
+        return {
+          color: this.colorTheme.umbral,
+          pickable: Pickable.No,
+        };
+      }
+
       return {
-        color: this.colorTheme.sunlightInview,
-        pickable: Pickable.Yes,
+        color: this.colorTheme.deselected,
+        pickable: Pickable.No,
       };
     }
 
     // Not in FOV
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
 
     if (!dotsManagerInstance.inViewData?.[sat.id]) {
       if (dotsManagerInstance.inSunData[sat.id] === SunStatus.SUN && this.objectTypeFlags.satHi) {

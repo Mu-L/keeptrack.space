@@ -1,6 +1,7 @@
 
 import { AtmosphereSettings, EarthTextureStyle } from '@app/engine/rendering/draw-manager/earth-quality-enums';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { NightToggle } from '../night-toggle/night-toggle';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -10,18 +11,32 @@ export class EarthPresetsPlugin extends KeepTrackPlugin {
   readonly id = 'EarthPresetsPlugin';
   dependencies_ = [];
 
+  private t_(key: string): string {
+    return t7e(`plugins.EarthPresetsPlugin.${key}` as Parameters<typeof t7e>[0]);
+  }
+
   rmbL1ElementName = 'earth-rmb';
-  rmbL1Html = html`<li class="rmb-menu-item" id="${this.rmbL1ElementName}"><a href="#">Earth Style &#x27A4;</a></li>`;
+  rmbL1Html = this.buildRmbL1Html_();
   rmbL2ElementName = 'earth-rmb-menu';
-  rmbL2Html = html`
-  <ul class='dropdown-contents'>
-    <li id="earth-satellite-rmb"><a href="#">Satellite Images</a></li>
-    <li id="earth-nadir-rmb"><a href="#">Alternate Satellite Images</a></li>
-    <li id="earth-engineer-rmb"><a href="#">Engineering Tool</a></li>
-    <li id="earth-opscenter-rmb"><a href="#">Operations Center</a></li>
-    <li id="earth-90sGraphics-rmb"><a href="#">90s Graphics</a></li>
-  </ul>
-  `;
+  rmbL2Html = this.buildRmbL2Html_();
+
+  private buildRmbL1Html_(): string {
+    return html`<li class="rmb-menu-item" id="${this.rmbL1ElementName}"><a href="#">${this.t_('rmbMenu.title')} &#x27A4;</a></li>`;
+  }
+
+  private buildRmbL2Html_(): string {
+    const m = (key: string) => this.t_(`rmbMenu.${key}`);
+
+    return html`
+    <ul class='dropdown-contents'>
+      <li id="earth-satellite-rmb"><a href="#">${m('satelliteImages')}</a></li>
+      <li id="earth-nadir-rmb"><a href="#">${m('alternateSatelliteImages')}</a></li>
+      <li id="earth-engineer-rmb"><a href="#">${m('engineeringTool')}</a></li>
+      <li id="earth-opscenter-rmb"><a href="#">${m('operationsCenter')}</a></li>
+      <li id="earth-90sGraphics-rmb"><a href="#">${m('nineties')}</a></li>
+    </ul>
+    `;
+  }
   rmbMenuOrder = 15;
   isRmbOnEarth = true;
   isRmbOffEarth = false;

@@ -45,9 +45,11 @@ import { Singletons } from './engine/core/interfaces';
 import { Engine } from './engine/engine';
 import { EventBus } from './engine/events/event-bus';
 import { EventBusEvent } from './engine/events/event-bus-events';
+import { PersistenceManager } from './engine/persistence/persistence-manager';
 import { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import { DotsManager } from './engine/rendering/dots-manager';
 import { lineManagerInstance } from './engine/rendering/line-manager';
+import { SatLabelManager } from './engine/rendering/sat-label-manager';
 import { WebWorkerThreadManager } from './engine/threads/web-worker-thread';
 import { DemoManager } from './engine/utils/demo-mode';
 import { html } from './engine/utils/development/formatter';
@@ -55,7 +57,9 @@ import { getEl } from './engine/utils/get-el';
 import { isThisNode } from './engine/utils/isThisNode';
 import { keepTrackApi } from './keepTrackApi';
 import { settingsManager, SettingsManagerOverride } from './settings/settings';
-import { VERSION } from './settings/version.js';
+
+import logoPrimaryPng from '@public/img/logo-primary.png';
+import logoSecondaryPng from '@public/img/logo-secondary.png';
 
 export class KeepTrack {
   private static instance: KeepTrack;
@@ -92,8 +96,6 @@ export class KeepTrack {
       throw new Error('KeepTrack is already started');
     }
 
-    // Update the version number
-    settingsManager.versionNumber = VERSION;
     this.settingsOverride_ = settingsOverride;
     Localization.getInstance(); // Initialize localization early
     this.engine = new Engine(this);
@@ -104,6 +106,7 @@ export class KeepTrack {
 
     if (!this.settingsOverride_.isPreventDefaultHtml) {
       import(/* webpackMode: "eager" */ '@css/loading-screen.css');
+      import(/* webpackMode: "eager" */ '@css/loading-overlay.css');
       KeepTrack.getDefaultBodyHtml();
       BottomMenu.init();
 
@@ -117,6 +120,7 @@ export class KeepTrack {
     const groupManagerInstance = new GroupsManager();
     const sensorManagerInstance = new SensorManager();
     const dotsManagerInstance = new DotsManager();
+    const satLabelManagerInstance = new SatLabelManager();
     const uiManagerInstance = new UiManager();
     const colorSchemeManagerInstance = new ColorSchemeManager();
     const sensorMathInstance = new SensorMath();
@@ -127,6 +131,7 @@ export class KeepTrack {
     Container.getInstance().registerSingleton(Singletons.GroupsManager, groupManagerInstance);
     Container.getInstance().registerSingleton(Singletons.SensorManager, sensorManagerInstance);
     Container.getInstance().registerSingleton(Singletons.DotsManager, dotsManagerInstance);
+    Container.getInstance().registerSingleton(Singletons.SatLabelManager, satLabelManagerInstance);
     Container.getInstance().registerSingleton(Singletons.UiManager, uiManagerInstance);
     Container.getInstance().registerSingleton(Singletons.ColorSchemeManager, colorSchemeManagerInstance);
     Container.getInstance().registerSingleton(Singletons.SensorMath, sensorMathInstance);
@@ -134,6 +139,13 @@ export class KeepTrack {
 
     CameraControlWidget.getInstance().init();
     DemoManager.getInstance().init();
+
+    // Initialize enhanced persistence features (cross-tab sync, provider subscriptions).
+    // The PersistenceManager already works synchronously from its constructor;
+    // this adds the async enhancements without blocking boot.
+    PersistenceManager.getInstance().initialize().catch((e) => {
+      console.warn('Failed to initialize enhanced persistence:', e);
+    });
   }
 
   static getDefaultBodyHtml(): void {
@@ -153,12 +165,12 @@ export class KeepTrack {
         <div id="canvas-holder">
         <div id="logo-primary" class="start-hidden">
             <a href="https://keeptrack.space" target="_blank">
-              <img src="${settingsManager.installDirectory}img/logo-primary.png" alt="KeepTrack">
+              <img src="${logoPrimaryPng}" alt="KeepTrack">
             </a>
           </div>
           <div id="logo-secondary" class="start-hidden">
             <a href="https://celestrak.org" target="_blank">
-              <img src="${settingsManager.installDirectory}img/logo-secondary.png" alt="Celestrak">
+              <img src="${logoSecondaryPng}" alt="Celestrak">
             </a>
           </div>
           <canvas id="keeptrack-canvas"></canvas>
@@ -168,8 +180,6 @@ export class KeepTrack {
               <span id="sat-hoverbox2"></span>
               <span id="sat-hoverbox3"></span>
             </div>
-            <div id="sat-minibox"></div>
-
             <div id="layers-hover-menu" class="start-hidden"></div>
             <aside id="left-menus"></aside>
           </div>
@@ -363,9 +373,14 @@ theodore.kruczek at gmail dot com.
       catalogManagerInstance.initObjects();
 
       catalogManagerInstance.init();
-      colorSchemeManagerInstance.init(renderer);
+      colorSchemeManagerInstance.init(renderer, this.threads);
 
-      await CatalogLoader.load(); // Needs Object Manager and gl first
+      if (settingsManager.noCatalogOnLoad) {
+        // Empty catalog — still adds stars, sensors, planets, etc.
+        await CatalogLoader.parse({});
+      } else {
+        await CatalogLoader.load(); // Needs Object Manager and gl first
+      }
 
       lineManagerInstance.init();
 
@@ -374,6 +389,8 @@ theodore.kruczek at gmail dot com.
       uiManagerInstance.init();
 
       dotsManagerInstance.initBuffers(colorSchemeManagerInstance.colorBuffer!);
+
+      ServiceLocator.getSatLabelManager()?.init(renderer.gl, settingsManager.maxLabels || settingsManager.desktopMaxLabels);
 
       inputManagerInstance.init();
 
@@ -424,6 +441,15 @@ theodore.kruczek at gmail dot com.
       this.isInitialized = true;
 
       EventBus.getInstance().emit(EventBusEvent.onKeepTrackReady);
+
+      // Register runtime internet connectivity detection
+      window.addEventListener('online', () => {
+        EventBus.getInstance().emit(EventBusEvent.connectivityChange, true);
+      });
+      window.addEventListener('offline', () => {
+        EventBus.getInstance().emit(EventBusEvent.connectivityChange, false);
+      });
+
       if (settingsManager.onLoadCb) {
         settingsManager.onLoadCb();
       }

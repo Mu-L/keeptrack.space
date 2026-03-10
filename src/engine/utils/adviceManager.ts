@@ -19,11 +19,11 @@
  */
 
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrack } from '@app/keeptrack';
 import { EventBus } from '../events/event-bus';
 import { html } from './development/formatter';
-import { getEl, hideEl } from './get-el';
+import { getEl } from './get-el';
 import { PersistenceManager, StorageKey } from './persistence-manager';
-import { KeepTrack } from '@app/keeptrack';
 
 export class AdviceManager {
   private helpHeaderDOM: HTMLElement;
@@ -34,20 +34,15 @@ export class AdviceManager {
   private tutIconDOM: HTMLElement;
 
   public clearAdvice(): void {
-    this.helpHeaderDOM.classList.remove('help-header-sel');
-    this.helpHeaderDOM.onclick = null;
+    this.helpHeaderDOM?.classList.remove('help-header-sel');
+    if (this.helpHeaderDOM) {
+      this.helpHeaderDOM.onclick = null;
+    }
   }
 
   public init() {
     // Advice only applies to things in the bottom menu
     if (settingsManager.isDisableBottomMenu) {
-      EventBus.getInstance().on(
-        EventBusEvent.uiManagerFinal,
-        () => {
-          hideEl('tutorial-btn');
-        },
-      );
-
       return;
     }
 
@@ -70,11 +65,6 @@ export class AdviceManager {
     this.helpOuterDOM = getEl('help-outer-container')!;
     this.helpHeaderDOM = getEl('help-header')!;
     this.helpTextDOM = getEl('help-text')!;
-    this.tutIconDOM = getEl('tutorial-icon')!;
-
-    this.tutIconDOM.addEventListener('click', () => {
-      EventBus.getInstance().emit(EventBusEvent.onHelpMenuClick);
-    });
 
     // TODO: This should be registered with the keyboard class
     window.onkeydown = (e: KeyboardEvent) => {
@@ -116,6 +106,11 @@ export class AdviceManager {
     this.isAdviceOpen = true;
 
     this.clearAdvice();
+
+    // DOM elements may not exist in test environments
+    if (!this.helpOuterDOM || !this.helpHeaderDOM || !this.helpTextDOM) {
+      return;
+    }
 
     this.helpOuterDOM.style.display = 'block';
     this.helpHeaderDOM.innerHTML = header;

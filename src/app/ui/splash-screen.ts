@@ -6,33 +6,33 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import blueMarbleJpg from '@public/img/wallpaper/blue-marble.jpg';
-import cubesatJpg from '@public/img/wallpaper/cubesat.jpg';
-import earthJpg from '@public/img/wallpaper/Earth.jpg';
+import cspocJpg from '@public/img/wallpaper/cspoc.jpg';
+import cspoc2Jpg from '@public/img/wallpaper/cspoc2.jpg';
 import epfl1Jpg from '@public/img/wallpaper/epfl-1.jpg';
 import epfl2Jpg from '@public/img/wallpaper/epfl-2.jpg';
-import marsSurfaceJpg from '@public/img/wallpaper/mars-surface.jpg';
 import marsJpg from '@public/img/wallpaper/mars.jpg';
 import moonJpg from '@public/img/wallpaper/moon.jpg';
-import observatoryJpg from '@public/img/wallpaper/observatory.jpg';
 import opsJpg from '@public/img/wallpaper/ops.jpg';
 import ops2Jpg from '@public/img/wallpaper/ops2.jpg';
 import ops3Jpg from '@public/img/wallpaper/ops3.jpg';
+import ops4Jpg from '@public/img/wallpaper/ops4.jpg';
+import ops5Jpg from '@public/img/wallpaper/ops5.jpg';
 import rocketJpg from '@public/img/wallpaper/rocket.jpg';
 import rocket2Jpg from '@public/img/wallpaper/rocket2.jpg';
 import rocket3Jpg from '@public/img/wallpaper/rocket3.jpg';
 import rocket4Jpg from '@public/img/wallpaper/rocket4.jpg';
-import satJpg from '@public/img/wallpaper/sat.jpg';
-import sat2Jpg from '@public/img/wallpaper/sat2.jpg';
-import telescopeJpg from '@public/img/wallpaper/telescope.jpg';
 import thuleJpg from '@public/img/wallpaper/thule.jpg';
+
+import logoPng from '@public/img/logo.png';
 
 export abstract class SplashScreen {
   /** An image is picked at random and then if the screen is bigger than 1080p then it loads the next one in the list */
   private static splashScreenImgList_ =
     [
-      blueMarbleJpg, moonJpg, observatoryJpg, thuleJpg, rocketJpg, rocket2Jpg, telescopeJpg, rocket3Jpg, rocket4Jpg, cubesatJpg, satJpg, sat2Jpg, earthJpg,
-      epfl1Jpg, epfl2Jpg, opsJpg, ops2Jpg, ops3Jpg,
-      marsJpg, marsSurfaceJpg,
+      cspocJpg, cspoc2Jpg,
+      blueMarbleJpg, moonJpg, thuleJpg, rocketJpg, rocket2Jpg, rocket3Jpg, rocket4Jpg,
+      epfl1Jpg, epfl2Jpg, opsJpg, ops2Jpg, ops3Jpg, ops4Jpg, ops5Jpg,
+      marsJpg,
     ];
 
   static readonly msg = {
@@ -61,11 +61,11 @@ export abstract class SplashScreen {
         <div id="logo-inner-container" class="valign">
           <div style="display: flex;">
           <!-- <span id="logo-text" class="logo-font">KEEP TRACK</span> -->
-          <img src="img/logo.png" alt="Keep Track" id="logo-text" class="logo-font">
+          <img src="${logoPng}" alt="Keep Track" id="logo-text" class="logo-font">
           <!-- <span id="logo-text-version" class="logo-font">10</span> -->
           </div>
-          <div style="height: 50px; min-height: 50px; max-height: 50px; overflow: hidden; display: flex; align-items: center;">
-            <span id="loader-text" style="width: 100%;">Downloading Science...</span>
+          <div style="height: 50px; min-height: 50px; max-height: 50px; margin-top: 1rem; display: flex; align-items: center;">
+            <span id="loader-text" style="width: 100%;">${t7e('loadingScreen.downloadingScience' as TranslationKey)}</span>
           </div>
           <div id="adsense-placeholder"
             style="width:970px;height:90px; margin:16px 0; display: none; position: absolute; bottom: 50px">
@@ -78,8 +78,8 @@ export abstract class SplashScreen {
             </button>
           </div>
         </div>
-        <div id="loading-hint">Hint: ${this.showHint()}</div>
-        <div id="version-text">v${settingsManager.versionNumber}</div>
+        <div id="loading-hint">${t7e('loadingScreen.hint' as TranslationKey)} ${this.showHint()}</div>
+        <div id="version-text">v${__VERSION__}-${__COMMIT_HASH__}</div>
         <div id="copyright-notice">
         ${settingsManager.isMobileModeEnabled ? t7e('copyright.noticeMobile') : t7e('copyright.notice')}
         </div>
@@ -138,14 +138,9 @@ export abstract class SplashScreen {
     hideEl('start-app-btn');
     hideEl('adsense-placeholder');
 
-    // Loading Screen Resized and Hidden
     setTimeout(() => {
-      getEl('loading-screen')?.classList.remove('full-loader');
-      getEl('loading-screen')?.classList.add('mini-loader-container');
-      getEl('logo-inner-container')?.classList.add('mini-loader');
       hideEl('loading-screen');
       showEl('keeptrack-header');
-      SplashScreen.loadStr(SplashScreen.msg.math);
     }, 100);
   }
 
@@ -159,16 +154,22 @@ export abstract class SplashScreen {
   }
 
   static loadImages() {
-    const allowedNames = new Set(settingsManager.splashScreenList);
+    const splashList = settingsManager.splashScreenList;
 
-    if (this.splashScreenImgList_ !== null && allowedNames.size > 0) {
-      // Filter images whose file name (without extension) matches an entry in splashScreenList
+    // null = show all (no filtering); non-null = filter to allowed names only
+    if (splashList !== null) {
+      const allowedNames = new Set(splashList);
+
       this.splashScreenImgList_ = this.splashScreenImgList_.filter((imgPath) => {
         const fileName = imgPath.split('/').pop()?.split('.')[0]?.toLowerCase();
 
-
         return fileName && allowedNames.has(fileName);
       });
+    }
+
+    // If no images remain, skip setting background
+    if (this.splashScreenImgList_.length === 0) {
+      return;
     }
 
     // Randomly load a splash screen - not a vulnerability

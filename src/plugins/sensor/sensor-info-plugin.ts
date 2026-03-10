@@ -1,4 +1,7 @@
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { LineManager } from '@app/engine/rendering/line-manager';
@@ -7,11 +10,9 @@ import { SensorToSunLine } from '@app/engine/rendering/line-manager/sensor-to-su
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { keepTrackApi } from '@app/keepTrackApi';
-import { RfSensor, SpaceObjectType } from '@ootk/src/main';
+import { SpaceObjectType } from '@ootk/src/main';
 import sensorInfoPng from '@public/img/icons/sensor-info.png';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SoundNames } from '../sounds/sounds';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class SensorInfoPlugin extends KeepTrackPlugin {
   readonly id = 'SensorInfoPlugin';
@@ -23,7 +24,7 @@ export class SensorInfoPlugin extends KeepTrackPlugin {
     this.checkIfLinesVisible_(ServiceLocator.getLineManager());
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.SENSORS, MenuMode.ALL];
 
   bottomIconLabel = 'Sensor Info';
   bottomIconImg = sensorInfoPng;
@@ -32,7 +33,7 @@ export class SensorInfoPlugin extends KeepTrackPlugin {
 
   sideMenuElementName: string = 'sensor-info-menu';
   sideMenuElementHtml: string = html`
-    <div id="sensor-info-menu" class="side-menu-parent start-hidden text-select">
+    <div id="sensor-info-menu" class="side-menu-parent start-hidden">
     <div id="sensor-content" class="side-menu">
         <div class="row">
         <h5 id="sensor-info-title" class="center-align">Sensor Name</h5>
@@ -282,7 +283,7 @@ export class SensorInfoPlugin extends KeepTrackPlugin {
       showEl(sensorBandElement?.parentElement ?? '');
       sensorBandElement.innerHTML = firstSensor.freqBand ? firstSensor.freqBand : 'Unknown';
 
-      if (firstSensor instanceof RfSensor) {
+      if (firstSensor instanceof DetailedSensor) {
         showEl(beamwidthElement?.parentElement ?? '');
         beamwidthElement.innerHTML = firstSensor.beamwidth ? `${firstSensor.beamwidth.toFixed(1).toString()}°` : 'Unknown';
       } else {

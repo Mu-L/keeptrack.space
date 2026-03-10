@@ -34,9 +34,13 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import { KeepTrack } from '@app/keeptrack';
-import { CruncerMessageTypes } from '@app/webworker/positionCruncher';
 import {
-  BaseObject, Degrees, DetailedSatellite, EciVec3, KilometersPerSecond, Radians, SatelliteRecord, Sgp4, SpaceObjectType, Star, Tle, TleLine1, TleLine2,
+  BaseObject, Degrees,
+  KilometersPerSecond, Radians,
+  Satellite,
+  SatelliteRecord, Sgp4, SpaceObjectType, Star,
+  TemeVec3,
+  Tle, TleLine1, TleLine2,
 } from '@ootk/src/main';
 import { SatMath } from '../analysis/sat-math';
 import { SatCruncherThreadManager } from '../threads/sat-cruncher-thread-manager';
@@ -59,6 +63,8 @@ declare module '@app/engine/core/interfaces' {
     // JSON string
     satId?: number;
     sensorMarkerArray?: number[];
+    /** Catalog sequence number for discarding stale messages after catalog swap */
+    seqNum?: number;
   }
   interface UserSettings {
     installDirectory: string;
@@ -80,7 +86,7 @@ export class CatalogManager {
   private static readonly TEMPLATE_TLE2_ENDING = ' 034.2502 167.2636 0042608 222.6554 121.5501 14.84703551080477';
   static readonly ANALYST_START_ID = 90000;
 
-  analSatSet = <DetailedSatellite[]>[];
+  analSatSet = <Satellite[]>[];
   cosparIndex: { [key: string]: number } = {};
   fieldOfViewSet = [] as {
     static: boolean;
@@ -108,7 +114,12 @@ export class CatalogManager {
   orbitalPlaneDensity: number[][] = [];
   orbitalPlaneDensityMax = 0;
   orbitalSats: number;
-  satCruncher: Worker;
+  satCruncherThread: SatCruncherThreadManager;
+  /** @deprecated Use satCruncherThread instead */
+  get satCruncher(): Worker {
+    return this.satCruncherThread?.worker as Worker;
+  }
+
   objectCache: BaseObject[];
   satExtraData;
   satLinkManager: SatLinkManager;
@@ -128,7 +139,7 @@ export class CatalogManager {
    * @param {SatObject} sat - The satellite object for which to calculate the satrec.
    * @returns {SatelliteRecord} The calculated or cached Satellite Record.
    */
-  calcSatrec(sat: DetailedSatellite): SatelliteRecord {
+  calcSatrec(sat: Satellite): SatelliteRecord {
     // If cached satrec exists, return it
     if (sat.satrec) {
       return sat.satrec;
@@ -139,7 +150,7 @@ export class CatalogManager {
 
     // Cache the satrec for later use.
     if (this.objectCache[sat.id]?.isSatellite()) {
-      (this.objectCache[sat.id] as DetailedSatellite).satrec = satrec;
+      (this.objectCache[sat.id] as Satellite).satrec = satrec;
     } else {
       errorManagerInstance.warn('calcSatrec: satId not found in satData');
     }
@@ -155,7 +166,9 @@ export class CatalogManager {
    * If a satellite number does not have a corresponding ID, it is not included in the returned array.
    */
   satnums2ids(satnumArray: number[]): number[] {
-    return satnumArray.map((satnum) => this.sccNum2Id(satnum.toString().padStart(5, '0'), false) ?? null).filter((id) => id !== null);
+    return satnumArray
+      .map((satnum) => this.sccNum2Id(satnum.toString().padStart(5, '0'), false))
+      .filter((id): id is number => id !== null);
   }
 
   /**
@@ -193,7 +206,7 @@ export class CatalogManager {
       for (let i = 0; i < this.objectCache.length; i++) {
         const obj = this.objectCache[i];
 
-        if (obj?.isSatellite() && (obj as DetailedSatellite)?.sccNum === a5Num.toString()) {
+        if (obj?.isSatellite() && (obj as Satellite)?.sccNum === a5Num.toString()) {
           return i;
         }
       }
@@ -208,7 +221,7 @@ export class CatalogManager {
    * @param sccNum - The object number of the satellite.
    * @returns The satellite object if found, null otherwise.
    */
-  sccNum2Sat(sccNum: number): DetailedSatellite | null {
+  sccNum2Sat(sccNum: number): Satellite | null {
     const sat = this.getObject(this.sccNum2Id(sccNum.toString().padStart(5, '0')));
 
     if (!sat?.isSatellite()) {
@@ -217,7 +230,19 @@ export class CatalogManager {
       return null;
     }
 
-    return sat as DetailedSatellite;
+    return sat as Satellite;
+  }
+
+  a52Sat(sccNum: string): Satellite | null {
+    const sat = this.getObject(this.sccNum2Id(sccNum.padStart(5, '0')));
+
+    if (!sat?.isSatellite()) {
+      errorManagerInstance.debug(`Object ${sccNum} is not a satellite!`);
+
+      return null;
+    }
+
+    return sat as Satellite;
   }
 
   /**
@@ -242,54 +267,57 @@ export class CatalogManager {
    * Optional GetSatType parameter can be used speed up the function by retrieving only the required data.
    *
    */
-  getObject(i: number | null | undefined, type: GetSatType = GetSatType.DEFAULT): BaseObject | null {
-    if (i === null || typeof i === 'undefined' || (i ?? -1) <= -1) {
+  getObject(i: string | number | null | undefined, type: GetSatType = GetSatType.DEFAULT): BaseObject | null {
+    // Convert string IDs to numbers for array access
+    const index = typeof i === 'string' ? parseInt(i, 10) : i;
+
+    if (index === null || typeof index === 'undefined' || (index ?? -1) <= -1) {
       // errorManagerInstance.debug('getSat: i is null'); - This happens a lot but is useful for debugging
 
       return null;
     }
 
-    if (i === -1 || !this.objectCache?.[i]) {
-      if (!isThisNode() && i >= 0 && !this.objectCache[i]) {
-        errorManagerInstance.debug(`Satellite ${i} not found`);
+    if (index === -1 || !this.objectCache?.[index]) {
+      if (!isThisNode() && index >= 0 && !this.objectCache[index]) {
+        errorManagerInstance.debug(`Satellite ${index} not found`);
       }
 
       return null;
     }
 
     if (type === GetSatType.EXTRA_ONLY) {
-      return this.objectCache[i];
+      return this.objectCache[index];
     }
 
     if (type === GetSatType.POSITION_ONLY) {
-      this.objectCache[i].position = ServiceLocator.getDotsManager().getCurrentPosition(i);
+      (this.objectCache[index] as Satellite).position = ServiceLocator.getDotsManager().getCurrentPosition(index);
 
-      return this.objectCache[i];
+      return this.objectCache[index];
     }
 
     if (type !== GetSatType.SKIP_POS_VEL) {
-      ServiceLocator.getDotsManager().updatePosVel(this.objectCache[i], i);
+      ServiceLocator.getDotsManager().updatePosVel(this.objectCache[index], index);
     }
 
-    return this.objectCache[i];
+    return this.objectCache[index];
   }
 
-  getSat(satId: number, type: GetSatType = GetSatType.DEFAULT): DetailedSatellite | null {
+  getSat(satId: string | number, type: GetSatType = GetSatType.DEFAULT): Satellite | null {
     const sat = this.getObject(satId, type);
 
     if (!sat?.isSatellite()) {
       return null;
     }
 
-    return sat as DetailedSatellite;
+    return sat as Satellite;
   }
 
-  getSats(): DetailedSatellite[] {
+  getSats(): Satellite[] {
     // sats are the first numSats objects in the objectCache
-    return this.objectCache.slice(0, this.numSatellites).filter((sat) => sat.isSatellite()) as DetailedSatellite[];
+    return this.objectCache.slice(0, this.numSatellites).filter((sat) => sat.isSatellite()) as Satellite[];
   }
 
-  getMissile(missileId: number): MissileObject | null {
+  getMissile(missileId: string | number): MissileObject | null {
     const missile = this.getObject(missileId);
 
     if (!missile?.isMissile()) {
@@ -300,32 +328,38 @@ export class CatalogManager {
   }
 
   getSensorFromSensorName(sensorName: string): number {
-    return this.objectCache.findIndex((object: BaseObject) => object.isSensor() && object.name === sensorName);
+    const index = this.objectCache.findIndex((object: BaseObject) => object.isSensor() && object.name === sensorName);
+
+    return index;
   }
 
   id2satnum(satIdArray: number[]) {
-    return satIdArray.map((id) => ((<DetailedSatellite>this.getObject(id))?.sccNum || -1).toString()).filter((satnum) => satnum !== '-1');
+    return satIdArray.map((id) => ((<Satellite>this.getObject(id))?.sccNum || -1).toString()).filter((satnum) => satnum !== '-1');
   }
 
   init(satCruncherOveride?: Worker): void {
     if (!satCruncherOveride) {
-      const satCruncherThreadManager = new SatCruncherThreadManager(KeepTrack.getInstance().threads);
+      const threadManager = new SatCruncherThreadManager(KeepTrack.getInstance().threads);
 
       SplashScreen.loadStr(SplashScreen.msg.elsets);
-      satCruncherThreadManager.init();
+      threadManager.init();
 
-      if (satCruncherThreadManager.worker === null) {
+      if (threadManager.worker === null) {
         throw new Error('satCruncher worker is null');
       }
 
-      this.satCruncher = satCruncherThreadManager.worker;
+      this.satCruncherThread = threadManager;
     } else {
-      this.satCruncher = satCruncherOveride;
+      // Test/override path: wrap the raw Worker in a minimal thread manager
+      const threadManager = new SatCruncherThreadManager(KeepTrack.getInstance().threads);
+
+      threadManager.init(satCruncherOveride);
+      this.satCruncherThread = threadManager;
     }
   }
 
-  getActiveSats(): DetailedSatellite[] {
-    return this.objectCache.filter((obj) => obj.isSatellite() && obj.active) as DetailedSatellite[];
+  getActiveSats(): Satellite[] {
+    return this.objectCache.filter((obj) => obj.isSatellite() && obj.active) as Satellite[];
   }
 
   initObjects() {
@@ -349,7 +383,7 @@ export class CatalogManager {
       const sccNum = Tle.convert6DigitToA5((CatalogManager.ANALYST_START_ID + i).toString());
 
       this.analSatSet.push(
-        new DetailedSatellite({
+        new Satellite({
           active: false,
           name: `Analyst Sat ${i}`,
           country: 'ANALSAT',
@@ -449,7 +483,7 @@ export class CatalogManager {
     }
   }
 
-  addAnalystSat(tle1: string, tle2: string, id: number, sccNum?: string): DetailedSatellite | null {
+  addAnalystSat(tle1: string, tle2: string, id: number, sccNum?: string): Satellite | null {
     if (tle1.length !== 69) {
       throw new Error(`Invalid TLE1: length is not 69 - ${tle1}`);
     }
@@ -468,7 +502,7 @@ export class CatalogManager {
     }
 
     if (SatMath.altitudeCheck(satrec, ServiceLocator.getTimeManager().simulationTimeObj) > 1) {
-      this.objectCache[id] = new DetailedSatellite({
+      this.objectCache[id] = new Satellite({
         active: true,
         name: `Analyst Sat ${id}`,
         country: 'ANALSAT',
@@ -482,17 +516,9 @@ export class CatalogManager {
         id,
       });
 
-      const m = {
-        typ: CruncerMessageTypes.SAT_EDIT,
-        id,
-        active: true,
-        tle1,
-        tle2,
-      };
-
-      this.satCruncher.postMessage(m);
+      this.satCruncherThread.sendSatEdit(id, tle1, tle2, true);
       ServiceLocator.getOrbitManager().changeOrbitBufferData(id, tle1, tle2);
-      const sat = this.objectCache[id] as DetailedSatellite;
+      const sat = this.objectCache[id] as Satellite;
 
       if (!sat.isSatellite()) {
         throw new Error(`Object ${id} is not a satellite!`);
@@ -515,12 +541,12 @@ export class CatalogManager {
     this.buildOrbitPlaneDensityMatrix_(activeSats);
   }
 
-  private calculateEffectiveAltitude_(satellite: DetailedSatellite): number {
+  private calculateEffectiveAltitude_(satellite: Satellite): number {
     // Using the mean altitude approach
     return (satellite.apogee + satellite.perigee) / 2;
   }
 
-  private buildOrbitPlaneDensityMatrix_(satellites: DetailedSatellite[]) {
+  private buildOrbitPlaneDensityMatrix_(satellites: Satellite[]) {
     // Build the orbit density matrix
     for (let i = 0; i < 180; i += 2) {
       this.orbitalPlaneDensity[i] = [];
@@ -534,7 +560,7 @@ export class CatalogManager {
       if (!satellites[i].active) {
         continue;
       }
-      const sat = satellites[i] as DetailedSatellite;
+      const sat = satellites[i] as Satellite;
 
       if (satellites[i].active) {
         const inc = Math.floor(sat.inclination / 2) * 2;
@@ -543,7 +569,7 @@ export class CatalogManager {
         this.orbitalPlaneDensity[inc][alt] += 1;
       }
 
-      satellites[i].velocity = { x: 0, y: 0, z: 0 } as EciVec3<KilometersPerSecond>;
+      satellites[i].velocity = { x: 0, y: 0, z: 0 } as TemeVec3<KilometersPerSecond>;
     }
 
     this.orbitalPlaneDensityMax = 0;
@@ -556,7 +582,7 @@ export class CatalogManager {
     }
   }
 
-  private calculateOrbitalDensity_(satellites: DetailedSatellite[], binSize: number = 25): DensityBin[] {
+  private calculateOrbitalDensity_(satellites: Satellite[], binSize: number = 25): DensityBin[] {
     const altitudes = satellites.map((satellite) => (
       {
         id: satellite.id,

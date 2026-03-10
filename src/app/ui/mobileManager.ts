@@ -2,7 +2,7 @@ import { ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { EarthTextureStyle } from '@app/engine/rendering/draw-manager/earth-quality-enums';
+import { EarthCloudTextureQuality, EarthDayTextureQuality, EarthNightTextureQuality, EarthTextureStyle } from '@app/engine/rendering/draw-manager/earth-quality-enums';
 import { KeepTrack } from '@app/keeptrack';
 import { Kilometers, Radians } from '@ootk/src/main';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
@@ -18,11 +18,11 @@ export class MobileManager {
           settingsManager.isMobileModeEnabled = true;
           settingsManager.disableWindowTouchMove = false;
           settingsManager.isShowLoadingHints = false;
-          settingsManager.isDisableBottomMenu = true;
+          settingsManager.isDisableBottomMenu = false;
           settingsManager.maxOribtsDisplayed = settingsManager.maxOrbitsDisplayedMobile;
           settingsManager.enableHoverOverlay = false;
-          settingsManager.cameraMovementSpeed = 0.0025;
-          settingsManager.cameraMovementSpeedMin = 0.0025;
+          settingsManager.cameraMovementSpeed = settingsManager.touchCameraMovementSpeed;
+          settingsManager.cameraMovementSpeedMin = settingsManager.touchCameraMovementSpeed;
           settingsManager.zoomSpeed = 0.025;
 
           if (settingsManager.isUseHigherFOVonMobile) {
@@ -32,20 +32,36 @@ export class MobileManager {
           }
           settingsManager.maxLabels = settingsManager.mobileMaxLabels;
 
-          // Disable desktop only plugins
+          // Mobile mode has a lot of desktop-only plugins that are not optimized for mobile and would cause performance issues, so we disable them by default.
+          // However, we allow users to re-enable any plugins they want in the settings.
           const cachePlugins = { ...settingsManager.plugins };
 
+          // Disable desktop only plugins
           Object.keys(settingsManager.plugins).forEach((key) => {
             settingsManager.plugins[key] = false;
           });
-          settingsManager.plugins.SoundManager = cachePlugins.SoundManager;
+          settingsManager.plugins.SoundToggle = cachePlugins.SoundToggle;
           settingsManager.plugins.SatInfoBoxCore = cachePlugins.SatInfoBoxCore;
           settingsManager.plugins.SatInfoBoxObject = cachePlugins.SatInfoBoxObject;
           settingsManager.plugins.TopMenu = cachePlugins.TopMenu;
           settingsManager.plugins.DateTimeManager = cachePlugins.DateTimeManager;
           settingsManager.plugins.SatInfoBoxOrbital = cachePlugins.SatInfoBoxOrbital;
           settingsManager.plugins.SatInfoBoxMission = cachePlugins.SatInfoBoxMission;
+          settingsManager.plugins.SatInfoBoxSponsor = cachePlugins.SatInfoBoxSponsor;
+
+          settingsManager.plugins.CountriesMenu = cachePlugins.CountriesMenu;
+          settingsManager.plugins.FilterMenuPlugin = cachePlugins.FilterMenuPlugin;
+          settingsManager.plugins.Reentries = cachePlugins.Reentries;
+          settingsManager.plugins.TimeMachine = cachePlugins.TimeMachine;
+          settingsManager.plugins.NaturalEventsPlugin = cachePlugins.NaturalEventsPlugin;
+          settingsManager.plugins.SeismicActivityPlugin = cachePlugins.SeismicActivityPlugin;
+          settingsManager.plugins.FilterMenuPlugin = cachePlugins.FilterMenuPlugin;
+
+          settingsManager.plugins.LaunchCalendar = cachePlugins.LaunchCalendar;
+          settingsManager.plugins.NextLaunchesPlugin = cachePlugins.NextLaunchesPlugin;
+
           settingsManager.defaultColorScheme = 'CelestrakColorScheme';
+          settingsManager.isDisablePlanets = true;
 
           // Get the size of keeptrack-root
           const keeptrackRoot = getEl('keeptrack-root');
@@ -67,26 +83,27 @@ export class MobileManager {
             isAllowRightClick: false,
             isShowLoadingHints: false,
             isBlockPersistence: true,
-            isDisableBottomMenu: true,
+            isDisableBottomMenu: false,
             isDrawSun: false,
             isDrawMilkyWay: false,
             isDisableGodrays: true,
             godraysSamples: -1,
             isDisableMoon: true,
-            earthDayTextureQuality: '2k',
-            earthNightTextureQuality: '2k',
+            earthDayTextureQuality: EarthDayTextureQuality.HIGH,
+            earthNightTextureQuality: EarthNightTextureQuality.HIGH,
             isDrawNightAsDay: false,
             // earthSpecTextureQuality: '1k',
             isDrawSpecMap: false,
             // earthBumpTextureQuality: '1k',
             isDrawBumpMap: false,
             // earthCloudTextureQuality: '1k',
-            isDrawCloudsMap: false,
+            isDrawCloudsMap: true,
+            earthCloudTextureQuality: EarthCloudTextureQuality.HIGH,
             // earthPoliticalTextureQuality: '1k',
             isDrawPoliticalMap: false,
             earthTextureStyle: EarthTextureStyle.BLUE_MARBLE,
             isDisableSkybox: true,
-            isDisableSearchBox: true,
+            isDisableSearchBox: false,
             isDrawCovarianceEllipsoid: false,
             isDisableAsyncReadPixels: true,
             pickingDotSize: '32.0',
@@ -107,13 +124,6 @@ export class MobileManager {
             () => {
               ServiceLocator.getUiManager().searchManager.closeSearch();
               hideEl('actions-section');
-            },
-          );
-
-          EventBus.getInstance().on(
-            EventBusEvent.uiManagerFinal,
-            () => {
-              hideEl('tutorial-btn');
             },
           );
 

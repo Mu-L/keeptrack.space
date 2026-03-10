@@ -100,6 +100,9 @@ export const parseGetVariables = (params: string[], settingsManager: SettingsMan
         settingsManager.isDisableStars = true;
         settingsManager.isDrawMilkyWay = false;
         break;
+      case 'nocatalog':
+        settingsManager.noCatalogOnLoad = true;
+        break;
       case 'draw-less':
         settingsManager.isDrawMilkyWay = false;
         settingsManager.isDrawLess = true;

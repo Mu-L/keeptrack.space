@@ -1,18 +1,18 @@
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { adviceManagerInstance } from '@app/engine/utils/adviceManager';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
 import fullscreenPng from '@public/img/icons/fullscreen.png';
-import helpPng from '@public/img/icons/help.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class TopMenu extends KeepTrackPlugin {
   readonly id = 'TopMenu';
   dependencies_ = [];
   static readonly SEARCH_RESULT_ID = 'search-results';
-  static readonly TOP_LEFT_ID = 'nav-top-left';
+  static readonly TOP_CENTER_ID = 'nav-top-center';
   static readonly TOP_RIGHT_ID = 'nav-top-right';
   static readonly NAV_WRAPPER_ID = 'nav-wrapper';
 
@@ -25,18 +25,11 @@ export class TopMenu extends KeepTrackPlugin {
     tooltip: string;
   }[] = [
       {
-        id: 'tutorial-btn',
-        order: 3,
-        class: 'bmenu-item-help bmenu-item-disabled',
-        icon: helpPng,
-        tooltip: 'Show Help',
-      },
-      {
-        id: 'fullscreen-icon',
+        id: 'fullscreen-btn',
         order: 4,
         class: 'top-menu-icons__blue-img',
         icon: fullscreenPng,
-        tooltip: 'Toggle Fullscreen',
+        tooltip: t7e('TopMenu.toggleFullscreen'),
       },
     ];
 
@@ -70,7 +63,7 @@ export class TopMenu extends KeepTrackPlugin {
                 `)
               .join('')}
             <div id="search-holder" class="menu-item search-slide-up">
-              <input id="search" type="search" name="search" placeholder="Search.." required />
+              <input id="search" type="search" name="search" placeholder="${t7e('TopMenu.searchPlaceholder')}" required />
             </div>
           </ul>
               </div>

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { MultiSiteLookAnglesPlugin } from '@app/plugins/sensor/multi-site-look-angles-plugin';
 import { setupStandardEnvironment } from './environment/standard-env';
@@ -9,7 +10,7 @@ describe('MultiSiteLookAnglesPlugin_class', () => {
   });
 
   afterEach(() => {
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   standardPluginSuite(MultiSiteLookAnglesPlugin);

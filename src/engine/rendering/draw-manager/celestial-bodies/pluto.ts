@@ -20,11 +20,12 @@
  */
 
 import { SolarBody } from '@app/engine/core/interfaces';
-import { EciVec3, Kilometers, Seconds, SpaceObjectType } from '@ootk/src/main';
+import { ChebyshevInterpolator } from '@ootk/src/interpolator/ChebyshevInterpolator';
+import { TemeVec3, Kilometers, Seconds, SpaceObjectType } from '@ootk/src/main';
 import { KM_PER_AU } from 'astronomy-engine';
 import { PlanetColors } from './celestial-body';
 import { DwarfPlanet } from './dwarf-planet';
-import { plutoEarthSvs } from './pluto-state-vectors';
+import { plutoChebyshevCoeffs } from './pluto-chebyshev';
 
 export enum PlutoTextureQuality {
   POTATO = '512',
@@ -39,14 +40,11 @@ export class Pluto extends DwarfPlanet {
   orbitalPeriod = 247.94 * 365.25 * 24 * 3600 as Seconds;
   meanDistanceToSun = 39.482 * KM_PER_AU as Kilometers;
   type: SpaceObjectType = SpaceObjectType.DWARF_PLANET;
-  eci: EciVec3;
+  eci: TemeVec3;
   rotation = [0, 0, Math.PI * 7 / 10];
   color = PlanetColors.MARS;
   textureQuality: PlutoTextureQuality = PlutoTextureQuality.POTATO;
-  svDatabase = {
-    [SolarBody.Earth]: plutoEarthSvs,
-    [SolarBody.Sun]: plutoEarthSvs,
-  };
+  protected interpolator_ = new ChebyshevInterpolator(plutoChebyshevCoeffs);
 
   getName(): SolarBody {
     return 'Pluto' as SolarBody;

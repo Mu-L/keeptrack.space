@@ -1,16 +1,11 @@
-/* eslint-disable complexity */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
-import { OemSatellite } from '@app/app/objects/oem-satellite';
-import { Planet } from '@app/app/objects/planet';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { BaseObject, DetailedSatellite, PayloadStatus, SpaceObjectType, Star } from '@app/engine/ootk/src/main';
+import { BaseObject, PayloadStatus, Satellite, SpaceObjectType } from '@app/engine/ootk/src/main';
 import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
-import { CameraType } from '../../camera/camera';
-import { errorManagerInstance } from '../../utils/errorManager';
+import { t7e } from '@app/locales/keys';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface CelestrakColorSchemeColorMap extends ColorSchemeColorMap {
@@ -24,7 +19,7 @@ export interface CelestrakColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class CelestrakColorScheme extends ColorScheme {
-  readonly label = 'Celestrak';
+  readonly label = t7e('colorSchemes.CelestrakColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'CelestrakColorScheme';
   static readonly id = 'CelestrakColorScheme';
 
@@ -82,198 +77,44 @@ export class CelestrakColorScheme extends ColorScheme {
   }
 
   update(obj: BaseObject): ColorInformation {
-    /*
-     * NOTE: The order of these checks is important
-     */
+    const earlyExit = this.earlyExitColor_(obj);
 
-    if (
-      obj.type === SpaceObjectType.TERRESTRIAL_PLANET ||
-      obj.type === SpaceObjectType.GAS_GIANT ||
-      obj.type === SpaceObjectType.ICE_GIANT ||
-      obj.type === SpaceObjectType.DWARF_PLANET ||
-      obj.type === SpaceObjectType.MOON
-    ) {
-      return {
-        color: (obj as Planet).color,
-        pickable: Pickable.Yes,
-      };
+    if (earlyExit) {
+      return earlyExit;
     }
 
-    if (((obj as OemSatellite).source ?? '') === 'OEM Import') {
-      return {
-        color: (obj as OemSatellite).dotColor,
-        pickable: Pickable.Yes,
-      };
-    }
+    const sensorResult = this.checkSensorVisibility_(obj, 'celestrakDefaultSensor', 'celestrakDefaultSensor');
 
-    if (settingsManager.maxZoomDistance > 2e6) {
-      // If zoomed out beyond 2 million km, hide everything except planets
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    if (obj.type === SpaceObjectType.NOTIONAL) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    if (obj.isStar()) {
-      return this.starColor_(obj as Star);
-    }
-
-    // If we are in astronomy mode, hide everything that isn't a star (above)
-    if (ServiceLocator.getMainCamera().cameraType === CameraType.ASTRONOMY) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-
-    const checkFacility = this.checkFacility_(obj);
-
-    if (checkFacility) {
-      return checkFacility;
-    }
-
-    if (obj.isMarker()) {
-      return this.getMarkerColor_();
-    }
-
-    if (obj.isSensor() && (this.objectTypeFlags.celestrakDefaultSensor === false || ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM)) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (obj.isSensor()) {
-      return {
-        color: this.colorTheme.celestrakDefaultSensor,
-        pickable: Pickable.Yes,
-      };
+    if (sensorResult) {
+      return sensorResult;
     }
 
     if (obj.isMissile()) {
       return this.missileColor_(obj as MissileObject);
     }
 
-    if (obj.type === SpaceObjectType.PAYLOAD) {
-      if (!settingsManager.isShowPayloads) {
-        return {
-          color: this.colorTheme.deselected,
-          pickable: Pickable.No,
-        };
-      }
-    } else if (obj.type === SpaceObjectType.ROCKET_BODY) {
-      if (!settingsManager.isShowRocketBodies) {
-        return {
-          color: this.colorTheme.deselected,
-          pickable: Pickable.No,
-        };
-      }
-    } else if (obj.type === SpaceObjectType.DEBRIS) {
-      if (!settingsManager.isShowDebris) {
-        return {
-          color: this.colorTheme.deselected,
-          pickable: Pickable.No,
-        };
-      }
+    const settingsResult = this.checkSettingsVisibility_(obj);
+
+    if (settingsResult) {
+      return settingsResult;
     }
 
-    const catalogManagerInstance = ServiceLocator.getCatalogManager();
-    const sensorManagerInstance = ServiceLocator.getSensorManager();
-    const dotsManagerInstance = ServiceLocator.getDotsManager();
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
+    const isActive = (s: Satellite) => s.status !== PayloadStatus.NONOPERATIONAL && s.status !== PayloadStatus.UNKNOWN;
+    const isInactive = (s: Satellite) => s.status === PayloadStatus.NONOPERATIONAL || s.status === PayloadStatus.UNKNOWN;
 
     if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        sat.status !== PayloadStatus.NONOPERATIONAL && sat.status !== PayloadStatus.UNKNOWN &&
-        this.objectTypeFlags.celestrakDefaultActivePayload === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        sat.status !== PayloadStatus.NONOPERATIONAL && sat.status !== PayloadStatus.UNKNOWN &&
-        this.objectTypeFlags.celestrakDefaultActivePayload === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        sat.status !== PayloadStatus.NONOPERATIONAL && sat.status !== PayloadStatus.UNKNOWN &&
-        this.objectTypeFlags.celestrakDefaultActivePayload === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        (sat.status === PayloadStatus.NONOPERATIONAL || sat.status === PayloadStatus.UNKNOWN) &&
-        this.objectTypeFlags.celestrakDefaultInactivePayload === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        (sat.status === PayloadStatus.NONOPERATIONAL || sat.status === PayloadStatus.UNKNOWN) &&
-        this.objectTypeFlags.celestrakDefaultInactivePayload === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.PAYLOAD &&
-        (sat.status === PayloadStatus.NONOPERATIONAL || sat.status === PayloadStatus.UNKNOWN) &&
-        this.objectTypeFlags.celestrakDefaultInactivePayload === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.UNKNOWN &&
-        this.objectTypeFlags.celestrakDefaultUnknown === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM &&
-        sat.type === SpaceObjectType.UNKNOWN &&
-        this.objectTypeFlags.celestrakDefaultUnknown === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.UNKNOWN &&
-        this.objectTypeFlags.celestrakDefaultUnknown === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.ROCKET_BODY &&
-        this.objectTypeFlags.celestrakDefaultRocketBody === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && sat.type === SpaceObjectType.ROCKET_BODY &&
-        this.objectTypeFlags.celestrakDefaultRocketBody === false) || (catalogManagerInstance.isSensorManagerLoaded &&
-          sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-          typeof sat.vmag === 'undefined' &&
-          sat.type === SpaceObjectType.ROCKET_BODY &&
-          this.objectTypeFlags.celestrakDefaultRocketBody === false)
-    ) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
-    if (
-      ((!dotsManagerInstance.inViewData || (dotsManagerInstance.inViewData && dotsManagerInstance.inViewData?.[sat.id] === 0)) &&
-        sat.type === SpaceObjectType.DEBRIS &&
-        this.objectTypeFlags.celestrakDefaultDebris === false) ||
-      (ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM && sat.type === SpaceObjectType.DEBRIS && this.objectTypeFlags.celestrakDefaultDebris === false) ||
-      (catalogManagerInstance.isSensorManagerLoaded &&
-        sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER &&
-        typeof sat.vmag === 'undefined' &&
-        sat.type === SpaceObjectType.DEBRIS &&
-        this.objectTypeFlags.celestrakDefaultDebris === false)
+      this.isTypeFlagFiltered_(sat, {
+        types: SpaceObjectType.PAYLOAD, flagKey: 'celestrakDefaultActivePayload',
+        extraCondition: isActive,
+      }) ||
+      this.isTypeFlagFiltered_(sat, {
+        types: SpaceObjectType.PAYLOAD, flagKey: 'celestrakDefaultInactivePayload',
+        extraCondition: isInactive,
+      }) ||
+      this.isTypeFlagFiltered_(sat, { types: SpaceObjectType.UNKNOWN, flagKey: 'celestrakDefaultUnknown' }) ||
+      this.isTypeFlagFiltered_(sat, { types: SpaceObjectType.ROCKET_BODY, flagKey: 'celestrakDefaultRocketBody' }) ||
+      this.isTypeFlagFiltered_(sat, { types: SpaceObjectType.DEBRIS, flagKey: 'celestrakDefaultDebris' })
     ) {
       return {
         color: this.colorTheme.deselected,
@@ -281,58 +122,26 @@ export class CelestrakColorScheme extends ColorScheme {
       };
     }
 
-    if (dotsManagerInstance.inViewData?.[sat.id] === 1 && this.objectTypeFlags.celestrakDefaultFov === false &&
-      ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM) {
-      return {
-        color: this.colorTheme.deselected,
-        pickable: Pickable.No,
-      };
-    }
+    const fovResult = this.checkInFovVisibility_(sat, 'celestrakDefaultFov', 'inFOVAlt');
 
-    if (dotsManagerInstance.inViewData?.[sat.id] === 1 && ServiceLocator.getMainCamera().cameraType !== CameraType.PLANETARIUM) {
-      if (catalogManagerInstance.isSensorManagerLoaded && sensorManagerInstance.currentSensors[0].type === SpaceObjectType.OBSERVER && typeof sat.vmag === 'undefined') {
-        // Intentional
-      } else {
-        return {
-          color: this.colorTheme.inFOVAlt,
-          pickable: Pickable.Yes,
-        };
-      }
+    if (fovResult) {
+      return fovResult;
     }
 
     let color: rgbaArray;
-    /*
-     * Green:  OBJECT_TYPE = PAY, OPS_STATUS_CODE = +
-     * Orange: OBJECT_TYPE = PAY, OPS_STATUS_CODE = -
-     * Red: R/B
-     * Gray: DEB
-     * White: UNK
-     */
 
     if (sat.type === SpaceObjectType.PAYLOAD) {
-      // Payload
-      if (sat.status !== PayloadStatus.NONOPERATIONAL && sat.status !== PayloadStatus.UNKNOWN) {
-        color = this.colorTheme.celestrakDefaultActivePayload;
-      } else {
-        color = this.colorTheme.celestrakDefaultInactivePayload;
-      }
+      color = isActive(sat) ? this.colorTheme.celestrakDefaultActivePayload : this.colorTheme.celestrakDefaultInactivePayload;
     } else if (sat.type === SpaceObjectType.ROCKET_BODY) {
-      // Rocket Body
       color = this.colorTheme.celestrakDefaultRocketBody;
     } else if (sat.type === SpaceObjectType.DEBRIS) {
-      // Debris
       color = this.colorTheme.celestrakDefaultDebris;
     } else {
       color = this.colorTheme.celestrakDefaultUnknown;
     }
 
     if (typeof color === 'undefined') {
-      errorManagerInstance.debug(`${sat.id.toString()} has no color!`);
-
-      return {
-        color: settingsManager.colors.transparent ?? this.colorTheme.transparent,
-        pickable: Pickable.No,
-      };
+      return this.undefinedColorFallback_(sat.id, 'debug');
     }
 
     return {

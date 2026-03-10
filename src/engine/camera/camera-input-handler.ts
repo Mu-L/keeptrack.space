@@ -1,10 +1,13 @@
 import { ToastMsgType } from '@app/engine/core/interfaces';
+import { KeyboardShortcutRegistry } from '@app/engine/core/keyboard-shortcut-registry';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
+import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { errorManagerInstance } from '../utils/errorManager';
-import { Camera, CameraType } from './camera';
+import { Camera } from './camera';
+import { CameraType } from './camera-type';
 import { CameraState } from './state/camera-state';
-import { ServiceLocator } from '../core/service-locator';
 
 export class CameraInputHandler {
   private readonly camera: Camera;
@@ -51,6 +54,7 @@ export class CameraInputHandler {
       this.state.isDragging = true;
     }
 
+    this.camera.transition.cancel();
     this.state.isAutoPitchYawToTarget = false;
     if (!settingsManager.disableUI) {
       this.camera.autoRotate(false);
@@ -58,12 +62,13 @@ export class CameraInputHandler {
   }
 
   touchStart_() {
-    settingsManager.cameraMovementSpeed = Math.max(0.005 * this.state.zoomLevel, settingsManager.cameraMovementSpeedMin);
+    settingsManager.cameraMovementSpeed = Math.max(settingsManager.touchCameraMovementSpeed * this.state.zoomLevel, settingsManager.cameraMovementSpeedMin);
     this.state.screenDragPoint = [this.state.mouseX, this.state.mouseY];
     this.state.dragStartPitch = this.state.camPitch;
     this.state.dragStartYaw = this.state.camYaw;
     this.state.isDragging = true;
 
+    this.camera.transition.cancel();
     this.state.isAutoPitchYawToTarget = false;
     if (!settingsManager.disableUI) {
       this.camera.autoRotate(false);
@@ -71,6 +76,25 @@ export class CameraInputHandler {
   }
 
   registerKeyboardEvents() {
+    // Register camera keys in the shortcut registry for conflict detection.
+    // Camera inits before plugins, so these registrations win on conflict.
+    const noop = () => { /* handled via EventBus */ };
+    const cameraShortcuts: IKeyboardShortcut[] = [
+      { key: 'ArrowUp', callback: noop },
+      { key: 'ArrowDown', callback: noop },
+      { key: 'ArrowLeft', callback: noop },
+      { key: 'ArrowRight', callback: noop },
+      // WASD+QE omitted — camera handles them via EventBus and they are
+      // only active in FPS / special camera modes.  Keeping them out of the
+      // registry lets plugins claim those keys for menu toggles.
+      { key: 'r', callback: noop },
+      { key: 'v', callback: noop },
+      { key: '`', callback: noop },
+      { key: 'Shift', callback: noop },
+    ];
+
+    KeyboardShortcutRegistry.register('CameraInputHandler', cameraShortcuts);
+
     const keysDown = ['Shift', 'ShiftRight', 'W', 'A', 'S', 'D', 'Q', 'E', 'r', 'v', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
     const keysUp = ['Shift', 'ShiftRight', 'W', 'A', 'S', 'D', 'Q', 'E', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
@@ -165,20 +189,19 @@ export class CameraInputHandler {
 
   keyDownv_() {
     const uiManagerInstance = ServiceLocator.getUiManager();
-    const orbitManagerInstance = ServiceLocator.getOrbitManager();
 
-    this.camera.changeCameraType(orbitManagerInstance);
+    this.camera.changeCameraType();
 
     switch (this.camera.cameraType) {
       case CameraType.FIXED_TO_EARTH:
         uiManagerInstance.toast('Earth Centered Camera Mode', ToastMsgType.standby);
         this.camera.state.zoomTarget = 0.5;
         break;
-      case CameraType.OFFSET:
-        uiManagerInstance.toast('Offset Camera Mode', ToastMsgType.standby);
+      case CameraType.FIXED_TO_SAT_LVLH:
+        uiManagerInstance.toast('Fixed to Satellite (LVLH) Camera Mode', ToastMsgType.standby);
         break;
-      case CameraType.FIXED_TO_SAT:
-        uiManagerInstance.toast('Fixed to Satellite Camera Mode', ToastMsgType.standby);
+      case CameraType.FIXED_TO_SAT_ECI:
+        uiManagerInstance.toast('Fixed to Satellite (ECI) Camera Mode', ToastMsgType.standby);
         break;
       case CameraType.FPS:
         uiManagerInstance.toast('Free Camera Mode', ToastMsgType.standby);
@@ -186,11 +209,14 @@ export class CameraInputHandler {
       case CameraType.PLANETARIUM:
         uiManagerInstance.toast('Planetarium Camera Mode', ToastMsgType.standby);
         break;
-      case CameraType.SATELLITE:
-        uiManagerInstance.toast('Satellite Camera Mode', ToastMsgType.standby);
+      case CameraType.SATELLITE_FIRST_PERSON:
+        uiManagerInstance.toast('Satellite First Person Camera Mode', ToastMsgType.standby);
         break;
       case CameraType.ASTRONOMY:
         uiManagerInstance.toast('Astronomy Camera Mode', ToastMsgType.standby);
+        break;
+      case CameraType.FLAT_MAP:
+        uiManagerInstance.toast('Flat Map Camera Mode', ToastMsgType.standby);
         break;
       default:
         errorManagerInstance.log(`Invalid Camera Type: ${this.camera.cameraType}`);
@@ -217,7 +243,7 @@ export class CameraInputHandler {
       this.state.fpsVertSpeed = settingsManager.fpsVertSpeed;
       this.state.isFPSVertSpeedLock = true;
     }
-    if (this.camera.cameraType === CameraType.SATELLITE || this.camera.cameraType === CameraType.ASTRONOMY) {
+    if (this.camera.cameraType === CameraType.SATELLITE_FIRST_PERSON || this.camera.cameraType === CameraType.ASTRONOMY) {
       this.state.fpsRotateRate = -settingsManager.fpsRotateRate / this.state.speedModifier;
     }
   }
@@ -225,13 +251,14 @@ export class CameraInputHandler {
   keyDownNumpad8_() {
     switch (this.camera.cameraType) {
       case CameraType.FIXED_TO_EARTH:
-      case CameraType.FIXED_TO_SAT:
+      case CameraType.FIXED_TO_SAT_LVLH:
+      case CameraType.FIXED_TO_SAT_ECI:
         settingsManager.isAutoRotateU = true;
         this.state.isAutoRotate = true;
         this.isHoldingDownAKey = 5;
         break;
       case CameraType.FPS:
-      case CameraType.SATELLITE:
+      case CameraType.SATELLITE_FIRST_PERSON:
       case CameraType.PLANETARIUM:
       case CameraType.ASTRONOMY:
         this.state.fpsPitchRate = settingsManager.fpsPitchRate / this.state.speedModifier;
@@ -244,13 +271,14 @@ export class CameraInputHandler {
   keyDownNumpad2_() {
     switch (this.camera.cameraType) {
       case CameraType.FIXED_TO_EARTH:
-      case CameraType.FIXED_TO_SAT:
+      case CameraType.FIXED_TO_SAT_LVLH:
+      case CameraType.FIXED_TO_SAT_ECI:
         settingsManager.isAutoRotateD = true;
         this.isHoldingDownAKey = 5;
         this.state.isAutoRotate = true;
         break;
       case CameraType.FPS:
-      case CameraType.SATELLITE:
+      case CameraType.SATELLITE_FIRST_PERSON:
       case CameraType.PLANETARIUM:
       case CameraType.ASTRONOMY:
         this.state.fpsPitchRate = settingsManager.fpsPitchRate / this.state.speedModifier;
@@ -263,13 +291,14 @@ export class CameraInputHandler {
   keyDownNumpad4_() {
     switch (this.camera.cameraType) {
       case CameraType.FIXED_TO_EARTH:
-      case CameraType.FIXED_TO_SAT:
+      case CameraType.FIXED_TO_SAT_LVLH:
+      case CameraType.FIXED_TO_SAT_ECI:
         settingsManager.isAutoRotateL = true;
         this.isHoldingDownAKey = 5;
         this.state.isAutoRotate = true;
         break;
       case CameraType.FPS:
-      case CameraType.SATELLITE:
+      case CameraType.SATELLITE_FIRST_PERSON:
         this.state.fpsYawRate = -settingsManager.fpsYawRate / this.state.speedModifier;
         break;
       case CameraType.PLANETARIUM:
@@ -284,13 +313,14 @@ export class CameraInputHandler {
   keyDownNumpad6_() {
     switch (this.camera.cameraType) {
       case CameraType.FIXED_TO_EARTH:
-      case CameraType.FIXED_TO_SAT:
+      case CameraType.FIXED_TO_SAT_LVLH:
+      case CameraType.FIXED_TO_SAT_ECI:
         settingsManager.isAutoRotateR = true;
         this.isHoldingDownAKey = 5;
         this.state.isAutoRotate = true;
         break;
       case CameraType.FPS:
-      case CameraType.SATELLITE:
+      case CameraType.SATELLITE_FIRST_PERSON:
         this.state.fpsYawRate = settingsManager.fpsYawRate / this.state.speedModifier;
         break;
       case CameraType.PLANETARIUM:
@@ -315,7 +345,7 @@ export class CameraInputHandler {
       this.state.fpsVertSpeed = -settingsManager.fpsVertSpeed;
       this.state.isFPSVertSpeedLock = true;
     }
-    if (this.camera.cameraType === CameraType.SATELLITE || this.camera.cameraType === CameraType.ASTRONOMY) {
+    if (this.camera.cameraType === CameraType.SATELLITE_FIRST_PERSON || this.camera.cameraType === CameraType.ASTRONOMY) {
       this.state.fpsRotateRate = settingsManager.fpsRotateRate / this.state.speedModifier;
     }
   }

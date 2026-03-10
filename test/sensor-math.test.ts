@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SatMath } from '@app/app/analysis/sat-math';
 import { SensorMath } from '@app/app/sensors/sensor-math';
 import { Container } from '@app/engine/core/container';
@@ -14,7 +15,7 @@ describe('sensor-math', () => {
   });
   it('process_getTearData_isRiseSetLookangles', () => {
     // jest mock SatMath.checkIsInView to return true
-    jest.spyOn(SatMath, 'checkIsInView').mockReturnValue(true);
+    vi.spyOn(SatMath, 'checkIsInView').mockReturnValue(true);
     const test = () => SensorMath.getTearData(new Date('2023-01-01T00:00:00.000Z'), defaultSat.satrec as SatelliteRecord, [defaultSensor], true);
 
     expect(test).not.toThrow();

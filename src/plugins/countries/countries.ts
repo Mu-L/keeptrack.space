@@ -1,77 +1,192 @@
-import { clickAndDragWidth } from '@app/engine/utils/click-and-drag';
-import { getEl } from '@app/engine/utils/get-el';
-import { t7e, TranslationKey } from '@app/locales/keys';
-
+import { countryFlagIconMap } from '@app/app/data/catalogs/countries';
 import { GroupType } from '@app/app/data/object-group';
-import { StringExtractor } from '@app/app/ui/string-extractor';
-import { MenuMode } from '@app/engine/core/interfaces';
-import flagPng from '@public/img/icons/flag.png';
-
 import { SearchResult } from '@app/app/ui/search-manager';
+import { StringExtractor } from '@app/app/ui/string-extractor';
+import { SoundNames } from '@app/engine/audio/sounds';
+import { MenuMode } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import {
+  IBottomIconConfig,
+  ICommandPaletteCapable,
+  ICommandPaletteCommand,
+  IDragOptions,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+import { getEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
+import { settingsManager } from '@app/settings/settings';
+import flagPng from '@public/img/icons/flag.png';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '../sounds/sounds';
 import { TopMenu } from '../top-menu/top-menu';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import './countries.css';
 
-export class CountriesMenu extends KeepTrackPlugin {
+/**
+ * Countries Menu Plugin
+ *
+ * This plugin adds a side menu that allows users to filter satellites by country.
+ * Unlike the filter menu, this menu creates groups based on countries, enabling users to
+ * view all satellites from a specific country in one go.
+ *
+ * Selected countries are stored as groups, and populate the search box with the corresponding satellite SCC numbers.
+ *
+ * Usage:
+ * 1. Click on the flag icon in the bottom menu to open the Countries Menu.
+ * 2. Select a country from the list to filter satellites by that country.
+ * 3. The search box will be populated with the SCC numbers of the satellites from the selected country.
+ */
+export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCapable {
   readonly id = 'CountriesMenu';
   dependencies_ = [TopMenu.name];
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+  // =========================================================================
+  // Composition-based configuration methods
+  // =========================================================================
 
-  bottomIconImg = flagPng;
-  sideMenuElementHtml = html`
-    <div id="countries-menu" class="side-menu-parent start-hidden text-select">
-      <div id="country-menu" class="side-menu">
-        <ul id="country-list">
-        </ul>
-      </div>
-    </div>
-    `;
-
-  sideMenuElementName = 'countries-menu';
-
-  addHtml() {
-    super.addHtml();
-
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      () => {
-        getEl('country-list')!.innerHTML = CountriesMenu.generateCountryList_();
-
-        getEl('country-menu')!
-          .querySelectorAll('li')
-          .forEach((element) => {
-            element.addEventListener('click', () => {
-              ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
-              CountriesMenu.countryMenuClick_(element.getAttribute('data-group') ?? '');
-            });
-          });
-
-        clickAndDragWidth(getEl(this.sideMenuElementName));
-      },
-    );
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'menu-countries',
+      label: t7e('plugins.CountriesMenu.bottomIconLabel'),
+      image: flagPng,
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
+    };
   }
 
-  private static generateCountryList_(): string {
-    const header = html`
-    <h5 class="center-align">${t7e(`plugins.${CountriesMenu.name}.bottomIconLabel` as TranslationKey)}</h5>
-    <li class="divider"></li>`;
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'countries-menu',
+      title: t7e('plugins.CountriesMenu.title'),
+      html: this.buildSideMenuHtml_(),
+      dragOptions: this.getDragOptions_(),
+    };
+  }
 
+  private getDragOptions_(): IDragOptions {
+    return {
+      isDraggable: true,
+      minWidth: 200,
+      maxWidth: 400,
+    };
+  }
+
+  private buildSideMenuHtml_(): string {
+    return html`
+      <div id="countries-menu" class="side-menu-parent start-hidden">
+        <div id="country-menu" class="side-menu">
+          <ul id="country-list">
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'O',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const category = 'Countries';
+    const catalogManager = ServiceLocator.getCatalogManager();
     const countryCodeList = [] as string[];
 
-    ServiceLocator.getCatalogManager().getSats().forEach((sat) => {
+    catalogManager.getSats().forEach((sat) => {
       if (sat.country && !countryCodeList.includes(sat.country) && sat.country !== 'ANALSAT') {
         countryCodeList.push(sat.country);
       }
     });
 
-    const countries = countryCodeList.map((countryCode) => {
+    const countryGroups: Record<string, string[]> = {};
+
+    countryCodeList.forEach((countryCode) => {
+      const country = StringExtractor.extractCountry(countryCode);
+
+      if (countryCode === '') {
+        return;
+      }
+      if (!countryGroups[country]) {
+        countryGroups[country] = [];
+      }
+      countryGroups[country].push(countryCode);
+    });
+
+    return Object.entries(countryGroups)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([country, codes]) => {
+        const dataGroup = codes.join('|');
+
+        return {
+          id: `CountriesMenu.selectCountry.${dataGroup}`,
+          label: `Select Country: ${country}`,
+          category,
+          callback: () => this.countryMenuClick_(dataGroup),
+        };
+      });
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.CountriesMenu.title'),
+      body: t7e('plugins.CountriesMenu.helpBody'),
+    };
+  }
+
+  // =========================================================================
+  // Lifecycle methods
+  // =========================================================================
+
+  addHtml(): void {
+    super.addHtml();
+
+    EventBus.getInstance().on(
+      EventBusEvent.uiManagerFinal,
+      this.uiManagerFinal_.bind(this),
+    );
+  }
+
+  private uiManagerFinal_(): void {
+    const countryListEl = getEl('country-list', true);
+    const countryMenuEl = getEl('country-menu', true);
+
+    if (!countryListEl || !countryMenuEl) {
+      return;
+    }
+
+    countryListEl.innerHTML = this.generateCountryList_();
+
+    countryMenuEl.querySelectorAll('li').forEach((element) => {
+      element.addEventListener('click', () => {
+        ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+        this.countryMenuClick_(element.getAttribute('data-group') ?? '');
+      });
+    });
+  }
+
+  private generateCountryList_(): string {
+    const uniqueCodes = [] as string[];
+    const countByCode: Record<string, number> = {};
+    const catalogManager = ServiceLocator.getCatalogManager();
+
+    catalogManager.getSats().forEach((sat) => {
+      if (sat.country && sat.country !== 'ANALSAT') {
+        countByCode[sat.country] = (countByCode[sat.country] ?? 0) + 1;
+        if (!uniqueCodes.includes(sat.country)) {
+          uniqueCodes.push(sat.country);
+        }
+      }
+    });
+
+    const countries = uniqueCodes.map((countryCode) => {
       const country = StringExtractor.extractCountry(countryCode);
 
       return { country, countryCode };
@@ -93,15 +208,21 @@ export class CountriesMenu extends KeepTrackPlugin {
     // Create a single <li> per country, with all codes merged by '|'
     const mergedList = Object.entries(countryGroups).reduce((acc, [country, codes]) => {
       const dataGroup = codes.join('|');
+      const flagCode = countryFlagIconMap[codes[0]] ?? 'unknown';
+      const flagClass = `fi fi-${flagCode.toLowerCase()}`;
+      const satCount = codes.reduce((sum, code) => sum + (countByCode[code] ?? 0), 0);
 
-
-      return `${acc}<li class="menu-selectable country-option" data-group="${dataGroup}">${country}</li>`;
-    }, header);
+      return `${acc}<li class="menu-selectable country-option" data-group="${dataGroup}">` +
+        `<span class="${flagClass} country-flag"></span>` +
+        `<span class="country-name">${country}</span>` +
+        `<span class="country-count">${satCount.toLocaleString()}</span>` +
+        '</li>';
+    }, '');
 
     return `${mergedList}<br/>`;
   }
 
-  private static countryMenuClick_(countryCode: string): void {
+  private countryMenuClick_(countryCode: string): void {
     const groupManagerInstance = ServiceLocator.getGroupsManager();
 
     if (countryCode === '') {
@@ -112,10 +233,10 @@ export class CountriesMenu extends KeepTrackPlugin {
       groupManagerInstance.createGroup(GroupType.COUNTRY, countryCode, countryCode);
     }
 
-    CountriesMenu.groupSelected_(countryCode);
+    this.groupSelected_(countryCode);
   }
 
-  private static groupSelected_(groupName: string): void {
+  private groupSelected_(groupName: string): void {
     const groupManagerInstance = ServiceLocator.getGroupsManager();
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const uiManagerInstance = ServiceLocator.getUiManager();
@@ -132,7 +253,7 @@ export class CountriesMenu extends KeepTrackPlugin {
 
     searchDOM.value = groupManagerInstance.groupList[groupName].ids.reduce((acc: string, id: number) => `${acc}${catalogManagerInstance.getSat(id)?.sccNum},`, '').slice(0, -1);
     uiManagerInstance.searchManager.fillResultBox(
-      groupManagerInstance.groupList[groupName].ids.map((id: number) => <SearchResult>{ id }),
+      groupManagerInstance.groupList[groupName].ids.map((id: number) => ({ id }) as SearchResult),
       catalogManagerInstance,
     );
 

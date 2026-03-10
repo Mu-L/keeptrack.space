@@ -1,10 +1,8 @@
 import {
-  Degrees, GreenwichMeanSiderealTime, Kilometers, LlaVec3, MILLISECONDS_TO_DAYS, PI, RAD2DEG, Radians, RaeVec3, Sensor, Sgp4, SpaceObjectType, rae2eci,
+  Degrees, GreenwichMeanSiderealTime, GroundStation, Kilometers, LlaVec3, MILLISECONDS_TO_DAYS, PI, RAD2DEG, Radians, RaeVec3, Sensor, Sgp4, SpaceObjectType, rae2eci,
 } from '@ootk/src/main';
-import { SensorObjectCruncher } from '../../engine/core/interfaces';
 import { A } from '../../engine/utils/external/meuusjs';
 import { jday } from '../../engine/utils/transforms';
-import { oneOrZero } from '../constants';
 
 /* Returns Current Propagation Time */
 export const propTime = (dynamicOffsetEpoch: number, staticOffset: number, propRate: number) => {
@@ -17,7 +15,7 @@ export const propTime = (dynamicOffsetEpoch: number, staticOffset: number, propR
 };
 
 export const checkSunExclusion = (
-  sensor: Sensor,
+  sensor: GroundStation,
   j: number,
   gmst: GreenwichMeanSiderealTime,
   now: Date,
@@ -50,38 +48,7 @@ export const checkSunExclusion = (
   return sensor && (sensor.type === SpaceObjectType.OPTICAL || sensor.type === SpaceObjectType.OBSERVER) && sunElRel > -6 ? [true, sunECI] : [false, sunECI];
 };
 
-export const isInFov = (sensor: SensorObjectCruncher, lookangles?: RaeVec3): oneOrZero => {
-  if (!lookangles) {
-    return 0;
-  }
-
-  const { az, el, rng } = lookangles;
-
-  sensor.minAz2 ??= Infinity as Degrees;
-  sensor.maxAz2 ??= -Infinity as Degrees;
-  sensor.minEl2 ??= Infinity as Degrees;
-  sensor.maxEl2 ??= -Infinity as Degrees;
-  sensor.minRng2 ??= Infinity as Kilometers;
-  sensor.maxRng2 ??= -Infinity as Kilometers;
-
-  if (sensor.minAz > sensor.maxAz) {
-    if (
-      ((az >= sensor.minAz || az <= sensor.maxAz) && el >= sensor.minEl && el <= sensor.maxEl && rng <= sensor.maxRng && rng >= sensor.minRng) ||
-      ((az >= (sensor.minAz2) || az <= sensor.maxAz2) && el >= sensor.minEl2 && el <= sensor.maxEl2 && rng <= sensor.maxRng2 && rng >= sensor.minRng2)
-    ) {
-      return 1;
-    }
-  } else if (
-    (az >= sensor.minAz && az <= sensor.maxAz && el >= sensor.minEl && el <= sensor.maxEl && rng <= sensor.maxRng && rng >= sensor.minRng) ||
-    (az >= sensor.minAz2 && az <= sensor.maxAz2 && el >= sensor.minEl2 && el <= sensor.maxEl2 && rng <= sensor.maxRng2 && rng >= sensor.minRng2)
-  ) {
-    return 1;
-  }
-
-  return 0;
-};
-
-export const setupTimeVariables = (dynamicOffsetEpoch: number, staticOffset: number, propRate: number, isSunlightView: boolean, sensors: Sensor[] | null) => {
+export const setupTimeVariables = (dynamicOffsetEpoch: number, staticOffset: number, propRate: number, isSunlightView: boolean, sensors: (Sensor | GroundStation)[] | null) => {
   const now = propTime(dynamicOffsetEpoch, staticOffset, propRate);
 
   const j =
@@ -102,7 +69,7 @@ export const setupTimeVariables = (dynamicOffsetEpoch: number, staticOffset: num
 
   if (isSunlightView && sensors?.length === 1) {
     // TODO: Sun exclusion should be calculated for each sensor
-    [isSunExclusion, sunEci] = checkSunExclusion(sensors[0], j, gmst, now);
+    [isSunExclusion, sunEci] = checkSunExclusion(sensors[0] as GroundStation, j, gmst, now);
   }
 
   const j2 =

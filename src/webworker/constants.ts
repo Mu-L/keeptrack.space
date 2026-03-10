@@ -1,6 +1,6 @@
 import { Degrees, Kilometers, Radians, SatelliteRecord, ZoomValue } from '@ootk/src/main';
 import { SensorObjectCruncher } from '../engine/core/interfaces';
-import { CruncerMessageTypes, MarkerMode } from './positionCruncher';
+import { MarkerMode, PosCruncherMsgType } from './position-cruncher-messages';
 
 // Typing
 
@@ -37,26 +37,28 @@ export type PositionCruncherOutgoingMsg = {
   sensorMarkerArray?: number[];
   satPos?: Float32Array;
   satVel?: Float32Array;
+  gmst?: number;
+  seqNum?: number;
 };
 export type oneOrZero = 0 | 1;
 
 // Code
 export const defaultGd = {
-  lat: <Radians>null,
-  lon: <Radians>0,
-  alt: <Kilometers>0,
+  lat: 0 as Radians,
+  lon: 0 as Radians,
+  alt: 0 as Kilometers,
 };
 
 export const emptySensor: SensorObjectCruncher = {
   observerGd: {
-    lat: <Radians>null,
-    lon: <Radians>0,
-    alt: <Kilometers>0,
+    lat: 0 as Radians,
+    lon: 0 as Radians,
+    alt: 0 as Kilometers,
   },
-  alt: null,
+  alt: 0 as Kilometers,
   country: '',
-  lat: null,
-  lon: null,
+  lat: 0 as Degrees,
+  lon: 0 as Degrees,
   name: '',
   maxAz: <Degrees>0,
   maxEl: <Degrees>0,
@@ -80,7 +82,7 @@ export interface PositionCruncherIncomingMsg {
     tle1: string;
     tle2: string;
     dat: string; // JSON string
-    typ: CruncerMessageTypes;
+    typ: PosCruncherMsgType;
     staticOffset?: number;
     dynamicOffsetEpoch?: number;
     propRate?: number;
@@ -92,5 +94,10 @@ export interface PositionCruncherIncomingMsg {
     fieldOfViewSetLength?: number;
     sensor?: SensorObjectCruncher[];
     markerMode?: MarkerMode;
+    seqNum?: number;
+    // Camera data for tiered update system
+    vpMatrix?: Float32Array;
+    camPosEci?: Float32Array;
+    isFrustumCullingEnabled?: boolean;
   };
 }

@@ -1,9 +1,10 @@
 /* eslint-disable complexity */
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
-import { BaseObject, Days, DetailedSatellite, getDayOfYear, Star } from '@ootk/src/main';
+import { BaseObject, Days, Satellite, getDayOfYear, Star } from '@ootk/src/main';
 import { errorManagerInstance } from '../../utils/errorManager';
-import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
+import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface GpAgeColorSchemeColorMap extends ColorSchemeColorMap {
   age1: rgbaArray;
@@ -16,7 +17,7 @@ export interface GpAgeColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class GpAgeColorScheme extends ColorScheme {
-  readonly label = 'GP Age';
+  readonly label = t7e('colorSchemes.GpAgeColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'GpAgeColorScheme';
   static readonly id = 'GpAgeColorScheme';
 
@@ -104,7 +105,7 @@ export class GpAgeColorScheme extends ColorScheme {
       };
     }
 
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
     const epochYearShort = parseInt(sat.tle1.substring(18, 20), 10);
     const epochDay = parseFloat(sat.tle1.substring(20, 32));
 

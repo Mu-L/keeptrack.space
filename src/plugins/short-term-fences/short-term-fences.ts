@@ -3,17 +3,18 @@ import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
 import wifiFindPng from '@public/img/icons/wifi-find.png';
 
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
+import { SoundNames } from '@app/engine/audio/sounds';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { BaseObject, DEG2RAD, Degrees, DetailedSensor, EpochUTC, Kilometers, RAE, Radians, SpaceObjectType, ZoomValue, eci2rae } from '@ootk/src/main';
+import { BaseObject, DEG2RAD, Degrees, EpochUTC, Kilometers, RAE, Radians, SpaceObjectType, ZoomValue, eci2rae } from '@ootk/src/main';
 import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '../sounds/sounds';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class ShortTermFences extends KeepTrackPlugin {
   readonly id = 'ShortTermFences';
@@ -27,6 +28,7 @@ export class ShortTermFences extends KeepTrackPlugin {
 
   bottomIconImg = wifiFindPng;
   isRequireSensorSelected = true;
+  isIconDisabledOnLoad = true;
   isAddStfLinksOnce = false;
 
   dragOptions: ClickDragOptions = {
@@ -35,11 +37,11 @@ export class ShortTermFences extends KeepTrackPlugin {
     isDraggable: true,
   };
 
-  menuMode: MenuMode[] = [MenuMode.ADVANCED, MenuMode.ALL];
+  menuMode: MenuMode[] = [MenuMode.CREATE, MenuMode.ALL];
 
   sideMenuElementName = 'stf-menu';
   sideMenuElementHtml: string = html`
-  <div id="stf-menu" class="side-menu-parent start-hidden text-select">
+  <div id="stf-menu" class="side-menu-parent start-hidden">
     <div id="stf-content" class="side-menu">
       <div class="row">
         <h5 class="center-align">Short Term Fence</h5>
@@ -207,7 +209,7 @@ export class ShortTermFences extends KeepTrackPlugin {
       (sensor, id): void => {
         if (sensor === null && id === null) {
           this.closeAndDisable_();
-          slideOutLeft(getEl(this.sideMenuElementName), 1000);
+          slideOutLeft(getEl(this.sideMenuElementName), 300);
         } else {
           this.setBottomIconToEnabled();
         }
@@ -263,16 +265,8 @@ export class ShortTermFences extends KeepTrackPlugin {
     });
 
     if (
-      !curSensor.isRaeInFov({
-        az: minaz,
-        el: minel,
-        rng: minrange,
-      }) ||
-      !curSensor.isRaeInFov({
-        az: maxaz,
-        el: maxel,
-        rng: maxrange,
-      })
+      !curSensor.isRaeInFov(minaz, minel, minrange) ||
+      !curSensor.isRaeInFov(maxaz, maxel, maxrange)
     ) {
       errorManagerInstance.warn('STF is not in view of the sensor!');
 
@@ -307,7 +301,7 @@ export class ShortTermFences extends KeepTrackPlugin {
     (<HTMLInputElement>getEl('stf-rng')).value = rae.rng.toFixed(1);
 
     ServiceLocator.getUiManager().hideSideMenus();
-    slideInRight(getEl('stf-menu'), 1000);
+    slideInRight(getEl('stf-menu'), 300);
     this.isMenuButtonActive = true;
     this.setBottomIconToSelected();
   }

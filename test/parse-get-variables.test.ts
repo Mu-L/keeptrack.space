@@ -1,6 +1,5 @@
+import { vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable global-require */
 
 import { ToastMsgType } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -8,22 +7,28 @@ import { EarthTextureStyle } from '@app/engine/rendering/draw-manager/earth-qual
 import { GetVariables } from '@app/settings/getVariables';
 import { parseGetVariables } from '@app/settings/parse-get-variables';
 import { SettingsManager } from '@app/settings/settings';
+import * as darkCloudsModule from '@app/settings/presets/darkClouds';
+import * as startalkModule from '@app/settings/presets/startalk';
+import * as stemModule from '@app/settings/presets/stem';
+import { SettingsPresets } from '@app/settings/presets/presets';
 
 describe('parseGetVariables', () => {
   let settingsManager: SettingsManager;
-  let toastMock: jest.Mock;
+  let toastMock: vi.Mock;
 
   beforeEach(() => {
-    toastMock = jest.fn();
+    toastMock = vi.fn();
     settingsManager = {
       plugins: {},
-      disableAllPlugins: jest.fn(),
+      disableAllPlugins: vi.fn(),
       dataSources: {} as any,
       colors: {} as any,
       satShader: {} as any,
     } as unknown as SettingsManager;
     // Mock ServiceLocator.getUiManager().toast
-    jest.spyOn(ServiceLocator.getUiManager(), 'toast').mockImplementation(toastMock);
+    vi.spyOn(ServiceLocator, 'getUiManager').mockReturnValue({
+      toast: toastMock,
+    } as any);
   });
 
   it('should handle bad presets', () => {
@@ -33,84 +38,84 @@ describe('parseGetVariables', () => {
   });
 
   it('should load ops-center preset', () => {
-    const loadPresetOpsCenter = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetOpsCenter');
+    const loadPresetOpsCenter = vi.spyOn(SettingsPresets, 'loadPresetOpsCenter');
 
     parseGetVariables(['preset=ops-center'], settingsManager);
     expect(loadPresetOpsCenter).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load education preset', () => {
-    const loadPresetEducation = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetEducation');
+    const loadPresetEducation = vi.spyOn(SettingsPresets, 'loadPresetEducation');
 
     parseGetVariables(['preset=education'], settingsManager);
     expect(loadPresetEducation).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load outreach preset', () => {
-    const loadPresetOutreach = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetOutreach');
+    const loadPresetOutreach = vi.spyOn(SettingsPresets, 'loadPresetOutreach');
 
     parseGetVariables(['preset=outreach'], settingsManager);
     expect(loadPresetOutreach).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load debris preset', () => {
-    const loadPresetDebris = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetDebris');
+    const loadPresetDebris = vi.spyOn(SettingsPresets, 'loadPresetDebris');
 
     parseGetVariables(['preset=debris'], settingsManager);
     expect(loadPresetDebris).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should call darkClouds', () => {
-    const darkClouds = jest.spyOn(require('@app/settings/presets/darkClouds'), 'darkClouds');
+    const darkClouds = vi.spyOn(darkCloudsModule, 'darkClouds');
 
     parseGetVariables(['preset=dark-clouds'], settingsManager);
     expect(darkClouds).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should call starTalk', () => {
-    const starTalk = jest.spyOn(require('@app/settings/presets/startalk'), 'starTalk');
+    const starTalk = vi.spyOn(startalkModule, 'starTalk');
 
     parseGetVariables(['preset=startalk'], settingsManager);
     expect(starTalk).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should call stemEnvironment', () => {
-    const stemEnvironment = jest.spyOn(require('@app/settings/presets/stem'), 'stemEnvironment');
+    const stemEnvironment = vi.spyOn(stemModule, 'stemEnvironment');
 
     parseGetVariables(['preset=stem'], settingsManager);
     expect(stemEnvironment).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load million-year preset', () => {
-    const loadPresetMillionYear = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetMillionYear');
+    const loadPresetMillionYear = vi.spyOn(SettingsPresets, 'loadPresetMillionYear');
 
     parseGetVariables(['preset=million-year'], settingsManager);
     expect(loadPresetMillionYear).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load million-year2 preset', () => {
-    const loadPresetMillionYear2 = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetMillionYear2');
+    const loadPresetMillionYear2 = vi.spyOn(SettingsPresets, 'loadPresetMillionYear2');
 
     parseGetVariables(['preset=million-year2'], settingsManager);
     expect(loadPresetMillionYear2).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load facsat2 preset', () => {
-    const loadPresetFacSat2 = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetFacSat2');
+    const loadPresetFacSat2 = vi.spyOn(SettingsPresets, 'loadPresetFacSat2');
 
     parseGetVariables(['preset=facsat2'], settingsManager);
     expect(loadPresetFacSat2).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load altitudes preset', () => {
-    const loadPresetAltitudes_ = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetAltitudes_');
+    const loadPresetAltitudes_ = vi.spyOn(SettingsPresets, 'loadPresetAltitudes_');
 
     parseGetVariables(['preset=altitudes'], settingsManager);
     expect(loadPresetAltitudes_).toHaveBeenCalledWith(settingsManager);
   });
 
   it('should load starlink preset', () => {
-    const loadPresetStarlink = jest.spyOn(require('@app/settings/presets/presets').SettingsPresets, 'loadPresetStarlink');
+    const loadPresetStarlink = vi.spyOn(SettingsPresets, 'loadPresetStarlink');
 
     parseGetVariables(['preset=starlink'], settingsManager);
     expect(loadPresetStarlink).toHaveBeenCalledWith(settingsManager);
@@ -152,7 +157,7 @@ describe('parseGetVariables', () => {
   });
 
   it('should set godraysSamples', () => {
-    const godraysMock = jest.spyOn(GetVariables, 'godrays').mockReturnValue(16);
+    const godraysMock = vi.spyOn(GetVariables, 'godrays').mockReturnValue(16);
 
     parseGetVariables(['godrays=abc'], settingsManager);
     expect(settingsManager.godraysSamples).toBe(16);

@@ -1,7 +1,7 @@
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { ModelResolver } from '@app/app/rendering/mesh/model-resolver';
 import { EciArr3, GetSatType } from '@app/engine/core/interfaces';
-import { BaseObject, DEG2RAD, Degrees, DetailedSatellite, EciVec3, EpochUTC, Kilometers, PayloadStatus, Radians, SpaceObjectType, Sun, Vec3, Vector3D } from '@ootk/src/main';
+import { BaseObject, DEG2RAD, Degrees, Satellite, TemeVec3, Kilometers, PayloadStatus, Radians, SpaceObjectType, Sun, Vec3, Vector3D } from '@ootk/src/main';
 import { mat3, mat4, vec3 } from 'gl-matrix';
 import { Layout, Mesh } from 'webgl-obj-loader';
 import { MissileObject } from '../../app/data/catalog-manager/MissileObject';
@@ -62,17 +62,7 @@ export type MeshModel = {
 export interface MeshObject {
   rotation: Vec3<Degrees>;
   id: number;
-  position: EciVec3<Kilometers>;
-  sccNum: string;
-  inSun: number;
-  model: MeshModel;
-  isRotationStable: boolean;
-}
-
-export interface MeshObject {
-  rotation: Vec3<Degrees>;
-  id: number;
-  position: EciVec3<Kilometers>;
+  position: TemeVec3<Kilometers>;
   sccNum: string;
   inSun: number;
   model: MeshModel;
@@ -83,7 +73,7 @@ export class MeshManager {
   calculateNadirYaw_: () => Radians;
   currentMeshObject: MeshObject = {
     id: -1,
-    position: { x: 0, y: 0, z: 0 } as EciVec3<Kilometers>,
+    position: { x: 0, y: 0, z: 0 } as TemeVec3<Kilometers>,
     sccNum: '',
     inSun: 0,
     model: null as unknown as MeshModel,
@@ -141,7 +131,37 @@ export class MeshManager {
     this.currentMeshObject.model = model;
   }
 
-  update(selectedDate: Date, sat: DetailedSatellite | OemSatellite | MissileObject) {
+  /**
+   * Update mesh for a non-catalog body (e.g., deep-space satellite) using position and model name.
+   */
+  updateForBody(position: EciArr3, modelName: string): void {
+    this.currentMeshObject.id = 0;
+    this.currentMeshObject.inSun = 1;
+    this.currentMeshObject.isRotationStable = false;
+
+    const resolvedMesh = this.meshRegistry_.get(modelName) ?? { id: -1, name: modelName };
+
+    this.setCurrentModel(resolvedMesh);
+
+    if (!this.currentMeshObject.model?.mesh && this.currentMeshObject.model?.name) {
+      this.meshRegistry_.load(modelName, `${settingsManager.installDirectory}meshes/${modelName}.obj`, this.gl_);
+    }
+
+    const drawPosition = position.map((coord) => coord / 1e11) as EciArr3;
+
+    this.mvMatrix_ = mat4.create();
+    mat4.translate(this.mvMatrix_, this.mvMatrix_, drawPosition);
+
+    // Apply manual rotation
+    mat4.rotateX(this.mvMatrix_, this.mvMatrix_, settingsManager.meshRotation.x * DEG2RAD);
+    mat4.rotateY(this.mvMatrix_, this.mvMatrix_, settingsManager.meshRotation.y * DEG2RAD);
+    mat4.rotateZ(this.mvMatrix_, this.mvMatrix_, settingsManager.meshRotation.z * DEG2RAD);
+
+    this.nMatrix_ = mat3.create();
+    mat3.normalFromMat4(this.nMatrix_, this.mvMatrix_);
+  }
+
+  update(selectedDate: Date, sat: Satellite | OemSatellite | MissileObject) {
     if (!sat.isSatellite() && !sat.isMissile()) {
       return;
     }
@@ -156,9 +176,9 @@ export class MeshManager {
 
     const posData = ServiceLocator.getDotsManager().positionData;
     const position = {
-      x: posData[sat.id * 3],
-      y: posData[sat.id * 3 + 1],
-      z: posData[sat.id * 3 + 2],
+      x: posData[Number(sat.id) * 3],
+      y: posData[Number(sat.id) * 3 + 1],
+      z: posData[Number(sat.id) * 3 + 2],
     };
     let drawPosition = [position.x, position.y, position.z] as EciArr3;
 
@@ -171,7 +191,7 @@ export class MeshManager {
 
     if (
       this.currentMeshObject.isRotationStable ||
-      (sat.type === SpaceObjectType.PAYLOAD && (sat as DetailedSatellite).status === PayloadStatus.OPERATIONAL) ||
+      (sat.type === SpaceObjectType.PAYLOAD && (sat as Satellite).status === PayloadStatus.OPERATIONAL) ||
       (sat as OemSatellite).isStable
     ) {
       // Rotate the Satellite to Face Nadir if needed
@@ -181,7 +201,7 @@ export class MeshManager {
       const dt = ServiceLocator.getRenderer().dtAdjusted;
 
       this.currentMeshObject.rotation.z = (this.currentMeshObject.rotation.z + (dt * 10)) % 360 as Degrees;
-      this.currentMeshObject.rotation.y = (sat as DetailedSatellite).inclination;
+      this.currentMeshObject.rotation.y = (sat as Satellite).inclination;
     }
 
     if (this.currentMeshObject.rotation?.x) {
@@ -212,8 +232,10 @@ export class MeshManager {
       return;
     }
 
+    const satWithVel = sat as unknown as { velocity: TemeVec3 };
+
     // Calculate a position to look at along the satellite's velocity vector
-    const lookAtPos = [drawPosition[0] + sat.velocity.x, drawPosition[1] + sat.velocity.y, drawPosition[2] + sat.velocity.z];
+    const lookAtPos = [drawPosition[0] + satWithVel.velocity.x, drawPosition[1] + satWithVel.velocity.y, drawPosition[2] + satWithVel.velocity.z];
 
     let up: vec3;
 
@@ -221,7 +243,7 @@ export class MeshManager {
       up = vec3.normalize(vec3.create(), drawPosition);
     } else {
       // Up is perpendicular to the velocity vector
-      up = vec3.cross(vec3.create(), vec3.fromValues(0, 1, 0), vec3.fromValues(sat.velocity.x, sat.velocity.y, sat.velocity.z));
+      up = vec3.cross(vec3.create(), vec3.fromValues(0, 1, 0), vec3.fromValues(satWithVel.velocity.x, satWithVel.velocity.y, satWithVel.velocity.z));
     }
 
     mat4.targetTo(this.mvMatrix_, drawPosition, lookAtPos, up);
@@ -238,11 +260,13 @@ export class MeshManager {
         return;
       }
 
-      this.updatePosition(obj.position);
+      const objWithPos = obj as unknown as { position: TemeVec3 };
 
-      const pos = new Vector3D(obj.position.x, obj.position.y, obj.position.z);
+      this.updatePosition(objWithPos.position);
 
-      this.currentMeshObject.inSun = Sun.lightingRatio(pos, Sun.position(EpochUTC.fromDateTime(selectedDate)));
+      const pos = new Vector3D(objWithPos.position.x, objWithPos.position.y, objWithPos.position.z);
+
+      this.currentMeshObject.inSun = Sun.lightingRatio(pos, Sun.eci(selectedDate));
       this.currentMeshObject.isRotationStable = false;
 
       if (settingsManager.meshOverride) {

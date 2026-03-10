@@ -10,7 +10,8 @@ import { LineColors } from '@app/engine/rendering/line-manager/line';
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { hideEl } from '@app/engine/utils/get-el';
-import { DetailedSatellite, Kilometers } from '@ootk/src/main';
+import { t7e } from '@app/locales/keys';
+import { Satellite, Kilometers } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -20,35 +21,49 @@ export class DrawLinesPlugin extends KeepTrackPlugin {
   readonly id = 'DrawLinesPlugin';
   dependencies_ = [];
 
+  private t_(key: string): string {
+    return t7e(`plugins.DrawLinesPlugin.${key}` as Parameters<typeof t7e>[0]);
+  }
+
   rmbL1ElementName = 'draw-rmb';
-  rmbL1Html = html`<li class="rmb-menu-item" id="draw-rmb"><a href="#">Draw &#x27A4;</a></li>`;
+  rmbL1Html = this.buildRmbL1Html_();
   rmbL2ElementName = 'draw-rmb-menu';
-  rmbL2Html = html`
-  <ul class='dropdown-contents'>
-    <li id="line-eci-axis-rmb"><a href="#">ECI Axes</a></li>
-    <li id="line-eci-xgrid-rmb"><a href="#">X Axes Grid</a></li>
-    <li id="line-eci-ygrid-rmb"><a href="#">Y Axes Grid</a></li>
-    <li id="line-eci-zgrid-rmb"><a href="#">Z Axes Grid</a></li>
-    <li id="line-eci-radial-xgrid-rmb"><a href="#">X Axes Radial Grid</a></li>
-    <li id="line-eci-radial-ygrid-rmb"><a href="#">Y Axes Radial Grid</a></li>
-    <li id="line-eci-radial-zgrid-rmb"><a href="#">Z Axes Radial Grid</a></li>
-    <li id="line-earth-sat-rmb"><a href="#">Earth to Satellite</a></li>
-    <li id="line-sensor-sat-rmb"><a href="#">Sensor to Satellite</a></li>
-    <li id="line-sat-sat-rmb"><a href="#">Satellite to Satellite</a></li>
-    <li id="line-sat-sun-rmb"><a href="#">Satellite to Sun</a></li>
-    <li id="line-sat-moon-rmb"><a href="#">Satellite to Moon</a></li>
-  </ul>
-  `;
+  rmbL2Html = this.buildRmbL2Html_();
+
+  private buildRmbL1Html_(): string {
+    return html`<li class="rmb-menu-item" id="draw-rmb"><a href="#">${this.t_('rmbMenu.title')} &#x27A4;</a></li>`;
+  }
+
+  private buildRmbL2Html_(): string {
+    const m = (key: string) => this.t_(`rmbMenu.${key}`);
+
+    return html`
+    <ul class='dropdown-contents'>
+      <li id="line-eci-axis-rmb"><a href="#">${m('eciAxes')}</a></li>
+      <li id="line-eci-xgrid-rmb"><a href="#">${m('xAxesGrid')}</a></li>
+      <li id="line-eci-ygrid-rmb"><a href="#">${m('yAxesGrid')}</a></li>
+      <li id="line-eci-zgrid-rmb"><a href="#">${m('zAxesGrid')}</a></li>
+      <li id="line-eci-radial-xgrid-rmb"><a href="#">${m('xAxesRadialGrid')}</a></li>
+      <li id="line-eci-radial-ygrid-rmb"><a href="#">${m('yAxesRadialGrid')}</a></li>
+      <li id="line-eci-radial-zgrid-rmb"><a href="#">${m('zAxesRadialGrid')}</a></li>
+      <li id="line-earth-sat-rmb"><a href="#">${m('earthToSatellite')}</a></li>
+      <li id="line-sensor-sat-rmb"><a href="#">${m('sensorToSatellite')}</a></li>
+      <li id="line-sat-sat-rmb"><a href="#">${m('satelliteToSatellite')}</a></li>
+      <li id="line-sat-sun-rmb"><a href="#">${m('satelliteToSun')}</a></li>
+      <li id="line-sat-moon-rmb"><a href="#">${m('satelliteToMoon')}</a></li>
+    </ul>
+    `;
+  }
   rmbMenuOrder = 5;
   isRmbOnEarth = true;
   isRmbOffEarth = true;
   isRmbOnSat = true;
 
   rmbCallback = (targetId: string, clickedSat?: number): void => {
-    let clickSatObj: DetailedSatellite | MissileObject | OemSatellite | null = null;
+    let clickSatObj: Satellite | MissileObject | OemSatellite | null = null;
     const obj = ServiceLocator.getCatalogManager().getObject(clickedSat);
 
-    if ((obj instanceof DetailedSatellite) || (obj instanceof OemSatellite) || (obj instanceof MissileObject)) {
+    if ((obj instanceof Satellite) || (obj instanceof OemSatellite) || (obj instanceof MissileObject)) {
       clickSatObj = obj;
     }
 
@@ -105,7 +120,7 @@ export class DrawLinesPlugin extends KeepTrackPlugin {
           const primarySatObj = PluginRegistry.getPlugin(SelectSatManager)?.primarySatObj;
 
           if (!primarySatObj) {
-            errorManagerInstance.warn('No primary satellite selected for Earth to Satellite line.');
+            errorManagerInstance.warn(this.t_('errorMsgs.noPrimarySat'));
 
             return;
           }
@@ -131,7 +146,7 @@ export class DrawLinesPlugin extends KeepTrackPlugin {
         hideEl('line-eci-axis-rmb');
       }
 
-      if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? -1) === -1) {
+      if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
         hideEl('line-sat-sat-rmb');
       }
 

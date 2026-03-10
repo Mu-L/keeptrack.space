@@ -4,7 +4,6 @@ import { MultiCompiler, MultiRspackOptions, MultiStats, rspack } from '@rspack/c
 import { BuildError, ConsoleStyles, ErrorCodes, handleBuildError, logWithStyle } from './lib/build-error';
 import { ConfigManager } from './lib/config-manager';
 import { FileSystemManager } from './lib/filesystem-manager';
-import { PluginManager } from './lib/plugin-manager';
 import { VersionManager } from './lib/version-manager';
 import { WebpackManager } from './webpack-manager';
 
@@ -20,17 +19,18 @@ class BuildManager {
       // Initialize utilities
       const fileManager = new FileSystemManager(import.meta.url);
       const configManager = new ConfigManager();
-      const pluginManager = new PluginManager(fileManager);
       const versionManager = new VersionManager(fileManager);
 
-      // Check for .env file - if it is missing copy from .env.example
-      if (!fileManager.fileExists('./.env')) {
+      // In legacy .env mode, ensure .env exists before loading config
+      const isProfileMode = process.argv.some((arg) => arg.startsWith('--profile='));
+
+      if (!isProfileMode && !fileManager.fileExists('./.env')) {
         fileManager.copyFile('./.env.example', './.env', { force: false });
         logWithStyle('.env file not found, copied from .env.example', ConsoleStyles.WARNING);
       }
 
-      // Load configuration
-      const config = configManager.loadConfig(process.argv.slice(2));
+      // Load configuration (pass rootDir so ProfileLoader can find configs/)
+      const config = configManager.loadConfig(process.argv.slice(2), fileManager.rootDir);
 
       // Prepare build directory
       fileManager.prepareBuildDirectory('./dist');
@@ -40,47 +40,21 @@ class BuildManager {
       fileManager.copyTopLevelFiles('./public', './dist');
 
       // Copy resource directories
-      const resourceDirs = ['img/favicons', 'img/pwa', 'img/achievements', 'data', 'meshes', 'res', 'simulation', 'textures', 'tle'];
+      const resourceDirs = ['img/favicons', 'img/pwa', 'img/achievements', 'data', 'meshes', 'res', 'settings', 'simulation', 'textures', 'tle'];
 
       resourceDirs.forEach((dir) => {
         fileManager.copyDirectory(`public/${dir}`, `dist/${dir}`, { recursive: true });
       });
 
-      // Apply custom configurations
+      // Copy pro examples if available
       fileManager.copyDirectory('src/plugins-pro/examples', 'dist/examples', { isOptional: true, recursive: true });
 
-      // Apply custom configurations
-      if (config.textLogoPath) {
-        fileManager.copyFile(config.textLogoPath, './dist/img/logo.png', { force: true });
-      }
-      if (config.primaryLogoPath) {
-        fileManager.copyFile(config.primaryLogoPath, './dist/img/logo-primary.png', { force: true });
-      }
-
-      if (config.secondaryLogoPath) {
-        fileManager.copyFile(config.secondaryLogoPath, './dist/img/logo-secondary.png', { force: true });
-      }
-
-      if (config.styleCssPath) {
-        // Verify the file exists
-        if (!fileManager.fileExists(config.styleCssPath)) {
-          throw new BuildError(`Style CSS file not found: ${config.styleCssPath}`, ErrorCodes.FILE_NOT_FOUND);
-        }
-      }
-
-      if (config.loadingScreenCssPath) {
-        // Verify the file exists
-        if (!fileManager.fileExists(config.loadingScreenCssPath)) {
-          throw new BuildError(`Loading screen CSS file not found: ${config.loadingScreenCssPath}`, ErrorCodes.FILE_NOT_FOUND);
-        }
-      }
-
-      if (config.favIconPath) {
-        fileManager.copyFile(config.favIconPath, './dist/img/favicons/favicon.ico', { force: true });
-      }
-
-      if (config.settingsPath) {
+      // Copy profile-specific runtime files (not bundled by webpack)
+      if (config.settingsPath && config.settingsPath !== 'public/settings/settingsOverride.js') {
         fileManager.copyFile(config.settingsPath, './dist/settings/settingsOverride.js', { force: true });
+      }
+      if (config.favIconPath && config.favIconPath !== 'public/img/favicons/favicon.ico') {
+        fileManager.copyFile(config.favIconPath, './dist/img/favicons/favicon.ico', { force: true });
       }
 
       if (config.isPro) {
@@ -90,11 +64,9 @@ class BuildManager {
         fileManager.compileLocales('src');
       }
 
-      // Configure plugins
-      pluginManager.configurePlugins(config.isPro);
-
       // Update version information
-      versionManager.generateVersionFile('./package.json', 'src/settings/version.js');
+      versionManager.updateVersionReferences('./package.json');
+      versionManager.updateServiceWorkerVersion('./package.json');
 
       // Generate webpack configuration
       const webpackConfig = WebpackManager.createConfig(config) as MultiRspackOptions;

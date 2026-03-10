@@ -35,7 +35,7 @@
       "tooltip": "Fusée ou véhicule utilisé pour lancer l'objet"
     },
     "Configuration": {
-      "label": "Configuration",
+      "label": "Config. lanceur",
       "tooltip": "Configuration de la fusée ou du véhicule de lancement"
     },
     "RCS": {

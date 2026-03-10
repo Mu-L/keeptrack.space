@@ -1,8 +1,9 @@
 /* eslint-disable complexity */
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
-import { BaseObject, DetailedSatellite } from '@ootk/src/main';
-import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
+import { BaseObject, Satellite } from '@ootk/src/main';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
+import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
   sourceUssf: rgbaArray;
@@ -13,7 +14,7 @@ export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class RcsColorScheme extends ColorScheme {
-  readonly label = 'Radar Cross Section';
+  readonly label = t7e('colorSchemes.RcsColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'RcsColorScheme';
   static readonly id = 'RcsColorScheme';
 
@@ -47,7 +48,7 @@ export class RcsColorScheme extends ColorScheme {
       return { color: this.colorTheme.transparent, pickable: Pickable.No };
     }
 
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
 
     if (!sat.rcs) {
       if (this.objectTypeFlags.rcsUnknown) {

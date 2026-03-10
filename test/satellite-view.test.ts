@@ -1,5 +1,6 @@
 import { UiManager } from '@app/app/ui/ui-manager';
-import { Camera, CameraType } from '@app/engine/camera/camera';
+import { Camera } from '@app/engine/camera/camera';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { Container } from '@app/engine/core/container';
 import { Singletons, ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
@@ -10,6 +11,7 @@ import { getEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
 import { SatelliteViewPlugin } from '@app/plugins/satellite-view/satellite-view';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
+import { vi } from 'vitest';
 import { mockCameraManager, mockUiManager } from './environment/standard-env';
 import { standardPluginSuite } from './generic-tests';
 
@@ -36,7 +38,7 @@ describe('SatelliteViewPlugin_class', () => {
   beforeEach(() => {
     PluginRegistry.unregisterAllPlugins();
 
-    mockUiManager.toast = jest.fn();
+    mockUiManager.toast = vi.fn();
     Container.getInstance().registerSingleton<UiManager>(Singletons.UiManager, mockUiManager);
     const selectSatManager = new SelectSatManager();
 
@@ -57,13 +59,13 @@ describe('SatelliteViewPlugin_class', () => {
   // Tests that the addHtml method adds the correct HTML element to the DOM
   it('test_addHtml_method', () => {
     const plugin = new SatelliteViewPlugin();
-    const registerSpy = jest.spyOn(EventBus.getInstance(), 'on');
+    const registerSpy = vi.spyOn(EventBus.getInstance(), 'on');
 
     plugin.addHtml();
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
     expect(registerSpy).toHaveBeenCalled();
-    expect(getEl('bottom-icons')?.innerHTML).toContain('satellite-view-bottom-icon');
+    expect(getEl('bottom-icons-utility')?.innerHTML).toContain('SatelliteViewPlugin-utility-icon');
   });
 
   // Tests that a toast message is displayed when no satellite is selected and trying to activate Satellite Camera Mode
@@ -103,7 +105,7 @@ describe('SatelliteViewPlugin_class', () => {
     plugin.init();
     EventBus.getInstance().emit(EventBusEvent.uiManagerInit);
     EventBus.getInstance().emit(EventBusEvent.uiManagerFinal);
-    const tempMockCamera = { ...mockCameraManager, cameraType: CameraType.SATELLITE } as Camera;
+    const tempMockCamera = { ...mockCameraManager, cameraType: CameraType.SATELLITE_FIRST_PERSON } as Camera;
 
     Container.getInstance().registerSingleton<Camera>(Singletons.MainCamera, tempMockCamera);
     EventBus.getInstance().emit(EventBusEvent.bottomMenuClick, plugin.bottomIconElementName);

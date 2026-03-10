@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getEl } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
 import { openColorbox } from '../src/engine/utils/colorbox';
@@ -37,6 +38,7 @@ import * as getElAll from '../src/engine/utils/get-el';
 
 describe('openColorbox_function', () => {
   beforeEach(() => {
+    KeepTrack.getInstance().containerRoot = document.body as HTMLDivElement;
     KeepTrack.getDefaultBodyHtml();
     KeepTrack.getInstance().containerRoot.innerHTML = `
         <div id="colorbox-container" style="display:none;"></div>
@@ -44,9 +46,6 @@ describe('openColorbox_function', () => {
         <div id="colorbox-div" style="display:block;"></div>
         <div id="colorbox-iframe" style="display:none;"></div>
         <div id="colorbox-img" style="display:none;"></div>
-        <div id="loading-screen" style="display:none;">
-          <div id="loader-text"></div>
-        </div>
         `;
   });
 
@@ -58,7 +57,7 @@ describe('openColorbox_function', () => {
     expect(colorboxDiv).toBeNull();
 
     // jest replace getEl function
-    jest.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
+    vi.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
 
     openColorbox('https://www.example.com');
     const newColorboxDiv = getEl('colorbox-div');
@@ -66,13 +65,13 @@ describe('openColorbox_function', () => {
     expect(newColorboxDiv).not.toBeNull();
   });
 
-  // Tests that loading screen is shown before opening the colorbox
+  // Tests that loading overlay is shown before opening the colorbox
   it('test_show_loading', () => {
-    const loading = <HTMLElement>getEl('loading-screen');
-
-    expect(loading.style.display).toBe('none');
     openColorbox('https://www.example.com');
-    expect(loading.style.display).toBe('flex');
+    const overlay = document.getElementById('loading-overlay');
+
+    expect(overlay).not.toBeNull();
+    expect(overlay!.style.display).toBe('flex');
   });
 
   // Tests that colorbox is displayed after loading screen disappears
@@ -80,7 +79,7 @@ describe('openColorbox_function', () => {
     let colorboxDiv = <HTMLElement>getEl('colorbox-div');
 
     openColorbox('https://www.example.com');
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
     colorboxDiv = <HTMLElement>getEl('colorbox-div');
     expect(colorboxDiv.style.display).toBe('block');
   });
@@ -88,10 +87,10 @@ describe('openColorbox_function', () => {
   // Tests that image colorbox is set up if options.image is true
   it('test_setup_image_colorbox', () => {
     // jest replace getEl function
-    jest.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
+    vi.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
 
     openColorbox('https://www.example.com', { image: true });
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
 
     const colorboxContainer = <HTMLElement>getEl('colorbox-container');
 
@@ -108,10 +107,10 @@ describe('openColorbox_function', () => {
   // Tests that iframe colorbox is set up if options.image is false
   it('test_setup_iframe_colorbox', () => {
     // jest replace getEl function
-    jest.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
+    vi.spyOn(getElAll, 'getEl').mockImplementationOnce(() => <HTMLElement>getEl('colorbox-div'));
 
     openColorbox('https://www.example.com', { image: false });
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
 
     const colorboxIframe = <HTMLIFrameElement>getEl('colorbox-iframe');
 
@@ -125,16 +124,16 @@ describe('openColorbox_function', () => {
   // Tests that colorbox is closed when clicked
   it('test_close_colorbox', () => {
     // Create a spyon
-    const cb = jest.fn();
+    const cb = vi.fn();
 
     openColorbox('https://www.example.com', { callback: cb });
-    jest.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(2000);
 
     const colorboxDom = <HTMLElement>getEl('colorbox-div');
 
     expect(colorboxDom.style.display).toBe('block');
     colorboxDom.click();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
 
     expect(cb).toHaveBeenCalled();
   });

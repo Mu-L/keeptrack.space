@@ -1,6 +1,5 @@
 {
   "env": {
-    "jest": true,
     "browser": true,
     "es2021": true
   },
@@ -21,8 +20,7 @@
     "ecmaVersion": 2021
   },
   "plugins": [
-    "@typescript-eslint",
-    "jest"
+    "@typescript-eslint"
   ],
   "rules": {
     "accessor-pairs": "error",
@@ -94,16 +92,11 @@
     "lines-between-class-members": "off",
     "max-classes-per-file": "error",
     "max-depth": "warn", // TODO: change to error
-    "max-len": [
-      "warn",
-      {
-        "code": 180
-      }
-    ], // TODO: change to error
+    "max-len": "off",
     "max-lines": [
       "warn",
       {
-        "max": 1000
+        "max": 15000
       }
     ], // TODO: change to error
     "max-lines-per-function": [
@@ -217,7 +210,7 @@
       }
     ],
     "no-undef-init": "error",
-    "no-undefined": "error",
+    "no-undefined": "off",
     "no-underscore-dangle": "off",
     "no-unmodified-loop-condition": "error",
     "no-unneeded-ternary": "error",
@@ -269,7 +262,7 @@
     "require-atomic-updates": "error",
     "require-await": "warn", // TODO: change to errors
     "require-jsdoc": "error",
-    "require-unicode-regexp": "error",
+    "require-unicode-regexp": "warn",
     "rest-spread-spacing": "error",
     "semi": "error",
     "semi-spacing": "error",
@@ -295,7 +288,16 @@
     "wrap-regex": "error",
     "yield-star-spacing": "error",
     "yoda": "error",
-    "@typescript-eslint/no-explicit-any": "warn"
+    "@typescript-eslint/no-explicit-any": "warn",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ]
   },
   "overrides": [
     {

@@ -32,8 +32,11 @@ export class TooltipsPlugin extends KeepTrackPlugin {
 
   menuMode: MenuMode[] = [];
 
-  isVisible_ = false;
+  private isVisible_ = false;
+  private showTimer_: ReturnType<typeof setTimeout> | null = null;
   tooltipTag = 'kt-tooltip';
+
+  private static readonly SHOW_DELAY_ = 150;
 
   addHtml(): void {
     super.addHtml();
@@ -44,20 +47,7 @@ export class TooltipsPlugin extends KeepTrackPlugin {
         const tooltipDiv = document.createElement('div');
 
         tooltipDiv.id = 'tooltip';
-        tooltipDiv.style.display = 'none';
-        tooltipDiv.style.position = 'absolute';
-        tooltipDiv.style.zIndex = '999999';
-        tooltipDiv.style.maxWidth = '200px';
-        tooltipDiv.style.overflow = 'visible';
-        tooltipDiv.style.backgroundColor = 'var(--color-primary-dark)';
-        tooltipDiv.style.textAlign = 'center';
-        tooltipDiv.style.padding = '5px';
-        tooltipDiv.style.borderWidth = '5px';
-        tooltipDiv.style.borderColor = 'var(--color-primary)';
-        tooltipDiv.style.borderStyle = 'solid';
-        tooltipDiv.style.color = '#ffffff';
-        tooltipDiv.style.fontSize = 'smaller';
-        tooltipDiv.textContent = tooltipDiv.getAttribute('data-tooltip') ?? '';
+        tooltipDiv.className = 'kt-tooltip-popup';
         document.body.appendChild(tooltipDiv);
       },
     );
@@ -98,16 +88,25 @@ export class TooltipsPlugin extends KeepTrackPlugin {
       return;
     }
 
-    el.addEventListener('mouseenter', (event) => {
-      // Don't show if it is already visible
+    el.addEventListener('mouseenter', () => {
       if (this.isVisible_) {
         return;
       }
-      this.showTooltip(event, (event.target as HTMLElement).getAttribute(this.tooltipTag) ?? '');
-      this.isVisible_ = true;
+
+      const text = (el as HTMLElement).getAttribute(this.tooltipTag) ?? '';
+
+      // Delay showing tooltip to avoid flicker on fast mouse movement
+      this.showTimer_ = setTimeout(() => {
+        this.showTooltip(el as HTMLElement, text);
+        this.isVisible_ = true;
+      }, TooltipsPlugin.SHOW_DELAY_);
     });
 
     el.addEventListener('mouseleave', () => {
+      if (this.showTimer_) {
+        clearTimeout(this.showTimer_);
+        this.showTimer_ = null;
+      }
       this.hideTooltip();
       this.isVisible_ = false;
     });
@@ -116,94 +115,51 @@ export class TooltipsPlugin extends KeepTrackPlugin {
   }
 
   hideTooltip() {
-    const tooltipDiv = document.getElementById('tooltip') as HTMLDivElement;
+    const tooltipDiv = document.getElementById('tooltip');
 
     if (tooltipDiv) {
-      tooltipDiv.style.display = 'none';
+      tooltipDiv.classList.remove('kt-tooltip-visible');
     }
   }
 
-  showTooltip(event: MouseEvent, text: string): void {
-    const tooltipDiv = document.getElementById('tooltip') as HTMLDivElement;
+  showTooltip(targetEl: HTMLElement, text: string): void {
+    const tooltipDiv = document.getElementById('tooltip');
 
     if (!tooltipDiv) {
       return;
     }
 
-    // Get viewport dimensions
+    // Set tooltip content
+    tooltipDiv.innerHTML = text;
+
+    // Force layout to measure tooltip size
+    tooltipDiv.classList.add('kt-tooltip-measuring');
+    const tooltipRect = tooltipDiv.getBoundingClientRect();
+
+    tooltipDiv.classList.remove('kt-tooltip-measuring');
+
+    // Get target element bounds for stable positioning
+    const targetRect = targetEl.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Get tooltip dimensions (force display to measure)
-    tooltipDiv.style.display = 'block';
-    tooltipDiv.style.visibility = 'hidden';
-    const tooltipRect = tooltipDiv.getBoundingClientRect();
+    // Default: position above the element, centered horizontally
+    let top = targetRect.top + window.scrollY - tooltipRect.height - 8;
+    let left = targetRect.left + window.scrollX + (targetRect.width / 2) - (tooltipRect.width / 2);
 
-    tooltipDiv.style.visibility = 'visible';
-
-    // Set tooltip HTML (allow <br />)
-    tooltipDiv.innerHTML = text;
-
-    // Calculate available space in each direction
-    const spaceAbove = event.clientY / viewportHeight;
-    const spaceBelow = (viewportHeight - event.clientY) / viewportHeight;
-    const spaceLeft = event.clientX / viewportWidth;
-    const spaceRight = (viewportWidth - event.clientX) / viewportWidth;
-
-    // Choose direction with most space
-    let top: number;
-    let left: number;
-
-    type TooltipDirection = 'top' | 'bottom' | 'left' | 'right';
-
-    const upDown = [
-      { dir: 'top', value: spaceAbove },
-      { dir: 'bottom', value: spaceBelow },
-    ];
-    const leftRight = [
-      { dir: 'left', value: spaceLeft },
-      { dir: 'right', value: spaceRight },
-    ];
-
-    upDown.sort((a, b) => b.value - a.value);
-    leftRight.sort((a, b) => b.value - a.value);
-    const upOrDown = upDown[0].dir as TooltipDirection;
-    const leftOrRight = leftRight[0].dir as TooltipDirection;
-
-    // Position tooltip based on direction
-    switch (upOrDown) {
-      case 'top':
-        top = event.pageY - tooltipRect.height - 10;
-        break;
-      case 'bottom':
-        top = event.pageY + 10;
-        break;
-      default:
-        errorManagerInstance.warn(`Unknown tooltip direction: ${upOrDown}`);
-
-        return;
+    // If not enough space above, position below
+    if (targetRect.top < tooltipRect.height + 16) {
+      top = targetRect.bottom + window.scrollY + 8;
     }
 
-    switch (leftOrRight) {
-      case 'left':
-        left = event.pageX - tooltipRect.width / 2;
-        break;
-      case 'right':
-        left = event.pageX + 10;
-        break;
-      default:
-        errorManagerInstance.warn(`Unknown tooltip direction: ${upOrDown}`);
+    // Clamp horizontally to viewport
+    left = Math.max(8, Math.min(left, viewportWidth - tooltipRect.width - 8));
 
-        return;
-    }
-
-    // Clamp position to viewport
-    top = Math.max(0, Math.min(top, viewportHeight - tooltipRect.height));
-    left = Math.max(0, Math.min(left, viewportWidth - (tooltipRect.width / 2)));
+    // Clamp vertically to viewport
+    top = Math.max(8, Math.min(top, viewportHeight + window.scrollY - tooltipRect.height - 8));
 
     tooltipDiv.style.left = `${left}px`;
     tooltipDiv.style.top = `${top}px`;
-    tooltipDiv.style.display = 'block';
+    tooltipDiv.classList.add('kt-tooltip-visible');
   }
 }
-

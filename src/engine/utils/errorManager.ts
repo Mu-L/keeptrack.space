@@ -5,41 +5,76 @@ import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { isThisNode } from './isThisNode';
 
-export class ErrorManager {
-  private readonly ALLOW_DEBUG = false; // window.location.hostname === 'localhost';
-  private readonly ALLOW_LOG = window.location.hostname === 'localhost';
-  private readonly ALLOW_INFO = true;
-  private readonly ALLOW_WARN = true;
-  private lastErrorTime = 0;
-  isDebug = false;
+export enum LogLevel {
+  DEBUG = 0,
+  LOG = 1,
+  INFO = 2,
+  WARN = 3,
+  ERROR = 4,
+  NONE = 5,
+}
 
+const LOG_LABELS: Record<LogLevel, string> = {
+  [LogLevel.DEBUG]: 'DEBUG',
+  [LogLevel.LOG]: 'LOG',
+  [LogLevel.INFO]: 'INFO',
+  [LogLevel.WARN]: 'WARN',
+  [LogLevel.ERROR]: 'ERROR',
+  [LogLevel.NONE]: '',
+};
+
+export class ErrorManager {
+  private minLevel_: LogLevel;
+  private lastErrorTime_ = 0;
   private newGithubIssueUrl_: (options: Options) => string;
 
   constructor() {
-    // hostname is not localhost
+    if (!isThisNode() && window.location.hostname === 'localhost') {
+      this.minLevel_ = LogLevel.LOG;
+    } else {
+      this.minLevel_ = LogLevel.WARN;
+    }
+
     if (!isThisNode() && window.location.hostname !== 'localhost') {
       this.newGithubIssueUrl_ = githubIssueUrl;
     } else {
       this.newGithubIssueUrl_ = () => '';
-      if (isThisNode()) {
-        this.newGithubIssueUrl_ = () => '';
-      }
     }
   }
 
-  error(e: Error, funcName: string, toastMsg?: string) {
+  setLogLevel(level: LogLevel): void {
+    this.minLevel_ = level;
+  }
+
+  private shouldLog_(level: LogLevel): boolean {
+    return level >= this.minLevel_;
+  }
+
+  private formatMsg_(level: LogLevel, msg: string): string {
+    return `[${LOG_LABELS[level]}] ${msg}`;
+  }
+
+  error(e: Error, funcName: string, toastMsg?: string): void {
+    if (!this.shouldLog_(LogLevel.ERROR)) {
+      return;
+    }
+
     EventBus.getInstance().emit(EventBusEvent.error, e, funcName);
 
     // eslint-disable-next-line no-console
-    console.error(e);
+    console.error(this.formatMsg_(LogLevel.ERROR, `${funcName}: ${e.message}`), e);
+    if (!isThisNode()) {
+      // eslint-disable-next-line no-console
+      console.trace();
+    }
 
     toastMsg ??= e.message || 'Unknown error';
-    const url = this.getErrorUrl(e, funcName);
+    const url = this.getErrorUrl_(e, funcName);
 
     // Max 1 error per 5 minutes
-    if (url !== '' && Date.now() - this.lastErrorTime > 1000 * 60 * 5) {
+    if (url !== '' && Date.now() - this.lastErrorTime_ > 1000 * 60 * 5) {
       window.open(url, '_blank');
-      this.lastErrorTime = Date.now();
+      this.lastErrorTime_ = Date.now();
     }
 
     ServiceLocator.getUiManager()?.toast(toastMsg, ToastMsgType.error, true);
@@ -49,7 +84,63 @@ export class ErrorManager {
     }
   }
 
-  private getErrorUrl(e: Error, funcName: string) {
+  warn(msg: string, ...optionalParams: unknown[]): void {
+    if (!this.shouldLog_(LogLevel.WARN)) {
+      return;
+    }
+
+    ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.serious, true);
+
+    // eslint-disable-next-line no-console
+    console.warn(this.formatMsg_(LogLevel.WARN, msg), ...optionalParams);
+    if (!isThisNode()) {
+      // eslint-disable-next-line no-console
+      console.trace();
+    }
+  }
+
+  warnToast(msg: string): void {
+    if (!this.shouldLog_(LogLevel.WARN)) {
+      return;
+    }
+
+    ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.serious, true);
+  }
+
+  info(msg: string, ...optionalParams: unknown[]): void {
+    if (!this.shouldLog_(LogLevel.INFO)) {
+      return;
+    }
+
+    ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.normal, true);
+
+    // eslint-disable-next-line no-console
+    console.info(this.formatMsg_(LogLevel.INFO, msg), ...optionalParams);
+  }
+
+  log(msg: string, ...optionalParams: unknown[]): void {
+    if (!this.shouldLog_(LogLevel.LOG)) {
+      return;
+    }
+
+    ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.standby, true);
+
+    // eslint-disable-next-line no-console
+    console.log(this.formatMsg_(LogLevel.LOG, msg), ...optionalParams);
+  }
+
+  debug(msg: string, ...optionalParams: unknown[]): void {
+    if (!this.shouldLog_(LogLevel.DEBUG)) {
+      return;
+    }
+
+    ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.standby, true);
+
+    // eslint-disable-next-line no-console
+    console.debug(this.formatMsg_(LogLevel.DEBUG, msg), ...optionalParams);
+  }
+
+  private getErrorUrl_(e: Error, funcName: string): string {
     return this.newGithubIssueUrl_({
       user: 'thkruz',
       repo: 'keeptrack.space',
@@ -58,7 +149,7 @@ export class ErrorManager {
       body: `#### User Description
 Type what you were trying to do here...\n\n\n
 #### Version
-${settingsManager.versionNumber} - ${settingsManager.versionDate}
+${__VERSION__} - ${new Date(__VERSION_DATE__).toLocaleString()}
 #### Error Title
 ${e.name}
 #### Error Message
@@ -66,65 +157,6 @@ ${e.message}
 #### Stack
 ${e.stack}`,
     });
-  }
-
-  warn(msg: string, isHideFromConsole = false) {
-    if (this.ALLOW_WARN) {
-      ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.serious, true);
-    }
-
-    if (!isHideFromConsole) {
-      // eslint-disable-next-line no-console
-      console.warn(msg);
-      if (!isThisNode()) {
-        // eslint-disable-next-line no-console
-        console.trace();
-      }
-    }
-  }
-
-  info(msg: string) {
-    if (this.ALLOW_INFO) {
-      ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.normal, true);
-    }
-    if (this.isDebug && !isThisNode()) {
-      // eslint-disable-next-line no-console
-      console.info(msg);
-      if (!isThisNode()) {
-        // eslint-disable-next-line no-console
-        console.trace();
-      }
-    }
-  }
-
-  log(msg: string) {
-    if (this.ALLOW_LOG) {
-      ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.standby, true);
-    }
-    if (this.isDebug && !isThisNode()) {
-      // eslint-disable-next-line no-console
-      console.log(msg);
-      if (!isThisNode()) {
-        // eslint-disable-next-line no-console
-        console.trace();
-      }
-    }
-  }
-
-  debug(msg: string) {
-    if (this.ALLOW_DEBUG) {
-      ServiceLocator.getUiManager()?.toast(msg, ToastMsgType.standby, true);
-      // eslint-disable-next-line no-debugger
-      debugger;
-    }
-    if (this.isDebug && !isThisNode()) {
-      // eslint-disable-next-line no-console
-      console.debug(msg);
-      if (!isThisNode()) {
-        // eslint-disable-next-line no-console
-        console.trace();
-      }
-    }
   }
 }
 

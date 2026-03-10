@@ -1,0 +1,38 @@
+@import url('../../public/css/style.common.css');
+
+
+/* File-specific CSS rules */
+
+.bmenu-item {
+  padding: 5px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  height: 100%;
+}
+
+#layers-icon img,
+#tutorial-icon img,
+#fullscreen-icon img,
+#search-icon img,
+.top-menu-icons__blue-img,
+.bmenu-item:not(.bmenu-item-disabled, .bmenu-item-selected, .bmenu-item-help) .bmenu-item-inner *,
+.bmenu-filter-item:not(.bmenu-item-disabled, .bmenu-item-selected, .bmenu-item-help) .bmenu-filter-item-inner * {
+  filter: hue-rotate(0deg) brightness(0.7) saturate(4);
+}
+
+.dropdown-content {
+  max-height: 770% !important;
+}
+
+.ui-icon-circle-triangle-e {
+  background-position: -33px -17px;
+  filter: brightness(1.9) sepia(1) hue-rotate(160deg) saturate(2.5);
+}
+
+.ui-icon-circle-triangle-w {
+  background-position: -97px -17px;
+  filter: brightness(1.9) sepia(1) hue-rotate(160deg) saturate(2.5);
+}

@@ -4,6 +4,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { ScenarioData, ScenarioManagementPlugin } from '../scenario-management/scenario-management';
 import { TopMenu } from '../top-menu/top-menu';
@@ -29,7 +30,7 @@ export class TimeSlider extends KeepTrackPlugin {
             <div id="time-slider-container" class="time-slider-container">
               <div id="time-slider-container-slider" class="ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"
                  style="display: inline-block;" data-min="0" data-max="100" data-step="0.1"
-                 kt-tooltip="Time Slider: Drag to adjust time of day"
+                 kt-tooltip="${t7e('plugins.TimeSlider.tooltip' as Parameters<typeof t7e>[0])}"
               >
                 <span
                   tabindex="0" class="ui-slider-handle ui-corner-all ui-state-default"
@@ -88,6 +89,11 @@ export class TimeSlider extends KeepTrackPlugin {
     });
 
     EventBus.getInstance().on(EventBusEvent.staticOffsetChange, () => {
+      this.updateSliderPosition();
+    });
+
+    EventBus.getInstance().on(EventBusEvent.scenarioBoundsChanged, () => {
+      this.scenario = PluginRegistry.getPlugin(ScenarioManagementPlugin)?.scenario ?? null;
       this.updateSliderPosition();
     });
   }

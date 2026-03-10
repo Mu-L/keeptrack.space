@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * /////////////////////////////////////////////////////////////////////////////
  *
@@ -21,45 +22,50 @@
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { CelestialBody } from '@app/engine/rendering/draw-manager/celestial-bodies/celestial-body';
 import { Earth } from '@app/engine/rendering/draw-manager/earth';
 import {
   BaseObject,
   DEG2RAD,
   Degrees,
-  DetailedSatellite,
-  DetailedSensor,
-  EciVec3,
+  estimateRcs as ootkEstimateRcs,
   GreenwichMeanSiderealTime,
   Kilometers,
   KilometersPerSecond,
+  linearDistance,
+  mag2db as ootkMag2db,
   MILLISECONDS_TO_DAYS,
   MINUTES_PER_DAY,
   PosVel,
   RAD2DEG,
-  RIC,
+  relativeVelocity as ootkRelativeVelocity,
   Radians,
+  Satellite,
   SatelliteRecord,
-  Sensor,
   Sgp4,
   SpaceObjectType,
   StateVectorSgp4,
+  Sun as OotkSun,
+  SunStatus,
   TAU,
-  ecf2eci,
-  ecfRad2rae,
-  eci2ecf,
+  TemeVec3,
+  Vector3D,
+  ecef2eci,
+  ecefRad2rae,
+  eci2ecef,
   eci2lla,
   eci2rae,
+  RIC,
 } from '@ootk/src/main';
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { vec3 } from 'gl-matrix';
 import numeric from 'numeric';
 import { EciArr3 } from '../../engine/core/interfaces';
 import type { Sun } from '../../engine/rendering/draw-manager/sun';
-import { DISTANCE_TO_SUN, RADIUS_OF_EARTH, RADIUS_OF_SUN } from '../../engine/utils/constants';
+import { DISTANCE_TO_SUN } from '../../engine/utils/constants';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { jday, lon2yaw } from '../../engine/utils/transforms';
-import { CoordinateTransforms } from './coordinate-transforms';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 if (!global) {
   window._numeric = numeric; // numeric will break if it is not available globally
@@ -67,78 +73,29 @@ if (!global) {
 
 export type StringifiedNumber = `${number}.${number}`;
 
-export enum SunStatus {
-  UNKNOWN = -1,
-  UMBRAL = 0,
-  PENUMBRAL = 1,
-  SUN = 2,
-}
+// Re-export SunStatus from ootk for backward compatibility
+export { SunStatus } from '@ootk/src/main';
 
 export abstract class SatMath {
   /**
    * Converts magnitude to decibels.
    * @param magnitude The magnitude to convert.
+   * @deprecated Use mag2db() from ootk instead.
    */
   static mag2db(magnitude: number) {
-    return 10 * Math.log10(magnitude);
+    if (magnitude <= 0) {
+      return NaN; // KeepTrack returns NaN instead of throwing
+    }
+
+    return ootkMag2db(magnitude);
   }
 
+  /**
+   * Estimates the Radar Cross Section (RCS) of an object based on its dimensions and shape.
+   * @deprecated Use estimateRcs() from ootk instead.
+   */
   static estimateRcs(length: number, width: number, height: number, shape: string): number {
-    // If shape contains the word "sphere", then use the sphere RCS formula
-    if (shape.toLowerCase().includes('sphere')) {
-      // RCS=πr^2
-      const rcs = Math.PI * (length / 2) ** 2;
-
-
-      return (Math.sqrt(rcs) * 3) / 2;
-    }
-
-    // If shape contains the word "cylinder", then use the cylinder RCS formula
-    if (shape.toLowerCase().includes('cyl')) {
-      // RCS=length*2r
-      const minRcs = length * 2 * (width / 2);
-      // RCS=πr^2
-      const maxRcs = Math.PI * (length / 2) ** 2;
-      const rcs = (minRcs + maxRcs) / 2;
-
-
-      return (Math.sqrt(rcs) * 3) / 2;
-    }
-
-    // If shape contains the word "cone", then use the cone RCS formula
-    if (shape.toLowerCase().includes('cone')) {
-      // PI * r ** 2 / 2
-      const rcs = (Math.PI * (width / 2) ** 2) / 2;
-
-
-      return (Math.sqrt(rcs) * 3) / 2;
-    }
-
-    // If shape contains the word "hexagon", then use the hexagon RCS formula
-    if (shape.toLowerCase().includes('hex')) {
-      const minLength = Math.min(length * width, length * height, width * height);
-      const minRcs = (3 * ((Math.sqrt(3) / 2) * minLength ** 2)) / 4;
-      const maxLength = Math.max(length * width, length * height, width * height);
-      const maxRcs = (3 * ((Math.sqrt(3) / 2) * maxLength ** 2)) / 2;
-      const rcs = (minRcs + maxRcs) / 2;
-
-
-      return (Math.sqrt(rcs) * 3) / 2;
-    }
-
-    // Assume everything else is a cube
-
-    /*
-     * If shape contains the word "cube", then use the cube RCS formula
-     * if (shape.toLowerCase().includes('cube') || shape.toLowerCase().includes('box')) {
-     */
-    const minRcs = Math.min(length * width, length * height, width * height);
-    const maxRcs = Math.max(length * width, length * height, width * height);
-    const rcs = (minRcs + maxRcs) / 2;
-
-
-    return (Math.sqrt(rcs) * 3) / 2;
-    // }
+    return ootkEstimateRcs(length, width, height, shape);
   }
 
   /**
@@ -154,12 +111,12 @@ export abstract class SatMath {
       m: number;
     };
 
-    let positionEci: EciVec3;
+    let positionEci: TemeVec3;
 
     try {
       const stateVector = Sgp4.propagate(satrec, m);
 
-      positionEci = <EciVec3>stateVector.position;
+      positionEci = <TemeVec3>stateVector.position;
       if (!stateVector || !positionEci) {
         errorManagerInstance.log(`No ECI position for ${satrec.satnum} at ${now}`);
 
@@ -176,24 +133,23 @@ export abstract class SatMath {
 
   /**
    * Calculates whether a satellite is in the sun's shadow (umbra), in the penumbra, or in sunlight.
+   * Uses ootk's Sun.lightingRatio() for accurate eclipse calculations.
    * @param obj The satellite object.
    * @param sunECI The position of the sun in ECI coordinates.
    * @returns A value indicating whether the satellite is in the sun's shadow (umbra), in the penumbra, or in sunlight.
    */
-  static calculateIsInSun(obj: BaseObject | StateVectorSgp4, sunECI: EciVec3): SunStatus {
-    let x: Kilometers;
-    let y: Kilometers;
-    let z: Kilometers;
-
+  static calculateIsInSun(obj: BaseObject | StateVectorSgp4, sunECI: TemeVec3): SunStatus {
     if (!obj) {
       return SunStatus.UNKNOWN;
     }
 
+    // Extract position from various object types
+    let x: Kilometers;
+    let y: Kilometers;
+    let z: Kilometers;
 
-    if (obj instanceof BaseObject) {
-      if (!obj?.position) {
-        return SunStatus.UNKNOWN;
-      }
+    // Check for StateVectorSgp4 (has position property directly)
+    if ('position' in obj && typeof obj.position !== 'boolean' && obj.position) {
       if (!sunECI) {
         return SunStatus.UNKNOWN;
       }
@@ -201,59 +157,35 @@ export abstract class SatMath {
       x = obj.position.x;
       y = obj.position.y;
       z = obj.position.z;
+    } else if (obj instanceof BaseObject && (obj as unknown as { position?: TemeVec3 }).position) {
+      const pos = (obj as unknown as { position: TemeVec3 }).position;
 
-    } else if ((typeof obj.position === 'boolean' || (
-      obj.position &&
-      typeof obj.position.x === 'number' &&
-      typeof obj.position.y === 'number' &&
-      typeof obj.position.z === 'number'
-    )) &&
-      (typeof obj.velocity === 'boolean' || (
-        obj.velocity &&
-        typeof obj.velocity.x === 'number' &&
-        typeof obj.velocity.y === 'number' &&
-        typeof obj.velocity.z === 'number'
-      )) && typeof obj.position !== 'boolean') {
+      if (!sunECI) {
+        return SunStatus.UNKNOWN;
+      }
 
-      x = obj.position.x as Kilometers;
-      y = obj.position.y as Kilometers;
-      z = obj.position.z as Kilometers;
+      x = pos.x;
+      y = pos.y;
+      z = pos.z;
     } else {
       return SunStatus.UNKNOWN;
     }
 
-    /*
-     * NOTE: Code is mashed to save memory when used on the whole catalog
-     * Position needs to be relative to satellite NOT ECI
-     * const distSatEarthX = Math.pow(-sat.position.x, 2);
-     * const distSatEarthY = Math.pow(-sat.position.y, 2);
-     * const distSatEarthZ = Math.pow(-sat.position.z, 2);
-     * const distSatEarth = Math.sqrt(distSatEarthX + distSatEarthY + distSatEarthZ);
-     * const semiDiamEarth = Math.asin(RADIUS_OF_EARTH/distSatEarth) * RAD2DEG;
-     */
-    const semiDiamEarth = Math.asin(RADIUS_OF_EARTH / Math.sqrt((-x) ** 2 + (-y) ** 2 + (-z) ** 2)) * RAD2DEG;
+    // Convert to Vector3D for ootk's Sun.lightingRatio
+    const satPos = new Vector3D(x, y, z);
+    const sunPos = new Vector3D(sunECI.x, sunECI.y, sunECI.z);
 
-    /*
-     * Position needs to be relative to satellite NOT ECI
-     * const distSatSunX = Math.pow(-sat.position.x + sunECI.x, 2);
-     * const distSatSunY = Math.pow(-sat.position.y + sunECI.y, 2);
-     * const distSatSunZ = Math.pow(-sat.position.z + sunECI.z, 2);
-     * const distSatSun = Math.sqrt(distSatSunX + distSatSunY + distSatSunZ);
-     * const semiDiamSun = Math.asin(RADIUS_OF_SUN/distSatSun) * RAD2DEG;
-     */
-    const semiDiamSun =
-      Math.asin(RADIUS_OF_SUN / Math.sqrt((-x + sunECI.x) ** 2 + (-y + sunECI.y) ** 2 + (-z + sunECI.z) ** 2)) * RAD2DEG;
+    // Use ootk's lighting ratio calculation
+    const ratio = OotkSun.lightingRatio(satPos, sunPos);
 
-    // Angle between earth and sun
-    const theta = Math.acos(
-      <number>numeric.dot([-x, -y, -z], [-x + sunECI.x, -y + sunECI.y, -z + sunECI.z]) /
-      (Math.sqrt((-x) ** 2 + (-y) ** 2 + (-z) ** 2) * Math.sqrt((-x + sunECI.x) ** 2 + (-y + sunECI.y) ** 2 + (-z + sunECI.z) ** 2))) * RAD2DEG;
-
-    if (semiDiamEarth > semiDiamSun && theta < semiDiamEarth - semiDiamSun) {
+    // Map ratio to SunStatus:
+    // 0.0 = fully eclipsed (umbra)
+    // 0.0 < ratio < 1.0 = partial illumination (penumbra)
+    // 1.0 = fully illuminated (sun)
+    if (ratio === 0) {
       return SunStatus.UMBRAL;
     }
-
-    if (semiDiamSun > semiDiamEarth || theta < semiDiamSun - semiDiamEarth || (Math.abs(semiDiamEarth - semiDiamSun) < theta && theta < semiDiamEarth + semiDiamSun)) {
+    if (ratio < 1) {
       return SunStatus.PENUMBRAL;
     }
 
@@ -283,7 +215,7 @@ export abstract class SatMath {
    * @param selectedDate - The selected date.
    * @returns The nadir yaw angle in radians.
    */
-  static calculateNadirYaw(position: EciVec3, selectedDate: Date): Radians {
+  static calculateNadirYaw(position: TemeVec3, selectedDate: Date): Radians {
     const gmst = SatMath.calculateTimeVariables(selectedDate).gmst;
 
 
@@ -298,7 +230,7 @@ export abstract class SatMath {
    * @param sun The Sun object.
    * @returns The visual magnitude of the satellite.
    */
-  static calculateVisMag(sat: DetailedSatellite, sensor: Sensor, propTime: Date, sun: Sun): number {
+  static calculateVisMag(sat: Satellite, sensor: DetailedSensor, propTime: Date, sun: Sun): number {
     let rae: {
       az: Degrees | null;
       el: Degrees | null;
@@ -306,7 +238,7 @@ export abstract class SatMath {
     };
 
     if (sat.position.x > 0) {
-      rae = eci2rae(propTime, sat.position, sensor as unknown as Sensor);
+      rae = eci2rae(propTime, sat.position, sensor);
     } else {
       rae = SatMath.getRae(propTime, sat.satrec, sensor);
     }
@@ -349,7 +281,7 @@ export abstract class SatMath {
    * @param rae An object containing the range, azimuth, and elevation of the satellite in RAE coordinates.
    * @returns A boolean indicating whether the satellite is within the field of view of the sensor.
    */
-  static checkIsInView(sensor: Sensor, rae: { rng: Kilometers | null; az: Degrees | null; el: Degrees | null }): boolean {
+  static checkIsInView(sensor: DetailedSensor, rae: { rng: Kilometers | null; az: Degrees | null; el: Degrees | null }): boolean {
     const { az, el, rng } = rae;
 
     if (az === null || el === null || rng === null) {
@@ -386,9 +318,10 @@ export abstract class SatMath {
    * @param obj1 The first object's ECI coordinates.
    * @param obj2 The second object's ECI coordinates.
    * @returns The distance between the two objects in kilometers.
+   * @deprecated Use linearDistance() from ootk instead.
    */
-  static distance(obj1: EciVec3, obj2: EciVec3): Kilometers {
-    return <Kilometers>Math.sqrt((obj1.x - obj2.x) ** 2 + (obj1.y - obj2.y) ** 2 + (obj1.z - obj2.z) ** 2);
+  static distance(obj1: TemeVec3, obj2: TemeVec3): Kilometers {
+    return linearDistance(obj1, obj2);
   }
 
   /**
@@ -397,8 +330,12 @@ export abstract class SatMath {
    * @param obj2 The second object's velocity in ECI coordinates.
    * @returns The velocity between the two objects in kilometers/s.
    */
-  static velocity(obj1: EciVec3<KilometersPerSecond>, obj2: EciVec3<KilometersPerSecond>): KilometersPerSecond {
-    return <KilometersPerSecond>Math.sqrt((obj1.x - obj2.x) ** 2 + (obj1.y - obj2.y) ** 2 + (obj1.z - obj2.z) ** 2);
+  /**
+   * Calculates the relative velocity between two objects.
+   * @deprecated Use relativeVelocity() from ootk instead.
+   */
+  static velocity(obj1: TemeVec3<KilometersPerSecond>, obj2: TemeVec3<KilometersPerSecond>): KilometersPerSecond {
+    return ootkRelativeVelocity(obj1, obj2);
   }
 
 
@@ -410,48 +347,30 @@ export abstract class SatMath {
    * @returns An object containing the offset time (in milliseconds), the distance between the satellites (in kilometers), and the relative position and velocity vectors in RIC
    * coordinates.
    */
+  /**
+   * @deprecated Use sat1.findClosestApproach(sat2, startDate, duration, stepSize) instead.
+   */
   static findClosestApproachTime(
-    sat1: DetailedSatellite,
-    sat2: DetailedSatellite,
+    sat1: Satellite,
+    sat2: Satellite,
     propLength?: number,
   ): {
     offset: number;
     dist: number;
     ric: { position: [number, number, number]; velocity: [number, number, number] };
   } {
-    let offset = 0;
+    propLength ??= 1440 * 60; // 1 Day (in seconds)
 
-    propLength ??= 1440 * 60; // 1 Day
-    let minDist = 1000000;
-    let result = {
-      offset: <number | null>null,
-      dist: <number | null>null,
-      ric: <StateVectorSgp4 | null>null,
-    };
+    const result = sat1.findClosestApproach(sat2, new Date(), propLength, 1);
 
-    for (let t = 0; t < propLength; t++) {
-      offset = t * 1000; // Offset in seconds (msec * 1000)
-
-      const ric = RIC.fromJ2000(sat1.toJ2000(new Date(Date.now() + offset)), sat2.toJ2000(new Date(Date.now() + offset)));
-
-      if (ric.range < minDist && !(ric.position.x === 0 && ric.position.y === 0 && ric.position.z === 0)) {
-        minDist = ric.range;
-        result = {
-          offset,
-          dist: ric.range,
-          ric: { position: ric.position, velocity: ric.velocity },
-        };
-      }
-    }
-
-    if (result.dist === null) {
-      throw new Error('No closest approach found');
-    }
-
-    return result as unknown as {
-      offset: number;
-      dist: number;
-      ric: { position: [number, number, number]; velocity: [number, number, number] };
+    // Adapt result format for backward compatibility
+    return {
+      offset: result.offset,
+      dist: result.distance,
+      ric: {
+        position: [result.ric.position.x, result.ric.position.y, result.ric.position.z],
+        velocity: [result.ric.velocity.x, result.ric.velocity.y, result.ric.velocity.z],
+      },
     };
   }
 
@@ -462,7 +381,7 @@ export abstract class SatMath {
    * @returns The altitude of the satellite in kilometers.
    * If the altitude calculation fails, returns 0.
    */
-  static getAlt(positionEci: EciVec3, gmst: GreenwichMeanSiderealTime, radius?: Kilometers): Kilometers {
+  static getAlt(positionEci: TemeVec3, gmst: GreenwichMeanSiderealTime, radius?: Kilometers): Kilometers {
     let alt: number;
 
     try {
@@ -482,7 +401,7 @@ export abstract class SatMath {
     return alt as Kilometers;
   }
 
-  static getPositionFromCenterBody(position: EciVec3, centerBody?: Earth | CelestialBody): EciVec3 {
+  static getPositionFromCenterBody(position: TemeVec3, centerBody?: Earth | CelestialBody): TemeVec3 {
     centerBody ??= ServiceLocator.getScene().getBodyById(settingsManager.centerBody)!;
 
     const centerBodyPosition = centerBody.position;
@@ -494,17 +413,17 @@ export abstract class SatMath {
     };
   }
 
-  static estimateRcsUsingHistoricalData(satInput: DetailedSatellite): number | null {
+  static estimateRcsUsingHistoricalData(satInput: Satellite): number | null {
     const historicRcs: number[] = [];
     const catalogManager = ServiceLocator.getCatalogManager();
     const objectCache = catalogManager.objectCache;
 
     for (const obj of objectCache) {
-      if (!obj.isSatellite()) {
+      if (!obj?.isSatellite()) {
         continue;
       }
 
-      const sat = obj as DetailedSatellite;
+      const sat = obj as Satellite;
 
       if (sat.bus === satInput.bus && sat.bus !== 'Unknown' && sat.rcs && sat.rcs > 0) {
         historicRcs.push(sat.rcs);
@@ -541,12 +460,10 @@ export abstract class SatMath {
 
   /**
    * Calculates the azimuth and elevation angles between two satellites based on their positions and velocities.
-   * @param sat1 The first satellite object.
-   * @param sat2 The second satellite object.
-   * @returns An object containing the azimuth and elevation angles between the two satellites.
-   * @throws An error if either satellite's position or velocity is undefined.
+   * @deprecated Use sat1.angleTo(sat2, date) instead. Note: this method uses pre-propagated positions,
+   * while the ootk method propagates to the specified date.
    */
-  static getAngleBetweenTwoSatellites(sat1: DetailedSatellite, sat2: DetailedSatellite): { az: number; el: number } {
+  static getAngleBetweenTwoSatellites(sat1: Satellite, sat2: Satellite): { az: number; el: number } {
     const { position: pos1, velocity: vel1 } = sat1;
     const { position: pos2, velocity: vel2 } = sat2;
 
@@ -584,14 +501,11 @@ export abstract class SatMath {
   }
 
   /**
-   * Calculates the angle between 2 satellites and the Sun
-   * @param sat1 The first satellite object.
-   * @param sat2 The second satellite object.
-   * @param sunVec The sun ECI vector.
-   * @returns The sun angle in rad.
-   * @throws An error if either satellite's position or velocity is undefined.
+   * Calculates the angle between 2 satellites and the Sun.
+   * @deprecated Use sat1.sunAngleTo(sat2, sunPosition, date) instead. Note: this method uses pre-propagated
+   * positions, while the ootk method propagates to the specified date.
    */
-  static getAngleBetweenSatellitesAndSun(sat1: DetailedSatellite, sat2: DetailedSatellite, sunVec: EciVec3): number {
+  static getAngleBetweenSatellitesAndSun(sat1: Satellite, sat2: Satellite, sunVec: TemeVec3): number {
     const { position: pos1 } = sat1;
     const { position: pos2 } = sat2;
 
@@ -620,45 +534,17 @@ export abstract class SatMath {
    * @param simulationTime The current simulation time.
    * @returns A string indicating the direction of the satellite's movement ('N' for north, 'S' for south, or 'Error' if there was an error in the calculation).
    */
-  static getDirection(sat: DetailedSatellite, simulationTime: Date) {
-    const gmst = SatMath.calculateTimeVariables(simulationTime).gmst;
+  /**
+   * @deprecated Use sat.getDirection() instead.
+   */
+  static getDirection(sat: Satellite, simulationTime: Date): string {
+    try {
+      return sat.getDirection(simulationTime);
+    } catch (e) {
+      errorManagerInstance.log(`Sat Direction Calculation Error: ${e}`);
 
-    const FIVE_SECONDS = 5000;
-    const fiveSecLaterTime = new Date(simulationTime.getTime() + FIVE_SECONDS);
-    const fiveSecLaterPos = SatMath.getEci(sat, fiveSecLaterTime).position || { x: <Kilometers>0, y: <Kilometers>0, z: <Kilometers>0 };
-    const gmstFiveSecLater = SatMath.calculateTimeVariables(fiveSecLaterTime).gmst;
-
-    if (fiveSecLaterPos) {
-      const nowLat = eci2lla(sat.position, gmst).lat;
-      const futLat = eci2lla(<EciVec3>fiveSecLaterPos, gmstFiveSecLater).lat;
-
-      if (nowLat < futLat) {
-        return 'N';
-      }
-      if (nowLat > futLat) {
-        return 'S';
-      }
+      return 'Error';
     }
-
-    const tenSecLaterTime = new Date(simulationTime.getTime() + FIVE_SECONDS * 2);
-    const tenSecLaterPos = SatMath.getEci(sat, tenSecLaterTime).position || { x: <Kilometers>0, y: <Kilometers>0, z: <Kilometers>0 };
-    const gmstTenSecLater = SatMath.calculateTimeVariables(tenSecLaterTime).gmst;
-
-    if (tenSecLaterPos) {
-      const nowLat = eci2lla(sat.position, gmst).lat;
-      const futLat = eci2lla(<EciVec3>tenSecLaterPos, gmstTenSecLater).lat;
-
-      if (nowLat < futLat) {
-        return 'N';
-      }
-      if (nowLat > futLat) {
-        return 'S';
-      }
-    }
-
-    errorManagerInstance.log('Sat Direction Calculation Error - By Pole?');
-
-    return 'Error';
   }
 
   /**
@@ -668,8 +554,8 @@ export abstract class SatMath {
    * @param getOffsetTimeObj A function that returns a Date object with the specified offset from the current simulation time.
    * @returns An array of objects containing the ECF coordinates for each point along the orbit.
    */
-  static getEcfOfCurrentOrbit(sat: DetailedSatellite, points: number, getOffsetTimeObj: (offset: number) => Date): { x: number; y: number; z: number }[] {
-    return SatMath.getOrbitPoints(sat, points, getOffsetTimeObj, (params: { eciPts: EciVec3; angle: number }) => ecf2eci(params.eciPts, params.angle));
+  static getEcfOfCurrentOrbit(sat: Satellite, points: number, getOffsetTimeObj: (offset: number) => Date): { x: number; y: number; z: number }[] {
+    return SatMath.getOrbitPoints(sat, points, getOffsetTimeObj, (params: { eciPts: TemeVec3; angle: number }) => ecef2eci(params.eciPts, params.angle));
   }
 
   /**
@@ -679,8 +565,8 @@ export abstract class SatMath {
    * @param getOffsetTimeObj A function that returns a Date object with the specified offset from the current simulation time.
    * @returns An array of objects containing the ECI coordinates for each point along the orbit.
    */
-  static getEciOfCurrentOrbit(sat: DetailedSatellite, points: number, getOffsetTimeObj: (offset: number) => Date): { x: number; y: number; z: number }[] {
-    return SatMath.getOrbitPoints(sat, points, getOffsetTimeObj, (params: { eciPts: EciVec3 }) => params.eciPts);
+  static getEciOfCurrentOrbit(sat: Satellite, points: number, getOffsetTimeObj: (offset: number) => Date): { x: number; y: number; z: number }[] {
+    return SatMath.getOrbitPoints(sat, points, getOffsetTimeObj, (params: { eciPts: TemeVec3 }) => params.eciPts);
   }
 
   /**
@@ -690,8 +576,8 @@ export abstract class SatMath {
    * @param getOffsetTimeObj A function that returns a Date object with the specified offset from the current simulation time.
    * @returns An array of objects containing the latitude, longitude, altitude, and time for each point along the orbit.
    */
-  static getLlaOfCurrentOrbit(sat: DetailedSatellite, points: number, getOffsetTimeObj: (offset: number) => Date): { lat: number; lon: number; alt: number; time: number }[] {
-    return SatMath.getOrbitPoints(sat, points, getOffsetTimeObj, (params: { eciPts: EciVec3; offset: number }) => {
+  static getLlaOfCurrentOrbit(sat: Satellite, points: number, getOffsetTimeObj: (offset: number) => Date): { lat: number; lon: number; alt: number; time: number }[] {
+    return SatMath.getOrbitPoints(sat, points, getOffsetTimeObj, (params: { eciPts: TemeVec3; offset: number }) => {
       const now = getOffsetTimeObj(params.offset);
       const { gmst } = SatMath.calculateTimeVariables(now);
       const lla = eci2lla(params.eciPts, gmst);
@@ -711,8 +597,8 @@ export abstract class SatMath {
    * @returns An array of RIC coordinates for the given satellite and reference satellite
    */
   static getRicOfCurrentOrbit(
-    sat: DetailedSatellite,
-    sat2: DetailedSatellite,
+    sat: Satellite,
+    sat2: Satellite,
     points: number,
     getOffsetTimeObj: (offset: number) => Date,
     orbits?: number,
@@ -721,7 +607,7 @@ export abstract class SatMath {
       sat,
       points,
       getOffsetTimeObj,
-      (params: { eciPts: EciVec3; eciPts2: EciVec3; velPts: EciVec3<KilometersPerSecond>; velPts2: EciVec3<KilometersPerSecond>; offset: number }) => {
+      (params: { eciPts: TemeVec3; eciPts2: TemeVec3; velPts: TemeVec3<KilometersPerSecond>; velPts2: TemeVec3<KilometersPerSecond>; offset: number }) => {
         const vel1 = {
           total: 0,
           ...params.velPts,
@@ -735,10 +621,10 @@ export abstract class SatMath {
         sat.velocity = vel1;
         sat2.position = params.eciPts2;
         sat2.velocity = vel2;
-        const ric = CoordinateTransforms.sat2ric(sat, sat2).position;
+        const ric = RIC.fromPosVel(sat, sat2).position;
 
 
-        return { x: ric[0], y: ric[1], z: ric[2] };
+        return { x: ric.x, y: ric.y, z: ric.z };
       },
       sat2,
       orbits,
@@ -756,11 +642,11 @@ export abstract class SatMath {
    * @returns An array of objects containing the transformed coordinates for each point along the orbit.
    */
   private static getOrbitPoints<T>(
-    sat: DetailedSatellite,
+    sat: Satellite,
     points: number,
     getOffsetTimeObj: (offset: number) => Date,
-    transformFunc: (params: { eciPts: EciVec3; eciPts2: EciVec3; velPts: EciVec3<KilometersPerSecond>; velPts2: EciVec3<KilometersPerSecond>; angle: number; offset: number }) => T,
-    sat2?: DetailedSatellite,
+    transformFunc: (params: { eciPts: TemeVec3; eciPts2: TemeVec3; velPts: TemeVec3<KilometersPerSecond>; velPts2: TemeVec3<KilometersPerSecond>; angle: number; offset: number }) => T,
+    sat2?: Satellite,
     orbits = 1,
   ): T[] {
     const orbitPoints: T[] = [];
@@ -777,8 +663,8 @@ export abstract class SatMath {
         continue;
       }
 
-      let eciPts2 = { x: 0, y: 0, z: 0 } as EciVec3;
-      let velPts2 = { x: 0, y: 0, z: 0 } as EciVec3<KilometersPerSecond>;
+      let eciPts2 = { x: 0, y: 0, z: 0 } as TemeVec3;
+      let velPts2 = { x: 0, y: 0, z: 0 } as TemeVec3<KilometersPerSecond>;
 
       if (sat2) {
         eciPts2 = SatMath.getEci(sat2, now).position;
@@ -801,7 +687,7 @@ export abstract class SatMath {
    * @param now The time at which to calculate the ECI coordinates.
    * @returns An object containing the ECI coordinates and velocity of the satellite at the given time.
    */
-  static getEci(sat: DetailedSatellite, now: Date): PosVel {
+  static getEci(sat: Satellite, now: Date): PosVel {
     try {
       const { m } = SatMath.calculateTimeVariables(now, sat.satrec) as { m: number };
       const sv = Sgp4.propagate(sat.satrec, m);
@@ -826,7 +712,7 @@ export abstract class SatMath {
   static getRae(
     now: Date,
     satrec: SatelliteRecord,
-    sensor: Sensor,
+    sensor: DetailedSensor,
     isHideToasts = false,
   ): {
     az: Degrees | null;
@@ -834,7 +720,7 @@ export abstract class SatMath {
     rng: Kilometers | null;
   } {
     const { gmst, m } = SatMath.calculateTimeVariables(now, satrec) as { gmst: GreenwichMeanSiderealTime; m: number };
-    const positionEci = <EciVec3>Sgp4.propagate(satrec, m).position;
+    const positionEci = <TemeVec3>Sgp4.propagate(satrec, m).position;
 
     if (!positionEci) {
       if (!isHideToasts) {
@@ -843,16 +729,18 @@ export abstract class SatMath {
 
       return { az: null, el: null, rng: null };
     }
-    const positionEcf = eci2ecf(positionEci, gmst);
+    const positionEcf = eci2ecef(positionEci, gmst);
 
-    return ecfRad2rae(sensor.llaRad(), positionEcf);
+    return ecefRad2rae(sensor.llaRad(), positionEcf);
   }
 
   /**
-   *Calculates the direction of the sun in the sky based on the Julian date.
-   *The function returns an array of three numbers representing the x, y, and z components of the sun's direction vector.
+   * Calculates the direction of the sun in the sky based on the Julian date.
+   * The function returns an array of three numbers representing the x, y, and z components of the sun's direction vector.
    * @param jd Julian Day
    * @returns ECI position of the Sun
+   * @deprecated For new code, use Sun.position(epoch) from ootk which returns a Vector3D.
+   * This function is retained for caching compatibility with KeepTrack's scene.
    */
   static getSunDirection(jd: number): EciArr3 {
     if (!jd) {
@@ -915,55 +803,18 @@ export abstract class SatMath {
    * @param now - The current date used to calculate the number of days since the satellite's epoch.
    * @returns The normalized RAAN value within the 0-360 degree range.
    */
-  static normalizeRaan(sat: DetailedSatellite, now: Date): number {
-    const precessionRate = this.getNodalPrecessionRate(sat);
-    const daysSinceEpoch = sat.ageOfElset(now);
-    let normalizedRaan = sat.rightAscension + (precessionRate * daysSinceEpoch);
-
-    // Ensure RAAN stays within 0-360 range
-    normalizedRaan = ((normalizedRaan % 360) + 360) % 360;
-
-    return normalizedRaan;
+  /**
+   * @deprecated Use sat.normalizeRaan() instead.
+   */
+  static normalizeRaan(sat: Satellite, now: Date): number {
+    return sat.normalizeRaan(now);
   }
 
   /**
-   * Calculates the nodal precession rate of a satellite.
-   *
-   * @param {DetailedSatellite} s - The satellite object containing its orbital parameters.
-   * @returns {number} The nodal precession rate in degrees per day.
-   *
-   * @remarks
-   * The nodal precession rate is influenced by the Earth's oblateness (J2), the satellite's
-   * semi-major axis, eccentricity, inclination, and orbital period. This function converts
-   * the inclination from degrees to radians and the semi-major axis from kilometers to meters
-   * before performing the calculation.
-   *
-   * @example
-   * ```typescript
-   * const satellite = {
-   *   period: 90, // in minutes
-   *   semiMajorAxis: 7000, // in kilometers
-   *   eccentricity: 0.001,
-   *   inclination: 98.7 // in degrees
-   * };
-   * const precessionRate = getNodalPrecessionRate(satellite);
-   * console.log(precessionRate); // Output: nodal precession rate in degrees per day
-   * ```
+   * @deprecated Use sat.getNodalPrecessionRate() instead.
    */
-  static getNodalPrecessionRate(s: DetailedSatellite): number {
-    const Re = 6378137; // Earth radius in meters
-    const J2 = 1.082626680e-3; // Earth's second dynamic form factor
-    const period = s.period * 60; // Convert period from minutes to seconds
-    const omega = (2 * Math.PI) / period; // Angular velocity in rad/s
-    const a = s.semiMajorAxis * 1000; // Convert semi-major axis from km to meters
-    const e = s.eccentricity;
-    const i = s.inclination * Math.PI / 180; // Convert inclination to radians
-
-    // Calculate precession rate in rad/s
-    const omegaP = (-3 / 2) * (Re / a) ** 2 / (1 - e * e) ** 2 * J2 * omega * Math.cos(i);
-
-    // Convert to degrees per day
-    return omegaP * (180 / Math.PI) * 86400;
+  static getNodalPrecessionRate(s: Satellite): number {
+    return s.getNodalPrecessionRate();
   }
 
   /**
@@ -972,7 +823,7 @@ export abstract class SatMath {
    * @param secondaryObj The second satellite object.
    * @returns The sun angle in deg.
    */
-  static sunAngle(hoverSat: BaseObject, secondaryObj?: DetailedSensor | DetailedSatellite): Degrees {
+  static sunAngle(hoverSat: BaseObject, secondaryObj?: DetailedSensor | Satellite): Degrees {
     // Validate Objects
     if (!secondaryObj || !hoverSat) {
       return NaN as Degrees;
@@ -983,8 +834,40 @@ export abstract class SatMath {
 
     // Calculate Sun Angle
     const sunEci = ServiceLocator.getScene().sun.eci;
-    const angle = this.getAngleBetweenSatellitesAndSun(hoverSat as DetailedSatellite, secondaryObj as DetailedSatellite, sunEci);
+    const angle = this.getAngleBetweenSatellitesAndSun(hoverSat as Satellite, secondaryObj as Satellite, sunEci);
 
     return angle * RAD2DEG as Degrees;
+  }
+
+  /**
+     * Calculate the angle between Sun, Satellite, and Earth with vertex at the
+     * satellite: angle(Sun - Satellite - Earth).
+     *
+     * This computes the angle between the vector from the satellite to the Sun
+     * and the vector from the satellite to the Earth (Earth is at origin).
+     */
+  static sunSatEarthAngle(satPos: TemeVec3<Kilometers>, sunPos: TemeVec3<Kilometers>): number {
+    // Vector from satellite to Sun
+    const s2sunX = sunPos.x - satPos.x;
+    const s2sunY = sunPos.y - satPos.y;
+    const s2sunZ = sunPos.z - satPos.z;
+
+    // Vector from satellite to Earth (Earth at origin -> -satPos)
+    const s2earthX = -satPos.x;
+    const s2earthY = -satPos.y;
+    const s2earthZ = -satPos.z;
+
+    const mag1 = Math.hypot(s2sunX, s2sunY, s2sunZ);
+    const mag2 = Math.hypot(s2earthX, s2earthY, s2earthZ);
+
+    if (mag1 === 0 || mag2 === 0) {
+      return NaN;
+    }
+
+    const dot = s2sunX * s2earthX + s2sunY * s2earthY + s2sunZ * s2earthZ;
+    const cosAngle = dot / (mag1 * mag2);
+    const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+
+    return (angle * 180) / Math.PI;
   }
 }

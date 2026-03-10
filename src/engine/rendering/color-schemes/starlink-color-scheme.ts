@@ -1,14 +1,15 @@
 /* eslint-disable complexity */
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
+import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
-import { html } from '@app/engine/utils/development/formatter';
-import { BaseObject, DetailedSatellite, PayloadStatus, SpaceObjectType } from '@ootk/src/main';
-import { CameraType } from '../../camera/camera';
-import { ColorScheme } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
+import { BaseObject, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
+import { ColorScheme } from './color-scheme';
 
 export class StarlinkColorScheme extends ColorScheme {
-  readonly label = 'Starlink';
+  readonly label = t7e('colorSchemes.StarlinkColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'StarlinkColorScheme';
   static readonly id = 'StarlinkColorScheme';
   isOptionInRmbMenu = false;
@@ -84,7 +85,7 @@ export class StarlinkColorScheme extends ColorScheme {
     }
 
     if (obj.name.toLocaleLowerCase().startsWith('starlink') && obj.type === SpaceObjectType.PAYLOAD) {
-      if ((obj as DetailedSatellite).status === PayloadStatus.OPERATIONAL) {
+      if ((obj as Satellite).status === PayloadStatus.OPERATIONAL) {
         if (this.objectTypeFlags.starlinkOperational === false) {
           return {
             color: this.colorTheme.deselected,
@@ -98,7 +99,7 @@ export class StarlinkColorScheme extends ColorScheme {
         };
       }
 
-      if ((obj as DetailedSatellite).status !== PayloadStatus.OPERATIONAL) {
+      if ((obj as Satellite).status !== PayloadStatus.OPERATIONAL) {
         if (this.objectTypeFlags.starlinkOther === false) {
           return {
             color: this.colorTheme.deselected,

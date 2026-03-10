@@ -2,19 +2,20 @@ import { ToastMsgType } from '@app/engine/core/interfaces';
 import { NightToggle } from '@app/plugins/night-toggle/night-toggle';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { SettingsManager, settingsManager } from '@app/settings/settings';
-import { DEG2RAD, Degrees, DetailedSatellite, RAD2DEG, Radians } from '@ootk/src/main';
+import { DEG2RAD, Degrees, RAD2DEG, Radians, Satellite } from '@ootk/src/main';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
+import { KeyboardComponent } from '../plugins/components/keyboard/keyboard-component';
 import { AtmosphereSettings, EarthTextureStyle } from '../rendering/draw-manager/earth-quality-enums';
 import { getEl } from '../utils/get-el';
-import { OrbitCruncherMsgType } from '@app/webworker/orbit-cruncher-interfaces';
 
 export abstract class UrlManager {
-  private static selectedSat_: DetailedSatellite | null = null;
+  private static selectedSat_: Satellite | null = null;
   private static searchString_: string = '';
   private static propRate_: number;
+  private static readonly MAX_URL_LENGTH_ = 2000;
   private static readonly colorSchemeDefinitions_ = {
     'type': 'ObjectTypeColorScheme',
     'celestrak': 'CelestrakColorScheme',
@@ -35,7 +36,7 @@ export abstract class UrlManager {
 
   static {
     EventBus.getInstance().on(EventBusEvent.selectSatData, (sat) => {
-      if (sat instanceof DetailedSatellite) {
+      if (sat instanceof Satellite) {
         this.selectedSat_ = sat;
       } else {
         this.selectedSat_ = null;
@@ -57,11 +58,12 @@ export abstract class UrlManager {
       this.updateURL();
     });
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, (key) => {
-      if (key === 'U') {
-        this.updateURL(true);
-      }
-    });
+    new KeyboardComponent('UrlManager', [
+      {
+        key: 'U',
+        callback: () => this.updateURL(true),
+      },
+    ]).init();
   }
 
   static getParams(): string[] {
@@ -168,6 +170,9 @@ export abstract class UrlManager {
         case 'limitSats':
           settingsManager.limitSats = kv[key];
           break;
+        case 'regime':
+          this.handleRegimeParam_(kv[key]);
+          break;
         case 'earth':
           this.handleEarthParam_(kv[key]);
           isUsingParsedVariables = true;
@@ -196,10 +201,7 @@ export abstract class UrlManager {
               settingsManager.numberOfEcfOrbitsToDraw = ecfValue;
 
               EventBus.getInstance().on(EventBusEvent.onKeepTrackReady, () => {
-                ServiceLocator.getOrbitManager().orbitThreadMgr.postMessage({
-                  type: OrbitCruncherMsgType.SETTINGS_UPDATE,
-                  numberOfOrbitsToDraw: settingsManager.numberOfEcfOrbitsToDraw,
-                });
+                ServiceLocator.getOrbitManager().orbitThreadMgr.sendSettingsUpdate(settingsManager.numberOfEcfOrbitsToDraw);
               });
             }
           }
@@ -269,6 +271,7 @@ export abstract class UrlManager {
     }
   }
 
+  // eslint-disable-next-line complexity
   static updateURL(isMaxData: boolean = false): void {
     // Throttling navigation to prevent the browser from hanging.
     if (Date.now() - this.lastUpdateTime_ < 250) {
@@ -315,6 +318,10 @@ export abstract class UrlManager {
 
     if (settingsManager.limitSats) {
       paramSlices.push(`limitSats=${settingsManager.limitSats}`);
+    }
+
+    if (settingsManager.core.regimeFilter.length > 0) {
+      paramSlices.push(`regime=${settingsManager.core.regimeFilter.join(',')}`);
     }
 
     if (settingsManager.isEnableJscCatalog === false) {
@@ -369,6 +376,28 @@ export abstract class UrlManager {
 
     if (paramSlices.length > 0) {
       url += `?${paramSlices.join('&')}`;
+    }
+
+    // Drop heavy params progressively to stay under the URL length limit and avoid 431 errors
+    if (url.length > UrlManager.MAX_URL_LENGTH_) {
+      const heavyKeys = ['tle', 'external-only', 'search', 'limitSats'];
+
+      for (const dropKey of heavyKeys) {
+        const idx = paramSlices.findIndex((s) => s.startsWith(`${dropKey}=`) || s.startsWith(`${dropKey}%`));
+
+        if (idx !== -1) {
+          paramSlices.splice(idx, 1);
+          url = paramSlices.length > 0 ? `${arr[0]}?${paramSlices.join('&')}` : arr[0];
+          if (url.length <= UrlManager.MAX_URL_LENGTH_) {
+            break;
+          }
+        }
+      }
+    }
+
+    // If still too long after dropping heavy params, skip the update entirely
+    if (url.length > UrlManager.MAX_URL_LENGTH_) {
+      return;
     }
 
     if (url !== window.location.href) {
@@ -645,6 +674,23 @@ export abstract class UrlManager {
     }
   }
 
+  private static readonly VALID_REGIMES_ = ['vleo', 'leo', 'meo', 'geo', 'heo', 'xgeo'];
+
+  private static handleRegimeParam_(val: string): void {
+    const regimes = val.toLowerCase().split(',').map((r) => r.trim()).filter((r) => r.length > 0);
+    const valid: string[] = [];
+
+    for (const r of regimes) {
+      if (UrlManager.VALID_REGIMES_.includes(r)) {
+        valid.push(r);
+      } else {
+        console.warn(`Unknown regime filter: ${r}`);
+      }
+    }
+
+    settingsManager.core.regimeFilter = valid;
+  }
+
   private static handleDotsParam_(val: string): boolean {
     switch (val) {
       case 'large':
@@ -655,6 +701,7 @@ export abstract class UrlManager {
           largeObjectMaxZoom: 0.58,
           minSizePlanetarium: 20.0,
           maxSizePlanetarium: 20.0,
+          starMinSize: 8.0,
           maxAllowedSize: 35.0,
           isUseDynamicSizing: false,
           dynamicSizeScalar: 1.0,

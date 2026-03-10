@@ -1,10 +1,12 @@
 /* eslint-disable max-statements */
 /* eslint-disable max-lines */
-import { CoordinateTransforms } from '@app/app/analysis/coordinate-transforms';
 import { SatMath } from '@app/app/analysis/sat-math';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { PhasedOrbitSatellite } from '@app/app/objects/phased-orbit-satellite';
 import { SensorMath } from '@app/app/sensors/sensor-math';
+import { SolarBody } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -13,13 +15,11 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl, setInnerHtml } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { BaseObject, DetailedSatellite, eci2lla, Kilometers, MINUTES_PER_DAY } from '@ootk/src/main';
-import { Body } from 'astronomy-engine';
+import { BaseObject, eci2lla, Kilometers, MINUTES_PER_DAY, Satellite } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { EL, SECTIONS } from './sat-info-box-orbital-html';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 export class SatInfoBoxOrbital extends KeepTrackPlugin {
   readonly id = 'SatInfoBoxOrbital';
@@ -36,7 +36,7 @@ export class SatInfoBoxOrbital extends KeepTrackPlugin {
     super.addHtml();
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxInit, () => {
-      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createOrbitalSection(), order: 4 });
+      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createOrbitalSection(), order: 5 });
     });
   }
 
@@ -107,7 +107,7 @@ export class SatInfoBoxOrbital extends KeepTrackPlugin {
       return;
     }
 
-    if (obj instanceof DetailedSatellite) {
+    if (obj instanceof Satellite) {
       setInnerHtml(EL.APOGEE, `${obj.apogee.toFixed(0)} ${t7e('SatInfoBoxOrbital.kilometer')}`);
       setInnerHtml(EL.PERIGEE, `${obj.perigee.toFixed(0)} ${t7e('SatInfoBoxOrbital.kilometer')}`);
       setInnerHtml(EL.INCLINATION, `${obj.inclination.toFixed(2)}°`);
@@ -164,16 +164,20 @@ export class SatInfoBoxOrbital extends KeepTrackPlugin {
         }
       }
 
+      this.updateSectionHeader_();
+    } else if (obj instanceof OemSatellite) {
+      this.updateOemOrbitalElements_(obj);
     }
+
     const satAltitudeElement = getEl(EL.ALTITUDE);
     const satVelocityElement = getEl(EL.VELOCITY);
 
     if (satAltitudeElement && satVelocityElement) {
 
-      if (obj instanceof DetailedSatellite || obj instanceof OemSatellite) {
+      if (obj instanceof Satellite || obj instanceof OemSatellite) {
         const gmst = ServiceLocator.getTimeManager().gmst;
 
-        if (((obj as OemSatellite).centerBody ?? Body.Earth) !== Body.Earth) {
+        if (((obj as OemSatellite).centerBody ?? SolarBody.Earth) !== SolarBody.Earth) {
           const centerBody = ServiceLocator.getScene().getBodyById((obj as OemSatellite).centerBody) as CelestialBody | null;
 
           if (!centerBody) {
@@ -239,8 +243,8 @@ export class SatInfoBoxOrbital extends KeepTrackPlugin {
     const secondarySatObj = PluginRegistry.getPlugin(SelectSatManager)!.secondarySatObj;
 
     if (secondarySatObj && obj.isSatellite()) {
-      const sat = obj as DetailedSatellite;
-      const ric = CoordinateTransforms.sat2ric(secondarySatObj, sat);
+      const sat = obj as Satellite;
+      const ric = secondarySatObj.toRIC(sat, ServiceLocator.getTimeManager().simulationTimeObj);
       const dist = SensorMath.distanceString(sat, secondarySatObj).split(' ')[2];
 
       const satDistanceElement = getEl('sat-sec-dist');
@@ -250,12 +254,94 @@ export class SatInfoBoxOrbital extends KeepTrackPlugin {
 
       if (satDistanceElement && satRadiusElement && satInTrackElement && satCrossTrackElement) {
         satDistanceElement.innerHTML = `${dist} km`;
-        satRadiusElement.innerHTML = `${ric.position[0].toFixed(2)}km`;
-        satInTrackElement.innerHTML = `${ric.position[1].toFixed(2)}km`;
-        satCrossTrackElement.innerHTML = `${ric.position[2].toFixed(2)}km`;
+        satRadiusElement.innerHTML = `${ric.position.x.toFixed(2)}km`;
+        satInTrackElement.innerHTML = `${ric.position.y.toFixed(2)}km`;
+        satCrossTrackElement.innerHTML = `${ric.position.z.toFixed(2)}km`;
       } else {
         errorManagerInstance.debug('Error updating secondary satellite info!');
       }
+    }
+  }
+
+  private updateOemOrbitalElements_(obj: OemSatellite): void {
+    try {
+      const elements = obj.toClassicalElements();
+
+      setInnerHtml(EL.APOGEE, `${elements.apogee.toFixed(0)} ${t7e('SatInfoBoxOrbital.kilometer')}`);
+      setInnerHtml(EL.PERIGEE, `${elements.perigee.toFixed(0)} ${t7e('SatInfoBoxOrbital.kilometer')}`);
+      setInnerHtml(EL.INCLINATION, `${elements.inclinationDegrees.toFixed(2)}°`);
+      setInnerHtml(EL.ECCENTRICITY, elements.eccentricity.toFixed(3));
+      setInnerHtml(EL.RAAN, `${elements.rightAscensionDegrees.toFixed(2)}°`);
+      setInnerHtml(EL.ARG_PE, `${elements.argPerigeeDegrees.toFixed(2)}°`);
+
+      const periodDom = getEl(EL.PERIOD);
+
+      if (periodDom) {
+        periodDom.innerHTML = `${elements.period.toFixed(2)} ${t7e('SatInfoBoxOrbital.Period.min')}`;
+        periodDom.dataset.position = 'top';
+        periodDom.dataset.delay = '50';
+        periodDom.setAttribute(
+          'kt-tooltip',
+          `${t7e('SatInfoBoxOrbital.Period.meanMotion')}: ${(MINUTES_PER_DAY / elements.period).toFixed(2)} ${t7e('SatInfoBoxOrbital.Period.revPerDay')}`,
+        );
+      }
+
+      setInnerHtml(EL.ELSET_AGE, 'N/A');
+
+      const gmst = ServiceLocator.getTimeManager().gmst;
+      const lla = eci2lla(obj.position, gmst);
+
+      const satLonElement = getEl(EL.LONGITUDE);
+      const satLatElement = getEl(EL.LATITUDE);
+
+      if (satLonElement && satLatElement) {
+        if (lla.lon >= 0) {
+          satLonElement.innerHTML = `${lla.lon.toFixed(3)}°${t7e('SatInfoBoxOrbital.Longitude.east')}`;
+        } else {
+          satLonElement.innerHTML = `${(lla.lon * -1).toFixed(3)}°${t7e('SatInfoBoxOrbital.Longitude.west')}`;
+        }
+        if (lla.lat >= 0) {
+          satLatElement.innerHTML = `${lla.lat.toFixed(3)}°${t7e('SatInfoBoxOrbital.Latitude.north')}`;
+        } else {
+          satLatElement.innerHTML = `${(lla.lat * -1).toFixed(3)}°${t7e('SatInfoBoxOrbital.Latitude.south')}`;
+        }
+      }
+    } catch {
+      setInnerHtml(EL.APOGEE, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.PERIGEE, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.INCLINATION, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.ECCENTRICITY, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.RAAN, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.ARG_PE, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.PERIOD, t7e('SatInfoBoxOrbital.unknown'));
+      setInnerHtml(EL.ELSET_AGE, 'N/A');
+    }
+
+    this.updateSectionHeader_(obj);
+  }
+
+  private updateSectionHeader_(obj?: OemSatellite): void {
+    const sectionEl = getEl(SECTIONS.ORBITAL);
+
+    if (!sectionEl) {
+      return;
+    }
+
+    const headerSpan = sectionEl.querySelector('.sat-info-section-header > span:first-child') as HTMLSpanElement | null;
+
+    if (!headerSpan) {
+      return;
+    }
+
+    if (obj instanceof PhasedOrbitSatellite) {
+      const phase = obj.getActivePhase();
+      const phaseName = phase ? phase.name : '';
+
+      headerSpan.textContent = phaseName
+        ? `${t7e('SatInfoBoxOrbital.title')} (${phaseName})`
+        : t7e('SatInfoBoxOrbital.title');
+    } else {
+      headerSpan.textContent = t7e('SatInfoBoxOrbital.title');
     }
   }
 }

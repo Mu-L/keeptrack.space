@@ -1,19 +1,18 @@
 /* eslint-disable max-lines */
+import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import { rgbaArray, SolarBody } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { CelestialBody } from '@app/engine/rendering/draw-manager/celestial-bodies/celestial-body';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { StringPad } from '@app/engine/utils/stringPad';
-import { CruncerMessageTypes, CruncherSat } from '@app/webworker/positionCruncher';
+import { CruncherSat } from '@app/webworker/positionCruncher';
 import {
   BaseObject,
   CatalogSource,
-  DetailedSatellite,
-  DetailedSensor,
   LandObject,
   Marker,
   PayloadStatus,
-  Sensor,
+  Satellite,
   SpaceObjectType,
   Star,
   Tle,
@@ -41,7 +40,7 @@ interface ExtraSat {
   vmag?: number;
 }
 
-interface AsciiTleSat {
+export interface AsciiTleSat {
   ON?: string;
   OT?: SpaceObjectType;
   SCC: string;
@@ -106,7 +105,7 @@ export interface KeepTrackTLEFile {
   /** Purpose of the object */
   purpose?: string;
   /** Size of the object in Radar Cross Section (RCS) in meters squared */
-  rcs?: string;
+  rcs?: string | null;
   /** Shape of the object */
   shape?: string;
   /** Current status of the object */
@@ -114,7 +113,7 @@ export interface KeepTrackTLEFile {
   /** Type of the object */
   type?: SpaceObjectType;
   /** Visual magnitude of the object */
-  vmag?: number;
+  vmag?: number | null;
   /**
    * Used internally only and deleted before saving
    * @deprecated Not really, but it makes it clear that this is not saved to disk
@@ -135,7 +134,7 @@ export interface KeepTrackTLEFile {
 
 export class CatalogLoader {
   static filterTLEDatabase(resp: KeepTrackTLEFile[], extraSats: ExtraSat[] | null, asciiCatalog: AsciiTleSat[] | null, jsCatalog: JsSat[] | null): void {
-    let tempObjData: DetailedSatellite[] = [];
+    let tempObjData: Satellite[] = [];
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
 
     catalogManagerInstance.sccIndex = <{ [key: string]: number }>{};
@@ -308,12 +307,15 @@ export class CatalogLoader {
     externalCatalog?: Promise<AsciiTleSat[] | null> | null;
     vimpelCatalog?: Promise<JsSat[]> | null;
   }): Promise<void> {
-    await Promise.all([extraSats, asciiCatalog, externalCatalog, jsCatalog]).then(([extraSats, asciiCatalog, externalCatalog, jsCatalog]) => {
+    await Promise.all([extraSats, asciiCatalog, externalCatalog, jsCatalog]).then(async ([extraSats, asciiCatalog, externalCatalog, jsCatalog]) => {
       asciiCatalog = externalCatalog || asciiCatalog;
 
       // Make sure everyone agrees on what time it is
       ServiceLocator.getTimeManager().init();
       ServiceLocator.getTimeManager().synchronize();
+
+      // Inject pro star catalog data before processing static objects
+      await CatalogLoader.injectStarData_();
 
       /*
        * Filter TLEs
@@ -328,13 +330,378 @@ export class CatalogLoader {
       const satDataString = CatalogLoader.getSatDataString_(catalogManagerInstance.objectCache);
 
       /** Send satDataString to satCruncher to begin propagation loop */
-      catalogManagerInstance.satCruncher.postMessage({
-        typ: CruncerMessageTypes.OBJ_DATA,
-        dat: satDataString,
-        fieldOfViewSetLength: catalogManagerInstance.fieldOfViewSet.length,
-        isLowPerf: settingsManager.lowPerf,
-      });
+      catalogManagerInstance.satCruncherThread.sendCatalogData(
+        satDataString,
+        catalogManagerInstance.fieldOfViewSet.length,
+        settingsManager.lowPerf,
+      );
     });
+  }
+
+  /**
+   * Parses raw TLE text content (2-line or 3-line format) into AsciiTleSat objects.
+   * Supports .tce files (2-line TLE pairs) and 3LE files (name + TLE pair).
+   */
+  static parseTceContent(content: string): AsciiTleSat[] {
+    const lines = content.split('\n');
+
+    CatalogLoader.cleanAsciiCatalogFile_(lines);
+
+    const catalog: AsciiTleSat[] = [];
+
+    if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) {
+      return catalog;
+    }
+
+    if (lines[0].startsWith('1 ')) {
+      CatalogLoader.parseAsciiTLE_(lines, catalog);
+    } else if (lines.length > 1 && lines[1].startsWith('1 ')) {
+      CatalogLoader.parseAscii3LE_(lines, catalog);
+    } else {
+      throw new Error('Unrecognized TLE format: first data line must start with "1 "');
+    }
+
+    CatalogLoader.sortByScc_(catalog);
+
+    return catalog;
+  }
+
+  /**
+   * Reloads the entire satellite catalog from raw TLE text content.
+   * Resets all rendering subsystems and re-initializes the propagation worker.
+   * Supports .tce (2-line), .tle (3-line), and .txt TLE files.
+   */
+  static async reloadCatalog(tceContent: string): Promise<void> {
+    const { showLoadingSticky, hideLoading } = await import('../../engine/utils/showLoading');
+    const { SelectSatManager } = await import('../../plugins/select-sat-manager/select-sat-manager');
+    const { EventBus } = await import('../../engine/events/event-bus');
+    const { EventBusEvent } = await import('../../engine/events/event-bus-events');
+    const { PluginRegistry } = await import('../../engine/core/plugin-registry');
+
+    showLoadingSticky();
+
+    try {
+      // Deselect current satellite
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (selectSatManager) {
+        selectSatManager.selectSat(-1);
+      }
+
+      // Clear orbits and hover state
+      const orbitManager = ServiceLocator.getOrbitManager();
+
+      orbitManager.clearSelectOrbit(false);
+      orbitManager.clearSelectOrbit(true);
+      orbitManager.clearHoverOrbit();
+      orbitManager.clearInViewOrbit();
+      orbitManager.orbitCache.clear();
+
+      // Reset hover ID so stale IDs from the old catalog don't reference
+      // out-of-bounds indices in the new color data
+      ServiceLocator.getHoverManager().setHoverId(-1);
+
+      // Clear search results
+      settingsManager.lastSearchResults = [];
+
+      // Parse the TLE content
+      const asciiCatalog = CatalogLoader.parseTceContent(tceContent);
+
+      if (asciiCatalog.length === 0) {
+        throw new Error('No valid TLE data found in file');
+      }
+
+      // Reset rendering subsystems
+      const dotsManager = ServiceLocator.getDotsManager();
+      const colorSchemeManager = ServiceLocator.getColorSchemeManager();
+
+      dotsManager.resetForCatalogSwap();
+      colorSchemeManager.resetForCatalogSwap();
+
+      // Remove stars from staticSet to prevent injectStarData_ from adding duplicates
+      // on repeated catalog swaps (injectStarData_ pushes into staticSet every time)
+      const catalogManager = ServiceLocator.getCatalogManager();
+
+      catalogManager.staticSet = catalogManager.staticSet.filter(
+        (obj: { type?: SpaceObjectType }) => obj.type !== SpaceObjectType.STAR,
+      );
+
+      // Re-parse the catalog via existing pipeline
+      // Must pass as externalCatalog because parse() uses `externalCatalog || asciiCatalog`
+      // and externalCatalog defaults to Promise.resolve([]) which is truthy, discarding keepTrackAscii
+      await CatalogLoader.parse({
+        keepTrackTle: [],
+        externalCatalog: Promise.resolve(asciiCatalog),
+      });
+
+      // Re-init GPU buffers with the new catalog size
+      // This must run after parse (which sets objectCache/numObjects) but before
+      // onCruncherReady — matching the startup flow in keeptrack.ts
+      dotsManager.initBuffers(colorSchemeManager.colorBuffer!);
+
+      // Re-init orbit cruncher with new catalog TLE data and resize GL buffers
+      orbitManager.resetForCatalogSwap();
+
+      // Clear position/velocity data AGAIN after parse returns.
+      // During the await inside parse(), stale worker messages from the old
+      // propagation loop can set positionData/velocityData. If these persist
+      // when cruncherReady is set to false below, the next stale worker message
+      // would satisfy the onCruncherReady check and trigger it prematurely
+      // with old catalog positions.
+      dotsManager.positionData = null as unknown as Float32Array;
+      dotsManager.velocityData = null as unknown as Float32Array;
+      dotsManager.isReady = false;
+
+      // Reset cruncherReady AFTER clearing stale data so that the NEXT worker
+      // message (from the new OBJ_DATA) is the first to satisfy onCruncherReady
+      settingsManager.cruncherReady = false;
+
+      // Keep loading screen up until the position cruncher finishes processing
+      // and onCruncherReady fires (which triggers ColorSchemeManager to rebuild colors)
+      const eventBus = EventBus.getInstance();
+      const onReady = () => {
+        eventBus.unregister(EventBusEvent.onCruncherReady, onReady);
+        eventBus.emit(EventBusEvent.catalogReloaded);
+        hideLoading();
+      };
+
+      eventBus.on(EventBusEvent.onCruncherReady, onReady);
+    } catch (error) {
+      hideLoading();
+      throw error;
+    }
+  }
+
+  /**
+   * Merges incoming TLE data into the existing catalog, preserving satellite
+   * metadata (name, country, mission, etc.) for satellites that appear in both
+   * the current catalog and the incoming file.
+   *
+   * Satellites not present in the incoming TLE file are removed.
+   * New satellites from the incoming file are added with minimal metadata.
+   */
+  static async mergeAndReloadCatalog(tceContent: string): Promise<void> {
+    const { showLoadingSticky, hideLoading } = await import('../../engine/utils/showLoading');
+    const { SelectSatManager } = await import('../../plugins/select-sat-manager/select-sat-manager');
+    const { EventBus } = await import('../../engine/events/event-bus');
+    const { EventBusEvent } = await import('../../engine/events/event-bus-events');
+    const { PluginRegistry } = await import('../../engine/core/plugin-registry');
+
+    showLoadingSticky();
+
+    try {
+      // Deselect current satellite
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (selectSatManager) {
+        selectSatManager.selectSat(-1);
+      }
+
+      // Clear orbits and hover state
+      const orbitManager = ServiceLocator.getOrbitManager();
+
+      orbitManager.clearSelectOrbit(false);
+      orbitManager.clearSelectOrbit(true);
+      orbitManager.clearHoverOrbit();
+      orbitManager.clearInViewOrbit();
+      orbitManager.orbitCache.clear();
+
+      ServiceLocator.getHoverManager().setHoverId(-1);
+      settingsManager.lastSearchResults = [];
+
+      // Parse the incoming TLE content
+      const asciiCatalog = CatalogLoader.parseTceContent(tceContent);
+
+      if (asciiCatalog.length === 0) {
+        throw new Error('No valid TLE data found in file');
+      }
+
+      // Build lookup map: 6-digit SCC → AsciiTleSat
+      const incomingMap = new Map<string, AsciiTleSat>();
+
+      for (const entry of asciiCatalog) {
+        const scc6 = Tle.convertA5to6Digit(entry.SCC);
+
+        incomingMap.set(scc6, entry);
+      }
+
+      // Snapshot existing satellite metadata and merge with new TLEs
+      const catalogManager = ServiceLocator.getCatalogManager();
+      const merged: KeepTrackTLEFile[] = [];
+      const matchedSccs = new Set<string>();
+
+      for (const obj of catalogManager.objectCache) {
+        if (!obj.isSatellite()) {
+          continue;
+        }
+        const sat = obj as Satellite;
+        const incoming = incomingMap.get(sat.sccNum);
+
+        if (!incoming) {
+          continue; // satellite not in new TLE → remove it
+        }
+
+        matchedSccs.add(sat.sccNum);
+
+        // Preserve metadata, update TLE lines
+        merged.push({
+          tle1: incoming.TLE1,
+          tle2: incoming.TLE2,
+          name: sat.name,
+          altName: sat.altName,
+          country: sat.country,
+          owner: sat.owner,
+          mission: sat.mission,
+          purpose: sat.purpose,
+          type: sat.type,
+          bus: sat.bus,
+          configuration: sat.configuration,
+          dryMass: sat.dryMass,
+          equipment: sat.equipment,
+          lifetime: sat.lifetime,
+          manufacturer: sat.manufacturer,
+          motor: sat.motor,
+          payload: sat.payload,
+          power: sat.power,
+          shape: sat.shape,
+          span: sat.span,
+          launchDate: sat.launchDate,
+          launchMass: sat.launchMass,
+          launchSite: sat.launchSite,
+          launchPad: sat.launchPad,
+          launchVehicle: sat.launchVehicle,
+          length: sat.length,
+          diameter: sat.diameter,
+          rcs: typeof sat.rcs === 'number' ? sat.rcs.toString() : null,
+          vmag: sat.vmag ?? null,
+          status: sat.status,
+          altId: sat.altId,
+        });
+      }
+
+      // Add incoming satellites not found in the current catalog
+      for (const [scc6, entry] of incomingMap) {
+        if (matchedSccs.has(scc6)) {
+          continue;
+        }
+        merged.push({
+          tle1: entry.TLE1,
+          tle2: entry.TLE2,
+          name: entry.ON ?? 'Unknown',
+          type: entry.OT,
+        });
+      }
+
+      // Reset rendering subsystems
+      const dotsManager = ServiceLocator.getDotsManager();
+      const colorSchemeManager = ServiceLocator.getColorSchemeManager();
+
+      dotsManager.resetForCatalogSwap();
+      colorSchemeManager.resetForCatalogSwap();
+
+      // Remove stars from staticSet to prevent duplicates
+      catalogManager.staticSet = catalogManager.staticSet.filter(
+        (obj: { type?: SpaceObjectType }) => obj.type !== SpaceObjectType.STAR,
+      );
+
+      // Re-parse via the primary pipeline (keepTrackTle path preserves metadata)
+      await CatalogLoader.parse({
+        keepTrackTle: merged,
+      });
+
+      // Re-init GPU buffers with the new catalog size
+      dotsManager.initBuffers(colorSchemeManager.colorBuffer!);
+      orbitManager.resetForCatalogSwap();
+
+      // Clear stale position/velocity data after parse returns
+      dotsManager.positionData = null as unknown as Float32Array;
+      dotsManager.velocityData = null as unknown as Float32Array;
+      dotsManager.isReady = false;
+
+      settingsManager.cruncherReady = false;
+
+      const eventBus = EventBus.getInstance();
+      const onReady = () => {
+        eventBus.unregister(EventBusEvent.onCruncherReady, onReady);
+        eventBus.emit(EventBusEvent.catalogReloaded);
+        hideLoading();
+      };
+
+      eventBus.on(EventBusEvent.onCruncherReady, onReady);
+    } catch (error) {
+      hideLoading();
+      throw error;
+    }
+  }
+
+  /**
+   * Reloads the catalog from pre-built KeepTrackTLEFile data (with full metadata).
+   * Use this when merging has already been done externally (e.g., against a cached catalog).
+   */
+  static async reloadCatalogFromData(data: KeepTrackTLEFile[]): Promise<void> {
+    const { showLoadingSticky, hideLoading } = await import('../../engine/utils/showLoading');
+    const { SelectSatManager } = await import('../../plugins/select-sat-manager/select-sat-manager');
+    const { EventBus } = await import('../../engine/events/event-bus');
+    const { EventBusEvent } = await import('../../engine/events/event-bus-events');
+    const { PluginRegistry } = await import('../../engine/core/plugin-registry');
+
+    showLoadingSticky();
+
+    try {
+      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+
+      if (selectSatManager) {
+        selectSatManager.selectSat(-1);
+      }
+
+      const orbitManager = ServiceLocator.getOrbitManager();
+
+      orbitManager.clearSelectOrbit(false);
+      orbitManager.clearSelectOrbit(true);
+      orbitManager.clearHoverOrbit();
+      orbitManager.clearInViewOrbit();
+      orbitManager.orbitCache.clear();
+
+      ServiceLocator.getHoverManager().setHoverId(-1);
+      settingsManager.lastSearchResults = [];
+
+      const dotsManager = ServiceLocator.getDotsManager();
+      const colorSchemeManager = ServiceLocator.getColorSchemeManager();
+
+      dotsManager.resetForCatalogSwap();
+      colorSchemeManager.resetForCatalogSwap();
+
+      const catalogManager = ServiceLocator.getCatalogManager();
+
+      catalogManager.staticSet = catalogManager.staticSet.filter(
+        (obj: { type?: SpaceObjectType }) => obj.type !== SpaceObjectType.STAR,
+      );
+
+      await CatalogLoader.parse({
+        keepTrackTle: data,
+      });
+
+      dotsManager.initBuffers(colorSchemeManager.colorBuffer!);
+      orbitManager.resetForCatalogSwap();
+
+      dotsManager.positionData = null as unknown as Float32Array;
+      dotsManager.velocityData = null as unknown as Float32Array;
+      dotsManager.isReady = false;
+
+      settingsManager.cruncherReady = false;
+
+      const eventBus = EventBus.getInstance();
+      const onReady = () => {
+        eventBus.unregister(EventBusEvent.onCruncherReady, onReady);
+        eventBus.emit(EventBusEvent.catalogReloaded);
+        hideLoading();
+      };
+
+      eventBus.on(EventBusEvent.onCruncherReady, onReady);
+    } catch (error) {
+      hideLoading();
+      throw error;
+    }
   }
 
   /**
@@ -365,6 +732,13 @@ export class CatalogLoader {
         tempObjData.push(sensor);
       } else if (staticSat instanceof LaunchSite) {
         tempObjData.push(staticSat);
+      } else if (staticSat.type === SpaceObjectType.STAR) {
+        const star = new Star({
+          id: tempObjData.length,
+          ...staticSat,
+        });
+
+        tempObjData.push(star);
       } else {
         const landObj = new LandObject({
           id: tempObjData.length,
@@ -382,7 +756,7 @@ export class CatalogLoader {
     catalogManagerInstance.numSatellites = tempObjData.length;
 
     for (let i = 0; i < settingsManager.maxOemSatellites; i++) {
-      tempObjData.push(new BaseObject({
+      tempObjData.push(new Planet({
         id: tempObjData.length,
         name: `OEM Satellite ${i + 1}`,
       }));
@@ -448,6 +822,26 @@ export class CatalogLoader {
       });
     }
 
+    const deepSpaceSatellites = ServiceLocator.getScene().deepSpaceSatellites;
+
+    if (deepSpaceSatellites) {
+      Object.keys(deepSpaceSatellites).forEach((satKey) => {
+        const sat = deepSpaceSatellites[satKey];
+        const satDot = new Planet({
+          id: tempObjData.length,
+          name: satKey,
+          type: sat?.type ?? SpaceObjectType.NOTIONAL,
+        });
+
+        satDot.color = sat?.color ?? [1.0, 1.0, 1.0, 1.0] as rgbaArray;
+        if (sat) {
+          sat.planetObject = satDot;
+        }
+
+        tempObjData.push(satDot);
+      });
+    }
+
     dotsManagerInstance.planetDot2 = tempObjData.length;
 
     for (const missileObj of catalogManagerInstance.missileSet) {
@@ -463,6 +857,24 @@ export class CatalogLoader {
       const marker = new Marker(fieldOfViewMarker);
 
       tempObjData.push(marker);
+    }
+  }
+
+  /**
+   * Injects star data from the pro StarsPlugin if it is registered.
+   * This is called before filterTLEDatabase so stars are part of the static set.
+   */
+  private static async injectStarData_(): Promise<void> {
+    if (!__IS_PRO__) {
+      return;
+    }
+
+    try {
+      const { StarsPlugin } = await import('../../plugins-pro/stars/stars-plugin');
+
+      await StarsPlugin.injectStars();
+    } catch {
+      // StarsPlugin not available — skip silently
     }
   }
 
@@ -660,8 +1072,8 @@ export class CatalogLoader {
         // Order matters here
         if (obj.isSatellite()) {
           data = {
-            tle1: (obj as DetailedSatellite).tle1,
-            tle2: (obj as DetailedSatellite).tle2,
+            tle1: (obj as Satellite).tle1,
+            tle2: (obj as Satellite).tle2,
             active: obj.active,
           };
         } else if (obj.isMissile()) {
@@ -677,11 +1089,11 @@ export class CatalogLoader {
           data = {
             isMarker: true,
           };
-        } else if ((obj as Sensor | LandObject).isStatic()) {
+        } else if ((obj as DetailedSensor | LandObject).isStatic()) {
           data = {
-            lat: (obj as Sensor | LandObject).lat,
-            lon: (obj as Sensor | LandObject).lon,
-            alt: (obj as Sensor | LandObject).alt,
+            lat: (obj as DetailedSensor | LandObject).lat,
+            lon: (obj as DetailedSensor | LandObject).lon,
+            alt: (obj as DetailedSensor | LandObject).alt,
           };
         } else {
           throw new Error('Unknown object type');
@@ -692,7 +1104,7 @@ export class CatalogLoader {
     );
   }
 
-  private static makeDebris(notionalDebris: DetailedSatellite, meanAnom: number, notionalSatNum: number, tempSatData: BaseObject[]) {
+  private static makeDebris(notionalDebris: Satellite, meanAnom: number, notionalSatNum: number, tempSatData: BaseObject[]) {
     const debris = { ...notionalDebris };
 
     debris.id = tempSatData.length;
@@ -727,7 +1139,7 @@ export class CatalogLoader {
       StringPad.pad0(meanAnom.toFixed(4), 8) + // New Mean Anomaly
       debris.tle2.substr(51) as TleLine2; // Columns 51-69
 
-    const debrisObj = new DetailedSatellite(debris);
+    const debrisObj = new Satellite(debris);
 
     tempSatData.push(debrisObj);
   }
@@ -779,6 +1191,10 @@ export class CatalogLoader {
       return;
     }
 
+    if (CatalogLoader.shouldSkipRegime_(resp[i].tle2)) {
+      return;
+    }
+
     const intlDes = CatalogLoader.parseIntlDes_(resp[i].tle1);
 
     resp[i].intlDes = intlDes;
@@ -810,7 +1226,7 @@ export class CatalogLoader {
       let isAddedToCatalog = false;
 
       try {
-        const satellite = new DetailedSatellite({
+        const satellite = new Satellite({
           ...resp[i],
           id: tempObjData.length,
           tle1: resp[i].tle1,
@@ -831,7 +1247,7 @@ export class CatalogLoader {
     }
 
     if (settingsManager.isNotionalDebris && resp[i].type === SpaceObjectType.DEBRIS) {
-      const notionalDebris = new DetailedSatellite({
+      const notionalDebris = new Satellite({
         id: 0,
         name: `${resp[i].name} (1cm Notional)`,
         tle1: resp[i].tle1,
@@ -874,7 +1290,7 @@ export class CatalogLoader {
     }
   }
 
-  private static processAsciiCatalogKnown_(catalogManagerInstance: CatalogManager, element: AsciiTleSat, tempSatData: DetailedSatellite[]) {
+  private static processAsciiCatalogKnown_(catalogManagerInstance: CatalogManager, element: AsciiTleSat, tempSatData: Satellite[]) {
     const i = catalogManagerInstance.sccIndex[`${element.SCC}`];
 
     tempSatData[i].tle1 = element.TLE1;
@@ -887,7 +1303,7 @@ export class CatalogLoader {
     tempSatData[i].altId = 'EXTERNAL_SAT'; // TODO: This is a hack to make sure the satellite is not removed by the filter
 
     try {
-      const satellite = new DetailedSatellite(tempSatData[i]);
+      const satellite = new Satellite(tempSatData[i]);
 
       tempSatData[i] = satellite;
     } catch {
@@ -896,6 +1312,10 @@ export class CatalogLoader {
   }
 
   private static processAsciiCatalogUnknown_(element: AsciiTleSat, tempSatData: BaseObject[], catalogManagerInstance: CatalogManager) {
+    if (CatalogLoader.shouldSkipRegime_(element.TLE2)) {
+      return;
+    }
+
     if (typeof element.ON === 'undefined') {
       element.ON = 'Unknown';
     }
@@ -930,7 +1350,7 @@ export class CatalogLoader {
     catalogManagerInstance.cosparIndex[`${intlDes}`] = tempSatData.length;
 
     try {
-      const satellite = new DetailedSatellite({
+      const satellite = new Satellite({
         ...asciiSatInfo,
         tle1: asciiSatInfo.tle1,
         tle2: asciiSatInfo.tle2,
@@ -945,7 +1365,7 @@ export class CatalogLoader {
     }
   }
 
-  private static processAsciiCatalog_(asciiCatalog: AsciiTleSat[], catalogManagerInstance: CatalogManager, tempSatData: DetailedSatellite[]) {
+  private static processAsciiCatalog_(asciiCatalog: AsciiTleSat[], catalogManagerInstance: CatalogManager, tempSatData: Satellite[]) {
     if (settingsManager.dataSources.externalTLEs) {
       if (settingsManager.dataSources.externalTLEs !== 'https://storage.keeptrack.space/data/celestrak.txt') {
         errorManagerInstance.log(`Processing ${settingsManager.dataSources.externalTLEs}`);
@@ -993,7 +1413,7 @@ export class CatalogLoader {
     return tempSatData;
   }
 
-  private static processExtraSats_(extraSats: ExtraSat[], catalogManagerInstance: CatalogManager, tempSatData: DetailedSatellite[]) {
+  private static processExtraSats_(extraSats: ExtraSat[], catalogManagerInstance: CatalogManager, tempSatData: Satellite[]) {
     // If extra catalogue
     for (const element of extraSats) {
       if (!element.SCC || !element.TLE1 || !element.TLE2) {
@@ -1009,6 +1429,10 @@ export class CatalogLoader {
         tempSatData[i].tle2 = element.TLE2 as TleLine2;
         tempSatData[i].source = CatalogSource.EXTRA_JSON;
       } else {
+        if (CatalogLoader.shouldSkipRegime_(element.TLE2)) {
+          continue;
+        }
+
         const intlDes = CatalogLoader.parseIntlDes_(element.TLE1);
         const extrasSatInfo = {
           static: false,
@@ -1032,7 +1456,7 @@ export class CatalogLoader {
         catalogManagerInstance.sccIndex[`${element.SCC.toString()}`] = tempSatData.length;
         catalogManagerInstance.cosparIndex[`${intlDes}`] = tempSatData.length;
 
-        const satellite = new DetailedSatellite({
+        const satellite = new Satellite({
           ...extrasSatInfo,
           tle1: extrasSatInfo.tle1,
           tle2: extrasSatInfo.tle2,
@@ -1067,6 +1491,10 @@ export class CatalogLoader {
         const isVimpel = element.TLE1[7] === 'V';
 
         if (isVimpel) {
+          if (CatalogLoader.shouldSkipRegime_(element.TLE2)) {
+            continue;
+          }
+
           const altId = element.TLE1.substring(9, 17).trim();
           const jsSatInfo = {
             static: false,
@@ -1086,7 +1514,7 @@ export class CatalogLoader {
             id: tempObjData.length,
           };
 
-          const satellite = new DetailedSatellite({
+          const satellite = new Satellite({
             tle1: jsSatInfo.TLE1 as TleLine1,
             tle2: jsSatInfo.TLE2 as TleLine2,
             ...jsSatInfo,
@@ -1100,6 +1528,62 @@ export class CatalogLoader {
         }
       }
     }
+  }
+
+  private static readonly EARTH_GM_ = 398600.4415;
+  private static readonly TAU_ = 2 * Math.PI;
+  private static readonly SECONDS_PER_DAY_ = 86400;
+  private static readonly EARTH_RADIUS_ = 6371;
+
+  /**
+   * Classify a satellite's orbital regime from raw TLE line 2 string.
+   * Uses the same apogee/eccentricity thresholds as color-scheme-manager.ts.
+   */
+  private static getRegimeFromTle_(tle2: string): string {
+    const n = parseFloat(tle2.substring(52, 63)); // mean motion (rev/day)
+    const ecc = parseFloat(`0.${tle2.substring(26, 33).trim()}`); // eccentricity (implied decimal)
+
+    if (isNaN(n) || isNaN(ecc) || n <= 0) {
+      return 'unknown';
+    }
+
+    const sma = CatalogLoader.EARTH_GM_ ** (1 / 3) / ((CatalogLoader.TAU_ * n / CatalogLoader.SECONDS_PER_DAY_) ** (2 / 3));
+    const apogee = sma * (1 + ecc) - CatalogLoader.EARTH_RADIUS_;
+
+    if (apogee < 400) {
+      return 'vleo';
+    }
+    if (apogee < 6000) {
+      return 'leo';
+    }
+    if (ecc >= 0.1 && apogee <= 39786) {
+      return 'heo';
+    }
+    if (ecc < 0.1 && apogee >= 6000 && apogee < 34786) {
+      return 'meo';
+    }
+    if (ecc < 0.1 && apogee >= 34786 && apogee < 36786) {
+      return 'geo';
+    }
+    if ((ecc < 0.1 && apogee > 36786) || apogee > 39786) {
+      return 'xgeo';
+    }
+
+    return 'unknown';
+  }
+
+  /**
+   * Returns true if the satellite should be skipped based on the regime filter.
+   * When regimeFilter is empty, no satellites are skipped.
+   */
+  private static shouldSkipRegime_(tle2: string): boolean {
+    if (settingsManager.core.regimeFilter.length === 0) {
+      return false;
+    }
+
+    const regime = CatalogLoader.getRegimeFromTle_(tle2);
+
+    return !settingsManager.core.regimeFilter.includes(regime);
   }
 
   private static sortByScc_(catalog: AsciiTleSat[] | ExtraSat[]) {

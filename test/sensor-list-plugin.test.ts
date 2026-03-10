@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { DateTimeManager } from '@app/plugins/date-time-manager/date-time-manager';
 import { SensorListPlugin } from '@app/plugins/sensor-list/sensor-list';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
@@ -6,13 +7,13 @@ import { standardClickTests, standardPluginMenuButtonTests, standardPluginSuite 
 
 describe('SensorListPlugin_class', () => {
   beforeEach(() => {
-    // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = jest.fn();
+    // Mock DateTimeManager uiManagerFinal_ to prevent errors
+    (DateTimeManager.prototype as any).uiManagerFinal_ = vi.fn();
     setupStandardEnvironment([TopMenu, DateTimeManager]);
   });
 
   afterEach(() => {
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   standardPluginSuite(SensorListPlugin);

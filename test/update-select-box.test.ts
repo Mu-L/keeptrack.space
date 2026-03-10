@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
@@ -13,8 +14,8 @@ import { standardPluginSuite } from './generic-tests';
 
 describe('UpdateSatManager_class', () => {
   beforeEach(() => {
-    // Mock DateTimeManager uiManagerFinal to prevent errors
-    DateTimeManager.prototype.uiManagerFinal = jest.fn();
+    // Mock DateTimeManager uiManagerFinal_ to prevent errors
+    (DateTimeManager.prototype as any).uiManagerFinal_ = vi.fn();
     PluginRegistry.unregisterAllPlugins();
     setupStandardEnvironment([TopMenu, SelectSatManager, DateTimeManager]);
   });
@@ -23,13 +24,13 @@ describe('UpdateSatManager_class', () => {
 });
 
 describe('SatInfoBoxCore_class2', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let satinfobox: SatInfoBox;
+  let _satinfobox: SatInfoBox;
 
   beforeEach(() => {
     PluginRegistry.unregisterAllPlugins();
     setupStandardEnvironment([TopMenu, SelectSatManager, DateTimeManager]);
-    satinfobox = new SatInfoBox();
+    _satinfobox = new SatInfoBox();
+    void _satinfobox; // Variable is used indirectly by plugin suite tests
   });
 
   it('should be able to select a satellite', () => {

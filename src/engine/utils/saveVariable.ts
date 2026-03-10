@@ -89,3 +89,41 @@ export const saveCsv = <T extends Record<string, unknown>>(items: Array<T>, name
     }
   }
 };
+
+/**
+ * Saves an array of objects as an XLSX file.
+ * Uses dynamic import to avoid adding xlsx to the main bundle.
+ * @param items The array of objects to be saved as XLSX.
+ * @param name The name of the XLSX file to be saved. Defaults to 'data'.
+ */
+export const saveXlsx = async <T extends Record<string, unknown>>(items: Array<T>, name?: string): Promise<void> => {
+  try {
+    const XLSX = await import('@e965/xlsx');
+    const ws = XLSX.utils.json_to_sheet(items);
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    name ??= 'data';
+    XLSX.writeFile(wb, `${name}.xlsx`);
+  } catch (e) {
+    if (!isThisNode()) {
+      errorManagerInstance.error(e, 'saveVariable', 'Error saving xlsx!');
+    }
+  }
+};
+
+/**
+ * Copies an array of objects as TSV (tab-separated values) to the clipboard.
+ * @param items The array of objects to copy as TSV.
+ */
+export const copyTsvToClipboard = async <T extends Record<string, unknown>>(items: Array<T>): Promise<void> => {
+  try {
+    const tsv = Papa.unparse(items, { delimiter: '\t' });
+
+    await navigator.clipboard.writeText(tsv);
+  } catch (e) {
+    if (!isThisNode()) {
+      errorManagerInstance.error(e, 'saveVariable', 'Error copying to clipboard!');
+    }
+  }
+};

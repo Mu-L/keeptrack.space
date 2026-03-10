@@ -1,4 +1,3 @@
-import type { AnalyticsInstance } from 'analytics';
 import type { SatMath } from './app/analysis/sat-math';
 import type { ToastMsgType } from './engine/core/interfaces';
 import type { SettingsManager } from './settings/settings';
@@ -6,7 +5,7 @@ import type { SettingsManager } from './settings/settings';
 import { PluginRegistry } from './engine/core/plugin-registry';
 import { ServiceLocator } from './engine/core/service-locator';
 import { EventBus } from './engine/events/event-bus';
-import { saveCsv, saveVariable } from './engine/utils/saveVariable';
+import { copyTsvToClipboard, saveCsv, saveVariable, saveXlsx } from './engine/utils/saveVariable';
 
 import type { CatalogManager } from './app/data/catalog-manager';
 import type { GroupsManager } from './app/data/groups-manager';
@@ -15,18 +14,17 @@ import type { SensorMath } from './app/sensors/sensor-math';
 import type { SensorManager } from './app/sensors/sensorManager';
 import type { HoverManager } from './app/ui/hover-manager';
 import type { UiManager } from './app/ui/ui-manager';
+import type { SoundManager } from './engine/audio/sound-manager';
 import type { Camera } from './engine/camera/camera';
 import type { Scene } from './engine/core/scene';
 import type { TimeManager } from './engine/core/time-manager';
 import type { InputManager } from './engine/input/input-manager';
-import HorizonsAPI from './engine/ootk/src/fetch/horizons';
 import { KeepTrackPlugin } from './engine/plugins/base-plugin';
 import type { ColorSchemeManager } from './engine/rendering/color-scheme-manager';
 import type { DotsManager } from './engine/rendering/dots-manager';
 import type { LineManager } from './engine/rendering/line-manager';
 import type { MeshManager } from './engine/rendering/mesh-manager';
 import type { WebGLRenderer } from './engine/rendering/webgl-renderer';
-import type { SoundManager } from './plugins/sounds/sound-manager';
 
 
 declare global {
@@ -36,7 +34,7 @@ declare global {
     randomizer: unknown;
     // eslint-disable-next-line no-use-before-define
     keepTrackApi: KeepTrackApi;
-    dataLayer: IArguments[]; // For Google Tag Manager
+    dataLayer?: unknown[]; // For Google Tag Manager / gtag
     _numeric: unknown;
     satellite: SatMath;
     M: {
@@ -64,34 +62,11 @@ declare global {
 }
 
 export class KeepTrackApi {
-  analytics: AnalyticsInstance = {
-    identify: () => {
-      // do nothing
-    },
+  analytics: { track: (event: string, params?: Record<string, unknown>) => void } = {
     track: () => {
-      // do nothing
+      // no-op when telemetry not initialized
     },
-    page: () => {
-      // do nothing
-    },
-    user: () => ({
-      anonymousId: '',
-      id: '',
-    }),
-    reset: () => {
-      // do nothing
-    },
-    ready: () => Promise.resolve(),
-    on: () => {
-      // do nothing
-    },
-    once: () => {
-      // do nothing
-    },
-    getState: () => ({
-      plugins: {},
-    }),
-  } as unknown as AnalyticsInstance;
+  };
 
   // UI related methods
   toast(toastText: string, type: ToastMsgType, isLong = false) {
@@ -142,9 +117,9 @@ export class KeepTrackApi {
 
   // Save utilities
   saveCsv = saveCsv;
+  saveXlsx = saveXlsx;
+  copyTsvToClipboard = copyTsvToClipboard;
   saveVariable = saveVariable;
-
-  horizonsApi = new HorizonsAPI();
 }
 
 export const keepTrackApi = new KeepTrackApi();

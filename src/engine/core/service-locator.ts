@@ -6,7 +6,7 @@ import type { HoverManager } from '@app/app/ui/hover-manager';
 import type { UiManager } from '@app/app/ui/ui-manager';
 import { Container } from '@app/engine/core/container';
 import { Singletons } from '@app/engine/core/interfaces';
-import type { SoundManager } from '@app/plugins/sounds/sound-manager';
+import type { SoundManager } from '@app/engine/audio/sound-manager';
 import type { OrbitManager } from '../../app/rendering/orbit-manager';
 import type { Camera } from '../camera/camera';
 import type { InputManager } from '../input/input-manager';
@@ -14,6 +14,7 @@ import type { ColorSchemeManager } from '../rendering/color-scheme-manager';
 import type { DotsManager } from '../rendering/dots-manager';
 import type { LineManager } from '../rendering/line-manager';
 import type { MeshManager } from '../rendering/mesh-manager';
+import type { SatLabelManager } from '../rendering/sat-label-manager';
 import type { WebGLRenderer } from '../rendering/webgl-renderer';
 import type { Scene } from './scene';
 import type { TimeManager } from './time-manager';
@@ -36,4 +37,5 @@ export class ServiceLocator {
   static readonly getHoverManager = () => Container.getInstance().get<HoverManager>(Singletons.HoverManager);
   static readonly getMainCamera = () => Container.getInstance().get<Camera>(Singletons.MainCamera);
   static readonly getMeshManager = () => Container.getInstance().get<MeshManager>(Singletons.MeshManager);
+  static readonly getSatLabelManager = () => Container.getInstance().get<SatLabelManager>(Singletons.SatLabelManager);
 }

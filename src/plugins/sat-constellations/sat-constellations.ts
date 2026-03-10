@@ -1,92 +1,279 @@
-import { getEl } from '@app/engine/utils/get-el';
-
+import { CatalogExporter } from '@app/app/data/catalog-exporter';
 import { GroupType } from '@app/app/data/object-group';
 import { MenuMode } from '@app/engine/core/interfaces';
-import { EventBus } from '@app/engine/events/event-bus';
-import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { html } from '@app/engine/utils/development/formatter';
-import categoryPng from '@public/img/icons/category.png';
-import { ClickDragOptions, KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import {
+  IBottomIconConfig,
+  ICommandPaletteCommand,
+  IHelpConfig,
+  ISecondaryMenuConfig,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
+import { html } from '@app/engine/utils/development/formatter';
+import { getEl } from '@app/engine/utils/get-el';
+import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
+import { t7e } from '@app/locales/keys';
+import { settingsManager } from '@app/settings/settings';
+import { Satellite } from '@ootk/src/main';
+import categoryPng from '@public/img/icons/category.png';
+import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
+import './sat-constellations.css';
+
+interface ConstellationStats {
+  count: number;
+  avgAltitudeKm: number;
+  incMinDeg: number;
+  incMaxDeg: number;
+}
+
+interface ConstellationDef {
+  groupName: string;
+  groupType: GroupType;
+  groupValue: number[] | RegExp;
+  groupSlug: string;
+}
+
+/** Built-in constellation slugs used for menu items, switch cases, and persistence. */
+const BUILT_IN_CONSTELLATIONS = [
+  'SpaceStations',
+  'AmateurRadio',
+  'GPSGroup',
+  'GalileoGroup',
+  'GlonassGroup',
+  'iridium',
+  'orbcomm',
+  'globalstar',
+  'ses',
+  'aehf',
+  'wgs',
+  'starlink',
+  'sbirs',
+] as const;
 
 export class SatConstellations extends KeepTrackPlugin {
   readonly id = 'SatConstellations';
   dependencies_: string[] = [SelectSatManager.name];
 
-  private readonly additionalConstellations_ = [] as {
-    groupName: string;
-    groupType: GroupType;
-    groupValue: number[] | RegExp;
-    groupSlug: string;
-  }[];
+  private readonly additionalConstellations_: ConstellationDef[] = [];
+  private selectedGroupName_: string | null = null;
 
-  menuMode: MenuMode[] = [MenuMode.BASIC, MenuMode.ADVANCED, MenuMode.ALL];
+  // ── Composition Config ──────────────────────────────────────────────
 
-  bottomIconImg = categoryPng;
-  bottomIconElementName: string = 'menu-constellations';
-  sideMenuElementName: string = 'constellations-menu';
-  sideMenuElementHtml: string = html`
-  <div id="constellations-menu" class="side-menu-parent start-hidden text-select">
-    <div id="constellation-menu" class="side-menu">
-      <ul>
-        <h5 class="center-align">Constellations</h5>
-        <li class="divider"></li>
-        <li class="menu-selectable" data-group="SpaceStations">Space Stations</li>
-        <li class="menu-selectable" data-group="AmatuerRadio">Amateur Radio</li>
-        <li class="menu-selectable" data-group="GPSGroup">GPS Satellites</li>
-        <li class="menu-selectable" data-group="GalileoGroup">Galileo Satellites</li>
-        <li class="menu-selectable" data-group="GlonassGroup">Glonass Satellites</li>
-        <li class="menu-selectable" data-group="iridium">Iridium</li>
-        <li class="menu-selectable" data-group="orbcomm">Orbcomm</li>
-        <li class="menu-selectable" data-group="globalstar">Globalstar</li>
-        <li class="menu-selectable" data-group="ses">SES</li>
-        <li class="menu-selectable" data-group="aehf">Milstar and AEHF</li>
-        <li class="menu-selectable" data-group="wgs">DSCS and WGS</li>
-        <li class="menu-selectable" data-group="starlink">Starlink</li>
-        <li class="menu-selectable" data-group="sbirs">SBIRS</li>
-      </ul>
-    </div>
-  </div>`;
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'menu-constellations',
+      label: t7e('plugins.SatConstellations.bottomIconLabel' as Parameters<typeof t7e>[0]),
+      image: categoryPng as unknown as string,
+      menuMode: [MenuMode.CATALOG, MenuMode.ALL],
+    };
+  }
 
-  dragOptions: ClickDragOptions = {
-    isDraggable: true,
-  };
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'constellations-menu',
+      title: t7e('plugins.SatConstellations.title' as Parameters<typeof t7e>[0]),
+      html: this.buildSideMenuHtml_(),
+      width: 650,
+    };
+  }
+
+  getSecondaryMenuConfig(): ISecondaryMenuConfig {
+    return {
+      html: this.buildSecondaryMenuHtml_(),
+      width: 280,
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.SatConstellations.title' as Parameters<typeof t7e>[0]),
+      body: t7e('plugins.SatConstellations.helpBody' as Parameters<typeof t7e>[0]),
+    };
+  }
+
+  getCommandPaletteCommands(): ICommandPaletteCommand[] {
+    const category = t7e('plugins.SatConstellations.commands.category' as Parameters<typeof t7e>[0]);
+
+    const builtInCommands: ICommandPaletteCommand[] = BUILT_IN_CONSTELLATIONS.map((slug) => ({
+      id: `SatConstellations.${slug}`,
+      label: this.getConstellationLabel_(slug),
+      category,
+      callback: () => this.constellationMenuClick_(slug),
+    }));
+
+    const additionalCommands: ICommandPaletteCommand[] = this.additionalConstellations_.map((c) => ({
+      id: `SatConstellations.${c.groupSlug}`,
+      label: c.groupName,
+      category,
+      callback: () => this.constellationMenuClick_(c.groupSlug),
+    }));
+
+    return [...builtInCommands, ...additionalCommands];
+  }
+
+  // ── Download ────────────────────────────────────────────────────────
+
+  onDownload(): void {
+    if (!this.selectedGroupName_) {
+      return;
+    }
+    const groupManagerInstance = ServiceLocator.getGroupsManager();
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const group = groupManagerInstance.groupList[this.selectedGroupName_];
+
+    if (!group) {
+      return;
+    }
+
+    const sats = group.ids
+      .map((id: number) => catalogManagerInstance.getSat(id))
+      .filter(Boolean) as Satellite[];
+
+    CatalogExporter.exportTle2Csv(sats);
+  }
+
+  // ── Lifecycle ───────────────────────────────────────────────────────
 
   addHtml(): void {
     super.addHtml();
 
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      () => {
+    EventBus.getInstance().on(EventBusEvent.uiManagerFinal, () => {
+      const menuEl = getEl('constellations-menu');
+      const ulEl = menuEl?.querySelector('ul');
+
+      if (ulEl) {
         // Add additional constellations
-        getEl('constellations-menu')!.querySelector('ul')!.insertAdjacentHTML(
+        ulEl.insertAdjacentHTML(
           'beforeend',
           this.additionalConstellations_
-            .map((constellation) => `<li class="menu-selectable" data-group="${constellation.groupSlug}">${constellation.groupName}</li>`)
+            .map((c) => `<li class="menu-selectable" data-group="${c.groupSlug}">${c.groupName}</li>`)
             .join(''),
         );
+      }
 
-        getEl('constellation-menu')!
-          .querySelectorAll('li')
-          .forEach((element) => {
-            element.addEventListener('click', (evt: Event) => {
-              this.constellationMenuClick_((evt.target as HTMLElement).dataset.group!);
-            });
-          });
-      },
-    );
+      // Wire click handlers on all list items
+      menuEl?.querySelectorAll('li').forEach((element) => {
+        element.addEventListener('click', (evt: Event) => {
+          const group = (evt.target as HTMLElement).dataset.group;
+
+          if (group) {
+            this.constellationMenuClick_(group);
+          }
+        });
+      });
+
+      // Wire filter form buttons
+      getEl('sc-filter-apply')?.addEventListener('click', () => this.applyFilters_());
+      getEl('sc-filter-reset')?.addEventListener('click', () => this.resetFilters_());
+
+      // Restore last selected constellation
+      const last = PersistenceManager.getInstance().getItem(StorageKey.LAST_CONSTELLATION);
+
+      if (last) {
+        this.constellationMenuClick_(last, true);
+      }
+    });
   }
 
-  addConstellation(groupName: string, groupType: GroupType, groupValue: number[] | RegExp) {
+  // ── Public API ──────────────────────────────────────────────────────
+
+  addConstellation(groupName: string, groupType: GroupType, groupValue: number[] | RegExp): void {
     const groupSlug = groupName.replace(/\s+/gu, '-').toLowerCase();
 
     this.additionalConstellations_.push({ groupName, groupType, groupValue, groupSlug });
   }
 
-  private constellationMenuClick_(groupName: string) {
-    // const timeManagerInstance = ServiceLocator.getTimeManager();
+  // ── Private: HTML Builders ──────────────────────────────────────────
+
+  private buildSideMenuHtml_(): string {
+    const l = (key: string) => t7e(`plugins.SatConstellations.constellations.${key}` as Parameters<typeof t7e>[0]);
+
+    return html`
+      <ul id="sc-constellation-list">
+        <li class="menu-selectable" data-group="SpaceStations">${l('SpaceStations')}</li>
+        <li class="menu-selectable" data-group="AmateurRadio">${l('AmateurRadio')}</li>
+        <li class="menu-selectable" data-group="GPSGroup">${l('GPSGroup')}</li>
+        <li class="menu-selectable" data-group="GalileoGroup">${l('GalileoGroup')}</li>
+        <li class="menu-selectable" data-group="GlonassGroup">${l('GlonassGroup')}</li>
+        <li class="menu-selectable" data-group="iridium">${l('iridium')}</li>
+        <li class="menu-selectable" data-group="orbcomm">${l('orbcomm')}</li>
+        <li class="menu-selectable" data-group="globalstar">${l('globalstar')}</li>
+        <li class="menu-selectable" data-group="ses">${l('ses')}</li>
+        <li class="menu-selectable" data-group="aehf">${l('aehf')}</li>
+        <li class="menu-selectable" data-group="wgs">${l('wgs')}</li>
+        <li class="menu-selectable" data-group="starlink">${l('starlink')}</li>
+        <li class="menu-selectable" data-group="sbirs">${l('sbirs')}</li>
+      </ul>
+      <div id="sc-stats" class="sc-stats start-hidden">
+        <div class="sc-stats-row">
+          <span id="sc-stat-count"></span>
+          <span id="sc-stat-alt"></span>
+          <span id="sc-stat-inc"></span>
+        </div>
+      </div>
+      <div id="sc-table-wrapper" class="start-hidden">
+        <table id="sc-results-table" class="sc-results-table center-align striped"></table>
+        <sub id="sc-results-count" class="center-align"></sub>
+      </div>
+    `;
+  }
+
+  private buildSecondaryMenuHtml_(): string {
+    const l = (key: string) => t7e(`plugins.SatConstellations.filters.${key}` as Parameters<typeof t7e>[0]);
+
+    return html`
+      <div class="sc-filter-form">
+        <div class="row">
+          <div class="input-field col s6">
+            <input placeholder="0" id="sc-filter-inc-min" type="number" />
+            <label for="sc-filter-inc-min" class="active">${l('incMin')}</label>
+          </div>
+          <div class="input-field col s6">
+            <input placeholder="180" id="sc-filter-inc-max" type="number" />
+            <label for="sc-filter-inc-max" class="active">${l('incMax')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s6">
+            <input placeholder="0" id="sc-filter-alt-min" type="number" />
+            <label for="sc-filter-alt-min" class="active">${l('altMin')}</label>
+          </div>
+          <div class="input-field col s6">
+            <input placeholder="50000" id="sc-filter-alt-max" type="number" />
+            <label for="sc-filter-alt-max" class="active">${l('altMax')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s6">
+            <input placeholder="0" id="sc-filter-raan-min" type="number" />
+            <label for="sc-filter-raan-min" class="active">${l('raanMin')}</label>
+          </div>
+          <div class="input-field col s6">
+            <input placeholder="360" id="sc-filter-raan-max" type="number" />
+            <label for="sc-filter-raan-max" class="active">${l('raanMax')}</label>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-field col s12">
+            <input placeholder=".*" id="sc-filter-name" type="text" />
+            <label for="sc-filter-name" class="active">${l('nameFilter')}</label>
+          </div>
+        </div>
+        <div class="row sc-filter-buttons">
+          <button id="sc-filter-apply" class="btn btn-ui waves-effect waves-light">${l('apply')}</button>
+          <button id="sc-filter-reset" class="btn btn-ui waves-effect waves-light">${l('reset')}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Private: Constellation Selection ────────────────────────────────
+
+  private constellationMenuClick_(groupName: string, skipCloseMenus = false): void {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
     const groupManagerInstance = ServiceLocator.getGroupsManager();
 
@@ -137,10 +324,10 @@ export class SatConstellations extends KeepTrackPlugin {
         break;
       case 'ses':
         if (!groupManagerInstance.groupList[groupName]) {
-          groupManagerInstance.createGroup(GroupType.PAYLOAD_NAME_REGEX, /SES \d+/u, groupName);
+          groupManagerInstance.createGroup(GroupType.PAYLOAD_NAME_REGEX, /SES-\d+/u, groupName);
         }
         break;
-      case 'AmatuerRadio':
+      case 'AmateurRadio':
         if (!groupManagerInstance.groupList[groupName]) {
           groupManagerInstance.createGroup(
             GroupType.SCC_NUM,
@@ -158,20 +345,13 @@ export class SatConstellations extends KeepTrackPlugin {
         if (!groupManagerInstance.groupList[groupName]) {
           groupManagerInstance.createGroup(GroupType.SCC_NUM, catalogManagerInstance.id2satnum(catalogManagerInstance.satLinkManager.aehf), groupName);
         }
-        // showLoading(() => {
-        //   catalogManagerInstance.satLinkManager.showLinks(lineManagerInstance, SatConstellationString.Aehf, timeManagerInstance);
-        // });
         break;
       case 'wgs':
         if (!groupManagerInstance.groupList[groupName]) {
-          // WGS also selects DSCS
           const wgs = catalogManagerInstance.satLinkManager.wgs.concat(catalogManagerInstance.satLinkManager.dscs);
 
           groupManagerInstance.createGroup(GroupType.SCC_NUM, catalogManagerInstance.id2satnum(wgs), groupName);
         }
-        // showLoading(() => {
-        //   catalogManagerInstance.satLinkManager.showLinks(lineManagerInstance, SatConstellationString.Wgs, timeManagerInstance);
-        // });
         break;
       case 'starlink':
         if (!groupManagerInstance.groupList[groupName]) {
@@ -185,9 +365,9 @@ export class SatConstellations extends KeepTrackPlugin {
           groupManagerInstance.createGroup(GroupType.SCC_NUM, catalogManagerInstance.id2satnum(sbirs), groupName);
         }
         break;
-      default:
+      default: {
         if (!groupManagerInstance.groupList[groupName]) {
-          const constellation = this.additionalConstellations_.find((constellation) => constellation.groupSlug === groupName);
+          const constellation = this.additionalConstellations_.find((c) => c.groupSlug === groupName);
 
           if (constellation) {
             groupManagerInstance.createGroup(constellation.groupType, constellation.groupValue, groupName);
@@ -197,11 +377,15 @@ export class SatConstellations extends KeepTrackPlugin {
         if (!groupManagerInstance.groupList[groupName]) {
           throw new Error(`Unknown group name: ${groupName}`);
         }
+      }
     }
-    SatConstellations.groupSelected(groupName);
+
+    this.selectedGroupName_ = groupName;
+    PersistenceManager.getInstance().saveItem(StorageKey.LAST_CONSTELLATION, groupName);
+    this.groupSelected_(groupName, skipCloseMenus);
   }
 
-  static groupSelected(groupName: string) {
+  private groupSelected_(groupName: string, skipCloseMenus = false): void {
     if (typeof groupName === 'undefined') {
       return;
     }
@@ -212,29 +396,287 @@ export class SatConstellations extends KeepTrackPlugin {
       throw new Error(`Unknown group name: ${groupName}`);
     }
 
-    const searchDOM = getEl('search');
+    groupManagerInstance.selectGroup(groupManagerInstance.groupList[groupName]);
 
-    if (!searchDOM) {
-      // If no searchDOM, there is no need to continue
+    PluginRegistry.getPlugin(SelectSatManager)?.selectSat(-1);
+
+    const sats = groupManagerInstance.groupList[groupName].ids
+      .map((id: number) => catalogManagerInstance.getSat(id))
+      .filter(Boolean) as Satellite[];
+
+    this.updateSearchBar_(sats);
+
+    if (!skipCloseMenus && settingsManager.isMobileModeEnabled) {
+      const uiManagerInstance = ServiceLocator.getUiManager();
+
+      uiManagerInstance.searchManager.closeSearch();
+      uiManagerInstance.hideSideMenus();
+    }
+
+    // Populate the stats panel and results table
+    this.populateTable_(groupName);
+  }
+
+  // ── Private: Stats & Table ──────────────────────────────────────────
+
+  private populateTable_(groupName: string): void {
+    // Guard: DOM may not be ready during persistence restore
+    if (!getEl('sc-results-table', true)) {
       return;
     }
 
-    groupManagerInstance.selectGroup(groupManagerInstance.groupList[groupName]);
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const groupManagerInstance = ServiceLocator.getGroupsManager();
+    const group = groupManagerInstance.groupList[groupName];
 
-    // Populate searchDOM with a search string separated by commas - minus the last one
-    searchDOM.innerHTML = groupManagerInstance.groupList[groupName].ids.reduce((acc: string, id: number) => `${acc}${catalogManagerInstance.getSat(id)?.sccNum},`, '').slice(0, -1);
+    if (!group) {
+      return;
+    }
 
-    // If SelectSatManager is enabled, deselect the selected sat
-    PluginRegistry.getPlugin(SelectSatManager)?.selectSat(-1);
+    const sats = group.ids
+      .map((id: number) => catalogManagerInstance.getSat(id))
+      .filter(Boolean) as Satellite[];
+
+    this.updateStats_(sats);
+    this.buildTable_(sats);
+
+    // Show the stats and table sections
+    getEl('sc-stats')?.classList.remove('start-hidden');
+    getEl('sc-table-wrapper')?.classList.remove('start-hidden');
+
+    const countEl = getEl('sc-results-count');
+
+    if (countEl) {
+      const label = t7e('plugins.SatConstellations.stats.satellites' as Parameters<typeof t7e>[0]);
+
+      if (sats.length > SatConstellations.MAX_TABLE_ROWS_) {
+        countEl.textContent = `${SatConstellations.MAX_TABLE_ROWS_} / ${sats.length} ${label}`;
+      } else {
+        countEl.textContent = `${sats.length} ${label}`;
+      }
+    }
+  }
+
+  private updateStats_(sats: Satellite[]): void {
+    if (sats.length === 0) {
+      return;
+    }
+
+    const stats = SatConstellations.calculateStats_(sats);
+
+    const lStat = (key: string) => t7e(`plugins.SatConstellations.stats.${key}` as Parameters<typeof t7e>[0]);
+
+    const countEl = getEl('sc-stat-count');
+    const altEl = getEl('sc-stat-alt');
+    const incEl = getEl('sc-stat-inc');
+
+    if (countEl) {
+      countEl.textContent = `${stats.count} ${lStat('satellites')}`;
+    }
+    if (altEl) {
+      altEl.textContent = `${lStat('avgAltitude')}: ${stats.avgAltitudeKm.toFixed(0)} km`;
+    }
+    if (incEl) {
+      incEl.textContent = `${lStat('incRange')}: ${stats.incMinDeg.toFixed(1)}\u00B0-${stats.incMaxDeg.toFixed(1)}\u00B0`;
+    }
+  }
+
+  static calculateStats_(sats: Satellite[]): ConstellationStats {
+    let totalAlt = 0;
+    let incMin = Infinity;
+    let incMax = -Infinity;
+
+    for (const sat of sats) {
+      const alt = (sat.apogee + sat.perigee) / 2;
+
+      totalAlt += alt;
+      if (sat.inclination < incMin) {
+        incMin = sat.inclination;
+      }
+      if (sat.inclination > incMax) {
+        incMax = sat.inclination;
+      }
+    }
+
+    return {
+      count: sats.length,
+      avgAltitudeKm: totalAlt / sats.length,
+      incMinDeg: incMin === Infinity ? 0 : incMin,
+      incMaxDeg: incMax === -Infinity ? 0 : incMax,
+    };
+  }
+
+  private static readonly MAX_TABLE_ROWS_ = 500;
+
+  private buildTable_(sats: Satellite[]): void {
+    const tbl = getEl('sc-results-table') as HTMLTableElement | null;
+
+    if (!tbl) {
+      return;
+    }
+
+    const lTbl = (key: string) => t7e(`plugins.SatConstellations.table.${key}` as Parameters<typeof t7e>[0]);
+    const headers = ['norad', 'name', 'inclination', 'raan', 'perigee', 'apogee'];
+
+    // Sort by RAAN to group orbital planes visually
+    const sorted = [...sats].sort((a, b) => a.rightAscension - b.rightAscension);
+    const displaySats = sorted.slice(0, SatConstellations.MAX_TABLE_ROWS_);
+
+    // Build entire table as HTML string for performance (single reflow)
+    let tableHtml = '<thead><tr>';
+
+    for (const h of headers) {
+      tableHtml += `<td style="text-decoration: underline" class="center">${lTbl(h)}</td>`;
+    }
+    tableHtml += '</tr></thead><tbody>';
+
+    for (const sat of displaySats) {
+      tableHtml += `<tr class="sc-table-row link" data-sat-id="${sat.id}">`;
+      tableHtml += `<td>${sat.sccNum}</td>`;
+      tableHtml += `<td>${sat.name}</td>`;
+      tableHtml += `<td>${sat.inclination.toFixed(1)}</td>`;
+      tableHtml += `<td>${sat.rightAscension.toFixed(1)}</td>`;
+      tableHtml += `<td>${sat.perigee.toFixed(0)}</td>`;
+      tableHtml += `<td>${sat.apogee.toFixed(0)}</td>`;
+      tableHtml += '</tr>';
+    }
+    tableHtml += '</tbody>';
+
+    tbl.innerHTML = tableHtml;
+
+    // Wire click handlers via event delegation
+    tbl.addEventListener('click', (evt: Event) => {
+      const tr = (evt.target as HTMLElement).closest('tr');
+      const satId = tr?.dataset.satId;
+
+      if (satId) {
+        PluginRegistry.getPlugin(SelectSatManager)?.selectSat(parseInt(satId));
+      }
+    });
+  }
+
+  // ── Private: Filtering ──────────────────────────────────────────────
+
+  private applyFilters_(): void {
+    if (!this.selectedGroupName_) {
+      return;
+    }
+
+    const groupManagerInstance = ServiceLocator.getGroupsManager();
+    const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const group = groupManagerInstance.groupList[this.selectedGroupName_];
+
+    if (!group) {
+      return;
+    }
+
+    const incMin = parseFloat((getEl('sc-filter-inc-min') as HTMLInputElement)?.value) || 0;
+    const incMax = parseFloat((getEl('sc-filter-inc-max') as HTMLInputElement)?.value) || 180;
+    const altMin = parseFloat((getEl('sc-filter-alt-min') as HTMLInputElement)?.value) || 0;
+    const altMax = parseFloat((getEl('sc-filter-alt-max') as HTMLInputElement)?.value) || 100000;
+    const raanMin = parseFloat((getEl('sc-filter-raan-min') as HTMLInputElement)?.value) || 0;
+    const raanMax = parseFloat((getEl('sc-filter-raan-max') as HTMLInputElement)?.value) || 360;
+    const nameFilter = (getEl('sc-filter-name') as HTMLInputElement)?.value || '';
+
+    let nameRegex: RegExp | null = null;
+
+    if (nameFilter) {
+      try {
+        nameRegex = new RegExp(nameFilter, 'iu');
+      } catch {
+        // Invalid regex, ignore filter
+      }
+    }
+
+    const filteredIds = group.ids.filter((id: number) => {
+      const sat = catalogManagerInstance.getSat(id);
+
+      if (!sat) {
+        return false;
+      }
+
+      if (sat.inclination < incMin || sat.inclination > incMax) {
+        return false;
+      }
+
+      const alt = (sat.apogee + sat.perigee) / 2;
+
+      if (alt < altMin || alt > altMax) {
+        return false;
+      }
+
+      if (sat.rightAscension < raanMin || sat.rightAscension > raanMax) {
+        return false;
+      }
+
+      if (nameRegex && !nameRegex.test(sat.name)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Create a temporary filtered group and display it
+    const filteredSats = filteredIds
+      .map((id: number) => catalogManagerInstance.getSat(id))
+      .filter(Boolean) as Satellite[];
+
+    if (filteredIds.length > 0) {
+      const tempGroup = groupManagerInstance.createGroup(GroupType.ID_LIST, filteredIds);
+
+      groupManagerInstance.selectGroup(tempGroup);
+    }
+
+    // Update the search bar to reflect filtered results
+    this.updateSearchBar_(filteredSats);
+
+    this.updateStats_(filteredSats);
+    this.buildTable_(filteredSats);
+
+    const countEl = getEl('sc-results-count');
+
+    if (countEl) {
+      countEl.textContent = `${filteredSats.length} / ${group.ids.length} ${t7e('plugins.SatConstellations.stats.satellites' as Parameters<typeof t7e>[0])}`;
+    }
+  }
+
+  private resetFilters_(): void {
+    const fields = ['sc-filter-inc-min', 'sc-filter-inc-max', 'sc-filter-alt-min', 'sc-filter-alt-max', 'sc-filter-raan-min', 'sc-filter-raan-max', 'sc-filter-name'];
+
+    for (const id of fields) {
+      const el = getEl(id) as HTMLInputElement | null;
+
+      if (el) {
+        el.value = '';
+      }
+    }
+
+    if (this.selectedGroupName_) {
+      this.groupSelected_(this.selectedGroupName_, true);
+    }
+  }
+
+  // ── Private: Search Bar ─────────────────────────────────────────────
+
+  private updateSearchBar_(sats: Satellite[]): void {
+    const searchDOM = getEl('search', true);
+
+    if (!searchDOM) {
+      return;
+    }
+
+    const sccNums = sats.map((sat) => sat.sccNum).join(',');
+
+    searchDOM.innerHTML = sccNums;
 
     const uiManagerInstance = ServiceLocator.getUiManager();
 
-    uiManagerInstance.searchManager.doSearch(groupManagerInstance.groupList[groupName].ids.map((id: number) => catalogManagerInstance.getSat(id)?.sccNum).join(','));
+    uiManagerInstance.searchManager.doSearch(sccNums);
+  }
 
-    // Close Menus
-    if (settingsManager.isMobileModeEnabled) {
-      uiManagerInstance.searchManager.closeSearch();
-    }
-    uiManagerInstance.hideSideMenus();
+  // ── Private: Helpers ────────────────────────────────────────────────
+
+  private getConstellationLabel_(slug: string): string {
+    return t7e(`plugins.SatConstellations.constellations.${slug}` as Parameters<typeof t7e>[0]) || slug;
   }
 }

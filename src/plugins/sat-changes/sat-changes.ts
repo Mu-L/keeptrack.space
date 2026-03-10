@@ -1,4 +1,5 @@
 /* eslint-disable no-use-before-define */
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { clickAndDragWidth } from '@app/engine/utils/click-and-drag';
@@ -7,9 +8,11 @@ import { getEl } from '@app/engine/utils/get-el';
 import { isThisNode } from '@app/engine/utils/isThisNode';
 import { slideInRight, slideOutLeft } from '@app/engine/utils/slide';
 import { dateFromJday } from '@app/engine/utils/transforms';
+import { t7e } from '@app/locales/keys';
 import satChngPng from '@public/img/icons/sats.png';
 import './components/sat-changes.css';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+
+const sc = (key: string) => t7e(`plugins.SatChanges.${key}` as Parameters<typeof t7e>[0]);
 
 /**
  *  ////////////////////////////////////////////////////////////////////////////
@@ -34,10 +37,10 @@ export const uiManagerInit = () => {
   getEl('left-menus')?.insertAdjacentHTML(
     'beforeend',
     html`
-        <div id="satChng-menu" class="side-menu-parent start-hidden text-select">
+        <div id="satChng-menu" class="side-menu-parent start-hidden">
           <div id="satChng-content" class="side-menu">
             <div class="row">
-              <h5 class="center-align">Interesting Movements</h5>
+              <h5 class="center-align">${sc('title')}</h5>
               <table id="satChng-table" class="center-align"></table>
             </div>
           </div>
@@ -53,7 +56,7 @@ export const uiManagerInit = () => {
           <div class="bmenu-item-inner">
             <img alt="satchng" src="" delayedsrc="${satChngPng}" />
           </div>
-          <span class="bmenu-title">Satellite Changes</span>
+          <span class="bmenu-title">${sc('bottomIconLabel')}</span>
         </div>
         `,
   );
@@ -106,7 +109,7 @@ export const satChng = (row: number, testOverride?: undefined): void => {
 
   if (row === -1 && satChngTable?.length === 0) {
     // Only generate the table if receiving the -1 argument for the first time
-    fetch(`./analysis/satchng.json?v=${settingsManager.versionNumber}`).then((resp) => {
+    fetch(`./analysis/satchng.json?v=${__VERSION__}`).then((resp) => {
       resp.json().then((json) => {
         ({ satChngTable } = getSatChngJson(json));
       });
@@ -125,7 +128,7 @@ export const satChng = (row: number, testOverride?: undefined): void => {
 };
 
 export const hideSideMenus = (): void => {
-  slideOutLeft(getEl('satChng-menu'), 1000);
+  slideOutLeft(getEl('satChng-menu'), 300);
   getEl('menu-satChng')?.classList.remove('bmenu-item-selected');
   issatChngMenuOpen = false;
 };
@@ -143,7 +146,7 @@ export const bottomMenuClick = (iconName: string): void => {
         uiManagerInstance.searchManager.closeSearch();
       }
       uiManagerInstance.hideSideMenus();
-      slideInRight(getEl('satChng-menu'), 1000);
+      slideInRight(getEl('satChng-menu'), 300);
       issatChngMenuOpen = true;
       satChng(-1);
       getEl('menu-satChng')?.classList.add('bmenu-item-selected');
@@ -176,19 +179,19 @@ export const getSatChngJson = (json) => {
   let tr = tbl.insertRow();
   let tdT = tr.insertCell();
 
-  tdT.appendChild(document.createTextNode('Time'));
+  tdT.appendChild(document.createTextNode(sc('tableHeaders.time')));
   tdT.setAttribute('style', 'text-decoration: underline');
   let tdSat = tr.insertCell();
 
-  tdSat.appendChild(document.createTextNode('Sat'));
+  tdSat.appendChild(document.createTextNode(sc('tableHeaders.satellite')));
   tdSat.setAttribute('style', 'text-decoration: underline');
   let tdInc = tr.insertCell();
 
-  tdInc.appendChild(document.createTextNode('Inc'));
+  tdInc.appendChild(document.createTextNode(sc('tableHeaders.inclination')));
   tdInc.setAttribute('style', 'text-decoration: underline');
   let tdPer = tr.insertCell();
 
-  tdPer.appendChild(document.createTextNode('Per'));
+  tdPer.appendChild(document.createTextNode(sc('tableHeaders.period')));
   tdPer.setAttribute('style', 'text-decoration: underline');
 
   // 20 rows max

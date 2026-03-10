@@ -1,4 +1,4 @@
-import { BaseObject, Degrees, DetailedSatellite, Kilometers, Meters, Milliseconds, Radians, SpaceObjectType, Vec3Flat, ZoomValue } from '@ootk/src/main';
+import { BaseObject, Degrees, Kilometers, Meters, Milliseconds, Radians, Satellite, SpaceObjectType, Vec3Flat, ZoomValue } from '@ootk/src/main';
 import type { ColorSchemeParams } from '../rendering/color-schemes/color-scheme';
 
 /** Array of ECI Coordinates [x, y, z] */
@@ -23,6 +23,7 @@ export interface SatShader {
   maxAllowedSize: number;
   maxSizePlanetarium: number;
   minSizePlanetarium: number;
+  starMinSize: number;
   starSize: string;
 }
 
@@ -129,7 +130,7 @@ export type lookanglesRow = {
 };
 
 export type SatPassTimes = {
-  sat: DetailedSatellite;
+  sat: Satellite;
   time: Date;
 };
 
@@ -213,11 +214,15 @@ export enum Pickable {
 }
 
 export enum MenuMode {
-  BASIC,
-  ADVANCED,
+  CATALOG,
+  SENSORS,
+  EVENTS,
+  CREATE,
   ANALYSIS,
-  EXPERIMENTAL,
+  DISPLAY,
+  TOOLS,
   SETTINGS,
+  EXPERIMENTAL,
   ALL,
 }
 
@@ -269,6 +274,7 @@ export enum Singletons {
   PersistenceManager = 'PersistenceManager',
   Scene = 'Scene',
   MeshManager = 'MeshManager',
+  SatLabelManager = 'SatLabelManager',
 }
 export enum SolarBody {
   Sun = 'Sun',
@@ -286,6 +292,11 @@ export enum SolarBody {
   Eris = 'Eris',
   Haumea = 'Haumea',
   Ceres = 'Ceres',
+  Sedna = 'Sedna',
+  Quaoar = 'Quaoar',
+  Orcus = 'Orcus',
+  Gonggong = 'Gonggong',
+  Charon = 'Charon',
   Io = 'Io',
   Europa = 'Europa',
   Ganymede = 'Ganymede',

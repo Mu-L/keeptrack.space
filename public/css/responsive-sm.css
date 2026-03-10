@@ -1,7 +1,7 @@
 @media (min-width: 640px) {
   .side-menu-parent {
-    width: 280px;
-    min-width: 265px;
+    min-width: 400px;
+    width: 400px;
   }
 
   #lookanglesmultisite-menu {
@@ -48,7 +48,7 @@
   }
 
   .footer-slide-trans {
-    transition: 1s;
+    transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .footer-slide-up {
@@ -61,9 +61,7 @@
   }
 
   #datetime-text {
-    border-width: 0px 0px 0px 1px;
-    border-style: solid;
-    border-color: var(--color-dark-text-accent);
+    border-left: 5px solid var(--color-dark-border);
     padding: 0px 10px 0px 10px;
     vertical-align: bottom;
   }
@@ -81,13 +79,6 @@
     display: block;
     justify-content: flex-start;
     text-align: unset;
-  }
-
-  #sat-infobox {
-    bottom: var(--bottom-menu-height);
-    width: 70%;
-    max-width: 380px;
-    right: 0px;
   }
 
   #polar-plot {

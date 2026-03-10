@@ -18,6 +18,7 @@
  */
 
 import { MobileManager } from '@app/app/ui/mobileManager';
+import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { UrlManager } from '@app/engine/input/url-manager';
 import { ColorSchemeColorMap } from '@app/engine/rendering/color-schemes/color-scheme';
@@ -36,8 +37,7 @@ import { parseGetVariables } from './parse-get-variables';
 import { PerformanceSettings, defaultPerformanceSettings } from './performance-settings';
 import { darkClouds } from './presets/darkClouds';
 import { SettingsPresets } from './presets/presets';
-import { UiSettings, defaultUiSettings } from './ui-settings';
-import { EventBus } from '@app/engine/events/event-bus';
+import { SatLabelMode, UiSettings, defaultUiSettings } from './ui-settings';
 
 /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 /* eslint-disable max-lines */
@@ -66,6 +66,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   earthNumLonSegs: 'graphics',
   isDrawAtmosphere: 'graphics',
   isDrawAurora: 'graphics',
+  isDrawGraticule: 'graphics',
   isDrawSun: 'graphics',
   sizeOfSun: 'graphics',
   isUseSunTexture: 'graphics',
@@ -98,6 +99,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   modelsOnSatelliteViewOverride: 'graphics',
   noMeshManager: 'graphics',
   isDisableAsyncReadPixels: 'graphics',
+  debugMobilePicking: 'graphics',
 
   // UI
   activeMenuMode: 'ui',
@@ -110,8 +112,10 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isShowLoadingHints: 'ui',
   isShowPrimaryLogo: 'ui',
   isShowSecondaryLogo: 'ui',
+  navBarLogoUrl: 'ui',
   isWatchlistTopMenuNotification: 'ui',
   isUseJdayOnTopMenu: 'ui',
+  isJdayToggleable: 'ui',
   mapWidth: 'ui',
   mapHeight: 'ui',
   lastMapUpdateTime: 'ui',
@@ -133,6 +137,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isShowNextPass: 'ui',
   isEciOnHover: 'ui',
   isSatLabelModeOn: 'ui',
+  satLabelMode: 'ui',
   desktopMaxLabels: 'ui',
   mobileMaxLabels: 'ui',
   minTimeBetweenSatLabels: 'ui',
@@ -189,6 +194,8 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   disableCameraControls: 'camera',
   isDragging: 'camera',
   isFocusOnSatelliteWhenSelected: 'camera',
+  isSmoothCameraTransitions: 'camera',
+  cameraTransitionDuration: 'camera',
   offsetCameraModeX: 'camera',
   offsetCameraModeZ: 'camera',
   fpsForwardSpeed: 'camera',
@@ -197,6 +204,11 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   fpsSideSpeed: 'camera',
   fpsVertSpeed: 'camera',
   fpsYawRate: 'camera',
+  touchCameraDecayFactor: 'camera',
+  touchCameraMovementSpeed: 'camera',
+  momentumDamping: 'camera',
+  touchMomentumDamping: 'camera',
+  isLocalRotateEnabled: 'camera',
   drawCameraWidget: 'camera',
 
   // Orbital
@@ -276,6 +288,8 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   filter: 'core',
   installDirectory: 'core',
   offlineMode: 'core',
+  offlineIconBehavior: 'core',
+  noCatalogOnLoad: 'core',
   isInIframe: 'core',
   isGlobalErrorTrapOn: 'core',
   isEnableConsole: 'core',
@@ -306,6 +320,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   lastSearchResults: 'core',
   minimumSearchCharacters: 'core',
   searchLimit: 'core',
+  isShowDecayedInSearch: 'core',
   limitSats: 'core',
   isDisableSelectSat: 'core',
   daysUntilObjectLost: 'core',
@@ -331,14 +346,13 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isDisableKeyboard: 'core',
   isFreezePropRateOnDrag: 'core',
   isBlockPersistence: 'core',
-  versionDate: 'core',
-  versionNumber: 'core',
   videoBitsPerSecond: 'core',
   isMissionDataEnabled: 'core',
   pTime: 'core',
   lkVerify: 'core',
   settingsManager: 'core',
   isAutoStart: 'core',
+  isDisableLoginGate: 'core',
   onLoadCb: 'core',
 };
 
@@ -380,6 +394,16 @@ export class SettingsManager {
 
     // Create property accessors for backward compatibility
     this.createPropertyAccessors_();
+
+    // Override isSatLabelModeOn to be a computed accessor based on satLabelMode
+    Object.defineProperty(this, 'isSatLabelModeOn', {
+      get: () => this.ui.satLabelMode !== SatLabelMode.OFF,
+      set: (value: boolean) => {
+        this.ui.satLabelMode = value ? SatLabelMode.FOV_ONLY : SatLabelMode.OFF;
+      },
+      enumerable: true,
+      configurable: true,
+    });
   }
 
   /**
@@ -413,6 +437,7 @@ export class SettingsManager {
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DRAW_BLACK_EARTH, settingsManager.isBlackEarth.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DRAW_ATMOSPHERE, settingsManager.isDrawAtmosphere.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DRAW_AURORA, settingsManager.isDrawAurora.toString());
+      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DRAW_GRATICULE, settingsManager.isDrawGraticule.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DRAW_MILKY_WAY, settingsManager.isDrawMilkyWay.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_GRAY_SKYBOX, settingsManager.isGraySkybox.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_ECI_ON_HOVER, settingsManager.isEciOnHover.toString());
@@ -423,10 +448,11 @@ export class SettingsManager {
         PersistenceManager.getInstance().removeItem(StorageKey.SETTINGS_CONFIDENCE_LEVELS);
       }
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DEMO_MODE, settingsManager.isDemoModeOn.toString());
-      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SAT_LABEL_MODE, settingsManager.isSatLabelModeOn.toString());
+      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SAT_LABEL_MODE_V2, settingsManager.satLabelMode.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_FREEZE_PROP_RATE_ON_DRAG, settingsManager.isFreezePropRateOnDrag.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_DISABLE_TIME_MACHINE_TOASTS, settingsManager.isDisableTimeMachineToasts.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SEARCH_LIMIT, settingsManager.searchLimit.toString());
+      PersistenceManager.getInstance().saveItem(StorageKey.SETTINGS_SHOW_DECAYED_IN_SEARCH, settingsManager.isShowDecayedInSearch.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.GRAPHICS_SETTINGS_GODRAYS_SAMPLES, settingsManager.godraysSamples.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.GRAPHICS_SETTINGS_GODRAYS_DECAY, settingsManager.godraysDecay.toString());
       PersistenceManager.getInstance().saveItem(StorageKey.GRAPHICS_SETTINGS_GODRAYS_EXPOSURE, settingsManager.godraysExposure.toString());
@@ -456,6 +482,7 @@ export class SettingsManager {
     this.isBlackEarth = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DRAW_BLACK_EARTH, this.isBlackEarth) as boolean;
     this.isDrawAtmosphere = parseInt(PersistenceManager.getInstance().getItem(StorageKey.SETTINGS_DRAW_ATMOSPHERE) ?? '1') as AtmosphereSettings;
     this.isDrawAurora = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DRAW_AURORA, this.isDrawAurora) as boolean;
+    this.isDrawGraticule = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DRAW_GRATICULE, this.isDrawGraticule) as boolean;
     this.isDrawMilkyWay = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DRAW_MILKY_WAY, this.isDrawMilkyWay) as boolean;
     this.isGraySkybox = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_GRAY_SKYBOX, this.isGraySkybox) as boolean;
     this.isEciOnHover = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_ECI_ON_HOVER, this.isEciOnHover) as boolean;
@@ -465,7 +492,16 @@ export class SettingsManager {
       this.isShowConfidenceLevels = false;
     }
     this.isDemoModeOn = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DEMO_MODE, this.isDemoModeOn) as boolean;
-    this.isSatLabelModeOn = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_SAT_LABEL_MODE, this.isSatLabelModeOn) as boolean;
+    const satLabelModeV2String = PersistenceManager.getInstance().getItem(StorageKey.SETTINGS_SAT_LABEL_MODE_V2);
+
+    if (satLabelModeV2String !== null) {
+      this.satLabelMode = parseInt(satLabelModeV2String) as SatLabelMode;
+    } else {
+      // Migrate from old boolean key
+      const oldLabelMode = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_SAT_LABEL_MODE, true) as boolean;
+
+      this.satLabelMode = oldLabelMode ? SatLabelMode.FOV_ONLY : SatLabelMode.OFF;
+    }
     this.isFreezePropRateOnDrag = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_FREEZE_PROP_RATE_ON_DRAG, this.isFreezePropRateOnDrag) as boolean;
     this.isDisableTimeMachineToasts = PersistenceManager.getInstance().checkIfEnabled(StorageKey.SETTINGS_DISABLE_TIME_MACHINE_TOASTS, this.isDisableTimeMachineToasts) as boolean;
 
@@ -485,6 +521,12 @@ export class SettingsManager {
 
     if (searchLimitString !== null) {
       this.searchLimit = parseInt(searchLimitString);
+    }
+
+    const showDecayedString = PersistenceManager.getInstance().getItem(StorageKey.SETTINGS_SHOW_DECAYED_IN_SEARCH);
+
+    if (showDecayedString !== null) {
+      this.isShowDecayedInSearch = showDecayedString === 'true';
     }
   }
 

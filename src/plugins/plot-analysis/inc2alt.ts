@@ -1,14 +1,69 @@
-import { EChartsData, GetSatType, MenuMode } from '@app/engine/core/interfaces';
+import { GetSatType, MenuMode } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
+import { KeepTrackPlugin } from '@app/engine/plugins/base-plugin';
+import {
+  IBottomIconConfig,
+  IHelpConfig,
+  IKeyboardShortcut,
+  ISideMenuConfig,
+} from '@app/engine/plugins/core/plugin-capabilities';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl } from '@app/engine/utils/get-el';
-import { DetailedSatellite, SpaceObjectType } from '@ootk/src/main';
+import { t7e } from '@app/locales/keys';
+import { CatalogSource, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import waterfall2Png from '@public/img/icons/waterfall2.png';
 import * as echarts from 'echarts';
 import 'echarts-gl';
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+import './inc2alt.css';
+
+// Constellation detection patterns
+const CONSTELLATION_PATTERNS: { name: string; regex: RegExp }[] = [
+  { name: 'Starlink', regex: /STARLINK/iu },
+  { name: 'OneWeb', regex: /ONEWEB/iu },
+  { name: 'Iridium', regex: /IRIDIUM/iu },
+  { name: 'Orbcomm', regex: /ORBCOMM/iu },
+  { name: 'Globalstar', regex: /GLOBALSTAR/iu },
+  { name: 'Planet', regex: /FLOCK|DOVE|SKYSAT|PELICAN/iu },
+  { name: 'Spire', regex: /LEMUR|SPIRE/iu },
+];
+
+/**
+ * Detect constellation from satellite name
+ */
+const detectConstellation = (name: string): string => {
+  for (const pattern of CONSTELLATION_PATTERNS) {
+    if (pattern.regex.test(name)) {
+      return pattern.name;
+    }
+  }
+
+  return 'Other';
+};
+
+/** Extended data tuple: [inclination, altitude, period, name, id, raan, eccentricity, country] */
+type Inc2AltDataItem = [number, number, number, string, number, number, number, string];
+
+interface Inc2AltConstellationData {
+  name: string;
+  value: Inc2AltDataItem[];
+}
+
+/** Filter settings for the Inc2Alt scatter plot */
+export interface Inc2AltFilters {
+  activePayloads: boolean;
+  inactivePayloads: boolean;
+  rocketBodies: boolean;
+  debris: boolean;
+  celestrak: boolean;
+  vimpel: boolean;
+  minAltitude: number;
+  maxAltitude: number;
+  minInclination: number;
+  maxInclination: number;
+  maxPeriod: number;
+}
 
 export class Inc2AltPlots extends KeepTrackPlugin {
   readonly id = 'Inc2AltPlots';
@@ -17,54 +72,209 @@ export class Inc2AltPlots extends KeepTrackPlugin {
 
   constructor() {
     super();
-    this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager; // this will be validated in KeepTrackPlugin constructor
+    this.selectSatManager_ = PluginRegistry.getPlugin(SelectSatManager) as unknown as SelectSatManager;
   }
 
-  bottomIconImg = waterfall2Png;
-  bottomIconCallback = () => {
+  // =========================================================================
+  // Plugin-specific properties
+  // =========================================================================
+
+  protected readonly plotCanvasId_ = 'plot-analysis-chart-inc2alt';
+  chart: echarts.ECharts | null = null;
+  private resizeHandler_: (() => void) | null = null;
+
+  protected currentFilters_: Inc2AltFilters = {
+    activePayloads: true,
+    inactivePayloads: false,
+    rocketBodies: false,
+    debris: false,
+    celestrak: true,
+    vimpel: false,
+    minAltitude: 70,
+    maxAltitude: 3000,
+    minInclination: 0,
+    maxInclination: 180,
+    maxPeriod: 250,
+  };
+
+  // =========================================================================
+  // Composition-based configuration methods
+  // =========================================================================
+
+  getBottomIconConfig(): IBottomIconConfig {
+    return {
+      elementName: 'inc2alt-plots-icon',
+      label: t7e('plugins.Inc2AltPlots.bottomIconLabel'),
+      image: waterfall2Png,
+      menuMode: [MenuMode.ANALYSIS, MenuMode.ALL],
+    };
+  }
+
+  getSideMenuConfig(): ISideMenuConfig {
+    return {
+      elementName: 'inc2alt-plots-menu',
+      title: t7e('plugins.Inc2AltPlots.title'),
+      html: this.buildSideMenuHtml_(),
+    };
+  }
+
+  getHelpConfig(): IHelpConfig {
+    return {
+      title: t7e('plugins.Inc2AltPlots.title'),
+      body: t7e('plugins.Inc2AltPlots.helpBody'),
+    };
+  }
+
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'I',
+        callback: () => this.bottomMenuClicked(),
+      },
+    ];
+  }
+
+  private buildSideMenuHtml_(): string {
+    const innerHtml = html`
+      <div id="${this.plotCanvasId_}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
+      <div id="inc2alt-stats">
+        <div id="inc2alt-total-count">--</div>
+        <div id="inc2alt-constellation-counts"></div>
+      </div>
+    `;
+
+    // When a secondary menu exists (pro), generateSideMenuHtml_() in the base plugin
+    // wraps sideMenuElementHtml in the standard side-menu template. Without a secondary
+    // menu (OSS), the raw HTML is inserted directly, so we must include the wrapper.
+    if ('getSecondaryMenuConfig' in this) {
+      return innerHtml;
+    }
+
+    return html`
+      <div id="inc2alt-plots-menu" class="side-menu-parent start-hidden plot-analysis-menu-normal">
+        <div id="plot-analysis-content" class="side-menu">
+          ${innerHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  // =========================================================================
+  // Event handlers
+  // =========================================================================
+
+  onBottomIconClick(): void {
     if (!this.isMenuButtonActive) {
       return;
     }
-    const chartDom = getEl(this.plotCanvasId)!;
 
-    this.createPlot(Inc2AltPlots.getPlotData(), chartDom);
-  };
-
-  menuMode: MenuMode[] = [MenuMode.ANALYSIS, MenuMode.ALL];
-
-  plotCanvasId = 'plot-analysis-chart-inc2alt';
-  chart: echarts.ECharts;
-
-  sideMenuElementName = 'inc2alt-plots-menu';
-  sideMenuElementHtml: string = html`
-  <div id="inc2alt-plots-menu" class="side-menu-parent start-hidden text-select plot-analysis-menu-normal plot-analysis-menu-maximized">
-    <div id="plot-analysis-content" class="side-menu" style="height: 80%">
-      <div id="${this.plotCanvasId}" class="plot-analysis-chart plot-analysis-menu-maximized"></div>
-    </div>
-  </div>`;
-
-  addHtml(): void {
-    super.addHtml();
+    this.refreshPlot_();
   }
 
-  createPlot(data: EChartsData, chartDom: HTMLElement) {
+  refreshPlot_(): void {
+    if (!this.isMenuButtonActive) {
+      return;
+    }
+
+    const chartDom = getEl(this.plotCanvasId_);
+
+    if (!chartDom) {
+      return;
+    }
+
+    const plotData = this.getPlotData();
+
+    this.createPlot(plotData, chartDom);
+    this.updateStatistics_(plotData);
+  }
+
+  onBottomIconDeselect(): void {
+    if (this.resizeHandler_) {
+      window.removeEventListener('resize', this.resizeHandler_);
+      this.resizeHandler_ = null;
+    }
+    if (this.chart) {
+      echarts.dispose(this.chart);
+      this.chart = null;
+    }
+  }
+
+  protected updateStatistics_(data: Inc2AltConstellationData[]): void {
+    const totalEl = getEl('inc2alt-total-count');
+    const countsEl = getEl('inc2alt-constellation-counts');
+
+    if (!totalEl || !countsEl) {
+      return;
+    }
+
+    // Calculate total
+    let total = 0;
+    const counts: { name: string; count: number }[] = [];
+
+    data.forEach((group) => {
+      const count = group.value?.length || 0;
+
+      total += count;
+      if (count > 0) {
+        counts.push({ name: group.name, count });
+      }
+    });
+
+    // Sort by count descending
+    counts.sort((a, b) => b.count - a.count);
+
+    // Update total
+    totalEl.textContent = `${t7e('plugins.Inc2AltPlots.labels.totalLeoPayloads' as Parameters<typeof t7e>[0])}: ${total}`;
+
+    // Update constellation breakdown using DOM API
+    countsEl.textContent = '';
+    counts.forEach((c) => {
+      const span = document.createElement('span');
+      const bold = document.createElement('b');
+
+      bold.textContent = `${c.name}:`;
+      span.appendChild(bold);
+      span.appendChild(document.createTextNode(` ${c.count}`));
+      countsEl.appendChild(span);
+    });
+  }
+
+  // Bridge for legacy event system
+  bottomIconCallback = (): void => {
+    this.onBottomIconClick();
+  };
+
+  // =========================================================================
+  // Lifecycle methods
+  // =========================================================================
+
+  createPlot(data: Inc2AltConstellationData[], chartDom: HTMLElement) {
     // Dont Load Anything if the Chart is Closed
     if (!this.isMenuButtonActive) {
       return;
     }
 
     // Delete any old charts and start fresh
-    if (!this.chart) {
-      // Setup Configuration
-      this.chart = echarts.init(chartDom);
-      this.chart.on('click', (event) => {
-        if ((event.data as unknown as { id: number })?.id > -1) {
-          this.selectSatManager_.selectSat((event.data as unknown as { id: number })?.id);
-        }
-      });
+    if (this.chart) {
+      echarts.dispose(this.chart);
     }
+    this.chart = echarts.init(chartDom);
+    this.chart.on('click', (event) => {
+      const eventData = event.data as { id?: number };
 
-    // Setup Chart
+      if (eventData?.id) {
+        this.selectSatManager_.selectSat(eventData.id);
+      }
+    });
+
+    // Setup resize handler
+    if (this.resizeHandler_) {
+      window.removeEventListener('resize', this.resizeHandler_);
+    }
+    this.resizeHandler_ = () => this.chart?.resize();
+    window.addEventListener('resize', this.resizeHandler_);
+
+    // Setup Chart - use notMerge to ensure colors reset properly on reopen
     this.chart.setOption({
       title: {
         text: 'Inclination vs Altitude Scatter Plot',
@@ -81,19 +291,34 @@ export class Inc2AltPlots extends KeepTrackPlugin {
       },
       tooltip: {
         formatter: (params) => {
-          const data = params.value;
+          const d = params.data as {
+            name: string;
+            value: number[];
+            constellation: string;
+            country: string;
+            raan: number;
+            ecc: number;
+          };
+
+          if (!d?.value) {
+            return '';
+          }
+
           const color = params.color;
-          const name = params.name;
 
           return `
-            <div style="display: flex; flex-direction: column; align-items: flex-start;">
-              <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between; align-items: flex-end;">
-                <div style="width: 10px; height: 10px; background-color: ${color}; border-radius: 50%; margin-bottom: 5px;"></div>
-                <div style="font-weight: bold;"> ${name}</div>
+            <div style="text-align: left;">
+              <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 10px; height: 10px; background-color: ${color}; border-radius: 50%; margin-right: 5px;"></div>
+                <span style="font-weight: bold;">${d.name}</span>
               </div>
-              <div><bold>Inclination:</bold> ${data[1].toFixed(3)}°</div>
-              <div><bold>Altitude:</bold> ${data[0].toFixed(3)} km</div>
-              <div><bold>Period:</bold> ${data[2].toFixed(2)} min</div>
+              <div><b>Constellation:</b> ${d.constellation}</div>
+              <div><b>Country:</b> ${d.country || 'Unknown'}</div>
+              <div><b>Altitude:</b> ${d.value[0].toFixed(0)} km</div>
+              <div><b>Inclination:</b> ${d.value[1].toFixed(2)}°</div>
+              <div><b>Period:</b> ${d.value[2].toFixed(1)} min</div>
+              <div><b>RAAN:</b> ${d.raan?.toFixed(1) ?? 'N/A'}°</div>
+              <div><b>Eccentricity:</b> ${d.ecc?.toFixed(5) ?? 'N/A'}</div>
             </div>
           `;
         },
@@ -175,13 +400,17 @@ export class Inc2AltPlots extends KeepTrackPlugin {
           },
         },
       ],
-      series: data.map((country) => ({
+      series: data.map((group) => ({
         type: 'scatter',
-        name: country.name,
-        data: country.value?.map((item) => ({
+        name: group.name,
+        data: group.value?.map((item) => ({
           name: item[3],
           id: item[4],
           value: [item[1], item[0], item[2]],
+          raan: item[5],
+          ecc: item[6],
+          country: item[7],
+          constellation: group.name,
         })),
         symbolSize: 12,
         itemStyle: {
@@ -194,80 +423,117 @@ export class Inc2AltPlots extends KeepTrackPlugin {
           },
         },
       })),
-    });
+    }, true);
   }
 
-  static getPlotData(): EChartsData {
-    const china = [] as unknown as [number, number, number, string, number][];
-    const usa = [] as unknown as [number, number, number, string, number][];
-    const france = [] as unknown as [number, number, number, string, number][];
-    const russia = [] as unknown as [number, number, number, string, number][];
-    const other = [] as unknown as [number, number, number, string, number][];
+  getPlotData(): Inc2AltConstellationData[] {
+    // Group by constellation instead of country
+    const constellations: Record<string, Inc2AltDataItem[]> = {
+      Starlink: [],
+      OneWeb: [],
+      Iridium: [],
+      Orbcomm: [],
+      Globalstar: [],
+      Planet: [],
+      Spire: [],
+      Other: [],
+    };
 
-    ServiceLocator.getCatalogManager().objectCache.forEach((obj) => {
-      if (obj.type !== SpaceObjectType.PAYLOAD) {
+    const catalogManager = ServiceLocator.getCatalogManager();
+    const now = ServiceLocator.getTimeManager().simulationTimeObj;
+    const filters = this.currentFilters_;
+    const allowedTypes = Inc2AltPlots.buildAllowedTypes_(filters);
+
+    catalogManager.objectCache.forEach((obj) => {
+      if (!allowedTypes.has(obj.type)) {
         return;
       }
 
-      let sat = obj as DetailedSatellite;
+      // For payloads, check active/inactive status
+      if (obj.type === SpaceObjectType.PAYLOAD) {
+        const sat = obj as Satellite;
+        const isActive = sat.status === PayloadStatus.OPERATIONAL;
 
-      if (sat.period > 250) {
+        if (isActive && !filters.activePayloads) {
+          return;
+        }
+        if (!isActive && !filters.inactivePayloads) {
+          return;
+        }
+      }
+
+      let sat = obj as Satellite;
+
+      if (sat.period > filters.maxPeriod) {
+        return;
+      }
+      if (sat.inclination < filters.minInclination || sat.inclination > filters.maxInclination) {
         return;
       }
 
-      sat = ServiceLocator.getCatalogManager().getSat(sat.id, GetSatType.POSITION_ONLY)!;
-      const now = ServiceLocator.getTimeManager().simulationTimeObj;
+      // Source filter
+      if (sat.source === CatalogSource.VIMPEL && !filters.vimpel) {
+        return;
+      }
+      if (sat.source !== CatalogSource.VIMPEL && !filters.celestrak) {
+        return;
+      }
+
+      const satWithPos = catalogManager.getSat(sat.id, GetSatType.POSITION_ONLY);
+
+      if (!satWithPos) {
+        return;
+      }
+
+      sat = satWithPos;
 
       const alt = sat.lla(now)?.alt ?? 0;
 
-      if (alt < 70) {
+      if (alt < filters.minAltitude || alt > filters.maxAltitude) {
         return;
-      } // TODO: USE THIS FOR FINDING DECAYS!
-
-      switch (sat.country) {
-        case 'United States of America':
-        case 'United States':
-        case 'US':
-        case 'USA':
-          usa.push([sat.inclination, alt, sat.period, sat.name, sat.id]);
-
-          return;
-        case 'France':
-        case 'FR':
-        case 'F':
-          france.push([sat.inclination, alt, sat.period, sat.name, sat.id]);
-
-          return;
-
-        case 'Russian Federation':
-        case 'CIS':
-        case 'RU':
-        case 'SU':
-        case 'Russia':
-          russia.push([sat.inclination, alt, sat.period, sat.name, sat.id]);
-
-          return;
-        case 'China':
-        case 'China, People\'s Republic of':
-        case 'Hong Kong Special Administrative Region, China':
-        case 'China (Republic)':
-        case 'PRC':
-        case 'CN':
-          china.push([sat.inclination, alt, sat.period, sat.name, sat.id]);
-
-          return;
-        default:
-          other.push([sat.inclination, alt, sat.period, sat.name, sat.id]);
-
       }
+
+      const constellation = detectConstellation(sat.name);
+
+      // [inclination, altitude, period, name, id, raan, eccentricity, country]
+      constellations[constellation].push([
+        sat.inclination,
+        alt,
+        sat.period,
+        sat.name,
+        sat.id,
+        sat.rightAscension,
+        sat.eccentricity,
+        sat.country,
+      ]);
     });
 
+    // Return constellations with satellites, putting "Other" last
     return [
-      { name: 'France', value: france },
-      { name: 'USA', value: usa },
-      { name: 'Other', value: other },
-      { name: 'Russia', value: russia },
-      { name: 'China', value: china },
-    ] as unknown as EChartsData;
+      { name: 'Starlink', value: constellations.Starlink },
+      { name: 'OneWeb', value: constellations.OneWeb },
+      { name: 'Iridium', value: constellations.Iridium },
+      { name: 'Orbcomm', value: constellations.Orbcomm },
+      { name: 'Globalstar', value: constellations.Globalstar },
+      { name: 'Planet', value: constellations.Planet },
+      { name: 'Spire', value: constellations.Spire },
+      { name: 'Other', value: constellations.Other },
+    ];
+  }
+
+  static buildAllowedTypes_(filters: Inc2AltFilters): Set<SpaceObjectType> {
+    const types = new Set<SpaceObjectType>();
+
+    if (filters.activePayloads || filters.inactivePayloads) {
+      types.add(SpaceObjectType.PAYLOAD);
+    }
+    if (filters.rocketBodies) {
+      types.add(SpaceObjectType.ROCKET_BODY);
+    }
+    if (filters.debris) {
+      types.add(SpaceObjectType.DEBRIS);
+    }
+
+    return types;
   }
 }

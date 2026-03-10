@@ -45,6 +45,10 @@ export class GraphicsSettings {
 
   // Earth Rendering
   /**
+   * If false, skip drawing the Earth mesh entirely (debug only).
+   */
+  isDrawEarth = true;
+  /**
    * If true, hide the earth textures and make the globe black
    */
   isBlackEarth = false;
@@ -59,11 +63,11 @@ export class GraphicsSettings {
   /**
    * The number of latitude segments used to render the Earth object.
    */
-  earthNumLatSegs = 128;
+  earthNumLatSegs = 256;
   /**
    * The number of longitude segments used to render the Earth.
    */
-  earthNumLonSegs = 128;
+  earthNumLonSegs = 256;
 
   // Atmosphere and Aurora
   /**
@@ -76,6 +80,10 @@ export class GraphicsSettings {
    * Determines whether or not to draw the Aurora effect.
    */
   isDrawAurora = true;
+  /**
+   * Determines whether or not to draw graticule (lat/lon grid) lines on the Earth.
+   */
+  isDrawGraticule = false;
 
   // Sun Settings
   sunTextureQuality: SunTextureQuality;
@@ -97,6 +105,11 @@ export class GraphicsSettings {
    */
   isUseSunTexture = false;
   isDrawNightAsDay = false;
+  /**
+   * When true, skips per-frame interpolation of TLE satellite positions.
+   * Satellites will only update when a new propagation message arrives from the worker.
+   */
+  isSkipTleInterpolation = false;
 
   // Godrays (Sun illumination effects)
   /**
@@ -178,8 +191,6 @@ export class GraphicsSettings {
    * TODO: Reimplement stars
    */
   isDisableStars = true;
-  isDrawConstellationBoundaries: boolean | null = null;
-  isDrawNasaConstellations: boolean | null = null;
 
   // Image Quality
   /**
@@ -219,6 +230,7 @@ export class GraphicsSettings {
      * The maximum size of objects in the shader when in planetarium mode.
      */
     maxSizePlanetarium: 20.0,
+    starMinSize: 8.0,
     /**
      * The maximum allowed size of objects in the shader.
      * This value is dynamically changed based on zoom level.
@@ -309,6 +321,9 @@ export class GraphicsSettings {
 
   // Advanced Graphics
   isDisableAsyncReadPixels = false;
+
+  // Debug
+  debugMobilePicking = false;
 }
 
 export const defaultGraphicsSettings = new GraphicsSettings();

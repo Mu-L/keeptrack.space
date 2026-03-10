@@ -3,18 +3,21 @@ import Draggabilly from 'draggabilly';
 /* eslint-disable max-lines */
 import { country2flagIcon } from '@app/app/data/catalogs/countries';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { IKeyboardShortcut } from '@app/engine/plugins/core/plugin-capabilities';
 import { DraggableBox } from '@app/engine/ui/draggable-box';
 import { html } from '@app/engine/utils/development/formatter';
 import { getEl, hideEl, setInnerHtml, showEl } from '@app/engine/utils/get-el';
 import { KeepTrack } from '@app/keeptrack';
-import { BaseObject, CatalogSource, DetailedSatellite } from '@ootk/src/main';
+import { BaseObject, CatalogSource, Satellite } from '@ootk/src/main';
+import bookmarkAddPng from '@public/img/icons/bookmark-add.png';
+import bookmarkRemovePng from '@public/img/icons/bookmark-remove.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { SoundNames } from '../sounds/sounds';
 import { CONTAINER_ID, EL, SECTIONS } from './sat-info-box-html';
 import './sat-info-box.css';
 
@@ -36,6 +39,15 @@ export class SatInfoBox extends KeepTrackPlugin {
   private isVisible_ = false;
   private isHtmlReady_ = false;
 
+  getKeyboardShortcuts(): IKeyboardShortcut[] {
+    return [
+      {
+        key: 'i',
+        callback: () => this.toggle(),
+      },
+    ];
+  }
+
   addHtml(): void {
     super.addHtml();
 
@@ -47,27 +59,16 @@ export class SatInfoBox extends KeepTrackPlugin {
     EventBus.getInstance().on(
       EventBusEvent.onWatchlistUpdated,
       (watchlistList: { id: number, inView: boolean }[]) => {
-        let isOnList = false;
+        const isOnList = watchlistList.some(({ id }) => id === PluginRegistry.getPlugin(SelectSatManager)!.selectedSat);
+        const toggleEl = getEl('sat-watchlist-toggle', true) as HTMLImageElement | null;
 
-        watchlistList.forEach(({ id }) => {
-          if (id === PluginRegistry.getPlugin(SelectSatManager)!.selectedSat) {
-            isOnList = true;
-          }
-        });
-
-        const addRemoveWatchlistDom = getEl('sat-add-watchlist', true);
-
-        /*
-         * TODO: There should be a placeholder on the left side to keep the
-         * satellite name centered when the add/remove watchlist icon is not shown.
-         */
-        if (addRemoveWatchlistDom) {
+        if (toggleEl) {
           if (isOnList) {
-            (<HTMLImageElement>getEl('sat-remove-watchlist')).style.display = 'block';
-            (<HTMLImageElement>getEl('sat-add-watchlist')).style.display = 'none';
+            toggleEl.src = bookmarkRemovePng;
+            toggleEl.classList.replace('off-watchlist', 'on-watchlist');
           } else {
-            (<HTMLImageElement>getEl('sat-add-watchlist')).style.display = 'block';
-            (<HTMLImageElement>getEl('sat-remove-watchlist')).style.display = 'none';
+            toggleEl.src = bookmarkAddPng;
+            toggleEl.classList.replace('on-watchlist', 'off-watchlist');
           }
         }
       },
@@ -75,7 +76,6 @@ export class SatInfoBox extends KeepTrackPlugin {
 
     EventBus.getInstance().on(EventBusEvent.selectSatData, this.updateHeaderData_.bind(this));
 
-    EventBus.getInstance().on(EventBusEvent.KeyDown, this.onKeyDownLowerI_.bind(this));
     EventBus.getInstance().on(EventBusEvent.selectSatData, (obj?: BaseObject) => this.selectSat_(this, obj));
   }
 
@@ -149,7 +149,7 @@ export class SatInfoBox extends KeepTrackPlugin {
         document.documentElement.style.setProperty('--search-box-bottom', '0px');
         satInfoBoxElement.classList.remove('satinfo-fixed');
 
-        getEl('search-results')!.style.maxHeight = '80%';
+        getEl('search-results')!.style.maxHeight = '85%';
       });
 
       draggie.on('pointerDown', () => {
@@ -184,7 +184,7 @@ export class SatInfoBox extends KeepTrackPlugin {
     const plugin = PluginRegistry.getPlugin(SatInfoBox)!;
 
     plugin.addElement({ html: this.createHeader(), order: 0 });
-    plugin.addElement({ html: this.createIdentifiersSection(), order: 3 });
+    plugin.addElement({ html: this.createIdentifiersSection(), order: 2 });
     // Make sure we have all the dynamic html elements before getting the order
     EventBus.getInstance().emit(EventBusEvent.satInfoBoxInit);
 
@@ -267,12 +267,12 @@ export class SatInfoBox extends KeepTrackPlugin {
       return;
     }
 
-    const isHasAltName: boolean = !!((obj as DetailedSatellite)?.altName && (obj as DetailedSatellite).altName !== '');
-    const isHasAltId: boolean = !!((obj as DetailedSatellite)?.altId && (obj as DetailedSatellite).altId !== '');
+    const isHasAltName: boolean = !!((obj as Satellite)?.altName && (obj as Satellite).altName !== '');
+    const isHasAltId: boolean = !!((obj as Satellite)?.altId && (obj as Satellite).altId !== '');
 
     setInnerHtml(EL.NAME, obj.name);
 
-    if (obj instanceof DetailedSatellite) {
+    if (obj instanceof Satellite) {
       KeepTrack.getInstance().containerRoot.querySelectorAll('.sat-only-info')?.forEach((el) => {
         (<HTMLElement>el).style.display = 'flex';
       });
@@ -281,10 +281,10 @@ export class SatInfoBox extends KeepTrackPlugin {
     const flagEl = getEl(EL.FLAG, true);
 
     if (flagEl) {
-      if (obj.isSatellite() && (obj as DetailedSatellite).sccNum5 === '25544') {
+      if (obj.isSatellite() && (obj as Satellite).sccNum5 === '25544') {
         flagEl.classList.value = 'fi fi-iss';
       } else {
-        flagEl.classList.value = `fi ${country2flagIcon((obj as DetailedSatellite).country)}`;
+        flagEl.classList.value = `fi ${country2flagIcon((obj as Satellite).country)}`;
       }
     }
 
@@ -293,7 +293,7 @@ export class SatInfoBox extends KeepTrackPlugin {
 
       if (altNameEl && altNameEl.parentElement) {
         showEl(altNameEl.parentElement, 'flex');
-        altNameEl.innerHTML = (obj as DetailedSatellite).altName;
+        altNameEl.innerHTML = (obj as Satellite).altName;
       }
     } else {
       const altNameEl = getEl(EL.ALT_NAME, true);
@@ -308,7 +308,7 @@ export class SatInfoBox extends KeepTrackPlugin {
 
       if (altIdEl && altIdEl.parentElement) {
         showEl(altIdEl.parentElement, 'flex');
-        altIdEl.innerHTML = (obj as DetailedSatellite).altId;
+        altIdEl.innerHTML = (obj as Satellite).altId;
       }
     } else {
       const altIdEl = getEl(EL.ALT_ID, true);
@@ -323,12 +323,18 @@ export class SatInfoBox extends KeepTrackPlugin {
      * getEl('edit-satinfo-link').innerHTML = "<a class='iframe' href='editor.htm?scc=" + sat.sccNum + "&popup=true'>Edit Satellite Info</a>";
      */
 
-    if (obj.isMissile() || obj instanceof OemSatellite) {
+    if (obj.isMissile()) {
       setInnerHtml(EL.INTL_DES, 'N/A');
       setInnerHtml(EL.OBJNUM, 'N/A');
       setInnerHtml(EL.SOURCE, 'N/A');
+    } else if (obj instanceof OemSatellite) {
+      const oemSat = obj as OemSatellite;
+
+      setInnerHtml(EL.INTL_DES, oemSat.intlDes || 'N/A');
+      setInnerHtml(EL.OBJNUM, oemSat.sccNum || 'N/A');
+      setInnerHtml(EL.SOURCE, oemSat.source || 'OEM File');
     } else {
-      const sat = obj as DetailedSatellite;
+      const sat = obj as Satellite;
 
       setInnerHtml(EL.INTL_DES, sat.intlDes === 'none' ? 'N/A' : sat.intlDes);
       if (sat.source && sat.source === CatalogSource.VIMPEL) {
@@ -345,7 +351,7 @@ export class SatInfoBox extends KeepTrackPlugin {
     }
   }
 
-  private updateConfidenceDom_(sat: DetailedSatellite) {
+  private updateConfidenceDom_(sat: Satellite) {
     if (!sat || sat.isStatic() || sat.isSensor()) {
       return;
     }
@@ -384,6 +390,12 @@ export class SatInfoBox extends KeepTrackPlugin {
     }
 
     if (obj.isSensor()) {
+      return;
+    }
+
+    if (!this.isHtmlReady_) {
+      setTimeout(() => this.selectSat_(satInfoBox, obj), 500);
+
       return;
     }
 
@@ -450,14 +462,6 @@ export class SatInfoBox extends KeepTrackPlugin {
     if (satIdentifierData) {
       satIdentifierData.style.display = 'block';
     }
-  }
-
-  private onKeyDownLowerI_(key: string): void {
-    if (key !== 'i') {
-      return;
-    }
-
-    this.toggle();
   }
 
   hide(): void {

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SensorInfoPlugin } from '@app/plugins/sensor/sensor-info-plugin';
 import { setupStandardEnvironment } from './environment/standard-env';
 import { standardClickTests, standardPluginMenuButtonTests, standardPluginSuite } from './generic-tests';
@@ -8,7 +9,7 @@ describe('SensorInfoPlugin_class', () => {
   });
 
   afterEach(() => {
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
   });
 
   standardPluginSuite(SensorInfoPlugin);

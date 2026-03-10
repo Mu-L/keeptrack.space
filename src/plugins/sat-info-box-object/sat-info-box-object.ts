@@ -2,6 +2,7 @@
 import { SatMath } from '@app/app/analysis/sat-math';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { StringExtractor } from '@app/app/ui/string-extractor';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -10,12 +11,11 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { BaseObject, DetailedSatellite, PayloadStatus, SpaceObjectType } from '@ootk/src/main';
+import { BaseObject, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SatInfoBox } from '../sat-info-box/sat-info-box';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { EL, SECTIONS } from './sat-info-box-object-html';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
 
 export class SatInfoBoxObject extends KeepTrackPlugin {
   readonly id = 'SatInfoBoxObject';
@@ -28,8 +28,8 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     super.addHtml();
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxInit, () => {
-      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createObjectSection_(), order: 6 });
-      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createSecondarySection(), order: 8 });
+      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createObjectSection_(), order: 7 });
+      PluginRegistry.getPlugin(SatInfoBox)!.addElement({ html: this.createSecondarySection(), order: 9 });
     });
   }
 
@@ -38,6 +38,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
 
     EventBus.getInstance().on(EventBusEvent.satInfoBoxAddListeners, this.satInfoBoxAddListeners_.bind(this));
     EventBus.getInstance().on(EventBusEvent.selectSatData, this.updateObjectData_.bind(this));
+    EventBus.getInstance().on(EventBusEvent.setSecondarySat, this.updateSecondaryVisibility_.bind(this));
   }
 
   private satInfoBoxAddListeners_() {
@@ -150,20 +151,24 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
       `;
   }
 
+  private updateSecondaryVisibility_(): void {
+    if (PluginRegistry.getPlugin(SelectSatManager)!.secondarySat !== -1) {
+      showEl('secondary-sat-info');
+      showEl('sec-angle-link');
+    } else {
+      hideEl('secondary-sat-info');
+      hideEl('sec-angle-link');
+    }
+  }
+
   private updateObjectData_(obj?: BaseObject) {
     if (!obj || (!obj.isSatellite() && !obj.isMissile())) {
       return;
     }
 
-    if (PluginRegistry.getPlugin(SelectSatManager)!.secondarySat !== -1 && getEl('secondary-sat-info')?.style?.display === 'none') {
-      showEl('secondary-sat-info');
-      showEl('sec-angle-link');
-    } else if (PluginRegistry.getPlugin(SelectSatManager)!.secondarySat === -1 && getEl('secondary-sat-info')?.style?.display !== 'none') {
-      hideEl('secondary-sat-info');
-      hideEl('sec-angle-link');
-    }
+    this.updateSecondaryVisibility_();
 
-    const satMisl = obj as DetailedSatellite | MissileObject;
+    const satMisl = obj as Satellite | MissileObject;
 
     this.updateCountryCorrelationTable_(satMisl);
     this.updateLaunchSiteCorrelationTable_(satMisl);
@@ -176,7 +181,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
       return;
     }
 
-    const sat = satMisl as DetailedSatellite;
+    const sat = satMisl as Satellite;
 
     const satStandardMagnitudeElement = getEl(EL.STDMAG)!;
     const satConfigurationElement = getEl(EL.CONFIGURATION)!;
@@ -226,7 +231,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
       missile.launchVehicle = missile.desc.split('(')[1].split(')')[0]; // Remove the () from the booster type
       satVehicleDom.innerHTML = missile.launchVehicle;
     } else {
-      const sat = obj as DetailedSatellite;
+      const sat = obj as Satellite;
 
       satVehicleDom.innerHTML = sat.launchVehicle; // Set to JSON record
       if (sat.launchVehicle === 'U') {
@@ -260,13 +265,13 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     if (obj.isMissile()) {
       const misl = obj as MissileObject;
 
-      siteArr = misl.desc.split('(');
-      missileOrigin = siteArr[0].slice(0, siteArr[0].length - 1);
+      siteArr = misl.desc?.split('(') ?? [];
+      missileOrigin = siteArr[0]?.slice(0, -1)?.trim() || t7e('SatInfoBoxObject.unknown');
 
       site.site = missileOrigin;
       site.launchPad = t7e('SatInfoBoxObject.unknown');
     } else {
-      const sat = obj as DetailedSatellite;
+      const sat = obj as Satellite;
 
       // Enhanced Catalog uses full names
       if (sat.launchSite?.length > 6) {
@@ -306,7 +311,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
 
   }
 
-  private updateCountryCorrelationTable_(obj: DetailedSatellite | MissileObject) {
+  private updateCountryCorrelationTable_(obj: Satellite | MissileObject) {
     const satCountryElement = getEl(EL.COUNTRY);
 
     if (!satCountryElement) {
@@ -378,7 +383,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     }
     satStatusParentElement.style.display = 'flex';
 
-    const sat = obj as DetailedSatellite;
+    const sat = obj as Satellite;
 
     switch (sat.status) {
       case PayloadStatus.OPERATIONAL:
@@ -405,7 +410,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     }
   }
 
-  private updateRcsData_(sat: DetailedSatellite) {
+  private updateRcsData_(sat: Satellite) {
     const satRcsEl = getEl(EL.RCS);
 
     if (!satRcsEl) {
@@ -438,7 +443,7 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     }
   }
 
-  private calculateStdMag_(obj: DetailedSatellite): number | null {
+  private calculateStdMag_(obj: Satellite): number | null {
     if (obj.vmag) {
       return obj.vmag;
     }
