@@ -8,6 +8,11 @@
         "launchSiteInfo": "Informacje o miejscu startu",
         "satelliteInfo": "Informacje o satelicie",
         "relatedSatellites": "Powiązane satelity"
+      },
+      "errorMsgs": {
+        "launchSiteNotFound": "Nie znaleziono miejsca startu!",
+        "noRelatedSats": "Nie znaleziono powiązanych satelitów!",
+        "sensorNotFound": "Nie znaleziono czujnika! Najpierw wybierz czujnik."
       }
     }
   }

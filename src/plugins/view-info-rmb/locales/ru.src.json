@@ -8,6 +8,11 @@
         "launchSiteInfo": "Информация о стартовой площадке",
         "satelliteInfo": "Информация о спутнике",
         "relatedSatellites": "Связанные спутники"
+      },
+      "errorMsgs": {
+        "launchSiteNotFound": "Стартовая площадка не найдена!",
+        "noRelatedSats": "Связанные спутники не найдены!",
+        "sensorNotFound": "Датчик не найден! Сначала выберите датчик."
       }
     }
   }

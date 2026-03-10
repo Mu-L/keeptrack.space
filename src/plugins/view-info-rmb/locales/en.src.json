@@ -8,6 +8,11 @@
         "launchSiteInfo": "Launch Site Info",
         "satelliteInfo": "Satellite Info",
         "relatedSatellites": "Related Satellites"
+      },
+      "errorMsgs": {
+        "launchSiteNotFound": "Launch site not found!",
+        "noRelatedSats": "No related satellites found!",
+        "sensorNotFound": "Sensor not found! Select a sensor first."
       }
     }
   }
