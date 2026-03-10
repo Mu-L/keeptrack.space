@@ -70,10 +70,17 @@ export class ClassificationBar extends KeepTrackPlugin {
       height: ${this.containerHeight}px;
       display: flex;
       align-items: center;
+      font-family: monospace;
       justify-content: center;
       `;
 
-    KeepTrack.getInstance().containerRoot.insertBefore(node, KeepTrack.getInstance().containerRoot.firstChild);
+    const navEl = KeepTrack.getInstance().containerRoot.querySelector('nav');
+
+    if (navEl) {
+      navEl.insertBefore(node, navEl.firstChild);
+    } else {
+      KeepTrack.getInstance().containerRoot.insertBefore(node, KeepTrack.getInstance().containerRoot.firstChild);
+    }
 
     this.isClassificationContainerLoaded_ = true;
   }
