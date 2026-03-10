@@ -1,11 +1,12 @@
 /* eslint-disable complexity */
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, Satellite, SpaceObjectType } from '@ootk/src/main';
 import { ColorScheme } from './color-scheme';
 
 export class SmallSatColorScheme extends ColorScheme {
-  readonly label = 'Small Satellites';
+  readonly label = t7e('colorSchemes.SmallSatColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'SmallSatColorScheme';
   static readonly id = 'SmallSatColorScheme';
   isOptionInRmbMenu = false;

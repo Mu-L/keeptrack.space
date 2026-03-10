@@ -5,6 +5,7 @@ import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { BaseObject, PayloadStatus, Satellite, SpaceObjectType } from '@app/engine/ootk/src/main';
 import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface CelestrakColorSchemeColorMap extends ColorSchemeColorMap {
@@ -18,7 +19,7 @@ export interface CelestrakColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class CelestrakColorScheme extends ColorScheme {
-  readonly label = 'Celestrak';
+  readonly label = t7e('colorSchemes.CelestrakColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'CelestrakColorScheme';
   static readonly id = 'CelestrakColorScheme';
 

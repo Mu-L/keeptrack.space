@@ -3,6 +3,7 @@ import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, Satellite, SpaceObjectType } from '@ootk/src/main';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
@@ -15,7 +16,7 @@ export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class CountryColorScheme extends ColorScheme {
-  readonly label = 'Country';
+  readonly label = t7e('colorSchemes.CountryColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'CountryColorScheme';
   static readonly id = 'CountryColorScheme';
 

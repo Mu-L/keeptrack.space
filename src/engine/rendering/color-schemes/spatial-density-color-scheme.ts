@@ -2,6 +2,7 @@
 import { DensityBin } from '@app/app/data/catalog-manager';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, Satellite, Star } from '@ootk/src/main';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -15,7 +16,7 @@ export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class SpatialDensityColorScheme extends ColorScheme {
-  readonly label = 'Spatial Density';
+  readonly label = t7e('colorSchemes.SpatialDensityColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'SpatialDensityColorScheme';
   static readonly id = 'SpatialDensityColorScheme';
 

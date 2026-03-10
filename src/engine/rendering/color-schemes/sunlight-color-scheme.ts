@@ -8,11 +8,12 @@ import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
 import { waitForCruncher } from '@app/engine/utils/waitForCruncher';
 import { BaseObject, Satellite, Star } from '@ootk/src/main';
+import { t7e } from '@app/locales/keys';
 import { ColorScheme } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class SunlightColorScheme extends ColorScheme {
-  readonly label = 'Sunlight Status';
+  readonly label = t7e('colorSchemes.SunlightColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'SunlightColorScheme';
   static readonly id = 'SunlightColorScheme';
 

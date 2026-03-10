@@ -4,11 +4,12 @@ import { CameraType } from '@app/engine/camera/camera-type';
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, PayloadStatus, Satellite, SpaceObjectType } from '@ootk/src/main';
 import { ColorScheme } from './color-scheme';
 
 export class StarlinkColorScheme extends ColorScheme {
-  readonly label = 'Starlink';
+  readonly label = t7e('colorSchemes.StarlinkColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'StarlinkColorScheme';
   static readonly id = 'StarlinkColorScheme';
   isOptionInRmbMenu = false;

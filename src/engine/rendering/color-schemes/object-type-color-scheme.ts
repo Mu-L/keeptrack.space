@@ -5,6 +5,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
 import { hideEl } from '@app/engine/utils/get-el';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, Satellite, SpaceObjectType, Star } from '@ootk/src/main';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
@@ -22,7 +23,7 @@ export interface ObjectTypeColorSchemeColorMap extends ColorSchemeColorMap {
 }
 
 export class ObjectTypeColorScheme extends ColorScheme {
-  readonly label = 'Object Type';
+  readonly label = t7e('colorSchemes.ObjectTypeColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'ObjectTypeColorScheme';
   static readonly id = 'ObjectTypeColorScheme';
 

@@ -1,12 +1,13 @@
 /* eslint-disable complexity */
 import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfaces';
 import { html } from '@app/engine/utils/development/formatter';
+import { t7e } from '@app/locales/keys';
 import { BaseObject, Star } from '@ootk/src/main';
 import { ColorScheme } from './color-scheme';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class VelocityColorScheme extends ColorScheme {
-  readonly label = 'Velocity';
+  readonly label = t7e('colorSchemes.VelocityColorScheme.label' as Parameters<typeof t7e>[0]);
   readonly id = 'VelocityColorScheme';
   static readonly id = 'VelocityColorScheme';
   isOptionInRmbMenu = false;
