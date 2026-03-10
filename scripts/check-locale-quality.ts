@@ -37,6 +37,8 @@ const PROPER_NOUN_KEYS = new Set([
   'plugins.CatalogBrowserPlugin.entries.sbas',
   'SatInfoBoxLinks.Heavens_Above.title',
   'plugins.DopsPlugin.toast.dopValues',
+  'pluginDrawer.modeExperimental',
+  'plugins.TocaPocaPlugin.labels.headerDistance',
 ]);
 
 // ─── CLI argument parsing ────────────────────────────────────────────────────
@@ -122,7 +124,13 @@ function runDeterministicChecks(enMap: Map<string, string>, langMap: Map<string,
     const langVal = langMap.get(key);
 
     if (langVal === undefined) {
-      continue; // Missing key — caught by other tests
+      // 0. Missing key — not present in compiled locale file
+      issues.push({
+        key, category: 'missing-key',
+        enValue: enVal.substring(0, 80), langValue: '(missing)',
+        reason: 'Key exists in English but missing from this language',
+      });
+      continue;
     }
 
     // 1. Placeholder consistency
@@ -326,7 +334,7 @@ function printReport(allIssues: Map<string, Issue[]>): void {
   process.stdout.write('\n# Locale Quality Report\n\n');
 
   // Summary table
-  const categories = ['placeholder', 'html-tags', 'empty', 'untranslated', 'too-short', 'llm-quality'];
+  const categories = ['missing-key', 'placeholder', 'html-tags', 'empty', 'untranslated', 'too-short', 'llm-quality'];
 
   process.stdout.write('| Language |');
   for (const cat of categories) {
@@ -384,7 +392,7 @@ function printReport(allIssues: Map<string, Issue[]>): void {
 
 async function main(): Promise<void> {
   const args = parseArgs();
-  const languages = args.language ? [args.language] : [...ALL_LANGUAGES];
+  const languages = args.language && args.language !== 'all' ? [args.language] : [...ALL_LANGUAGES];
 
   process.stdout.write('Loading locale files...\n');
   const enMap = loadLocale('en');
