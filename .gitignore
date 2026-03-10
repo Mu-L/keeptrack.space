@@ -155,3 +155,6 @@ docs-local
 
 # R2 Data
 public/data/ephemeris
+
+# Offline
+configs/offline/settingsOverride.js
