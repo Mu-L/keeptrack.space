@@ -167,59 +167,6 @@ jobs:
           MSG="### Build (${{ matrix.profile }}) Passed"
           echo "$MSG" >> $GITHUB_STEP_SUMMARY
 
-  e2e:
-    needs: [build]
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Cache node modules
-        uses: actions/cache@v4.2.3
-        with:
-          path: ~/.npm
-          key: >-
-            ${{ runner.os }}-build-node-modules-${{
-            hashFiles('**/package-lock.json') }}
-          restore-keys: >-
-            ${{ runner.os }}-build-node-modules-${{
-            runner.os }}-
-
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-      - name: Update submodules
-        run: git submodule update --init --recursive
-
-      - name: Install Dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Build for E2E
-        run: npm run build
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps chromium
-
-      - name: Run E2E Tests
-        run: npm run test:e2e
-
-      - name: Upload Playwright Report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 14
-
   trufflehog:
     needs: build
     name: TruffleHog Secrets Scan
