@@ -12,7 +12,10 @@ import { getEl } from '@app/engine/utils/get-el';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
 import { settingsManager } from '@app/settings/settings';
+import { t7e } from '@app/locales/keys';
 import './plugin-drawer.css';
+
+type DrawerKey_ = Parameters<typeof t7e>[0];
 
 interface DrawerItemData_ {
   id: string;
@@ -31,16 +34,16 @@ interface DrawerGroup_ {
   items: DrawerItemData_[];
 }
 
-const MODE_LABELS: Record<number, string> = {
-  [MenuMode.CATALOG]: 'Catalog',
-  [MenuMode.SENSORS]: 'Sensors',
-  [MenuMode.EVENTS]: 'Events',
-  [MenuMode.CREATE]: 'Create',
-  [MenuMode.ANALYSIS]: 'Analysis',
-  [MenuMode.DISPLAY]: 'Display',
-  [MenuMode.TOOLS]: 'Tools',
-  [MenuMode.SETTINGS]: 'Settings',
-  [MenuMode.EXPERIMENTAL]: 'Experimental',
+const MODE_LABEL_KEYS: Record<number, DrawerKey_> = {
+  [MenuMode.CATALOG]: 'pluginDrawer.modeCatalog' as DrawerKey_,
+  [MenuMode.SENSORS]: 'pluginDrawer.modeSensors' as DrawerKey_,
+  [MenuMode.EVENTS]: 'pluginDrawer.modeEvents' as DrawerKey_,
+  [MenuMode.CREATE]: 'pluginDrawer.modeCreate' as DrawerKey_,
+  [MenuMode.ANALYSIS]: 'pluginDrawer.modeAnalysis' as DrawerKey_,
+  [MenuMode.DISPLAY]: 'pluginDrawer.modeDisplay' as DrawerKey_,
+  [MenuMode.TOOLS]: 'pluginDrawer.modeTools' as DrawerKey_,
+  [MenuMode.SETTINGS]: 'pluginDrawer.modeSettings' as DrawerKey_,
+  [MenuMode.EXPERIMENTAL]: 'pluginDrawer.modeExperimental' as DrawerKey_,
 };
 
 /** Nav item IDs that should appear in the utility footer instead of Quick Actions */
@@ -213,17 +216,17 @@ export class PluginDrawer {
     const utilityGroups: Record<string, DrawerGroup_> = {};
 
     // Initialize MenuMode groups (scrollable content)
-    for (const [mode, label] of Object.entries(MODE_LABELS)) {
-      menuGroups[`mode-${mode}`] = { label, items: [] };
+    for (const [mode, key] of Object.entries(MODE_LABEL_KEYS)) {
+      menuGroups[`mode-${mode}`] = { label: t7e(key), items: [] };
     }
 
     // Initialize utility groups (pinned footer)
-    utilityGroups['utility-camera'] = { label: 'Camera Modes', items: [] };
-    utilityGroups['utility-layers'] = { label: 'Layer Toggles', items: [] };
-    utilityGroups['utility-settings'] = { label: 'Settings Toggles', items: [] };
+    utilityGroups['utility-camera'] = { label: t7e('pluginDrawer.groupCameraModes' as DrawerKey_), items: [] };
+    utilityGroups['utility-layers'] = { label: t7e('pluginDrawer.groupLayerToggles' as DrawerKey_), items: [] };
+    utilityGroups['utility-settings'] = { label: t7e('pluginDrawer.groupSettingsToggles' as DrawerKey_), items: [] };
 
     // About group for TopMenuPlugin instances (e.g., GithubLink)
-    menuGroups.about = { label: 'About', items: [] };
+    menuGroups.about = { label: t7e('pluginDrawer.groupAbout' as DrawerKey_), items: [] };
 
     for (const plugin of plugins) {
       // Handle TopMenuPlugins — put in About group

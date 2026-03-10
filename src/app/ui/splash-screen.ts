@@ -65,7 +65,7 @@ export abstract class SplashScreen {
           <!-- <span id="logo-text-version" class="logo-font">10</span> -->
           </div>
           <div style="height: 50px; min-height: 50px; max-height: 50px; margin-top: 1rem; display: flex; align-items: center;">
-            <span id="loader-text" style="width: 100%;">Downloading Science...</span>
+            <span id="loader-text" style="width: 100%;">${t7e('loadingScreen.downloadingScience' as TranslationKey)}</span>
           </div>
           <div id="adsense-placeholder"
             style="width:970px;height:90px; margin:16px 0; display: none; position: absolute; bottom: 50px">
@@ -78,7 +78,7 @@ export abstract class SplashScreen {
             </button>
           </div>
         </div>
-        <div id="loading-hint">Hint: ${this.showHint()}</div>
+        <div id="loading-hint">${t7e('loadingScreen.hint' as TranslationKey)} ${this.showHint()}</div>
         <div id="version-text">v${__VERSION__}-${__COMMIT_HASH__}</div>
         <div id="copyright-notice">
         ${settingsManager.isMobileModeEnabled ? t7e('copyright.noticeMobile') : t7e('copyright.notice')}
