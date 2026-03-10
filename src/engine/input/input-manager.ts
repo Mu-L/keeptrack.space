@@ -7,6 +7,7 @@ import { ServiceLocator } from '../core/service-locator';
 import { Engine } from '../engine';
 import { EventBus } from '../events/event-bus';
 import { lineManagerInstance } from '../rendering/line-manager';
+import { t7e } from '@app/locales/keys';
 import { html } from '../utils/development/formatter';
 import { getEl, hideEl } from '../utils/get-el';
 import { isThisNode } from '../utils/isThisNode';
@@ -345,10 +346,10 @@ export class InputManager {
         menuUl.insertAdjacentHTML(
           'beforeend',
           html`
-          <li id="toggle-time-rmb"><a href="#">Pause Clock</a></li>
-          <li id="reset-camera-rmb"><a href="#">Reset Camera</a></li>
-          <li id="clear-lines-rmb"><a href="#">Clear Lines</a></li>
-          <li id="clear-screen-rmb"><a href="#">Clear Screen</a></li>
+          <li id="toggle-time-rmb"><a href="#">${t7e('rightClickMenu.pauseClock')}</a></li>
+          <li id="reset-camera-rmb"><a href="#">${t7e('rightClickMenu.resetCamera')}</a></li>
+          <li id="clear-lines-rmb"><a href="#">${t7e('rightClickMenu.clearLines')}</a></li>
+          <li id="clear-screen-rmb"><a href="#">${t7e('rightClickMenu.clearScreen')}</a></li>
           `,
         );
 
