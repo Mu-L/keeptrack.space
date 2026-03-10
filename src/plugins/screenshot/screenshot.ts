@@ -31,12 +31,18 @@ import { ICommandPaletteCommand } from '@app/engine/plugins/core/plugin-capabili
 import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { KeepTrack } from '@app/keeptrack';
+import { t7e } from '@app/locales/keys';
 import cameraPng from '@public/img/icons/camera.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 
 export class Screenshot extends KeepTrackPlugin {
   readonly id = 'Screenshot';
   dependencies_ = [];
+
+  private t_(key: string): string {
+    return t7e(`plugins.Screenshot.${key}` as Parameters<typeof t7e>[0]);
+  }
+
   bottomIconCallback = () => {
     this.saveHiResPhoto('4k');
   };
@@ -88,7 +94,7 @@ export class Screenshot extends KeepTrackPlugin {
   };
 
   rmbL1ElementName = 'save-rmb';
-  rmbL1Html = html`<li class="rmb-menu-item" id="${this.rmbL1ElementName}"><a href="#">Save Image &#x27A4;</a></li>`;
+  rmbL1Html = this.buildRmbL1Html_();
 
   isRmbOnEarth = true;
   isRmbOffEarth = true;
@@ -96,31 +102,41 @@ export class Screenshot extends KeepTrackPlugin {
   rmbMenuOrder = 20;
 
   rmbL2ElementName = 'save-rmb-menu';
-  rmbL2Html = html`
+  rmbL2Html = this.buildRmbL2Html_();
+
+  private buildRmbL1Html_(): string {
+    return html`<li class="rmb-menu-item" id="${this.rmbL1ElementName}"><a href="#">${this.t_('rmbMenu.title')} &#x27A4;</a></li>`;
+  }
+
+  private buildRmbL2Html_(): string {
+    const m = (key: string) => this.t_(`rmbMenu.${key}`);
+
+    return html`
     <ul class='dropdown-contents'>
-      <li id="save-hd-rmb"><a href="#">HD (1920 x 1080)</a></li>
-      <li id="save-4k-rmb"><a href="#">4K (3840 x 2160)</a></li>
-      <li id="save-8k-rmb"><a href="#">8K (7680 x 4320)</a></li>
+      <li id="save-hd-rmb"><a href="#">${m('hd')}</a></li>
+      <li id="save-4k-rmb"><a href="#">${m('fourK')}</a></li>
+      <li id="save-8k-rmb"><a href="#">${m('eightK')}</a></li>
     </ul>
-  `;
+    `;
+  }
 
   getCommandPaletteCommands(): ICommandPaletteCommand[] {
     return [
       {
         id: 'Screenshot.take4k',
-        label: 'Take Screenshot (4K)',
+        label: this.t_('commands.take4k'),
         category: 'Export',
         callback: () => this.saveHiResPhoto('4k'),
       },
       {
         id: 'Screenshot.takeHd',
-        label: 'Take Screenshot (HD)',
+        label: this.t_('commands.takeHd'),
         category: 'Export',
         callback: () => this.saveHiResPhoto('hd'),
       },
       {
         id: 'Screenshot.take8k',
-        label: 'Take Screenshot (8K)',
+        label: this.t_('commands.take8k'),
         category: 'Export',
         callback: () => this.saveHiResPhoto('8k'),
       },
