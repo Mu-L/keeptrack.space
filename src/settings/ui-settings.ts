@@ -78,7 +78,7 @@ export class UiSettings {
    * URL for the small logo displayed in the nav bar next to the hamburger icon.
    * When empty string, an empty spacer div is used instead.
    */
-  navBarLogoUrl = '/img/logo.png';
+  navBarLogoUrl = 'img/logo.png';
 
   // Top Menu
   /** Flag to determine if the watchlist is shown in the top menu */
