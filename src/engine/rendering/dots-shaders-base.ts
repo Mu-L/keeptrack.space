@@ -187,10 +187,12 @@ export const createBaseVertShader = (settings: SettingsManager): string => (
         float dist = distance(vec3(0.0, 0.0, 0.0), a_position.xyz);
 
         if (u_flatMapMode) {
-          // Scale dot size with zoom so dots remain visible when zoomed in
-          float zoomScale = sqrt(u_flatMapZoom);
-          float flatSize = mix(u_minSize, float(${settings.satShader.starSize}), step(0.5, a_size));
-          gl_PointSize = flatSize * zoomScale;
+          // Large dots (searched/selected, a_size>=0.5) shrink when zoomed in so they don't obscure the map
+          // Small dots (regular satellites) keep a fixed minimum size
+          float isBig = step(0.5, a_size);
+          float bigSize = float(${settings.satShader.starSize}) / sqrt(u_flatMapZoom);
+          float flatSize = mix(u_minSize, max(bigSize, 3.0), isBig);
+          gl_PointSize = max(flatSize, 1.0);
           vPointSize = gl_PointSize;
           vColor = a_color;
           vSize = a_size * 1.0;
