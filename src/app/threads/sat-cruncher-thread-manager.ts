@@ -107,7 +107,13 @@ export class SatCruncherThreadManager extends WebWorkerThreadManager {
         const id = mData.badObjectId;
 
         if (id !== null) {
-          const sat = ServiceLocator.getCatalogManager().objectCache[id] as Satellite;
+          const sat = ServiceLocator.getCatalogManager().objectCache[id];
+
+          if (!sat || !(sat instanceof Satellite)) {
+            errorManagerInstance.debug(`Received badObjectId ${id} which does not correspond to a valid satellite.`);
+
+            return;
+          }
 
           sat.active = false;
           /*
