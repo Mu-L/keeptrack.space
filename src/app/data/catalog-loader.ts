@@ -22,6 +22,7 @@ import {
 import { SettingsManager } from '../../settings/settings';
 import { Planet } from '../objects/planet';
 import { CatalogManager } from './catalog-manager';
+import { orgDataService } from './catalogs/org-data-service';
 import { LaunchSite } from './catalog-manager/LaunchFacility';
 import { MissileObject } from './catalog-manager/MissileObject';
 
@@ -188,6 +189,9 @@ export class CatalogLoader {
    */
   static async load(): Promise<void> {
     const settingsManager: SettingsManager = window.settingsManager;
+
+    // Fire-and-forget: fetch org data from R2 in parallel with catalog loading
+    orgDataService.init();
 
     try {
       // TODO: Which sources can use this should be definied in the settings (Celestrak Rebase)
@@ -1201,7 +1205,7 @@ export class CatalogLoader {
     resp[i].active = true;
     if (!settingsManager.isDebrisOnly || (settingsManager.isDebrisOnly && (resp[i].type === SpaceObjectType.ROCKET_BODY || resp[i].type === SpaceObjectType.DEBRIS))) {
       resp[i].id = tempObjData.length;
-      resp[i].source = CatalogSource.CELESTRAK;
+      // resp[i].source = CatalogSource.CELESTRAK;
 
       /*
        * Embed a confidence level into the 64th character of the TLE1

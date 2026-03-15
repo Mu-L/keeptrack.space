@@ -30,7 +30,7 @@ export class DataSettings {
      *
      * It can be loaded from a local file or a remote source
      */
-    tle: 'https://api.keeptrack.space/v3/sats',
+    tle: 'https://api.keeptrack.space/v4/sats',
     /** url for an external TLE source */
     externalTLEs: '',
     /**
@@ -44,6 +44,7 @@ export class DataSettings {
     stars: 'https://r2.keeptrack.space/data/star-catalog.json',
     constellations: 'https://r2.keeptrack.space/data/constellations.json',
     covariance: 'https://r2.keeptrack.space/data/covariance.json',
+    orgs: 'https://r2.keeptrack.space/data/orgs.json',
     /** This determines if tle source is loaded to supplement externalTLEs  */
     isSupplementExternal: false,
   };
