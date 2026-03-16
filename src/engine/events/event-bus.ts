@@ -84,6 +84,7 @@ export interface EngineEventMap {
   [EventBusEvent.scenarioBoundsChanged]: [unknown]; // ScenarioData
   [EventBusEvent.cameraTypeChanged]: [string]; // camera type name
   [EventBusEvent.onColorBufferReady]: [];
+  [EventBusEvent.onFovPredictionReady]: [];
 }
 
 interface EventBusRegisterParams<T extends EventBusEvent> {

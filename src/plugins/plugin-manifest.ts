@@ -557,6 +557,14 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 315 },
   },
   {
+    configKey: 'FovFadePlugin',
+    proImport: () => import('../plugins-pro/fov-fade/fov-fade'),
+    proClassName: 'FovFadePlugin',
+    ossImport: () => import('./fov-fade/fov-fade'),
+    ossClassName: 'FovFadePlugin',
+    defaultConfig: { enabled: true, order: 316 },
+  },
+  {
     configKey: 'KeyboardShortcutsPlugin',
     proImport: __IS_PRO__ ? () => import('../plugins-pro/keyboard-shortcuts/keyboard-shortcuts') : undefined,
     proClassName: 'KeyboardShortcutsPlugin',

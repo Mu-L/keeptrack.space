@@ -159,4 +159,9 @@ export enum EventBusEvent {
    * ColorSchemeManager consumes the data and uploads to GPU.
    */
   onColorBufferReady = 'onColorBufferReady',
+  /**
+   * Emitted when the FOV prediction worker has new results ready.
+   * FovFadePlugin consumes the data and updates the alpha overlay.
+   */
+  onFovPredictionReady = 'onFovPredictionReady',
 }
