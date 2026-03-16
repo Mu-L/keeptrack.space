@@ -158,6 +158,93 @@ export abstract class StringExtractor {
     return manufacturerCode;
   }
 
+  private static readonly shapeAbbreviations_: Record<string, string> = {
+    'ann': 'Annulus',
+    'ant': 'Antenna',
+    'cone': 'Cone',
+    'cruci': 'Cruciform',
+    'cyl': 'Cylinder',
+    'dcone': 'Double Cone',
+    'dish': 'Dish',
+    'ell': 'Ellipsoid',
+    'frust': 'Frustum',
+    'half cyl': 'Half Cylinder',
+    'half hex prism': 'Half Hexagonal Prism',
+    'hept': 'Heptagonal',
+    'hept prism': 'Heptagonal Prism',
+    'hex': 'Hexagonal',
+    'hex cyl': 'Hexagonal Cylinder',
+    'hex-cyl': 'Hexagonal Cylinder',
+    'hexadec': 'Hexadecagonal',
+    'hexadec cyl': 'Hexadecagonal Cylinder',
+    'ico poly': 'Icosahedral Polyhedron',
+    'irr': 'Irregular',
+    'nonag': 'Nonagonal',
+    'oct': 'Octagonal',
+    'oct cyl': 'Octagonal Cylinder',
+    'oct dcone': 'Octagonal Double Cone',
+    'oct frust': 'Octagonal Frustum',
+    'pan': 'Panel',
+    'part cyl': 'Partial Cylinder',
+    'pent cyl': 'Pentagonal Cylinder',
+    'poly': 'Polyhedron',
+    'step cyl': 'Stepped Cylinder',
+    'taper cyl': 'Tapered Cylinder',
+    'trap': 'Trapezoidal',
+    'trap cyl': 'Trapezoidal Cylinder',
+    'tri cyl': 'Triangular Cylinder',
+    'trunc': 'Truncated',
+    'trunc cone': 'Truncated Cone',
+    'trunc prism': 'Truncated Prism',
+    'trunc pyramid': 'Truncated Pyramid',
+    'trunc tetrahedron': 'Truncated Tetrahedron',
+    'trapezoid': 'Trapezoid',
+    'flared cyl': 'Flared Cylinder',
+    'domed cyl': 'Domed Cylinder',
+  };
+
+  /**
+   * Expands abbreviated shape descriptions from the catalog into full words.
+   * Handles composite shapes like "Cyl + 2 Pan" → "Cylinder + 2 Panel".
+   * Returns the original string if already descriptive (longer than 30 chars).
+   */
+  static extractShape(shape: string): string {
+    if (!shape || shape === '') {
+      return t7e('Common.unknown');
+    }
+
+    // Already a full description
+    if (shape.length > 30) {
+      return shape;
+    }
+
+    // Split on "+" to handle composite shapes, expand each part
+    const parts = shape.split('+').map((part) => {
+      const segment = part.trim();
+
+      if (!segment) {
+        return '';
+      }
+
+      // Extract leading number if present (e.g., "2 Pan" → number=2, rest="Pan")
+      const numMatch = (/^(?<num>\d+)\s+(?<rest>.+)$/u).exec(segment);
+      let prefix = '';
+      let token = segment;
+
+      if (numMatch?.groups) {
+        prefix = `${numMatch.groups.num} `;
+        token = numMatch.groups.rest;
+      }
+
+      const lookup = token.toLowerCase();
+      const expanded = StringExtractor.shapeAbbreviations_[lookup];
+
+      return expanded ? `${prefix}${expanded}` : `${prefix}${token}`;
+    });
+
+    return parts.filter((p) => p).join(' + ');
+  }
+
   static getCountryCode(country?: string) {
     if (!country || country === '') {
       return '';

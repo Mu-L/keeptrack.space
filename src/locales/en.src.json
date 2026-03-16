@@ -249,6 +249,7 @@
     "modeTools": "Tools",
     "modeSettings": "Settings",
     "modeExperimental": "Experimental",
+    "modeRecent": "Recent",
     "groupCameraModes": "Camera Modes",
     "groupLayerToggles": "Layer Toggles",
     "groupSettingsToggles": "Settings Toggles",
