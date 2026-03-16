@@ -10,29 +10,22 @@ import { IconPlacement, UtilityGroup } from '@app/engine/plugins/core/plugin-cap
 import { TopMenuPlugin } from '@app/engine/plugins/top-menu-plugin';
 import { getEl } from '@app/engine/utils/get-el';
 import { PersistenceManager, StorageKey } from '@app/engine/utils/persistence-manager';
+import { t7e } from '@app/locales/keys';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
 import { settingsManager } from '@app/settings/settings';
-import { t7e } from '@app/locales/keys';
+import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
+import leftPanelOpenPng from '@public/img/icons/left-panel-open.png';
+import searchPng from '@public/img/icons/search.png';
+import {
+  type DrawerBadge, type DrawerGroup, type DrawerItemData,
+  buildRecentGroupFromCache, loadRecentPlugins, renderBadge,
+  renderStatusFooter, renderUtilityFooter, saveRecentPlugins,
+  syncBadgesFromEvents, syncInitialUtilityState, syncUtilityFooterState,
+  trackRecentPlugin, updateConnectivityStatus,
+} from './plugin-drawer-helpers';
 import './plugin-drawer.css';
 
 type DrawerKey_ = Parameters<typeof t7e>[0];
-
-interface DrawerItemData_ {
-  id: string;
-  pluginId?: string;
-  label: string;
-  imgSrc: string;
-  isTopMenu: boolean;
-  isDisabled?: boolean;
-  isLoginRequired?: boolean;
-  order: number;
-  shortcutHint?: string;
-}
-
-interface DrawerGroup_ {
-  label: string;
-  items: DrawerItemData_[];
-}
 
 const MODE_LABEL_KEYS: Record<number, DrawerKey_> = {
   [MenuMode.CATALOG]: 'pluginDrawer.modeCatalog' as DrawerKey_,
@@ -49,6 +42,7 @@ const MODE_LABEL_KEYS: Record<number, DrawerKey_> = {
 /** Nav item IDs that should appear in the utility footer instead of Quick Actions */
 const UTILITY_NAV_ITEM_IDS = new Set(['sound-btn', 'layers-menu-btn']);
 
+
 export class PluginDrawer {
   private isOpen_ = false;
   private isMobileMode_ = false;
@@ -56,6 +50,10 @@ export class PluginDrawer {
   private overlayEl_: HTMLElement | null = null;
   private hamburgerEl_: HTMLElement | null = null;
   private groupStates_: Record<string, boolean> = {};
+  private recentPluginIds_: string[] = [];
+  private allDrawerItems_: Map<string, DrawerItemData> = new Map();
+  private isRailMode_ = false;
+  private badges_: Map<string, DrawerBadge> = new Map();
 
   init(): void {
     this.isMobileMode_ = settingsManager.isMobileModeEnabled;
@@ -66,6 +64,10 @@ export class PluginDrawer {
     }
 
     this.loadGroupStates_();
+    this.recentPluginIds_ = loadRecentPlugins();
+
+    // Rail mode is automatic on tablet+ (non-mobile)
+    this.isRailMode_ = !this.isMobileMode_;
 
     EventBus.getInstance().on(EventBusEvent.uiManagerInit, () => {
       this.createDrawerDom_();
@@ -82,7 +84,10 @@ export class PluginDrawer {
     });
 
     EventBus.getInstance().on(EventBusEvent.hideSideMenus, () => {
-      this.close();
+      // Don't close the drawer if it's in rail mode — only close full open
+      if (this.isOpen_) {
+        this.close();
+      }
     });
 
     EventBus.getInstance().on(EventBusEvent.selectSatData, () => {
@@ -92,6 +97,22 @@ export class PluginDrawer {
 
     EventBus.getInstance().on(EventBusEvent.setSensor, () => {
       this.syncDisabledState_();
+      this.syncBadgesFromEvents_();
+    });
+
+    EventBus.getInstance().on(EventBusEvent.resetSensor, () => {
+      this.syncBadgesFromEvents_();
+    });
+
+    EventBus.getInstance().on(EventBusEvent.onWatchlistUpdated, (watchlist: { id: number; inView: boolean }[]) => {
+      this.updateBadge_(
+        'watchlist-overlay-menu',
+        watchlist.length > 0 ? { type: 'count', value: watchlist.length } : null,
+      );
+    });
+
+    EventBus.getInstance().on(EventBusEvent.connectivityChange, (isOnline: boolean) => {
+      this.updateConnectivityStatus_(isOnline);
     });
   }
 
@@ -100,6 +121,7 @@ export class PluginDrawer {
       return;
     }
     this.isOpen_ = true;
+    this.exitRailMode_();
     this.syncActiveState_();
     this.drawerEl_?.classList.add('open');
     this.overlayEl_?.classList.add('open');
@@ -114,6 +136,11 @@ export class PluginDrawer {
     this.drawerEl_?.classList.remove('open');
     this.overlayEl_?.classList.remove('open');
     this.hamburgerEl_?.classList.remove('open');
+
+    // Re-enter rail mode after closing on tablet+ (rail is always active)
+    if (this.isRailMode_ && !this.isMobileMode_) {
+      this.enterRailMode_();
+    }
   }
 
   toggle(): void {
@@ -122,6 +149,15 @@ export class PluginDrawer {
     } else {
       this.open();
     }
+  }
+
+  toggleRailMode(): void {
+    if (this.isMobileMode_) {
+      return;
+    }
+
+    // On tablet+, toggle between rail and locked-open
+    this.toggle();
   }
 
   private createHamburgerButton_(): void {
@@ -185,12 +221,20 @@ export class PluginDrawer {
     drawer.className = `plugin-drawer ${modeClass}`;
     drawer.innerHTML = [
       '<div class="drawer-inner">',
-      // '  <div class="drawer-header">',
-      // `    <span class="drawer-title">KeepTrack v${__VERSION__}</span>`,
-      // '  </div>',
+      '  <div class="drawer-search" id="drawer-search-trigger" role="button" tabindex="0">',
+      `    <img class="drawer-search-icon" src=${searchPng} alt="Search" />`,
+      '    <span class="drawer-search-label">Search\u2026</span>',
+      '    <span class="drawer-search-shortcut">Ctrl+\u21E7+K</span>',
+      '  </div>',
       '  <div id="drawer-content" class="drawer-content"></div>',
       '</div>',
       '<div id="drawer-user-account" class="drawer-user-account"></div>',
+      '<div id="drawer-status-footer" class="drawer-status-footer-container"></div>',
+      '<div id="drawer-rail-toggle" class="drawer-rail-toggle" role="button" aria-label="Toggle rail mode">',
+      `  <img class="drawer-rail-toggle-icon" src="${leftPanelClosePng}" alt="" />`,
+      '  <span class="drawer-rail-toggle-label">Collapse</span>',
+      '  <span class="drawer-rail-toggle-shortcut">Ctrl+B</span>',
+      '</div>',
     ].join('');
 
     // Utility footer inside ui-wrapper so it shares the same stacking context as side menus
@@ -212,8 +256,8 @@ export class PluginDrawer {
 
   private populateDrawerItems_(): void {
     const plugins = PluginRegistry.plugins;
-    const menuGroups: Record<string, DrawerGroup_> = {};
-    const utilityGroups: Record<string, DrawerGroup_> = {};
+    const menuGroups: Record<string, DrawerGroup> = {};
+    const utilityGroups: Record<string, DrawerGroup> = {};
 
     // Initialize MenuMode groups (scrollable content)
     for (const [mode, key] of Object.entries(MODE_LABEL_KEYS)) {
@@ -312,7 +356,7 @@ export class PluginDrawer {
         const tooltip = btnEl?.getAttribute('kt-tooltip') || navItem.tooltip || navItem.id;
         const isDisabled = btnEl?.classList.contains('bmenu-item-disabled') ?? false;
 
-        const item: DrawerItemData_ = {
+        const item: DrawerItemData = {
           id: navItem.id,
           label: tooltip,
           imgSrc,
@@ -327,13 +371,22 @@ export class PluginDrawer {
       }
     }
 
-    this.renderMenuGroups_(menuGroups);
+    // Build the "Recent" group from persisted recent plugin IDs
+    const recentGroup = this.buildRecentGroup_(menuGroups);
+
+    this.renderMenuGroups_(menuGroups, recentGroup);
     this.renderUtilityFooter_(utilityGroups);
+    this.renderStatusFooter_();
     this.syncInitialUtilityState_();
     PluginDrawer.updateBottomMenuCssVars_();
+
+    // Apply rail mode if it was persisted (desktop only)
+    if (this.isRailMode_ && !this.isMobileMode_) {
+      this.enterRailMode_();
+    }
   }
 
-  private renderMenuGroups_(groups: Record<string, DrawerGroup_>): void {
+  private renderMenuGroups_(groups: Record<string, DrawerGroup>, recentGroup?: DrawerGroup): void {
     const contentEl = getEl('drawer-content', true);
 
     if (!contentEl) {
@@ -341,6 +394,11 @@ export class PluginDrawer {
     }
 
     let html = '';
+
+    // Render "Recent" group first if it has items
+    if (recentGroup && recentGroup.items.length > 0) {
+      html += PluginDrawer.renderGroupHtml_('recent', recentGroup, true);
+    }
 
     for (const [key, group] of Object.entries(groups)) {
       if (group.items.length === 0) {
@@ -350,32 +408,8 @@ export class PluginDrawer {
       group.items.sort((a, b) => a.order - b.order);
 
       const isExpanded = this.groupStates_[key] !== false;
-      const collapsedClass = isExpanded ? '' : ' collapsed';
 
-      html += `<div class="drawer-group${collapsedClass}" data-group-key="${key}">`;
-      html += '<div class="drawer-group-header">';
-      html += `<span class="drawer-group-label">${group.label}</span>`;
-      html += '<span class="drawer-group-chevron">&#x25BE;</span>';
-      html += '</div>';
-      html += '<div class="drawer-group-items">';
-
-      for (const item of group.items) {
-        const dataAttr = item.isTopMenu ? `data-top-menu-id="${item.id}"` : `data-plugin-id="${item.id}"`;
-        const disabledClass = item.isDisabled ? ' disabled' : '';
-        const proClass = item.isLoginRequired ? ' bmenu-item-pro' : '';
-        const proAttr = item.isLoginRequired ? ' data-pro-gated' : '';
-        const tabIdx = item.isDisabled ? '' : ' tabindex="0"';
-        const shortcutBadge = item.shortcutHint ? `<span class="drawer-item-shortcut">${item.shortcutHint}</span>` : '';
-
-        html += `<div class="drawer-item${disabledClass}${proClass}" ${dataAttr}${proAttr}${tabIdx} role="button">`;
-        html += `<img class="drawer-item-icon" src="${item.imgSrc}" alt="${item.label}" />`;
-        html += `<span class="drawer-item-label">${item.label}</span>`;
-        html += shortcutBadge;
-        html += '</div>';
-      }
-
-      html += '</div>';
-      html += '</div>';
+      html += PluginDrawer.renderGroupHtml_(key, group, isExpanded);
     }
 
     contentEl.innerHTML = html;
@@ -396,43 +430,8 @@ export class PluginDrawer {
     });
   }
 
-  private renderUtilityFooter_(groups: Record<string, DrawerGroup_>): void {
-    const footerEl = getEl('drawer-utility-footer', true);
-
-    if (!footerEl) {
-      return;
-    }
-
-    let html = '';
-
-    for (const [, group] of Object.entries(groups)) {
-      if (group.items.length === 0) {
-        continue;
-      }
-
-      group.items.sort((a, b) => a.order - b.order);
-
-      html += '<div class="drawer-utility-section">';
-      html += `<div class="drawer-utility-section-label">${group.label}</div>`;
-      html += '<div class="drawer-utility-icons">';
-
-      for (const item of group.items) {
-        const disabledClass = item.isDisabled ? ' bmenu-item-disabled' : '';
-        const proClass = item.isLoginRequired ? ' bmenu-item-pro' : '';
-        const proAttr = item.isLoginRequired ? ' data-pro-gated' : '';
-        const dataAttr = item.isTopMenu ? `data-top-menu-id="${item.id}"` : `data-plugin-id="${item.id}"`;
-        const idAttr = item.pluginId ? ` id="${item.pluginId}-utility-icon"` : '';
-
-        html += `<div class="drawer-utility-icon${disabledClass}${proClass}"${idAttr} ${dataAttr}${proAttr} kt-tooltip="${item.label}">`;
-        html += `<img src="${item.imgSrc}" alt="${item.label}" />`;
-        html += '</div>';
-      }
-
-      html += '</div>';
-      html += '</div>';
-    }
-
-    footerEl.innerHTML = html;
+  private renderUtilityFooter_(groups: Record<string, DrawerGroup>): void {
+    renderUtilityFooter(groups);
   }
 
   private resolveImgSrc_(plugin: KeepTrackPlugin): string {
@@ -463,6 +462,7 @@ export class PluginDrawer {
 
         if (pluginId) {
           ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+          this.trackRecentPlugin_(pluginId);
           // Close drawer first so the side menu can animate cleanly
           this.close();
           // Small delay to let the drawer close before emitting the event
@@ -520,6 +520,55 @@ export class PluginDrawer {
       });
     }
 
+    // Search trigger — opens command palette
+    const searchTrigger = getEl('drawer-search-trigger', true);
+
+    if (searchTrigger) {
+      searchTrigger.addEventListener('click', () => {
+        PluginDrawer.openCommandPalette_();
+      });
+      searchTrigger.addEventListener('keydown', (evt: KeyboardEvent) => {
+        if (evt.key === 'Enter' || evt.key === ' ') {
+          evt.preventDefault();
+          PluginDrawer.openCommandPalette_();
+        }
+      });
+    }
+
+    // Rail toggle button
+    const railToggle = getEl('drawer-rail-toggle', true);
+
+    if (railToggle) {
+      railToggle.addEventListener('click', () => {
+        ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
+        this.toggleRailMode();
+      });
+    }
+
+    // Rail hover expansion — entire drawer triggers expand except the toggle button
+    if (!this.isMobileMode_ && this.drawerEl_) {
+      const drawer = this.drawerEl_;
+
+      drawer.addEventListener('mouseenter', () => {
+        if (drawer.classList.contains('rail-mode')) {
+          drawer.classList.add('rail-hover');
+        }
+      });
+      drawer.addEventListener('mouseleave', () => {
+        drawer.classList.remove('rail-hover');
+      });
+
+      // Prevent the toggle button from triggering hover expansion
+      const railToggleEl = getEl('drawer-rail-toggle', true);
+
+      if (railToggleEl) {
+        railToggleEl.addEventListener('mouseenter', (evt) => {
+          evt.stopPropagation();
+          drawer.classList.remove('rail-hover');
+        });
+      }
+    }
+
     // Hamburger button
     this.hamburgerEl_?.addEventListener('click', () => {
       ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
@@ -548,6 +597,12 @@ export class PluginDrawer {
         evt.preventDefault();
         this.toggle();
       }
+
+      // Ctrl+B toggles rail/expand on tablet+
+      if (evt.ctrlKey && evt.key === 'b' && !this.isMobileMode_) {
+        evt.preventDefault();
+        this.toggle();
+      }
     });
   }
 
@@ -569,65 +624,11 @@ export class PluginDrawer {
   }
 
   private syncUtilityFooterState_(): void {
-    const footerEl = getEl('drawer-utility-footer', true);
-
-    footerEl?.querySelectorAll('.drawer-utility-icon[data-plugin-id]').forEach((el) => {
-      const pluginId = (el as HTMLElement).dataset.pluginId;
-      const bottomIcon = pluginId ? getEl(pluginId, true) : null;
-
-      // UTILITY_ONLY plugins have no bottom bar icon element — their utility
-      // icon state is managed directly by setBottomIconToSelected/Unselected
-      if (!bottomIcon) {
-        return;
-      }
-      const isSelected = bottomIcon.classList.contains('bmenu-item-selected');
-
-      el.classList.toggle('bmenu-item-selected', isSelected);
-    });
-
-    footerEl?.querySelectorAll('.drawer-utility-icon[data-top-menu-id]').forEach((el) => {
-      const topMenuId = (el as HTMLElement).dataset.topMenuId;
-      const navBtn = topMenuId ? getEl(topMenuId, true) : null;
-      const isSelected = navBtn?.classList.contains('bmenu-item-selected') ?? false;
-      const isDisabled = navBtn?.classList.contains('bmenu-item-disabled') ?? false;
-
-      el.classList.toggle('bmenu-item-selected', isSelected);
-      el.classList.toggle('bmenu-item-disabled', isDisabled);
-    });
+    syncUtilityFooterState();
   }
 
-  /**
-   * Syncs initial selected/disabled state from plugin objects to newly-created drawer utility icons.
-   * Needed because plugins may call setBottomIconToSelected() before the drawer creates its icons.
-   */
   private syncInitialUtilityState_(): void {
-    // Sync plugin-based utility icons from plugin state
-    for (const plugin of PluginRegistry.plugins) {
-      const utilityIcon = getEl(`${plugin.id}-utility-icon`, true);
-
-      if (!utilityIcon) {
-        continue;
-      }
-      if (plugin.isMenuButtonActive) {
-        utilityIcon.classList.add('bmenu-item-selected');
-      }
-      if (plugin.isIconDisabled) {
-        utilityIcon.classList.add('bmenu-item-disabled');
-      }
-    }
-
-    // Sync top-menu-based utility icons from nav button DOM
-    const footerEl = getEl('drawer-utility-footer', true);
-
-    footerEl?.querySelectorAll('.drawer-utility-icon[data-top-menu-id]').forEach((el) => {
-      const topMenuId = (el as HTMLElement).dataset.topMenuId;
-      const navBtn = topMenuId ? getEl(topMenuId, true) : null;
-      // At init time, check both the element and its inner container (classInner)
-      const isSelected = navBtn?.classList.contains('bmenu-item-selected') ||
-        !!navBtn?.querySelector('.bmenu-item-selected');
-
-      el.classList.toggle('bmenu-item-selected', !!isSelected);
-    });
+    syncInitialUtilityState();
   }
 
   private syncDisabledState_(): void {
@@ -689,5 +690,169 @@ export class PluginDrawer {
     }
 
     return undefined;
+  }
+
+  /**
+   * Render a single drawer group to HTML.
+   */
+  private static renderGroupHtml_(key: string, group: DrawerGroup, isExpanded: boolean): string {
+    const collapsedClass = isExpanded ? '' : ' collapsed';
+    let html = `<div class="drawer-group${collapsedClass}" data-group-key="${key}">`;
+
+    html += '<div class="drawer-group-header">';
+    html += `<span class="drawer-group-label">${group.label}</span>`;
+    html += '<span class="drawer-group-chevron">&#x25BE;</span>';
+    html += '</div>';
+    html += '<div class="drawer-group-items">';
+
+    for (const item of group.items) {
+      const dataAttr = item.isTopMenu ? `data-top-menu-id="${item.id}"` : `data-plugin-id="${item.id}"`;
+      const disabledClass = item.isDisabled ? ' disabled' : '';
+      const proClass = item.isLoginRequired ? ' bmenu-item-pro' : '';
+      const proAttr = item.isLoginRequired ? ' data-pro-gated' : '';
+      const tabIdx = item.isDisabled ? '' : ' tabindex="0"';
+      const shortcutBadge = item.shortcutHint ? `<span class="drawer-item-shortcut">${item.shortcutHint}</span>` : '';
+
+      html += `<div class="drawer-item${disabledClass}${proClass}" ${dataAttr}${proAttr}${tabIdx} role="button" kt-tooltip="${item.label}">`;
+      html += `<img class="drawer-item-icon" src="${item.imgSrc}" alt="${item.label}" />`;
+      html += `<span class="drawer-item-label">${item.label}</span>`;
+      html += '<span class="drawer-item-badge"></span>';
+      html += shortcutBadge;
+      html += '</div>';
+    }
+
+    html += '</div>';
+    html += '</div>';
+
+    return html;
+  }
+
+  // ---- Command Palette ----
+
+  private static openCommandPalette_(): void {
+    // Dispatch the keyboard shortcut that the CommandPalettePlugin listens for
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      code: 'KeyK',
+      key: 'K',
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+    }));
+  }
+
+  // ---- Recent Plugins ----
+
+  private trackRecentPlugin_(pluginId: string): void {
+    this.recentPluginIds_ = trackRecentPlugin(this.recentPluginIds_, pluginId);
+    saveRecentPlugins(this.recentPluginIds_);
+    this.refreshRecentGroup_();
+  }
+
+  private buildRecentGroup_(menuGroups: Record<string, DrawerGroup>): DrawerGroup {
+    this.allDrawerItems_.clear();
+    for (const group of Object.values(menuGroups)) {
+      for (const item of group.items) {
+        if (!item.isTopMenu) {
+          this.allDrawerItems_.set(item.id, item);
+        }
+      }
+    }
+
+    return buildRecentGroupFromCache(this.recentPluginIds_, this.allDrawerItems_);
+  }
+
+  private refreshRecentGroup_(): void {
+    const contentEl = getEl('drawer-content', true);
+
+    if (!contentEl) {
+      return;
+    }
+
+    // Remove old recent group if present
+    const oldRecent = contentEl.querySelector('.drawer-group[data-group-key="recent"]');
+
+    oldRecent?.remove();
+
+    const recentGroup = buildRecentGroupFromCache(this.recentPluginIds_, this.allDrawerItems_);
+
+    if (recentGroup.items.length === 0) {
+      return;
+    }
+
+    const html = PluginDrawer.renderGroupHtml_('recent', recentGroup, true);
+    const template = document.createElement('template');
+
+    template.innerHTML = html;
+    const newGroupEl = template.content.firstElementChild;
+
+    if (newGroupEl) {
+      contentEl.prepend(newGroupEl);
+
+      // Wire collapsible header for the new group
+      const header = newGroupEl.querySelector('.drawer-group-header');
+
+      header?.addEventListener('click', () => {
+        newGroupEl.classList.toggle('collapsed');
+        const key = (newGroupEl as HTMLElement).getAttribute('data-group-key');
+
+        if (key) {
+          this.groupStates_[key] = !newGroupEl.classList.contains('collapsed');
+          this.saveGroupStates_();
+        }
+      });
+    }
+  }
+
+  // ---- Status Footer ----
+
+  private renderStatusFooter_(): void {
+    renderStatusFooter();
+  }
+
+  private updateConnectivityStatus_(isOnline: boolean): void {
+    updateConnectivityStatus(this.drawerEl_, isOnline);
+  }
+
+  // ---- Badges ----
+
+  updateBadge_(pluginId: string, badge: DrawerBadge | null): void {
+    if (badge) {
+      this.badges_.set(pluginId, badge);
+    } else {
+      this.badges_.delete(pluginId);
+    }
+    renderBadge(pluginId, this.badges_);
+  }
+
+  private syncBadgesFromEvents_(): void {
+    syncBadgesFromEvents((id, badge) => this.updateBadge_(id, badge));
+  }
+
+  // ---- Rail Mode ----
+
+  private enterRailMode_(): void {
+    this.drawerEl_?.classList.remove('rail-hover');
+    this.drawerEl_?.classList.add('rail-mode');
+    document.documentElement.style.setProperty('--drawer-offset', '48px');
+    this.updateRailToggleIcon_(true);
+  }
+
+  private exitRailMode_(): void {
+    this.drawerEl_?.classList.remove('rail-hover');
+    this.drawerEl_?.classList.remove('rail-mode');
+    document.documentElement.style.setProperty('--drawer-offset', '0px');
+    this.updateRailToggleIcon_(false);
+  }
+
+  private updateRailToggleIcon_(isRail: boolean): void {
+    const icon = this.drawerEl_?.querySelector('.drawer-rail-toggle-icon') as HTMLImageElement | null;
+    const label = this.drawerEl_?.querySelector('.drawer-rail-toggle-label');
+
+    if (icon) {
+      icon.src = isRail ? leftPanelOpenPng : leftPanelClosePng;
+    }
+    if (label) {
+      label.textContent = isRail ? 'Expand' : 'Collapse';
+    }
   }
 }

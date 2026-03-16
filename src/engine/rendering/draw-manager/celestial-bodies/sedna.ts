@@ -44,7 +44,7 @@ export class Sedna extends DwarfPlanet {
   rotation = [0, 0, 0];
   color = PlanetColors.SEDNA;
   tintColor: [number, number, number] = [1.3, 0.6, 0.5];
-  textureQuality: SednaTextureQuality = SednaTextureQuality.HIGH;
+  textureQuality: SednaTextureQuality = SednaTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(sednaChebyshevCoeffs);
 
   getName(): SolarBody {

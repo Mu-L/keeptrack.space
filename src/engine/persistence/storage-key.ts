@@ -55,6 +55,8 @@ export enum StorageKey {
   FILTER_SETTINGS_X_GEO = 'v2-filter-settings-x-geo',
   FILTER_SETTINGS_VIMPEL = 'v2-filter-settings-vimpel',
   FILTER_SETTINGS_CELESTRAK = 'v2-filter-settings-celestrak',
+  FILTER_SETTINGS_CELESTRAK_SUP = 'v2-filter-settings-celestrak-sup',
+  FILTER_SETTINGS_SATNOGS = 'v2-filter-settings-satnogs',
   FILTER_SETTINGS_NOTIONAL = 'v2-filter-settings-notional',
   FILTER_SETTINGS_UNITED_STATES = 'v2-filter-settings-united-states',
   FILTER_SETTINGS_UNITED_KINGDOM = 'v2-filter-settings-united-kingdom',
@@ -100,6 +102,8 @@ export enum StorageKey {
 
   // Plugin Drawer
   DRAWER_GROUP_STATES = 'v2-keepTrack-drawerGroupStates',
+  DRAWER_RECENT_PLUGINS = 'v2-keepTrack-drawerRecentPlugins',
+  DRAWER_RAIL_MODE = 'v2-keepTrack-drawerRailMode',
 
   VERSION = 'v2-version',
 

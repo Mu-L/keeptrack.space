@@ -78,6 +78,8 @@ export interface FilterPluginSettings {
   otherCountries?: boolean;
   vimpelSatellites?: boolean;
   celestrakSatellites?: boolean;
+  celestrakSupSatellites?: boolean;
+  satnogsSatellites?: boolean;
   notionalSatellites?: boolean;
 }
 
@@ -98,15 +100,15 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     return [
       {
         id: 'operationalPayloads',
-        name: t7e('filterMenu.operationalPayloads.name' as Parameters<typeof t7e>[0]),
-        category: t7e('filterMenu.operationalPayloads.category' as Parameters<typeof t7e>[0]),
-        tooltip: t7e('filterMenu.operationalPayloads.tooltip' as Parameters<typeof t7e>[0]),
+        name: t7e('filterMenu.operationalPayloads.name'),
+        category: t7e('filterMenu.operationalPayloads.category'),
+        tooltip: t7e('filterMenu.operationalPayloads.tooltip'),
       },
       {
         id: 'nonOperationalPayloads',
-        name: t7e('filterMenu.nonOperationalPayloads.name' as Parameters<typeof t7e>[0]),
-        category: t7e('filterMenu.nonOperationalPayloads.category' as Parameters<typeof t7e>[0]),
-        tooltip: t7e('filterMenu.nonOperationalPayloads.tooltip' as Parameters<typeof t7e>[0]),
+        name: t7e('filterMenu.nonOperationalPayloads.name'),
+        category: t7e('filterMenu.nonOperationalPayloads.category'),
+        tooltip: t7e('filterMenu.nonOperationalPayloads.tooltip'),
       },
       {
         id: 'rocketBodies',
@@ -142,15 +144,15 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
       },
       {
         id: 'groundSensors',
-        name: t7e('filterMenu.groundSensors.name' as Parameters<typeof t7e>[0]),
-        category: t7e('filterMenu.groundSensors.category' as Parameters<typeof t7e>[0]),
-        tooltip: t7e('filterMenu.groundSensors.tooltip' as Parameters<typeof t7e>[0]),
+        name: t7e('filterMenu.groundSensors.name'),
+        category: t7e('filterMenu.groundSensors.category'),
+        tooltip: t7e('filterMenu.groundSensors.tooltip'),
       },
       {
         id: 'launchFacilities',
-        name: t7e('filterMenu.launchFacilities.name' as Parameters<typeof t7e>[0]),
-        category: t7e('filterMenu.launchFacilities.category' as Parameters<typeof t7e>[0]),
-        tooltip: t7e('filterMenu.launchFacilities.tooltip' as Parameters<typeof t7e>[0]),
+        name: t7e('filterMenu.launchFacilities.name'),
+        category: t7e('filterMenu.launchFacilities.category'),
+        tooltip: t7e('filterMenu.launchFacilities.tooltip'),
       },
       {
         id: 'vLEOSatellites',
@@ -201,6 +203,18 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
         name: t7e('filterMenu.celestrakSatellites.name'),
         category: t7e('filterMenu.source.category'),
         tooltip: t7e('filterMenu.celestrakSatellites.tooltip'),
+      },
+      {
+        id: 'celestrakSupSatellites',
+        name: t7e('filterMenu.celestrakSupSatellites.name'),
+        category: t7e('filterMenu.source.category'),
+        tooltip: t7e('filterMenu.celestrakSupSatellites.tooltip'),
+      },
+      {
+        id: 'satnogsSatellites',
+        name: t7e('filterMenu.satnogsSatellites.name'),
+        category: t7e('filterMenu.source.category'),
+        tooltip: t7e('filterMenu.satnogsSatellites.tooltip'),
       },
       {
         id: 'unitedStates',
@@ -298,6 +312,8 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
     xGEOSatellites: StorageKey.FILTER_SETTINGS_X_GEO,
     vimpelSatellites: StorageKey.FILTER_SETTINGS_VIMPEL,
     celestrakSatellites: StorageKey.FILTER_SETTINGS_CELESTRAK,
+    celestrakSupSatellites: StorageKey.FILTER_SETTINGS_CELESTRAK_SUP,
+    satnogsSatellites: StorageKey.FILTER_SETTINGS_SATNOGS,
     notionalSatellites: StorageKey.FILTER_SETTINGS_NOTIONAL,
     groundSensors: StorageKey.FILTER_SETTINGS_GROUND_SENSORS,
     launchFacilities: StorageKey.FILTER_SETTINGS_LAUNCH_FACILITIES,
@@ -542,7 +558,7 @@ export class FilterMenuPlugin extends KeepTrackPlugin {
             (filter) => {
               filter.id ??= FilterMenuPlugin.generateFilterId_(filter.name);
               filter.checked ??= settingsManager.filter[filter.id] ?? true;
-              filter.tooltip ??= t7e('plugins.FilterMenuPlugin.defaultTooltip' as Parameters<typeof t7e>[0]).replace('{name}', filter.name);
+              filter.tooltip ??= t7e('plugins.FilterMenuPlugin.defaultTooltip').replace('{name}', filter.name);
 
               return html`
             <div class="switch row">

@@ -10,7 +10,7 @@ export function registerServiceWorker(): void {
     return;
   }
 
-  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+  if (window.location.protocol !== 'https:') {
     return;
   }
 

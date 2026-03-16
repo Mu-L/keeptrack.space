@@ -527,6 +527,8 @@ describe('FilterMenuPlugin_class', () => {
       'otherCountries',
       'vimpelSatellites',
       'celestrakSatellites',
+      'celestrakSupSatellites',
+      'satnogsSatellites',
       'notionalSatellites',
     ];
 

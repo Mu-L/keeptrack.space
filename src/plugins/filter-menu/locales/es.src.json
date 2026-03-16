@@ -122,6 +122,14 @@
       "name": "Satélites Celestrak",
       "tooltip": "Celestrak es una fuente popular de datos orbitales de satélites, proporcionando TLEs para una amplia gama de satélites y desechos."
     },
+    "celestrakSupSatellites": {
+      "name": "Satélites suplementarios de Celestrak",
+      "tooltip": "Datos satelitales suplementarios de Celestrak, incluyendo objetos adicionales que no están en el catálogo principal."
+    },
+    "satnogsSatellites": {
+      "name": "Satélites SatNOGS",
+      "tooltip": "Datos satelitales de la red SatNOGS, un proyecto comunitario para la observación y seguimiento de satélites."
+    },
     "countries": {
       "category": "Países",
       "unitedStates": {

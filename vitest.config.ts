@@ -58,6 +58,7 @@ export default defineConfig({
       '@public': path.resolve(__dirname, './public'),
       '@css': path.resolve(__dirname, './public/css'),
       '@test': path.resolve(__dirname, './test'),
+      '@wallpapers': path.resolve(__dirname, './src/app/ui/default-wallpapers.ts'),
     },
   },
 });

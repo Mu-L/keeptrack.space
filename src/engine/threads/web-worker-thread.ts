@@ -34,6 +34,9 @@ export abstract class WebWorkerThreadManager {
       }
 
       this.worker_.onmessage = this.onMessage.bind(this);
+      this.worker_.onerror = (event: ErrorEvent) => {
+        console.error(`[${this.WEB_WORKER_CODE}] Worker error:`, event.message);
+      };
     } catch (error) {
       // If you are trying to run this off the desktop you might have forgotten --allow-file-access-from-files
       if (window.location.href.startsWith('file://')) {

@@ -44,7 +44,7 @@ export class Charon extends DwarfPlanet {
   rotation = [0, 0, 0];
   color = PlanetColors.CHARON;
   tintColor: [number, number, number] = [0.85, 0.85, 0.88];
-  textureQuality: CharonTextureQuality = CharonTextureQuality.HIGH;
+  textureQuality: CharonTextureQuality = CharonTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(charonChebyshevCoeffs);
 
   getName(): SolarBody {

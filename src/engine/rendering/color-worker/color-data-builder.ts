@@ -55,6 +55,10 @@ function encodeSource(source: string | undefined): SourceCode {
     case CatalogSource.VIMPEL:
     case 'JSC Vimpel':
       return SourceCode.VIMPEL;
+    case CatalogSource.CELESTRAK_SUP:
+      return SourceCode.CELESTRAK_SUP;
+    case CatalogSource.SATNOGS:
+      return SourceCode.SATNOGS;
     case 'OEM Import':
       return SourceCode.OEM_IMPORT;
     case 'KeepTrack':

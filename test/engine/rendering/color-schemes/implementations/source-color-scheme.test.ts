@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 /* eslint-disable no-undefined */
 import { Pickable } from '@app/engine/core/interfaces';
 import { SourceColorScheme } from '@app/engine/rendering/color-schemes/source-color-scheme';
+import { CatalogSource } from '@ootk/src/main';
 import { ColorSchemeTestUtils } from '../__helpers__/color-scheme-test-utils';
 
 // Mock dependencies
@@ -44,7 +45,7 @@ describe('SourceColorScheme', () => {
 
   describe('Color Assignment Logic', () => {
     it('should assign Celestrak color for Celestrak source', () => {
-      const sat = ColorSchemeTestUtils.createMockSatellite({ source: 'Celestrak' });
+      const sat = ColorSchemeTestUtils.createMockSatellite({ source: CatalogSource.CELESTRAK });
       const result = colorScheme.update(sat);
 
       ColorSchemeTestUtils.assertValidColorInformation(result);
@@ -53,7 +54,7 @@ describe('SourceColorScheme', () => {
     });
 
     it('should assign Space-Track color for Space-Track source', () => {
-      const sat = ColorSchemeTestUtils.createMockSatellite({ source: 'USSF' });
+      const sat = ColorSchemeTestUtils.createMockSatellite({ source: CatalogSource.USSF });
       const result = colorScheme.update(sat);
 
       ColorSchemeTestUtils.assertValidColorInformation(result);
@@ -61,8 +62,8 @@ describe('SourceColorScheme', () => {
       expect(result.color).toEqual(colorScheme.colorTheme.sourceUssf);
     });
 
-    it('should assign Other color for unknown source', () => {
-      const sat = ColorSchemeTestUtils.createMockSatellite({ source: 'JSC Vimpel' });
+    it('should assign Vimpel color for Vimpel source', () => {
+      const sat = ColorSchemeTestUtils.createMockSatellite({ source: CatalogSource.VIMPEL });
       const result = colorScheme.update(sat);
 
       ColorSchemeTestUtils.assertValidColorInformation(result);
@@ -82,8 +83,8 @@ describe('SourceColorScheme', () => {
 
   describe('Edge Cases and Error Handling', () => {
     it('should provide consistent colors for identical sources', () => {
-      const sat1 = ColorSchemeTestUtils.createMockSatellite({ source: 'Celestrak' });
-      const sat2 = ColorSchemeTestUtils.createMockSatellite({ id: sat1.id + 1000, source: 'Celestrak' });
+      const sat1 = ColorSchemeTestUtils.createMockSatellite({ source: CatalogSource.CELESTRAK });
+      const sat2 = ColorSchemeTestUtils.createMockSatellite({ id: sat1.id + 1000, source: CatalogSource.CELESTRAK });
       const result1 = colorScheme.update(sat1);
       const result2 = colorScheme.update(sat2);
 
@@ -108,11 +109,11 @@ describe('SourceColorScheme', () => {
         colorScheme,
         testSatellites.map((sat, i) => {
           if (i % 3 === 0) {
-            sat.source = 'Celestrak';
+            sat.source = CatalogSource.CELESTRAK;
           } else if (i % 3 === 1) {
-            sat.source = 'USSF';
+            sat.source = CatalogSource.USSF;
           } else {
-            sat.source = 'Other';
+            sat.source = CatalogSource.VIMPEL;
           }
 
           return sat;
@@ -127,7 +128,7 @@ describe('SourceColorScheme', () => {
       const largeSatelliteSet = Array.from({ length: 1000 }, (_, i) => {
         const sat = ColorSchemeTestUtils.createMockSatellite({ id: i });
 
-        sat.source = ['Celestrak', 'Space-Track', 'Other'][i % 3];
+        sat.source = [CatalogSource.CELESTRAK, CatalogSource.USSF, CatalogSource.VIMPEL][i % 3];
 
         return sat;
       });

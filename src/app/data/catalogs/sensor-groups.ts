@@ -1,3 +1,4 @@
+import { apiFetch } from '@app/app/data/api-fetch';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { t7e } from '@app/locales/keys';
 
@@ -12,7 +13,7 @@ export interface SensorGroup {
 }
 
 export const fetchSensorGroups = async (): Promise<SensorGroup[]> => {
-  let sensorGroupsApi = await fetch('https://api.keeptrack.space/v1/sensor-groups').then((response) => response.json());
+  let sensorGroupsApi = await apiFetch('https://api.keeptrack.space/v1/sensor-groups').then((response) => response.json());
 
   if (sensorGroupsApi.length === 0) {
     errorManagerInstance.warn(t7e('errorMsgs.sensorGroupsApiEmpty'));

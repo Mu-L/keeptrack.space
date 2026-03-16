@@ -388,7 +388,6 @@ const settingsOverride = {
     /** This determines if tle source is loaded to supplement externalTLEs  */
     isSupplementExternal: false,
   },
-  splashScreenList: ['cspoc', 'cspoc2', 'ops', 'ops2', 'ops3', 'ops4'],
   isDisableLoginGate: true,
   isBlockPersistence: true,
   isShowSecondaryLogo: true,

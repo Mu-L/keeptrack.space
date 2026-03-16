@@ -406,6 +406,9 @@ theodore.kruczek at gmail dot com.
     }
   }
 
+  private static readonly POST_START_TIMEOUT_MS_ = 30_000;
+  private postStartElapsed_ = 0;
+
   private postStart_() {
     // UI Changes after everything starts -- DO NOT RUN THIS EARLY IT HIDES THE CANVAS
     UiManager.postStart();
@@ -457,6 +460,17 @@ theodore.kruczek at gmail dot com.
       this.isReady = true;
       SplashScreen.hideSplashScreen();
     } else {
+      this.postStartElapsed_ += 100;
+
+      if (this.postStartElapsed_ >= KeepTrack.POST_START_TIMEOUT_MS_) {
+        const notReady = this.threads.filter((t) => !t.isReady).map((t) => t.WEB_WORKER_CODE);
+
+        console.error(`[KeepTrack] Web workers failed to initialize after ${KeepTrack.POST_START_TIMEOUT_MS_ / 1000}s. Stalled workers: ${notReady.join(', ')}. Try a hard refresh (Ctrl+Shift+R).`);
+        SplashScreen.loadStr('Loading failed — try Ctrl+Shift+R to hard refresh.');
+
+        return;
+      }
+
       setTimeout(() => {
         this.postStart_();
       }, 100);

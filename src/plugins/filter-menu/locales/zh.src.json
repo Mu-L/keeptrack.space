@@ -122,6 +122,14 @@
       "name": "Celestrak 卫星",
       "tooltip": "Celestrak 是卫星轨道数据的热门来源，提供各种卫星和碎片的 TLE 数据。"
     },
+    "celestrakSupSatellites": {
+      "name": "Celestrak 补充卫星",
+      "tooltip": "来自 Celestrak 的补充卫星数据，包括主目录中未收录的其他对象。"
+    },
+    "satnogsSatellites": {
+      "name": "SatNOGS 卫星",
+      "tooltip": "来自 SatNOGS 网络的卫星数据，这是一个社区驱动的卫星观测和跟踪项目。"
+    },
     "countries": {
       "category": "国家",
       "unitedStates": {

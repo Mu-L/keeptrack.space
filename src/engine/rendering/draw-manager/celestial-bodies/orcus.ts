@@ -44,7 +44,7 @@ export class Orcus extends DwarfPlanet {
   rotation = [0, 0, 0];
   color = PlanetColors.ORCUS;
   tintColor: [number, number, number] = [0.85, 0.85, 0.9];
-  textureQuality: OrcusTextureQuality = OrcusTextureQuality.HIGH;
+  textureQuality: OrcusTextureQuality = OrcusTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(orcusChebyshevCoeffs);
 
   getName(): SolarBody {

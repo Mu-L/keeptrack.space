@@ -5,13 +5,15 @@ import { ColorInformation, Pickable, rgbaArray } from '@app/engine/core/interfac
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { html } from '@app/engine/utils/development/formatter';
 import { t7e } from '@app/locales/keys';
-import { BaseObject, Satellite, Star } from '@ootk/src/main';
+import { BaseObject, CatalogSource, Satellite, Star } from '@ootk/src/main';
 import { ColorScheme, ColorSchemeColorMap } from './color-scheme';
 
 export interface SourceColorSchemeColorMap extends ColorSchemeColorMap {
   sourceUssf: rgbaArray;
   sourceCelestrak: rgbaArray;
+  sourceCelestrakSup: rgbaArray;
   sourceVimpel: rgbaArray;
+  sourceSatnogs: rgbaArray;
 }
 
 export class SourceColorScheme extends ColorScheme {
@@ -22,14 +24,18 @@ export class SourceColorScheme extends ColorScheme {
   static readonly uniqueObjectTypeFlags = {
     sourceUssf: true,
     sourceCelestrak: true,
+    sourceCelestrakSup: true,
     sourceVimpel: true,
+    sourceSatnogs: true,
     sourceOemImport: true,
   };
 
   static readonly uniqueColorTheme = {
-    sourceUssf: [0.2, 1.0, 1.0, 0.7] as rgbaArray,
+    sourceUssf: [1.0, 0.6, 0.0, 0.85] as rgbaArray,
     sourceCelestrak: [0, 0.2, 1.0, 0.85] as rgbaArray,
-    sourceVimpel: [1.0, 0, 0, 0.6] as rgbaArray,
+    sourceCelestrakSup: [0.7, 0.3, 1.0, 0.85] as rgbaArray,
+    sourceVimpel: [1.0, 0.1, 0.1, 0.7] as rgbaArray,
+    sourceSatnogs: [0.0, 1.0, 0.0, 0.8] as rgbaArray,
     sourceOemImport: [1.0, 1.0, 0.2, 1.0] as rgbaArray,
   };
 
@@ -83,7 +89,7 @@ export class SourceColorScheme extends ColorScheme {
 
     if (sat.source) {
       switch (sat.source) {
-        case 'USSF':
+        case CatalogSource.USSF:
           if (this.objectTypeFlags.sourceUssf === false) {
             return {
               color: this.colorTheme.deselected,
@@ -96,7 +102,7 @@ export class SourceColorScheme extends ColorScheme {
             pickable: Pickable.Yes,
           };
 
-        case 'Celestrak':
+        case CatalogSource.CELESTRAK:
           if (this.objectTypeFlags.sourceCelestrak === false) {
             return {
               color: this.colorTheme.deselected,
@@ -106,6 +112,32 @@ export class SourceColorScheme extends ColorScheme {
 
           return {
             color: this.colorTheme.sourceCelestrak,
+            pickable: Pickable.Yes,
+          };
+
+        case CatalogSource.CELESTRAK_SUP:
+          if (this.objectTypeFlags.sourceCelestrakSup === false) {
+            return {
+              color: this.colorTheme.deselected,
+              pickable: Pickable.No,
+            };
+          }
+
+          return {
+            color: this.colorTheme.sourceCelestrakSup,
+            pickable: Pickable.Yes,
+          };
+
+        case CatalogSource.SATNOGS:
+          if (this.objectTypeFlags.sourceSatnogs === false) {
+            return {
+              color: this.colorTheme.deselected,
+              pickable: Pickable.No,
+            };
+          }
+
+          return {
+            color: this.colorTheme.sourceSatnogs,
             pickable: Pickable.Yes,
           };
 
@@ -123,7 +155,7 @@ export class SourceColorScheme extends ColorScheme {
             pickable: Pickable.Yes,
           };
 
-        case 'JSC Vimpel':
+        case CatalogSource.VIMPEL:
           if (this.objectTypeFlags.sourceVimpel === false) {
             return {
               color: this.colorTheme.deselected,
@@ -170,12 +202,20 @@ export class SourceColorScheme extends ColorScheme {
       Celestrak
     </li>
     <li>
+      <div class="Square-Box layers-sourceCelestrakSup-box"></div>
+      Celestrak Sup
+    </li>
+    <li>
       <div class="Square-Box layers-sourceUssf-box"></div>
       18 SDS
     </li>
     <li>
       <div class="Square-Box layers-sourceVimpel-box"></div>
       Vimpel
+    </li>
+    <li>
+      <div class="Square-Box layers-sourceSatnogs-box"></div>
+      SatNOGS
     </li>
     <li>
       <div class="Square-Box layers-sourceOemImport-box"></div>

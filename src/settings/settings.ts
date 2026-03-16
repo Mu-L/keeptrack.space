@@ -247,6 +247,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   isDisableControlSites: 'data',
   isDisableLaunchSites: 'data',
   isDisableSensors: 'data',
+  apiKey: 'data',
 
   // Performance
   lowPerf: 'performance',

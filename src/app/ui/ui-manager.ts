@@ -107,7 +107,11 @@ export class UiManager {
 
       imageElements.forEach((img) => {
         if (img.src && !img.src.includes('.svg') && !img.src.includes('.png') && !img.src.includes('.jpg')) {
-          img.src = img.attributes.delayedsrc?.value;
+          const delayedSrc = img.attributes.delayedsrc?.value;
+
+          if (delayedSrc) {
+            img.src = delayedSrc;
+          }
         }
       });
     }, 0);
@@ -191,6 +195,11 @@ export class UiManager {
 
     if (isLong) {
       toastMsg.timeRemaining = UiManager.LONG_TIMER_DELAY;
+    } else {
+      // timeRemaining should be based on the length of the toast text, with a minimum of 4 seconds and a maximum of 12 seconds
+      const calculatedTime = toastText.length * 100;
+
+      toastMsg.timeRemaining = Math.min(Math.max(calculatedTime, 4000), 12000);
     }
 
     // Add auto-dismiss progress bar
@@ -275,7 +284,7 @@ export class UiManager {
   hideUi() {
     if (this.isUiVisible) {
       hideEl('keeptrack-header');
-      hideEl('ui-wrapper');
+      hideEl('search-results');
       hideEl('nav-footer');
       hideEl('drawer-overlay');
       hideEl('drawer-utility-footer');
@@ -283,7 +292,7 @@ export class UiManager {
       this.isUiVisible = false;
     } else {
       showEl('keeptrack-header');
-      showEl('ui-wrapper');
+      showEl('search-results');
       showEl('nav-footer');
       showEl('drawer-overlay');
       showEl('drawer-utility-footer');

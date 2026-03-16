@@ -29,6 +29,8 @@ export const enum SourceCode {
   VIMPEL = 2,
   OEM_IMPORT = 3,
   KEEPTRACK = 4,
+  CELESTRAK_SUP = 5,
+  SATNOGS = 6,
   OTHER = 255,
 }
 

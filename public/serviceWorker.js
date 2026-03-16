@@ -75,10 +75,10 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // --- Navigation: network-first, cache under '/' so all query-param variants share one entry ---
+  // --- Navigation: network-first with timeout, cache under '/' so all query-param variants share one entry ---
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request)
+      fetchWithTimeout(e.request, 4000)
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();
@@ -101,7 +101,7 @@ self.addEventListener('fetch', (e) => {
   // so the app never needs to fall back to local /tle/ files.
   if (url.hostname === 'api.keeptrack.space' || url.hostname === 'r2.keeptrack.space' || url.hostname === 'app.keeptrack.space') {
     e.respondWith(
-      fetch(e.request)
+      fetchWithTimeout(e.request, 8000)
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();
@@ -165,17 +165,25 @@ self.addEventListener('fetch', (e) => {
 
           return response;
         })
-        .catch((err) => {
+        .catch(() => {
           if (cached) {
             return cached;
           }
-          throw err;
+
+          return new Response('', { status: 504, statusText: 'Gateway Timeout' });
         });
 
       return cached || fresh;
     }),
   );
 });
+
+function fetchWithTimeout(request, ms) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+
+  return fetch(request, { signal: controller.signal }).finally(() => clearTimeout(id));
+}
 
 function isStaticAsset(url) {
   const path = url.pathname;

@@ -122,6 +122,14 @@
       "name": "Celestrak-Satelliten",
       "tooltip": "Celestrak ist eine beliebte Quelle für Satellitenbahndaten und bietet TLEs für eine Vielzahl von Satelliten und Trümmern."
     },
+    "celestrakSupSatellites": {
+      "name": "Celestrak-Ergänzungssatelliten",
+      "tooltip": "Ergänzende Satellitendaten von Celestrak, einschließlich zusätzlicher Objekte, die nicht im Hauptkatalog enthalten sind."
+    },
+    "satnogsSatellites": {
+      "name": "SatNOGS-Satelliten",
+      "tooltip": "Satellitendaten aus dem SatNOGS-Netzwerk, einem gemeinschaftsgetriebenen Projekt zur Satellitenbeobachtung und -verfolgung."
+    },
     "countries": {
       "category": "Länder",
       "unitedStates": {

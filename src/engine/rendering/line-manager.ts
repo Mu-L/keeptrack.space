@@ -639,7 +639,7 @@ export class LineManager {
           float recomputedFlatX = recomputedLon * u_earthRadius;
           // Wrap to camera center to match vertex shader wrapping
           recomputedFlatX = u_flatMapCenterX + mod(recomputedFlatX - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
-          if (abs(v_flatX - recomputedFlatX) > 50.0) discard;
+          if (abs(v_flatX - recomputedFlatX) > mapW * 0.25) discard;
         }
 
         fragColor = vec4(vColor[0],vColor[1],vColor[2], vColor[3] * vAlpha);
@@ -704,7 +704,8 @@ export class LineManager {
               lon = mod(lon + PI, 2.0 * PI) - PI;
               float lat = atan(eciPos.z, length(eciPos.xy));
               float alt = eciDist - u_earthRadius;
-              vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, alt * 0.001);
+              // Use a fixed Z offset to ensure lines always render above the Earth surface
+              vec3 flatPos = vec3(lon * u_earthRadius, lat * u_earthRadius, 10.0);
 
               // Wrap X to nearest copy of camera center for seamless scrolling
               float mapW = 2.0 * PI * u_earthRadius;

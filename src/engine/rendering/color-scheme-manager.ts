@@ -91,6 +91,10 @@ export class ColorSchemeManager {
   colorBufferOneTime = false;
   // Colors are all 0-255
   colorData = new Float32Array(0);
+  /** Clean color data before FOV fade overlay — used to avoid compounding alpha multiplication. */
+  private cleanColorData_: Float32Array | null = null;
+  /** Per-satellite alpha multiplier overlay (0–1). Applied before GPU upload. */
+  private fovFadeAlpha_: Float32Array | null = null;
   colorTheme: ColorSchemeColorMap & ObjectTypeColorSchemeColorMap;
   /**
    * This is the update function that will be used color the dots
@@ -214,6 +218,13 @@ export class ColorSchemeManager {
         this.iSensor = 0;
       }
 
+      // Restore clean (pre-overlay) color data before the scheme loop so that
+      // dots NOT recolored in this partial batch start from un-overlaid values.
+      // Without this, partial updates compound the overlay on untouched dots.
+      if (this.fovFadeAlpha_ && this.cleanColorData_ && this.cleanColorData_.length === this.colorData.length) {
+        this.colorData.set(this.cleanColorData_);
+      }
+
       // Lets loop through all the satellites and color them in one by one
       const params = this.calculateParams_();
       const catalogManagerInstance = ServiceLocator.getCatalogManager();
@@ -229,7 +240,15 @@ export class ColorSchemeManager {
         this.calculateBufferDataLoop_(firstDotToColor, lastDotToColor, catalogManagerInstance.objectCache, params);
       }
 
+      // Save clean copy after loop (before overlay) so setFovFadeAlpha can reapply without compounding
+      if (this.fovFadeAlpha_) {
+        if (!this.cleanColorData_ || this.cleanColorData_.length !== this.colorData.length) {
+          this.cleanColorData_ = new Float32Array(this.colorData.length);
+        }
+        this.cleanColorData_.set(this.colorData);
+      }
       // If we don't do this then every time the color refreshes it will undo any effect being applied outside of this loop
+      this.applyFovFadeOverlay_();
       this.setSelectedAndHoverBuffer_();
       this.sendColorBufferToGpu();
 
@@ -339,6 +358,14 @@ export class ColorSchemeManager {
       if (data && data.colorData.length === this.colorData.length) {
         this.colorData.set(data.colorData);
         this.pickableData.set(data.pickableData);
+        // Save clean copy before overlay so setFovFadeAlpha can reapply without compounding
+        if (this.fovFadeAlpha_) {
+          if (!this.cleanColorData_ || this.cleanColorData_.length !== this.colorData.length) {
+            this.cleanColorData_ = new Float32Array(this.colorData.length);
+          }
+          this.cleanColorData_.set(this.colorData);
+        }
+        this.applyFovFadeOverlay_();
         this.setSelectedAndHoverBuffer_();
         this.sendColorBufferToGpu();
       }
@@ -514,6 +541,12 @@ export class ColorSchemeManager {
   isCelestrakSatOff(obj: BaseObject) {
     return settingsManager.filter?.celestrakSatellites === false && (obj as Satellite)?.source === CatalogSource.CELESTRAK;
   }
+  isCelestrakSupSatOff(obj: BaseObject) {
+    return settingsManager.filter?.celestrakSupSatellites === false && (obj as Satellite)?.source === CatalogSource.CELESTRAK_SUP;
+  }
+  isSatnogsSatOff(obj: BaseObject) {
+    return settingsManager.filter?.satnogsSatellites === false && (obj as Satellite)?.source === CatalogSource.SATNOGS;
+  }
   isStarlinkSatOff(obj: BaseObject) {
     return settingsManager.filter?.starlinkSatellites === false && obj.name?.includes('STARLINK');
   }
@@ -615,6 +648,18 @@ export class ColorSchemeManager {
       };
     }
     if (this.isCelestrakSatOff(sat)) {
+      return {
+        color: [0, 0, 0, 0],
+        pickable: Pickable.No,
+      };
+    }
+    if (this.isCelestrakSupSatOff(sat)) {
+      return {
+        color: [0, 0, 0, 0],
+        pickable: Pickable.No,
+      };
+    }
+    if (this.isSatnogsSatOff(sat)) {
       return {
         color: [0, 0, 0, 0],
         pickable: Pickable.No,
@@ -893,6 +938,44 @@ export class ColorSchemeManager {
   }
 
   /**
+   * Set or clear the FOV fade alpha overlay.
+   * When set, each satellite's alpha is multiplied by the corresponding value before GPU upload.
+   */
+  setFovFadeAlpha(alpha: Float32Array | null): void {
+    this.fovFadeAlpha_ = alpha;
+
+    if (this.colorData.length === 0) {
+      return;
+    }
+
+    // Restore clean color data before reapplying overlay to avoid compounding
+    if (this.cleanColorData_ && this.cleanColorData_.length === this.colorData.length) {
+      this.colorData.set(this.cleanColorData_);
+    }
+
+    if (!alpha) {
+      // Clearing the overlay — discard clean copy
+      this.cleanColorData_ = null;
+    }
+
+    this.applyFovFadeOverlay_();
+    this.setSelectedAndHoverBuffer_();
+    this.sendColorBufferToGpu();
+  }
+
+  /** Multiply each object's alpha channel by the FOV fade multiplier. */
+  private applyFovFadeOverlay_(): void {
+    if (!this.fovFadeAlpha_) {
+      return;
+    }
+    const n = Math.min(this.colorData.length / 4, this.fovFadeAlpha_.length);
+
+    for (let i = 0; i < n; i++) {
+      this.colorData[i * 4 + 3] *= this.fovFadeAlpha_[i];
+    }
+  }
+
+  /**
    * Sends the color buffer to the GPU
    */
   private sendColorBufferToGpu() {
@@ -1048,6 +1131,8 @@ export class ColorSchemeManager {
       otherCountries: f.otherCountries ?? true,
       vimpelSatellites: f.vimpelSatellites ?? true,
       celestrakSatellites: f.celestrakSatellites ?? true,
+      celestrakSupSatellites: f.celestrakSupSatellites ?? true,
+      satnogsSatellites: f.satnogsSatellites ?? true,
       starlinkSatellites: f.starlinkSatellites ?? true,
     };
 

@@ -122,6 +122,14 @@
       "name": "Satelity CelesTrak",
       "tooltip": "CelesTrak jest popularnym źródłem danych orbitalnych satelitów, udostępniającym TLE dla szerokiego zakresu satelitów i odłamków."
     },
+    "celestrakSupSatellites": {
+      "name": "Satelity uzupełniające Celestrak",
+      "tooltip": "Uzupełniające dane satelitarne z Celestrak, obejmujące dodatkowe obiekty nieuwzględnione w głównym katalogu."
+    },
+    "satnogsSatellites": {
+      "name": "Satelity SatNOGS",
+      "tooltip": "Dane satelitarne z sieci SatNOGS, społecznościowego projektu obserwacji i śledzenia satelitów."
+    },
     "countries": {
       "category": "Kraje",
       "unitedStates": {

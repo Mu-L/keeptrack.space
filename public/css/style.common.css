@@ -2325,15 +2325,35 @@ button.ui-button::-moz-focus-inner {
 }
 
 #info-overlay-menu {
-  background: rgba(0, 0, 0, 0);
-  width: 0px;
+  position: fixed;
+  top: var(--top-menu-height, 50px);
+  left: 0;
+  bottom: 0;
+  width: 230px;
+  overflow: hidden;
   height: auto;
-  bottom: auto;
+  background: transparent;
+  border: none;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.3);
 }
 
-#info-overlay-menu.side-menu-parent {
+#info-overlay-menu.ui-hidden {
+  top: 0;
+}
+
+#info-overlay-content {
+  position: absolute;
+  background: transparent;
+  color: white;
+  width: 230px;
+  padding-left: 20px;
+  top: 1rem;
   height: 100%;
-  border: none;
+  overflow: hidden;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 #iss-stream-menu {
@@ -4024,30 +4044,6 @@ input:focus {
   display: block;
   line-height: 20px;
   text-align: left;
-}
-
-#info-overlay-content {
-  position: absolute;
-  background: rgba(0, 0, 0, 0);
-  color: white;
-  max-width: 550px;
-  padding-left: 20px;
-  top: calc(var(--top-menu-height) + 100px);
-  height: 100%;
-  overflow: auto;
-  z-index: 10;
-}
-
-#info-overlay-content>div>div {
-  padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
-  background: rgba(0, 0, 0, 0.5);
-  margin-bottom: 10px;
-}
-
-#info-overlay-content>div>div>h5 {
-  margin: 0;
 }
 
 #jday {

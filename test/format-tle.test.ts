@@ -23,8 +23,8 @@ describe('FormatTle_class', () => {
     };
     const { tle1, tle2 } = FormatTle.createTle(tleParams as unknown as TleParams);
 
-    expect(tle1).toBe('1 25544U 98067A   21275.13678787 +.00001908 +00000-0 +44309-4 0 09997');
-    expect(tle2).toBe('2 25544 051.6443 082.9945 0002979 018.8536 341.2878 15.48970283 00010');
+    expect(tle1).toBe('1 25544U 98067A   21275.13678787  .00001908  00000-0  44309-4 0  9996');
+    expect(tle2).toBe('2 25544  51.6443  82.9945 0002979  18.8536 341.2878 15.48970283    00');
   });
 
   // Test that an error is thrown if inc length is not 8

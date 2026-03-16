@@ -44,7 +44,7 @@ export class Ceres extends DwarfPlanet {
   eci: TemeVec3;
   rotation = [0, 0, 0];
   color = PlanetColors.CERES;
-  textureQuality: CeresTextureQuality = CeresTextureQuality.HIGH;
+  textureQuality: CeresTextureQuality = CeresTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(ceresChebyshevCoeffs);
 
   getName(): SolarBody {

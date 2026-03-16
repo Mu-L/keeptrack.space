@@ -1,3 +1,4 @@
+import { apiFetch } from '@app/app/data/api-fetch';
 import { CatalogLoader, KeepTrackTLEFile } from '@app/app/data/catalog-loader';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
@@ -196,7 +197,7 @@ export class CatalogBrowserPlugin extends KeepTrackPlugin implements ICommandPal
           settingsManager.isEnableJscCatalog = true;
         }
       } else if (mode === 'VIMPEL_ONLY') {
-        const resp = await fetch(settingsManager.dataSources.vimpel);
+        const resp = await apiFetch(settingsManager.dataSources.vimpel);
 
         if (!resp.ok) {
           throw new Error(`Vimpel fetch returned HTTP ${resp.status}`);

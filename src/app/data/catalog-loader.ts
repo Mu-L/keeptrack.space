@@ -21,9 +21,11 @@ import {
 } from '@ootk/src/main';
 import { SettingsManager } from '../../settings/settings';
 import { Planet } from '../objects/planet';
+import { apiFetch } from './api-fetch';
 import { CatalogManager } from './catalog-manager';
 import { LaunchSite } from './catalog-manager/LaunchFacility';
 import { MissileObject } from './catalog-manager/MissileObject';
+import { orgDataService } from './catalogs/org-data-service';
 
 interface JsSat {
   TLE1: string;
@@ -189,6 +191,9 @@ export class CatalogLoader {
   static async load(): Promise<void> {
     const settingsManager: SettingsManager = window.settingsManager;
 
+    // Fire-and-forget: fetch org data from R2 in parallel with catalog loading
+    orgDataService.init();
+
     try {
       // TODO: Which sources can use this should be definied in the settings (Celestrak Rebase)
       if (
@@ -214,7 +219,7 @@ export class CatalogLoader {
       if (settingsManager.dataSources.externalTLEsOnly) {
         if (settingsManager.dataSources.isSupplementExternal) {
           // Load our database for the extra information - the satellites will be filtered out
-          await fetch(settingsManager.dataSources.tle)
+          await apiFetch(settingsManager.dataSources.tle)
             .then((response) => response.json())
             .then((data) => CatalogLoader.parse({
               keepTrackTle: data,
@@ -231,7 +236,7 @@ export class CatalogLoader {
         }
       } else if (settingsManager.isUseDebrisCatalog) {
         // Load the debris catalog
-        await fetch(settingsManager.dataSources.tleDebris)
+        await apiFetch(settingsManager.dataSources.tleDebris)
           .then((response) => response.json())
           .then((data) => CatalogLoader.parse({
             keepTrackTle: data,
@@ -254,7 +259,7 @@ export class CatalogLoader {
           }));
       } else {
         // Load the primary catalog
-        await fetch(settingsManager.dataSources.tle)
+        await apiFetch(settingsManager.dataSources.tle)
           .then((response) => response.json())
           .then((data) => CatalogLoader.parse({
             keepTrackTle: data,
@@ -1031,7 +1036,7 @@ export class CatalogLoader {
    * @throws An error if the fallback `vimpel.json` cannot be loaded.
    */
   private static async getJscCatalog_(settingsManager: SettingsManager): Promise<JsSat[]> {
-    const vimpelJson = await fetch(settingsManager.dataSources.vimpel)
+    const vimpelJson = await apiFetch(settingsManager.dataSources.vimpel)
       .then((response) => {
         if (response.ok) {
           return response.json();
@@ -1200,8 +1205,7 @@ export class CatalogLoader {
     resp[i].intlDes = intlDes;
     resp[i].active = true;
     if (!settingsManager.isDebrisOnly || (settingsManager.isDebrisOnly && (resp[i].type === SpaceObjectType.ROCKET_BODY || resp[i].type === SpaceObjectType.DEBRIS))) {
-      resp[i].id = tempObjData.length;
-      resp[i].source = CatalogSource.CELESTRAK;
+      // resp[i].source = CatalogSource.CELESTRAK;
 
       /*
        * Embed a confidence level into the 64th character of the TLE1

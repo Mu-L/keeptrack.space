@@ -22,15 +22,10 @@ describe('SelectSatManager_dots', () => {
   standardPluginSuite(SelectSatManager, 'SelectSatManager');
 
   it('should be able to select a satellite', () => {
-    ServiceLocator.getCatalogManager().objectCache = [
-      {
-        ...defaultSat, position: {
-          x: 10000,
-          y: 10000,
-          z: 10000,
-        },
-      } as Satellite,
-    ];
+    const sat = new Satellite(defaultSat);
+
+    sat.position = { x: 10000, y: 10000, z: 10000 } as any;
+    ServiceLocator.getCatalogManager().objectCache = [sat];
     ServiceLocator.getColorSchemeManager().colorData = Array(100).fill(0) as unknown as Float32Array<ArrayBuffer>;
     ServiceLocator.getDotsManager().sizeData = Array(100).fill(0) as unknown as Int8Array;
     ServiceLocator.getDotsManager().positionData = Array(100).fill(0) as unknown as Float32Array;

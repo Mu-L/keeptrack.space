@@ -30,7 +30,7 @@ export class DataSettings {
      *
      * It can be loaded from a local file or a remote source
      */
-    tle: 'https://api.keeptrack.space/v3/sats',
+    tle: 'https://api.keeptrack.space/v4/sats/brief',
     /** url for an external TLE source */
     externalTLEs: '',
     /**
@@ -40,10 +40,12 @@ export class DataSettings {
      */
     externalTLEsOnly: false,
     tleDebris: 'https://app.keeptrack.space/tle/TLEdebris.json',
-    vimpel: 'https://api.keeptrack.space/v3/r2/vimpel.json',
+    vimpel: 'https://api.keeptrack.space/v4/r2/vimpel.json',
     stars: 'https://r2.keeptrack.space/data/star-catalog.json',
     constellations: 'https://r2.keeptrack.space/data/constellations.json',
     covariance: 'https://r2.keeptrack.space/data/covariance.json',
+    orgs: 'https://r2.keeptrack.space/data/orgs.json',
+    satDetail: 'https://api.keeptrack.space/v4/sat/',
     /** This determines if tle source is loaded to supplement externalTLEs  */
     isSupplementExternal: false,
   };
@@ -52,6 +54,13 @@ export class DataSettings {
   apiServer = 'https://api.keeptrack.space';
   telemetryServer = 'https://telemetry.keeptrack.space';
   userServer = 'https://user.keeptrack.space';
+
+  /**
+   * API key for authenticating requests to api.keeptrack.space.
+   *
+   * Can be set via the `apiKey` query parameter or programmatically.
+   */
+  apiKey = '';
 
   // Database
   db: unknown = null;

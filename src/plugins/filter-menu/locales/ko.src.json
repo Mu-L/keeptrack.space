@@ -122,6 +122,14 @@
       "name": "Celestrak 위성",
       "tooltip": "Celestrak은 다양한 위성과 파편의 궤도 데이터를 제공하는 인기 있는 소스입니다."
     },
+    "celestrakSupSatellites": {
+      "name": "Celestrak 보충 위성",
+      "tooltip": "Celestrak의 보충 위성 데이터로, 기본 카탈로그에 포함되지 않은 추가 객체를 포함합니다."
+    },
+    "satnogsSatellites": {
+      "name": "SatNOGS 위성",
+      "tooltip": "SatNOGS 네트워크의 위성 데이터로, 위성 관측 및 추적을 위한 커뮤니티 주도 프로젝트입니다."
+    },
     "countries": {
       "category": "국가",
       "unitedStates": {
