@@ -123,7 +123,7 @@ describe('Collisions_class', () => {
       // Wait for fetch to complete
       await Promise.resolve();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.keeptrack.space/v2/socrates/latest');
+      expect(global.fetch).toHaveBeenCalledWith('https://api.keeptrack.space/v2/socrates/latest', expect.objectContaining({}));
     });
 
     it('should not parse collision data when menu is inactive', () => {

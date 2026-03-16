@@ -213,6 +213,7 @@ describe('TransponderChannelData_class', () => {
 
       expect(global.fetch).toHaveBeenCalledWith(
         'https://api.keeptrack.space/v3/channels/ASTRA%201N',
+        expect.objectContaining({}),
       );
     });
   });
