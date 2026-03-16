@@ -1,3 +1,4 @@
+import { apiFetch } from '@app/app/data/api-fetch';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
@@ -185,7 +186,7 @@ export class Collisions extends KeepTrackPlugin {
     }
     this.isFetching_ = true;
 
-    fetch(this.collisionDataSrc_)
+    apiFetch(this.collisionDataSrc_)
       .then((response) => response.json())
       .then((collisionList: CollisionEvent[]) => {
         this.collisionList_ = collisionList;

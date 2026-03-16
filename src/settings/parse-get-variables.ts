@@ -137,6 +137,9 @@ export const parseGetVariables = (params: string[], settingsManager: SettingsMan
       case 'noPropRate':
         settingsManager.isAlwaysHidePropRate = true;
         break;
+      case 'apiKey':
+        settingsManager.apiKey = val;
+        break;
       case 'supplement-data':
         settingsManager.dataSources.isSupplementExternal = true;
         break;

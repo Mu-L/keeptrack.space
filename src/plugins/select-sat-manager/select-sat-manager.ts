@@ -3,6 +3,7 @@ import { CameraType } from '@app/engine/camera/camera-type';
 import { GetSatType, SolarBody, ToastMsgType } from '@app/engine/core/interfaces';
 import { getEl, hideEl, showEl } from '@app/engine/utils/get-el';
 
+import { satDetailService } from '@app/app/data/catalogs/sat-detail-service';
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { Planet } from '@app/app/objects/planet';
@@ -218,6 +219,11 @@ export class SelectSatManager extends KeepTrackPlugin {
 
     // Run any other callbacks
     EventBus.getInstance().emit(EventBusEvent.selectSatData, spaceObj, spaceObj?.id);
+
+    // Lazy-load satellite detail data if not already present
+    if (spaceObj?.isSatellite() && !satDetailService.hasDetail(spaceObj as Satellite)) {
+      satDetailService.fetchSatDetail(spaceObj as Satellite);
+    }
 
     // Record the last selected sat
     this.lastSelectedSat(this.selectedSat);

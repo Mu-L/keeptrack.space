@@ -30,6 +30,7 @@ import {
   StateCovariance,
 } from '@ootk/src/main';
 import frameInspectPng from '@public/img/icons/frame-inspect.png';
+import tableChartPng from '@public/img/icons/table-chart.png';
 import { vec3 } from 'gl-matrix';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import './debris-screening.css';
@@ -169,7 +170,7 @@ export class DebrisScreening extends KeepTrackPlugin {
     return {
       html: this.buildSecondaryMenuHtml_(),
       zIndex: 3,
-      icon: 'table_chart',
+      icon: tableChartPng,
       dragOptions: this.getSecondaryDragOptions_(),
     };
   }

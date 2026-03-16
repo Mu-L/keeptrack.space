@@ -345,10 +345,27 @@ export class SatInfoBox extends KeepTrackPlugin {
         // satObjNumDom.setAttribute('data-tooltip', `${FormatTle.convert6DigitToA5(sat.sccNum)}`);
       }
 
-      setInnerHtml(EL.SOURCE, sat.source || CatalogSource.CELESTRAK);
+      setInnerHtml(EL.SOURCE, SatInfoBox.formatSourceName_(sat.source ?? CatalogSource.CELESTRAK));
 
       this.updateConfidenceDom_(sat);
     }
+  }
+
+  private static readonly SOURCE_DISPLAY_NAMES_: Record<string, string> = {
+    [CatalogSource.USSF]: 'USSF',
+    [CatalogSource.CELESTRAK]: 'CelesTrak',
+    [CatalogSource.CELESTRAK_SUP]: 'CelesTrak Supplemental',
+    [CatalogSource.UNIV_OF_MICH]: 'University of Michigan',
+    [CatalogSource.CALPOLY]: 'Cal Poly',
+    [CatalogSource.NUSPACE]: 'NuSpace',
+    [CatalogSource.VIMPEL]: 'Vimpel',
+    [CatalogSource.SATNOGS]: 'SatNOGS',
+    [CatalogSource.TLE_TXT]: 'TLE.txt',
+    [CatalogSource.EXTRA_JSON]: 'extra.json',
+  };
+
+  private static formatSourceName_(source: string): string {
+    return SatInfoBox.SOURCE_DISPLAY_NAMES_[source] ?? source;
   }
 
   private updateConfidenceDom_(sat: Satellite) {
