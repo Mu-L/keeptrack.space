@@ -28,7 +28,7 @@
 #loading-screen {
   display: flex;
   padding: 0;
-  z-index: 101;
+  z-index: 10000;
   text-align: center;
   background: #000000;
   color: white;

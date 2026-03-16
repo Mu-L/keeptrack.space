@@ -158,3 +158,6 @@ public/data/ephemeris
 
 # Offline
 configs/offline/settingsOverride.js
+
+# Wrangler
+.wrangler

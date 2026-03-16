@@ -17,6 +17,7 @@ const PROFILE_FILE_MAP: Record<string, { configKey: keyof BuildConfig; defaultPa
   'logo-primary.png': { configKey: 'primaryLogoPath', defaultPath: 'public/img/logo-primary.png' },
   'logo-secondary.png': { configKey: 'secondaryLogoPath', defaultPath: 'public/img/logo-secondary.png' },
   'favicon.ico': { configKey: 'favIconPath', defaultPath: 'public/img/favicons/favicon.ico' },
+  'wallpapers.ts': { configKey: 'wallpapersPath', defaultPath: 'src/app/ui/default-wallpapers.ts' },
 };
 
 /**

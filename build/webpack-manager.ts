@@ -135,6 +135,7 @@ export class WebpackManager {
           '@css/style.css': `${dirName}/../${this.config.styleCssPath}`,
           '@css/loading-screen.css': `${dirName}/../${this.config.loadingScreenCssPath}`,
           '@css': `${dirName}/../public/css`,
+          '@wallpapers': `${dirName}/../${this.config.wallpapersPath}`,
         },
       },
       module: {
@@ -332,6 +333,7 @@ export class WebpackManager {
           orbitCruncher: ['./src/webworker/orbitCruncher.ts'],
           colorCruncher: ['./src/webworker/colorCruncher.ts'],
           debrisScreeningWorker: ['./src/webworker/debrisScreeningWorker.ts'],
+          fovPredictionWorker: ['./src/webworker/fovPredictionWorker.ts'],
         },
         output: {
           filename: '[name].js',

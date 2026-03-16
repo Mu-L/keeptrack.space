@@ -15,6 +15,7 @@ export interface BuildConfig {
   textLogoPath: string;
   styleCssPath: string;
   loadingScreenCssPath: string;
+  wallpapersPath: string;
   isPro: boolean;
   /** Path to the env file for dotenv-webpack (relative to project root). Defaults to '.env'. */
   envFilePath: string;
@@ -42,6 +43,7 @@ export class ConfigManager {
       textLogoPath: 'public/img/logo.png',
       styleCssPath: 'public/css/style.css',
       loadingScreenCssPath: 'public/css/loading-screen.css',
+      wallpapersPath: 'src/app/ui/default-wallpapers.ts',
       primaryLogoPath: 'public/img/logo-primary.png',
       secondaryLogoPath: 'public/img/logo-secondary.png',
       isPro: false,
