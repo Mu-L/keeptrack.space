@@ -60,7 +60,7 @@ export class DataSettings {
    *
    * Can be set via the `apiKey` query parameter or programmatically.
    */
-  apiKey = 'kt_87f64b1cab12ae1211c722f518b8efe1';
+  apiKey = '';
 
   // Database
   db: unknown = null;
