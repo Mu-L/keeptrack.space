@@ -5,35 +5,12 @@ import { MobileManager } from './mobileManager';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { html } from '@app/engine/utils/development/formatter';
-import blueMarbleJpg from '@public/img/wallpaper/blue-marble.jpg';
-import cspocJpg from '@public/img/wallpaper/cspoc.jpg';
-import cspoc2Jpg from '@public/img/wallpaper/cspoc2.jpg';
-import epfl1Jpg from '@public/img/wallpaper/epfl-1.jpg';
-import epfl2Jpg from '@public/img/wallpaper/epfl-2.jpg';
-import marsJpg from '@public/img/wallpaper/mars.jpg';
-import moonJpg from '@public/img/wallpaper/moon.jpg';
-import opsJpg from '@public/img/wallpaper/ops.jpg';
-import ops2Jpg from '@public/img/wallpaper/ops2.jpg';
-import ops3Jpg from '@public/img/wallpaper/ops3.jpg';
-import ops4Jpg from '@public/img/wallpaper/ops4.jpg';
-import ops5Jpg from '@public/img/wallpaper/ops5.jpg';
-import rocketJpg from '@public/img/wallpaper/rocket.jpg';
-import rocket2Jpg from '@public/img/wallpaper/rocket2.jpg';
-import rocket3Jpg from '@public/img/wallpaper/rocket3.jpg';
-import rocket4Jpg from '@public/img/wallpaper/rocket4.jpg';
-import thuleJpg from '@public/img/wallpaper/thule.jpg';
-
 import logoPng from '@public/img/logo.png';
+import { wallpapers } from '@wallpapers';
 
 export abstract class SplashScreen {
-  /** An image is picked at random and then if the screen is bigger than 1080p then it loads the next one in the list */
-  private static splashScreenImgList_ =
-    [
-      cspocJpg, cspoc2Jpg,
-      blueMarbleJpg, moonJpg, thuleJpg, rocketJpg, rocket2Jpg, rocket3Jpg, rocket4Jpg,
-      epfl1Jpg, epfl2Jpg, opsJpg, ops2Jpg, ops3Jpg, ops4Jpg, ops5Jpg,
-      marsJpg,
-    ];
+  /** Wallpaper images provided by the active build profile via @wallpapers alias */
+  private static splashScreenImgList_ = [...wallpapers];
 
   static readonly msg = {
     math: t7e('loadingScreenMsgs.math'),
@@ -156,11 +133,11 @@ export abstract class SplashScreen {
   static loadImages() {
     const splashList = settingsManager.splashScreenList;
 
-    // null = show all (no filtering); non-null = filter to allowed names only
+    // Runtime filtering (used by presets like STEM/darkClouds)
     if (splashList !== null) {
       const allowedNames = new Set(splashList);
 
-      this.splashScreenImgList_ = this.splashScreenImgList_.filter((imgPath) => {
+      this.splashScreenImgList_ = wallpapers.filter((imgPath) => {
         const fileName = imgPath.split('/').pop()?.split('.')[0]?.toLowerCase();
 
         return fileName && allowedNames.has(fileName);
