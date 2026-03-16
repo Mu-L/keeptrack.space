@@ -122,6 +122,14 @@
       "name": "Satelity Celestrak",
       "tooltip": "Celestrak je oblíbený zdroj orbitálních dat satelitů, poskytující TLE pro širokou škálu satelitů a trosek."
     },
+    "celestrakSupSatellites": {
+      "name": "Doplňkové satelity Celestrak",
+      "tooltip": "Doplňková satelitní data z Celestrak, včetně dalších objektů, které nejsou v hlavním katalogu."
+    },
+    "satnogsSatellites": {
+      "name": "Satelity SatNOGS",
+      "tooltip": "Satelitní data ze sítě SatNOGS, komunitního projektu pro pozorování a sledování satelitů."
+    },
     "countries": {
       "category": "Země",
       "unitedStates": {

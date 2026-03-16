@@ -96,6 +96,7 @@ export type KeepTrackPluginsConfiguration = {
   PoliticalMapToggle?: PluginConfiguration;
   HideOtherSatellitesPlugin?: PluginConfiguration;
   SkipInterpolationToggle?: PluginConfiguration;
+  FovFadePlugin?: PluginConfiguration;
   KeyboardShortcutsPlugin?: PluginConfiguration;
   CovariancePlugin?: PluginConfiguration;
   CovarianceStatsPlugin?: PluginConfiguration;

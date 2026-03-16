@@ -122,6 +122,14 @@
       "name": "セレストラック衛星",
       "tooltip": "セレストラックは、幅広い衛星やデブリの軌道データ（TLE）を提供する人気のある情報源です。"
     },
+    "celestrakSupSatellites": {
+      "name": "Celestrak 補足衛星",
+      "tooltip": "Celestrak からの補足衛星データで、主カタログに含まれない追加オブジェクトを含みます。"
+    },
+    "satnogsSatellites": {
+      "name": "SatNOGS 衛星",
+      "tooltip": "SatNOGS ネットワークからの衛星データで、衛星の観測と追跡のためのコミュニティ主導のプロジェクトです。"
+    },
     "countries": {
       "category": "国",
       "unitedStates": {
