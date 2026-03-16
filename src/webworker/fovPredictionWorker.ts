@@ -9,6 +9,7 @@
  */
 
 /* eslint-disable complexity */
+/* eslint-disable no-unmodified-loop-condition, no-await-in-loop, no-promise-executor-return */
 
 import { DetailedSensor } from '@app/app/sensors/DetailedSensor';
 import {
@@ -153,6 +154,7 @@ function sweepSatellite(satIndex: number, simTimeMs: number): [number, number] {
 
 const BATCH_SIZE = 200;
 
+/** Run a full sweep of all satellites, batched with yields for responsiveness. */
 async function fullSweep(simTimeMs: number): Promise<void> {
   if (!minutesToEntry || !exitTimesMs) {
     return;
@@ -200,6 +202,7 @@ async function fullSweep(simTimeMs: number): Promise<void> {
 
 // ─── Incremental Update ──────────────────────────────────────────────────────
 
+/** Recompute only satellites whose cached exit time has expired. */
 function incrementalUpdate(simTimeMs: number): void {
   if (!minutesToEntry || !exitTimesMs) {
     return;
@@ -247,7 +250,8 @@ function incrementalUpdate(simTimeMs: number): void {
 
 // ─── Message Handler ─────────────────────────────────────────────────────────
 
-onmessage = function handleMessage(event: MessageEvent<FovPredInMsg>) {
+/** Handle incoming messages from the main thread. */
+onmessage = function onmessage(event: MessageEvent<FovPredInMsg>) {
   const msg = event.data;
 
   switch (msg.typ) {
