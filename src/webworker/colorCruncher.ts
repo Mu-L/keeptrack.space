@@ -58,6 +58,8 @@ let filterState: FilterState = {
   otherCountries: true,
   vimpelSatellites: true,
   celestrakSatellites: true,
+  celestrakSupSatellites: true,
+  satnogsSatellites: true,
   starlinkSatellites: true,
 };
 
@@ -379,6 +381,12 @@ function isFilteredOut(i: number): boolean {
     return true;
   }
   if (!filterState.celestrakSatellites && catalogData.source[i] === SourceCode.CELESTRAK) {
+    return true;
+  }
+  if (!filterState.celestrakSupSatellites && catalogData.source[i] === SourceCode.CELESTRAK_SUP) {
+    return true;
+  }
+  if (!filterState.satnogsSatellites && catalogData.source[i] === SourceCode.SATNOGS) {
     return true;
   }
 
@@ -1241,10 +1249,10 @@ function rcsScheme(cd: Float32Array, pd: Int8Array, i: number): void {
       writeColorArr(cd, pd, i, colorTheme.rcsMed ?? [0, 0, 1, 1], PICKABLE_YES);
     }
   } else if (objectTypeFlags.rcsLarge === false) {
-      writeDeselected(cd, pd, i);
-    } else {
-      writeColorArr(cd, pd, i, colorTheme.rcsLarge ?? [0, 0, 1, 1], PICKABLE_YES);
-    }
+    writeDeselected(cd, pd, i);
+  } else {
+    writeColorArr(cd, pd, i, colorTheme.rcsLarge ?? [0, 0, 1, 1], PICKABLE_YES);
+  }
 }
 
 /** Colors objects by their TLE confidence level (high, medium, low). */
@@ -1293,10 +1301,10 @@ function confidenceScheme(cd: Float32Array, pd: Int8Array, i: number): void {
       writeColorArr(cd, pd, i, colorTheme.confidenceMed ?? [1, 1, 0, 1], PICKABLE_YES);
     }
   } else if (objectTypeFlags.confidenceLow === false) {
-      writeDeselected(cd, pd, i);
-    } else {
-      writeColorArr(cd, pd, i, colorTheme.confidenceLow ?? [1, 0, 0, 1], PICKABLE_YES);
-    }
+    writeDeselected(cd, pd, i);
+  } else {
+    writeColorArr(cd, pd, i, colorTheme.confidenceLow ?? [1, 0, 0, 1], PICKABLE_YES);
+  }
 }
 
 /** Colors objects by the age of their general perturbations (GP) data. */
@@ -1614,10 +1622,10 @@ function orbitalPlaneDensityScheme(cd: Float32Array, pd: Int8Array, i: number): 
       writeDeselected(cd, pd, i);
     }
   } else if (objectTypeFlags.orbitalPlaneDensityOther !== false) {
-      writeColorArr(cd, pd, i, colorTheme.orbitalPlaneDensityOther ?? [0.5, 0.5, 0.5, 1], PICKABLE_YES);
-    } else {
-      writeDeselected(cd, pd, i);
-    }
+    writeColorArr(cd, pd, i, colorTheme.orbitalPlaneDensityOther ?? [0.5, 0.5, 0.5, 1], PICKABLE_YES);
+  } else {
+    writeDeselected(cd, pd, i);
+  }
 }
 
 /** Colors objects by their catalog data source (USSF, CelesTrak, Vimpel, etc.). */
@@ -1672,6 +1680,20 @@ function sourceScheme(cd: Float32Array, pd: Int8Array, i: number): void {
         writeDeselected(cd, pd, i);
       } else {
         writeColorArr(cd, pd, i, colorTheme.sourceCelestrak ?? [0, 0.2, 1, 0.85], PICKABLE_YES);
+      }
+      break;
+    case SourceCode.CELESTRAK_SUP:
+      if (objectTypeFlags.sourceCelestrakSup === false) {
+        writeDeselected(cd, pd, i);
+      } else {
+        writeColorArr(cd, pd, i, colorTheme.sourceCelestrakSup ?? [0.4, 0.6, 1, 0.85], PICKABLE_YES);
+      }
+      break;
+    case SourceCode.SATNOGS:
+      if (objectTypeFlags.sourceSatnogs === false) {
+        writeDeselected(cd, pd, i);
+      } else {
+        writeColorArr(cd, pd, i, colorTheme.sourceSatnogs ?? [0, 1, 0.4, 0.8], PICKABLE_YES);
       }
       break;
     case SourceCode.OEM_IMPORT:
@@ -1764,10 +1786,10 @@ function starlinkScheme(cd: Float32Array, pd: Int8Array, i: number): void {
         writeColorArr(cd, pd, i, colorTheme.starlinkOperational ?? [0, 0.8, 0, 0.8], PICKABLE_YES);
       }
     } else if (objectTypeFlags.starlinkOther === false) {
-        writeDeselected(cd, pd, i);
-      } else {
-        writeColorArr(cd, pd, i, colorTheme.starlinkOther ?? [0.8, 0.8, 0, 0.8], PICKABLE_YES);
-      }
+      writeDeselected(cd, pd, i);
+    } else {
+      writeColorArr(cd, pd, i, colorTheme.starlinkOther ?? [0.8, 0.8, 0, 0.8], PICKABLE_YES);
+    }
 
     return;
   }

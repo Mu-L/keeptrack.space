@@ -60,6 +60,8 @@ export interface FilterState {
   // Source filters
   vimpelSatellites: boolean;
   celestrakSatellites: boolean;
+  celestrakSupSatellites: boolean;
+  satnogsSatellites: boolean;
   starlinkSatellites: boolean;
 }
 

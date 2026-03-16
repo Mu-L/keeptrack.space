@@ -43,7 +43,7 @@ export class Haumea extends DwarfPlanet {
   eci: TemeVec3;
   rotation = [0, 0, 0];
   color = PlanetColors.HAUMEA;
-  textureQuality: HaumeaTextureQuality = HaumeaTextureQuality.HIGH;
+  textureQuality: HaumeaTextureQuality = HaumeaTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(haumeaChebyshevCoeffs);
 
   getName(): SolarBody {

@@ -44,7 +44,7 @@ export class Quaoar extends DwarfPlanet {
   rotation = [0, 0, 0];
   color = PlanetColors.QUAOAR;
   tintColor: [number, number, number] = [1.1, 0.85, 0.75];
-  textureQuality: QuaoarTextureQuality = QuaoarTextureQuality.HIGH;
+  textureQuality: QuaoarTextureQuality = QuaoarTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(quaoarChebyshevCoeffs);
 
   getName(): SolarBody {

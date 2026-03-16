@@ -44,7 +44,7 @@ export class Gonggong extends DwarfPlanet {
   rotation = [0, 0, 0];
   color = PlanetColors.GONGGONG;
   tintColor: [number, number, number] = [1.2, 0.65, 0.5];
-  textureQuality: GonggongTextureQuality = GonggongTextureQuality.HIGH;
+  textureQuality: GonggongTextureQuality = GonggongTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(gonggongChebyshevCoeffs);
 
   getName(): SolarBody {

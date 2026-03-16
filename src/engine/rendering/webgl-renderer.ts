@@ -335,6 +335,7 @@ export class WebGLRenderer {
     const visibleSatIds: number[] = [];
     const labelTexts: string[] = [];
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const colorData = ServiceLocator.getColorSchemeManager().colorData;
 
     // Skip FOV check for PLANETARIUM, FLAT_MAP, or ALL label mode
     const skipFovCheck =
@@ -345,6 +346,10 @@ export class WebGLRenderer {
     if (skipFovCheck) {
       watchlistPluginInstance?.watchlistList.forEach(({ id }) => {
         if (visibleSatIds.length >= settingsManager.maxLabels) {
+          return;
+        }
+        // Hide label if dot is fully transparent (e.g. FOV fade overlay)
+        if (colorData.length > id * 4 + 3 && colorData[id * 4 + 3] <= 0) {
           return;
         }
         const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY);
@@ -369,6 +374,10 @@ export class WebGLRenderer {
         const obj = catalogManagerInstance.getObject(id, GetSatType.POSITION_ONLY) as Satellite;
 
         if (dotsManagerInstance.inViewData[id] === 0) {
+          return;
+        }
+        // Hide label if dot is fully transparent (e.g. FOV fade overlay)
+        if (colorData.length > id * 4 + 3 && colorData[id * 4 + 3] <= 0) {
           return;
         }
         const satScreenPositionArray = this.getScreenCoords(obj);

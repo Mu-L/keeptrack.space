@@ -43,7 +43,7 @@ export class Eris extends DwarfPlanet {
   eci: TemeVec3;
   rotation = [0, 0, 0];
   color = PlanetColors.ERIS;
-  textureQuality: ErisTextureQuality = ErisTextureQuality.HIGH;
+  textureQuality: ErisTextureQuality = ErisTextureQuality.POTATO;
   protected interpolator_ = new ChebyshevInterpolator(erisChebyshevCoeffs);
 
   getName(): SolarBody {
