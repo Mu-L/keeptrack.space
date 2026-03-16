@@ -31,6 +31,7 @@ const MAX_RECENT_PLUGINS_ = 8;
 
 // ---- Utility Footer Rendering ----
 
+/** Render the utility footer icons grouped by category. */
 export function renderUtilityFooter(groups: Record<string, DrawerGroup>): void {
   const footerEl = getEl('drawer-utility-footer', true);
 
@@ -72,6 +73,7 @@ export function renderUtilityFooter(groups: Record<string, DrawerGroup>): void {
 
 // ---- Status Footer ----
 
+/** Render the status footer showing connectivity and version. */
 export function renderStatusFooter(): void {
   const footerEl = getEl('drawer-status-footer', true);
 
@@ -92,6 +94,7 @@ export function renderStatusFooter(): void {
   ].join('');
 }
 
+/** Update the connectivity status indicator in the drawer footer. */
 export function updateConnectivityStatus(_drawerEl: HTMLElement | null, isOnline: boolean): void {
   const statusFooter = getEl('drawer-status-footer', true);
   const dot = statusFooter?.querySelector('.drawer-status-dot');
@@ -108,6 +111,7 @@ export function updateConnectivityStatus(_drawerEl: HTMLElement | null, isOnline
 
 // ---- Badges ----
 
+/** Render a badge on a plugin's drawer item. */
 export function renderBadge(pluginId: string, badges: Map<string, DrawerBadge>): void {
   const contentEl = getEl('drawer-content', true);
 
@@ -135,6 +139,7 @@ export function renderBadge(pluginId: string, badges: Map<string, DrawerBadge>):
   });
 }
 
+/** Sync badge state from bottom icon events. */
 export function syncBadgesFromEvents(updateBadgeFn: (id: string, badge: DrawerBadge | null) => void): void {
   const sensorPluginIds = ['sensor-list-menu', 'sensor-info-menu', 'sensor-fov-menu', 'sensor-surv-menu'];
 
@@ -151,6 +156,7 @@ export function syncBadgesFromEvents(updateBadgeFn: (id: string, badge: DrawerBa
 
 // ---- Utility Footer Sync ----
 
+/** Sync utility footer icon selection state with bottom menu. */
 export function syncUtilityFooterState(): void {
   const footerEl = getEl('drawer-utility-footer', true);
 
@@ -177,6 +183,7 @@ export function syncUtilityFooterState(): void {
   });
 }
 
+/** Set initial selected/disabled state on utility footer icons. */
 export function syncInitialUtilityState(): void {
   for (const plugin of PluginRegistry.plugins) {
     const utilityIcon = getEl(`${plugin.id}-utility-icon`, true);
@@ -206,6 +213,7 @@ export function syncInitialUtilityState(): void {
 
 // ---- Recent Plugins ----
 
+/** Load the list of recently-used plugin IDs from persistence. */
 export function loadRecentPlugins(): string[] {
   try {
     const stored = PersistenceManager.getInstance().getItem(StorageKey.DRAWER_RECENT_PLUGINS);
@@ -220,6 +228,7 @@ export function loadRecentPlugins(): string[] {
   return [];
 }
 
+/** Persist the list of recently-used plugin IDs. */
 export function saveRecentPlugins(ids: string[]): void {
   try {
     PersistenceManager.getInstance().saveItem(
@@ -231,6 +240,7 @@ export function saveRecentPlugins(ids: string[]): void {
   }
 }
 
+/** Add a plugin to the front of the recent list, trimming to max size. */
 export function trackRecentPlugin(recentIds: string[], pluginId: string): string[] {
   const updated = recentIds.filter((id) => id !== pluginId);
 
@@ -243,6 +253,7 @@ export function trackRecentPlugin(recentIds: string[], pluginId: string): string
   return updated;
 }
 
+/** Build a DrawerGroup from cached recent plugin IDs. */
 export function buildRecentGroupFromCache(recentIds: string[], allItems: Map<string, DrawerItemData>): DrawerGroup {
   const recentItems: DrawerItemData[] = [];
 
