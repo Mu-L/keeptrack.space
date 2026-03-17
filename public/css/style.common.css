@@ -2326,7 +2326,7 @@ button.ui-button::-moz-focus-inner {
 
 #info-overlay-menu {
   position: fixed;
-  top: var(--top-menu-height, 50px);
+  top: 0;
   left: 0;
   bottom: 0;
   width: 230px;
@@ -2335,11 +2335,12 @@ button.ui-button::-moz-focus-inner {
   border: none;
   z-index: 2;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.9);
 }
 
 #info-overlay-menu.ui-hidden {
-  top: 0;
+  top: var(--top-menu-height);
+  left: 3rem;
 }
 
 #info-overlay-content {
@@ -2459,10 +2460,6 @@ button.ui-button::-moz-focus-inner {
   flex-wrap: nowrap;
   justify-content: space-between;
   height: var(--nav-bar-height);
-}
-
-#nextLaunch-menu {
-  display: block;
 }
 
 #sensor-info-menu a {
@@ -2753,7 +2750,7 @@ button.ui-button::-moz-focus-inner {
   left: 0px;
   overflow: hidden;
   transition: transform var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
-  transform: translateX(-100%);
+  transform: translateX(-120%);
   background: var(--color-dark-background);
   z-index: 5;
   border-right: 1px solid var(--kt-border-default, rgba(255, 255, 255, 0.12));
@@ -4290,20 +4287,6 @@ input:focus {
   }
 }
 
-/* mobile */
-@media (max-width: 694px) {
-  #nextLaunch-menu {
-    width: 100%;
-  }
-}
-
-/* desktop */
-@media (min-width: 1301px) {
-  #nextLaunch-menu {
-    width: 625px;
-  }
-}
-
 /* non-desktop */
 @media (max-width: 1300px) {
   .side-menu {
@@ -4313,13 +4296,6 @@ input:focus {
 
   .side-menu::-webkit-scrollbar {
     display: none;
-  }
-}
-
-/* tablet */
-@media (min-width: 695px) and (max-width: 1300px) {
-  #nextLaunch-menu {
-    width: 625px;
   }
 }
 
