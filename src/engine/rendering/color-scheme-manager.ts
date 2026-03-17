@@ -43,8 +43,6 @@ import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { BaseObject } from '../ootk/src/objects';
 import { PersistenceManager, StorageKey } from '../utils/persistence-manager';
-import { buildColorDataArrays } from './color-worker/color-data-builder';
-import { FilterState, SettingsFlags } from './color-worker/color-worker-messages';
 import { CelestrakColorScheme } from './color-schemes/celestrak-color-scheme';
 import { ColorScheme, ColorSchemeColorMap, ColorSchemeParams } from './color-schemes/color-scheme';
 import { ConfidenceColorScheme } from './color-schemes/confidence-color-scheme';
@@ -61,6 +59,8 @@ import { SpatialDensityColorScheme } from './color-schemes/spatial-density-color
 import { StarlinkColorScheme } from './color-schemes/starlink-color-scheme';
 import { SunlightColorScheme } from './color-schemes/sunlight-color-scheme';
 import { VelocityColorScheme } from './color-schemes/velocity-color-scheme';
+import { buildColorDataArrays } from './color-worker/color-data-builder';
+import { FilterState, SettingsFlags } from './color-worker/color-worker-messages';
 import { WebGLRenderer } from './webgl-renderer';
 
 export class ColorSchemeManager {
@@ -541,12 +541,6 @@ export class ColorSchemeManager {
   isCelestrakSatOff(obj: BaseObject) {
     return settingsManager.filter?.celestrakSatellites === false && (obj as Satellite)?.source === CatalogSource.CELESTRAK;
   }
-  isCelestrakSupSatOff(obj: BaseObject) {
-    return settingsManager.filter?.celestrakSupSatellites === false && (obj as Satellite)?.source === CatalogSource.CELESTRAK_SUP;
-  }
-  isSatnogsSatOff(obj: BaseObject) {
-    return settingsManager.filter?.satnogsSatellites === false && (obj as Satellite)?.source === CatalogSource.SATNOGS;
-  }
   isStarlinkSatOff(obj: BaseObject) {
     return settingsManager.filter?.starlinkSatellites === false && obj.name?.includes('STARLINK');
   }
@@ -648,18 +642,6 @@ export class ColorSchemeManager {
       };
     }
     if (this.isCelestrakSatOff(sat)) {
-      return {
-        color: [0, 0, 0, 0],
-        pickable: Pickable.No,
-      };
-    }
-    if (this.isCelestrakSupSatOff(sat)) {
-      return {
-        color: [0, 0, 0, 0],
-        pickable: Pickable.No,
-      };
-    }
-    if (this.isSatnogsSatOff(sat)) {
       return {
         color: [0, 0, 0, 0],
         pickable: Pickable.No,
