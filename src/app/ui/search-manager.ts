@@ -666,7 +666,7 @@ export class SearchManager {
       const decayedClass = isDecayed ? ' search-result-decayed' : '';
 
       html += `<div class="search-result${decayedClass}" data-obj-id="${obj.id}">`;
-      html += `<span class="search-type-badge">${SEARCH_TYPE_LABELS[result.searchType]}</span>`;
+      html += `<span class="search-type-badge">${SEARCH_TYPE_LABELS[result.searchType] ?? ''}</span>`;
       html += '<div class="truncate-search">';
 
       // Left half of search results
