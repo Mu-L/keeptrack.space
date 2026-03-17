@@ -286,16 +286,20 @@ export class UiManager {
       hideEl('keeptrack-header');
       hideEl('search-results');
       hideEl('nav-footer');
+      hideEl('plugin-drawer');
       hideEl('drawer-overlay');
       hideEl('drawer-utility-footer');
+      hideEl('drawer-hamburger');
       this.pluginDrawer?.close();
       this.isUiVisible = false;
     } else {
       showEl('keeptrack-header');
       showEl('search-results');
       showEl('nav-footer');
+      showEl('plugin-drawer');
       showEl('drawer-overlay');
       showEl('drawer-utility-footer');
+      showEl('drawer-hamburger');
       this.isUiVisible = true;
     }
   }
