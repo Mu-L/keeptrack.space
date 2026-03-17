@@ -14,7 +14,7 @@ test.describe('GraticuleToggle', () => {
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'graticule-toggle-bottom-icon');
 
     // Should not be selected initially
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Read initial state
     const initialState = await page.evaluate(() => (window as any).settingsManager?.isDrawGraticule);
@@ -30,7 +30,7 @@ test.describe('GraticuleToggle', () => {
     }).toPass({ timeout: 5_000 });
 
     // Verify selected state on the icon
-    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Click again to toggle off
     await utilityIcon.click({ force: true });
@@ -43,6 +43,6 @@ test.describe('GraticuleToggle', () => {
     }).toPass({ timeout: 5_000 });
 
     // Verify icon deselected
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u);
   });
 });

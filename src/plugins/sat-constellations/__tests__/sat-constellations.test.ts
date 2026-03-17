@@ -1,12 +1,15 @@
-import { vi } from 'vitest';
+import { CatalogManager } from '@app/app/data/catalog-manager';
 import { GroupsManager } from '@app/app/data/groups-manager';
 import { GroupType } from '@app/app/data/object-group';
+import { UiManager } from '@app/app/ui/ui-manager';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
+import { Satellite } from '@app/engine/ootk/src/objects';
 import { SatConstellations } from '@app/plugins/sat-constellations/sat-constellations';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite } from '@test/generic-tests';
-import { ServiceLocator } from '@app/engine/core/service-locator';
+import { vi } from 'vitest';
 
 describe('SatConstellations_class', () => {
   beforeEach(() => {
@@ -90,7 +93,7 @@ describe('SatConstellations_composition', () => {
       { apogee: 20200, perigee: 20100, inclination: 55.0, rightAscension: 60 },
       { apogee: 20250, perigee: 20150, inclination: 55.2, rightAscension: 120 },
       { apogee: 20180, perigee: 20080, inclination: 54.8, rightAscension: 180 },
-    ] as any[];
+    ] as Satellite[];
 
     const stats = SatConstellations.calculateStats_(mockSats);
 
@@ -134,7 +137,7 @@ describe('SatConstellations_constellation_click', () => {
         closeSearch: vi.fn(),
       },
       hideSideMenus: vi.fn(),
-    } as any);
+    } as unknown as UiManager);
 
     vi.spyOn(ServiceLocator, 'getCatalogManager').mockReturnValue({
       getSat: () => ({ sccNum: '25544', id: 0, apogee: 400, perigee: 400, inclination: 51.6, rightAscension: 0, name: 'ISS', isSatellite: () => true, tle1: 'line1' }),
@@ -147,7 +150,7 @@ describe('SatConstellations_constellation_click', () => {
         sbirs: [7, 8],
         dsp: [9, 10],
       },
-    } as any);
+    } as unknown as CatalogManager);
   });
 
   constellationSlugs.forEach((slug) => {
@@ -155,7 +158,8 @@ describe('SatConstellations_constellation_click', () => {
       const plugin = new SatConstellations();
 
       // Access private method via bracket notation for testing
-      expect(() => (plugin as any).constellationMenuClick_(slug)).not.toThrow();
+      // eslint-disable-next-line dot-notation
+      expect(() => plugin['constellationMenuClick_'](slug)).not.toThrow();
     });
   });
 });

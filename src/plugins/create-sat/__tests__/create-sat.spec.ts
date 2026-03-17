@@ -12,7 +12,7 @@ test.describe('CreateSat Plugin', () => {
 
     // Bottom icon should exist and NOT be disabled
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // Open drawer and find CreateSat item in the CREATE group
     await page.locator('#drawer-hamburger').click();
@@ -33,7 +33,7 @@ test.describe('CreateSat Plugin', () => {
     await drawerItem.click();
 
     // Verify bottom icon got selected (confirms click reached the handler)
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
 
     // Verify side menu content is visible (the inner .side-menu div)
     const sideMenuContent = page.locator('#createSat-content');
@@ -85,6 +85,6 @@ test.describe('CreateSat Plugin', () => {
 
     // Close via the side menu close button
     await page.locator('#createSat-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

@@ -29,9 +29,9 @@ test.describe('Plot Analysis Plugins', () => {
     await expect(ricIcon).toBeAttached();
 
     // All three should be disabled (no satellite selected)
-    await expect(eciIcon).toHaveClass(/bmenu-item-disabled/);
-    await expect(ecfIcon).toHaveClass(/bmenu-item-disabled/);
-    await expect(ricIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(eciIcon).toHaveClass(/bmenu-item-disabled/u);
+    await expect(ecfIcon).toHaveClass(/bmenu-item-disabled/u);
+    await expect(ricIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Verify chart canvases exist in DOM for each
     await expect(page.locator('#plot-analysis-chart-eci')).toBeAttached();
@@ -87,6 +87,6 @@ test.describe('Plot Analysis Plugins', () => {
 
     // Close via close button
     await page.locator('#inc2alt-plots-menu-close-btn').click();
-    await expect(inc2altIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(inc2altIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

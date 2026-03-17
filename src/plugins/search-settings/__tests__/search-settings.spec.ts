@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('SearchSettingsPlugin', () => {
@@ -26,7 +26,7 @@ test.describe('SearchSettingsPlugin', () => {
     await expect(drawerItem).toBeVisible();
     await drawerItem.click();
 
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
     await expect(page.locator('#search-settings-menu')).toBeVisible({ timeout: 5_000 });
 
     await expect(page.locator('#search-settings-maxResults')).toBeAttached();
@@ -38,6 +38,6 @@ test.describe('SearchSettingsPlugin', () => {
         new MouseEvent('click', { bubbles: true }),
       );
     });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

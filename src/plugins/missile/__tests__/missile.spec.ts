@@ -33,7 +33,7 @@ test.describe('MissilePlugin', () => {
     const sideMenu = page.locator('#MissilePlugin-menu');
 
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify form exists (inside draggable wrapper, use toBeAttached)
     await expect(page.locator('#MissilePlugin-menu-form')).toBeAttached();
@@ -62,6 +62,6 @@ test.describe('MissilePlugin', () => {
 
     // Close via close button
     await page.locator('#MissilePlugin-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

@@ -13,7 +13,7 @@ test.describe('CloseObjects Plugin', () => {
 
     // Bottom icon should exist and NOT be disabled
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // Open drawer and find item in the EVENTS group (mode-2)
     await page.locator('#drawer-hamburger').click();
@@ -32,7 +32,7 @@ test.describe('CloseObjects Plugin', () => {
 
     // Click to open side menu
     await drawerItem.click();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify the find button exists
@@ -53,6 +53,6 @@ test.describe('CloseObjects Plugin', () => {
 
     // Close via the side menu close button
     await page.locator('#close-objects-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

@@ -34,7 +34,7 @@ test.describe('DopsPlugin', () => {
     const sideMenu = page.locator('#dops-menu');
 
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify form exists with correct default values
     const form = page.locator('#dops-form');
@@ -51,6 +51,6 @@ test.describe('DopsPlugin', () => {
 
     // Close via the side menu close button
     await page.locator('#dops-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

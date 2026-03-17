@@ -13,7 +13,7 @@ test.describe('FindSatPlugin', () => {
     const bottomIcon = page.locator('#find-satellite-bottom-icon');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // 2. Open drawer and find plugin in Catalog group
     await page.locator('#drawer-hamburger').click();
@@ -32,7 +32,7 @@ test.describe('FindSatPlugin', () => {
 
     // 3. Click to open the side menu
     await drawerItem.click();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
 
     const sideMenu = page.locator('#findByLooks-menu');
 
@@ -79,6 +79,6 @@ test.describe('FindSatPlugin', () => {
 
     // 9. Close the side menu
     await page.locator('#findByLooks-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

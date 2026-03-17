@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('ReportsPlugin', () => {
@@ -12,7 +12,7 @@ test.describe('ReportsPlugin', () => {
 
     // Bottom icon should exist but be disabled (no satellite selected)
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Side menu HTML should exist in DOM but be hidden
     await expect(sideMenu).toBeAttached();
@@ -37,7 +37,7 @@ test.describe('ReportsPlugin', () => {
     await drawerItem.scrollIntoViewIfNeeded();
     await drawerItem.click({ force: true });
     await expect(sideMenu).toBeHidden({ timeout: 2_000 });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Verify report buttons container exists in the DOM
     await expect(page.locator('#reports-buttons')).toBeAttached();

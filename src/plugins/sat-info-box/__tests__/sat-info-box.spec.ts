@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('SatInfoBox and Related Plugins', () => {
@@ -87,7 +87,7 @@ test.describe('SatInfoBox and Related Plugins', () => {
     await expect(page.locator('#doppler-sat-info')).toBeAttached();
 
     // ── Container should be hidden (no satellite selected) ─────────────
-    await expect(container).toHaveClass(/start-hidden/);
+    await expect(container).toHaveClass(/start-hidden/u);
   });
 
   test('sat-infobox has no drawer entry (infrastructure plugin)', async ({ page }) => {

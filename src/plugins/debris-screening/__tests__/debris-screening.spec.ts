@@ -12,7 +12,7 @@ test.describe('DebrisScreening Plugin', () => {
 
     // Bottom icon should exist but be disabled (no satellite selected)
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Side menu HTML should exist in DOM but be hidden
     await expect(sideMenu).toBeAttached();
@@ -36,7 +36,7 @@ test.describe('DebrisScreening Plugin', () => {
     await drawerItem.scrollIntoViewIfNeeded();
     await drawerItem.click({ force: true });
     await expect(sideMenu).toBeHidden({ timeout: 2_000 });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Verify form elements exist in the DOM even though menu is hidden
     await expect(page.locator('form#debris-screening-menu-form')).toBeAttached();

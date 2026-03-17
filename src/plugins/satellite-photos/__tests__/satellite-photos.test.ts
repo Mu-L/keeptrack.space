@@ -1,4 +1,3 @@
-import { vi } from 'vitest';
 import { MenuMode } from '@app/engine/core/interfaces';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
@@ -6,6 +5,7 @@ import { SatellitePhotos } from '@app/plugins/satellite-photos/satellite-photos'
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite } from '@test/generic-tests';
+import { vi } from 'vitest';
 
 describe('SatellitePhotos', () => {
   beforeEach(() => {
@@ -94,6 +94,7 @@ describe('SatellitePhotos', () => {
     it('should register uiManagerFinal handler on addJs', () => {
       const plugin = new SatellitePhotos();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.spyOn(plugin as any, 'uiManagerFinal_').mockImplementation(() => { /* Intentional no-op */ });
       const onSpy = vi.spyOn(EventBus.getInstance(), 'on');
 

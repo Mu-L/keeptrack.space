@@ -11,7 +11,7 @@ test.describe('PolarPlotPlugin', () => {
     const bottomIcon = page.locator('#polar-plot-bottom-icon');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Open drawer and find item in Sensors group
     await page.locator('#drawer-hamburger').click();
@@ -29,7 +29,7 @@ test.describe('PolarPlotPlugin', () => {
 
     // Clicking disabled drawer item should NOT open the side menu
     await drawerItem.click({ force: true });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 2_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 2_000 });
 
     // Verify side menu elements exist in DOM (hidden)
     await expect(page.locator('#polar-plot-menu')).toBeAttached();

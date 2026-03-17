@@ -12,7 +12,7 @@ test.describe('ColorMenu Plugin', () => {
 
     // Bottom icon should exist and NOT be disabled
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // Open drawer and find item in the CATALOG group (mode-0)
     await page.locator('#drawer-hamburger').click();
@@ -31,7 +31,7 @@ test.describe('ColorMenu Plugin', () => {
 
     // Click to open side menu
     await drawerItem.click();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
 
     // Verify color scheme list has items
@@ -51,6 +51,6 @@ test.describe('ColorMenu Plugin', () => {
 
     // Close via the side menu close button
     await page.locator('#color-scheme-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

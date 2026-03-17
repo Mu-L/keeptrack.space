@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('SatellitePhotos', () => {
@@ -10,7 +10,7 @@ test.describe('SatellitePhotos', () => {
     const bottomIcon = page.locator('#menu-sat-photo');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // Open drawer and find item in Display group
     await page.locator('#drawer-hamburger').click();
@@ -27,7 +27,7 @@ test.describe('SatellitePhotos', () => {
     await expect(drawerItem).toBeVisible();
     await drawerItem.click();
 
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
     await expect(page.locator('#sat-photo-menu')).toBeVisible({ timeout: 5_000 });
 
     // Verify photo list content
@@ -39,6 +39,6 @@ test.describe('SatellitePhotos', () => {
         new MouseEvent('click', { bubbles: true }),
       );
     });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

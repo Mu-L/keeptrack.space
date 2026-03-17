@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('SkipInterpolationToggle', () => {
@@ -16,7 +16,7 @@ test.describe('SkipInterpolationToggle', () => {
 
     // Verify state changed via settingsManager
     await expect(async () => {
-      const state = await page.evaluate(() => (window as any).settingsManager?.isSkipTleInterpolation);
+      const state = await page.evaluate(() => window.settingsManager?.isSkipTleInterpolation);
 
       expect(state).toBe(true);
     }).toPass({ timeout: 5_000 });
@@ -25,7 +25,7 @@ test.describe('SkipInterpolationToggle', () => {
     await utilityIcon.click({ force: true });
 
     await expect(async () => {
-      const state = await page.evaluate(() => (window as any).settingsManager?.isSkipTleInterpolation);
+      const state = await page.evaluate(() => window.settingsManager?.isSkipTleInterpolation);
 
       expect(state).toBe(false);
     }).toPass({ timeout: 5_000 });

@@ -12,7 +12,7 @@ test.describe('Breakup Plugin', () => {
 
     // Bottom icon should exist in the DOM but be disabled (no satellite selected)
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Side menu HTML should exist in DOM but be hidden
     await expect(sideMenu).toBeAttached();
@@ -36,7 +36,7 @@ test.describe('Breakup Plugin', () => {
     // Clicking a disabled plugin's drawer item should NOT open the side menu
     await drawerItem.click({ force: true });
     await expect(sideMenu).toBeHidden({ timeout: 2_000 });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Verify form elements exist in the DOM even though menu is hidden
     await expect(page.locator('form#breakup')).toBeAttached();

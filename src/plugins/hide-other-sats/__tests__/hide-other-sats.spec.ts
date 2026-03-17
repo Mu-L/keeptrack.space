@@ -31,7 +31,7 @@ test.describe('HideOtherSatellitesPlugin', () => {
     }).toPass({ timeout: 5_000 });
 
     // Verify selected state on the icon
-    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Click again to toggle off (show other sats — restores alpha to 0.1)
     await utilityIcon.click({ force: true });
@@ -46,6 +46,6 @@ test.describe('HideOtherSatellitesPlugin', () => {
     }).toPass({ timeout: 5_000 });
 
     // Verify icon deselected
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u);
   });
 });
