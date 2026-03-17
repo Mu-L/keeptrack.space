@@ -194,8 +194,8 @@ export class PersistenceManager {
       typeof sm?.versionNumber === 'string' &&
       this.compareSemver_(currentVersion, sm.versionNumber) < 0
     ) {
-      console.warn(`Version mismatch: ${currentVersion} < ${sm.versionNumber}`);
-      console.warn('Clearing local storage...');
+      errorManagerInstance.warn(`Version mismatch: ${currentVersion} < ${sm.versionNumber}`);
+      errorManagerInstance.warn('Clearing local storage...');
       this.cache_.clear();
       this.primary_.clear();
     }
