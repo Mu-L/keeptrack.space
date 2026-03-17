@@ -51,9 +51,9 @@ export class PluginDrawer {
   private hamburgerEl_: HTMLElement | null = null;
   private groupStates_: Record<string, boolean> = {};
   private recentPluginIds_: string[] = [];
-  private allDrawerItems_: Map<string, DrawerItemData> = new Map();
+  private readonly allDrawerItems_: Map<string, DrawerItemData> = new Map();
   private isRailMode_ = false;
-  private badges_: Map<string, DrawerBadge> = new Map();
+  private readonly badges_: Map<string, DrawerBadge> = new Map();
 
   init(): void {
     this.isMobileMode_ = settingsManager.isMobileModeEnabled;
@@ -793,7 +793,7 @@ export class PluginDrawer {
 
       header?.addEventListener('click', () => {
         newGroupEl.classList.toggle('collapsed');
-        const key = (newGroupEl as HTMLElement).getAttribute('data-group-key');
+        const key = (newGroupEl as HTMLElement).dataset.groupKey;
 
         if (key) {
           this.groupStates_[key] = !newGroupEl.classList.contains('collapsed');
@@ -838,8 +838,7 @@ export class PluginDrawer {
   }
 
   private exitRailMode_(): void {
-    this.drawerEl_?.classList.remove('rail-hover');
-    this.drawerEl_?.classList.remove('rail-mode');
+    this.drawerEl_?.classList.remove('rail-hover', 'rail-mode');
     document.documentElement.style.setProperty('--drawer-offset', '0px');
     this.updateRailToggleIcon_(false);
   }

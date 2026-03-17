@@ -619,10 +619,6 @@ body.drawer-mode {
     opacity: 1;
   }
 
-  .drawer-utility-icon:hover img {
-    opacity: 1;
-  }
-
   .drawer-utility-icon:active img {
     filter: hue-rotate(275deg) brightness(1.2);
     opacity: 1;
@@ -796,6 +792,7 @@ body.drawer-mode:not(.is-mobile-mode) {
   }
 
   .plugin-drawer.rail-mode .drawer-item {
+    position: relative;
     padding: 8px 12px;
     justify-content: center;
     transition: padding var(--kt-duration-slow, 300ms) var(--kt-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
@@ -833,10 +830,6 @@ body.drawer-mode:not(.is-mobile-mode) {
     margin-left: 0;
     width: 6px;
     height: 6px;
-  }
-
-  .plugin-drawer.rail-mode .drawer-item {
-    position: relative;
   }
 
   .plugin-drawer.rail-mode .drawer-user-account,
