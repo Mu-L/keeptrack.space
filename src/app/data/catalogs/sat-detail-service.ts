@@ -5,11 +5,11 @@
  * it onto the existing Satellite object so UI plugins can display
  * mission, purpose, manufacturer, masses, dimensions, etc.
  */
-import { apiFetch } from '../api-fetch';
+import { Satellite } from '@ootk/src/main';
 import { EventBus } from '../../../engine/events/event-bus';
 import { EventBusEvent } from '../../../engine/events/event-bus-events';
 import { errorManagerInstance } from '../../../engine/utils/errorManager';
-import { Satellite } from '@ootk/src/main';
+import { apiFetch } from '../api-fetch';
 
 /**
  * Maps API response keys (UPPER_SNAKE_CASE) to Satellite property names (camelCase).
@@ -41,8 +41,8 @@ const API_TO_SAT_FIELD: Record<string, string> = {
 };
 
 class SatDetailDataService {
-  private fetchedSccs_ = new Set<string>();
-  private inflight_ = new Set<string>();
+  private readonly fetchedSccs_ = new Set<string>();
+  private readonly inflight_ = new Set<string>();
 
   /**
    * Returns true if this satellite already has detail data populated.

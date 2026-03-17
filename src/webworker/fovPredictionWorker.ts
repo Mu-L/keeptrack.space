@@ -120,7 +120,7 @@ function sweepSatellite(satIndex: number, simTimeMs: number): [number, number] {
 
     try {
       pv = Sgp4.propagate(satrec, m) as { position: TemeVec3 };
-      if (isNaN(pv.position.x) || isNaN(pv.position.y) || isNaN(pv.position.z)) {
+      if (Number.isNaN(pv.position.x) || Number.isNaN(pv.position.y) || Number.isNaN(pv.position.z)) {
         continue;
       }
     } catch {
@@ -196,7 +196,7 @@ async function fullSweep(simTimeMs: number): Promise<void> {
       typ: FovPredOutMsgType.FULL_SWEEP_COMPLETE,
       minutesToEntry: result,
     },
-    { transfer: [result.buffer as ArrayBuffer] },
+    { transfer: [result.buffer] },
   );
 }
 
@@ -307,6 +307,9 @@ onmessage = function onmessage(event: MessageEvent<FovPredInMsg>) {
 
     case FovPredMsgType.CANCEL:
       cancelled = true;
+      break;
+    default:
+      // Unknown message type
       break;
   }
 };

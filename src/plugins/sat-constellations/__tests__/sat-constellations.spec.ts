@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('SatConstellations Plugin', () => {
@@ -35,7 +35,7 @@ test.describe('SatConstellations Plugin', () => {
     // Click the drawer item — should open side menu
     await drawerItem.click();
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify constellation list exists with all built-in items
     const constellationList = page.locator('#sc-constellation-list');
@@ -87,6 +87,6 @@ test.describe('SatConstellations Plugin', () => {
 
     // Close via the side menu close button
     await page.locator('#constellations-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

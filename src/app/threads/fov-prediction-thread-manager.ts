@@ -3,16 +3,14 @@
  * Sends catalog + sensor data, receives per-satellite "minutes to next FOV entry" results.
  */
 
+import type { SensorObjectCruncher } from '@app/engine/core/interfaces';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { WebWorkerThreadManager } from '@app/engine/threads/web-worker-thread';
-import type { SensorObjectCruncher } from '@app/engine/core/interfaces';
 import {
   FovPredMsgType,
   FovPredOutMsgType,
   type FovPredOutMsg,
-  type FovPredOutProgressMsg,
-  type FovPredOutSweepMsg,
 } from '@app/webworker/fov-prediction-messages';
 
 export class FovPredictionThreadManager extends WebWorkerThreadManager {
@@ -37,12 +35,12 @@ export class FovPredictionThreadManager extends WebWorkerThreadManager {
     switch (data.typ) {
       case FovPredOutMsgType.FULL_SWEEP_COMPLETE:
       case FovPredOutMsgType.INCREMENTAL_UPDATE:
-        this.minutesToEntry_ = (data as FovPredOutSweepMsg).minutesToEntry;
+        this.minutesToEntry_ = data.minutesToEntry;
         EventBus.getInstance().emit(EventBusEvent.onFovPredictionReady);
         break;
       case FovPredOutMsgType.PROGRESS:
         if (this.onProgress_) {
-          this.onProgress_((data as FovPredOutProgressMsg).progress);
+          this.onProgress_(data.progress);
         }
         break;
       default:

@@ -10,7 +10,7 @@ test.describe('Calculator', () => {
     const bottomIcon = page.locator('#menu-calculator');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // Open drawer and find item in Analysis group
     await page.locator('#drawer-hamburger').click();
@@ -27,7 +27,7 @@ test.describe('Calculator', () => {
     await expect(drawerItem).toBeVisible();
     await drawerItem.click();
 
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
     await expect(page.locator('#calculator-menu')).toBeVisible({ timeout: 5_000 });
 
     // Verify form elements
@@ -42,6 +42,6 @@ test.describe('Calculator', () => {
         new MouseEvent('click', { bubbles: true }),
       );
     });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

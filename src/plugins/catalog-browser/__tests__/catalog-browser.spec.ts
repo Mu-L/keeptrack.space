@@ -22,7 +22,7 @@ test.describe('CatalogBrowserPlugin', () => {
     // Click the drawer item — should open side menu and select the icon
     await drawerItem.click();
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify the toggle switch exists
     const toggle = page.locator('#cb-orbital-data-only');
@@ -76,6 +76,6 @@ test.describe('CatalogBrowserPlugin', () => {
     await page.locator('#catalog-browser-menu-close-btn').click();
     // slideOutLeft animates translateX(-100%) but keeps display:block,
     // so check the icon deselects and the menu slides off-screen
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

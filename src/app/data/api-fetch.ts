@@ -1,3 +1,5 @@
+import { settingsManager } from '@app/settings/settings';
+
 /**
  * Wrapper around fetch() that injects the API key header for
  * requests to api.keeptrack.space when an apiKey is configured.
@@ -12,7 +14,7 @@ export const apiFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<
   } else {
     url = input.url;
   }
-  const apiKey = window.settingsManager?.apiKey;
+  const apiKey = settingsManager?.apiKey;
 
   if (apiKey && url.includes('api.keeptrack.space')) {
     const headers = new Headers(init?.headers);

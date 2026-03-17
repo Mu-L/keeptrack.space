@@ -8,7 +8,6 @@ import { t7e, TranslationKey } from '@app/locales/keys';
 import { OfflineIconBehavior } from '@app/settings/core-settings';
 import { BaseObject } from '@ootk/src/main';
 import Module from 'module';
-import { SelectSatManager } from '../../plugins/select-sat-manager/select-sat-manager';
 import { PluginRegistry } from '../core/plugin-registry';
 import { ServiceLocator } from '../core/service-locator';
 import { EventBus } from '../events/event-bus';
@@ -1332,9 +1331,9 @@ export abstract class KeepTrackPlugin {
       return;
     }
     if (this.isRequireSatelliteSelected) {
-      const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
+      const selectSatManager = PluginRegistry.getPluginByName('SelectSatManager');
 
-      if (!selectSatManager || selectSatManager.selectedSat === -1) {
+      if (!selectSatManager || (selectSatManager as unknown as { selectedSat: number }).selectedSat === -1) {
         return;
       }
     }
@@ -1377,7 +1376,7 @@ export abstract class KeepTrackPlugin {
      * const searchDom = getEl('search', true);
      * if (!selectSatManagerInstance || (selectSatManagerInstance?.selectedSat === -1 && (!searchDom || (<HTMLInputElement>searchDom).value === ''))) {
      */
-    if ((PluginRegistry.getPlugin(SelectSatManager)?.selectedSat ?? '-1') === '-1') {
+    if (((PluginRegistry.getPluginByName('SelectSatManager') as unknown as { selectedSat: number } | null)?.selectedSat ?? -1) === -1) {
       errorManagerInstance.warnToast(t7e('errorMsgs.SelectSatelliteFirst'));
       this.shakeBottomIcon();
 

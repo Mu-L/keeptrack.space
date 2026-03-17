@@ -1,6 +1,6 @@
 import { countryFlagIconMap } from '@app/app/data/catalogs/countries';
 import { GroupType } from '@app/app/data/object-group';
-import { SearchResult } from '@app/app/ui/search-manager';
+import { SearchResult, SearchResultType } from '@app/app/ui/search-manager';
 import { StringExtractor } from '@app/app/ui/string-extractor';
 import { SoundNames } from '@app/engine/audio/sounds';
 import { MenuMode } from '@app/engine/core/interfaces';
@@ -253,7 +253,7 @@ export class CountriesMenu extends KeepTrackPlugin implements ICommandPaletteCap
 
     searchDOM.value = groupManagerInstance.groupList[groupName].ids.reduce((acc: string, id: number) => `${acc}${catalogManagerInstance.getSat(id)?.sccNum},`, '').slice(0, -1);
     uiManagerInstance.searchManager.fillResultBox(
-      groupManagerInstance.groupList[groupName].ids.map((id: number) => ({ id }) as SearchResult),
+      groupManagerInstance.groupList[groupName].ids.map((id: number) => ({ id, searchType: SearchResultType.NORAD_ID, strIndex: 0, patlen: 0 }) as SearchResult),
       catalogManagerInstance,
     );
 

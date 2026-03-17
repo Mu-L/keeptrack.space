@@ -1,3 +1,5 @@
+import { errorManagerInstance } from '@app/engine/utils/errorManager';
+
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 60 minutes
 
 /**
@@ -43,7 +45,7 @@ export function registerServiceWorker(): void {
       });
     })
     .catch((err: unknown) => {
-      console.warn('Service worker registration failed:', err);
+      errorManagerInstance.warn('Service worker registration failed:', err);
     });
 
   // After the waiting SW calls skipWaiting(), it becomes the active controller.

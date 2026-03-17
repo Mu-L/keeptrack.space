@@ -5,13 +5,16 @@
  *   npx tsx scripts/fetch-tle.ts
  */
 
-import { writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const TLE_URL = 'https://api.keeptrack.space/v4/sats';
 const OUT_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'tle', 'tle.json');
 
+/**
+ * Fetch TLE data from the KeepTrack API and save to a local file. The output is used by the Best Pass plugin to calculate satellite passes without needing to make API calls from the client.
+ */
 async function main() {
   console.log(`Fetching TLE data from ${TLE_URL}...`);
 
@@ -27,7 +30,7 @@ async function main() {
   console.log(`Saved to ${OUT_PATH} (${(Buffer.byteLength(data) / 1024 / 1024).toFixed(1)} MB)`);
 }
 
-main().catch((err) => {
+await main().catch((err) => {
   console.error(err);
-  process.exit(1);
+  throw new Error('Failed to fetch and save TLE data');
 });

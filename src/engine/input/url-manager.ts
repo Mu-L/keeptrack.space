@@ -9,6 +9,7 @@ import { EventBus } from '../events/event-bus';
 import { EventBusEvent } from '../events/event-bus-events';
 import { KeyboardComponent } from '../plugins/components/keyboard/keyboard-component';
 import { AtmosphereSettings, EarthTextureStyle } from '../rendering/draw-manager/earth-quality-enums';
+import { errorManagerInstance } from '../utils/errorManager';
 import { getEl } from '../utils/get-el';
 
 export abstract class UrlManager {
@@ -255,7 +256,7 @@ export abstract class UrlManager {
             this.handleZoomParam_(kv[key], kv.camDistBuffer ?? null);
             break;
           default:
-            console.warn(`Unknown URL parameter: ${key}`);
+            errorManagerInstance.warn(`Unknown URL parameter: ${key}`);
         }
       });
     });
@@ -670,7 +671,7 @@ export abstract class UrlManager {
         settingsManager.godraysSamples = 128; // GodraySamples.ULTRA
         break;
       default:
-        console.warn(`Unknown sun parameter: ${val}`);
+        errorManagerInstance.warn(`Unknown sun parameter: ${val}`);
     }
   }
 
@@ -684,7 +685,7 @@ export abstract class UrlManager {
       if (UrlManager.VALID_REGIMES_.includes(r)) {
         valid.push(r);
       } else {
-        console.warn(`Unknown regime filter: ${r}`);
+        errorManagerInstance.warn(`Unknown regime filter: ${r}`);
       }
     }
 

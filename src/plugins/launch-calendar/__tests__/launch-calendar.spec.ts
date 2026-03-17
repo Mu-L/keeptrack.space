@@ -23,7 +23,7 @@ test.describe('LaunchCalendar Plugin', () => {
     // Click the drawer item — should open colorbox and select the icon
     await drawerItem.click();
     await expect(colorboxDiv).toBeVisible({ timeout: 10_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Iframe should point to the current year's launch calendar
     const currentYear = new Date().getFullYear();
@@ -42,6 +42,6 @@ test.describe('LaunchCalendar Plugin', () => {
 
     // Colorbox should hide and icon should deselect
     await expect(colorboxDiv).toBeHidden({ timeout: 5_000 });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u);
   });
 });

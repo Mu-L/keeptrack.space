@@ -14,12 +14,12 @@ test.describe('FpsView Plugin', () => {
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'fps-view-bottom-icon');
 
     // Should not be selected initially
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Click utility icon to activate FPS view
     await utilityIcon.click({ force: true });
 
     // Verify icon becomes selected (camera changed to FPS)
-    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

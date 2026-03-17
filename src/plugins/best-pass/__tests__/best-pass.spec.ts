@@ -12,7 +12,7 @@ test.describe('BestPassPlugin', () => {
 
     // Bottom icon should exist but be disabled (no sensor selected)
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Side menu HTML should exist in DOM but be hidden
     await expect(sideMenu).toBeAttached();
@@ -36,7 +36,7 @@ test.describe('BestPassPlugin', () => {
     await drawerItem.scrollIntoViewIfNeeded();
     await drawerItem.click({ force: true });
     await expect(sideMenu).toBeHidden({ timeout: 2_000 });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Verify form elements exist in the DOM even though menu is hidden
     await expect(page.locator('form#best-pass-menu-form')).toBeAttached();

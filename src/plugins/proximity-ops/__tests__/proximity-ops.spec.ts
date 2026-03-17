@@ -60,6 +60,6 @@ test.describe('ProximityOps', () => {
 
     // Close side menu
     await page.locator('#proximityOps-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

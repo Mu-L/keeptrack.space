@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('TransponderChannelData', () => {
@@ -10,7 +10,7 @@ test.describe('TransponderChannelData', () => {
     const bottomIcon = page.locator('#menu-transponderChannelData');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Side menu and table should exist in DOM
     await expect(page.locator('#TransponderChannelData-menu')).toBeAttached();

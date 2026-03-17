@@ -11,7 +11,7 @@ test.describe('FilterMenuPlugin', () => {
     const bottomIcon = page.locator('#filter-menu-icon');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-disabled/u);
 
     // 2. Open drawer and find plugin in Settings group
     await page.locator('#drawer-hamburger').click();
@@ -30,7 +30,7 @@ test.describe('FilterMenuPlugin', () => {
 
     // 3. Click to open the side menu
     await drawerItem.click();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
 
     const sideMenu = page.locator('#filter-menu');
 
@@ -85,6 +85,6 @@ test.describe('FilterMenuPlugin', () => {
 
     // 11. Close the side menu
     await page.locator('#filter-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

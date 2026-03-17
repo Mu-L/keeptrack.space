@@ -1,11 +1,12 @@
-import { SoundNames } from '@app/engine/audio/sounds';
 import { SatMath } from '@app/app/analysis/sat-math';
 import { SensorMath } from '@app/app/sensors/sensor-math';
+import { SoundNames } from '@app/engine/audio/sounds';
 import { GetSatType, MenuMode, SatPassTimes, ToastMsgType } from '@app/engine/core/interfaces';
 import { PluginRegistry } from '@app/engine/core/plugin-registry';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { ICommandPaletteCommand } from '@app/engine/plugins/core';
 import { lineManagerInstance } from '@app/engine/rendering/line-manager';
 import { LineColors } from '@app/engine/rendering/line-manager/line';
 import { dateFormat } from '@app/engine/utils/dateFormat';
@@ -16,7 +17,6 @@ import pictureInPicturePng from '@public/img/icons/picture-in-picture.png';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
 import { WatchlistPlugin } from './watchlist';
-import { ICommandPaletteCommand } from '@app/engine/plugins/core';
 import './watchlist-overlay.css';
 
 /**
@@ -82,7 +82,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
   private lastRecalcTime_ = 0;
 
   /** Cached FOV exit times keyed by satellite ID. Cleared on each recalc. */
-  private exitTimeCache_ = new Map<number, Date | null>();
+  private readonly exitTimeCache_ = new Map<number, Date | null>();
 
   /** Departed rotation state — avoids index jumps when departed count changes */
   private departedRotationOffset_ = 0;
@@ -188,7 +188,7 @@ export class WatchlistOverlay extends KeepTrackPlugin {
         return;
       }
 
-      const satId = parseInt(entry.dataset.satId ?? '-1');
+      const satId = Number.parseInt(entry.dataset.satId ?? '-1');
 
       if (satId >= 0) {
         PluginRegistry.getPlugin(SelectSatManager)?.selectSat(satId);

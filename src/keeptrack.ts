@@ -60,6 +60,7 @@ import { settingsManager, SettingsManagerOverride } from './settings/settings';
 
 import logoPrimaryPng from '@public/img/logo-primary.png';
 import logoSecondaryPng from '@public/img/logo-secondary.png';
+import { errorManagerInstance } from './engine/utils/errorManager';
 
 export class KeepTrack {
   private static instance: KeepTrack;
@@ -144,7 +145,7 @@ export class KeepTrack {
     // The PersistenceManager already works synchronously from its constructor;
     // this adds the async enhancements without blocking boot.
     PersistenceManager.getInstance().initialize().catch((e) => {
-      console.warn('Failed to initialize enhanced persistence:', e);
+      errorManagerInstance.warn(`Failed to initialize enhanced persistence: ${e.message}`);
     });
   }
 
@@ -318,16 +319,13 @@ theodore.kruczek at gmail dot com.
 
     if (LoaderText) {
       LoaderText.innerHTML = errorHtml;
-      // eslint-disable-next-line no-console
-      console.error(error);
+      errorManagerInstance.warn(error.message);
     } else {
-      // eslint-disable-next-line no-console
-      console.error(error);
+      errorManagerInstance.warn(error.message);
     }
     // istanbul ignore next
     if (!isThisNode()) {
-      // eslint-disable-next-line no-console
-      console.warn(error);
+      errorManagerInstance.warn(error.message);
     }
   }
 
@@ -465,7 +463,7 @@ theodore.kruczek at gmail dot com.
       if (this.postStartElapsed_ >= KeepTrack.POST_START_TIMEOUT_MS_) {
         const notReady = this.threads.filter((t) => !t.isReady).map((t) => t.WEB_WORKER_CODE);
 
-        console.error(`[KeepTrack] Web workers failed to initialize after ${KeepTrack.POST_START_TIMEOUT_MS_ / 1000}s. Stalled workers: ${notReady.join(', ')}. Try a hard refresh (Ctrl+Shift+R).`);
+        errorManagerInstance.warn(`[KeepTrack] Web workers failed to initialize after ${KeepTrack.POST_START_TIMEOUT_MS_ / 1000}s. Stalled workers: ${notReady.join(', ')}. Try a hard refresh (Ctrl+Shift+R).`);
         SplashScreen.loadStr('Loading failed — try Ctrl+Shift+R to hard refresh.');
 
         return;

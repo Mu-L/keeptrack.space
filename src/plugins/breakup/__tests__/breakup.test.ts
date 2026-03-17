@@ -2,12 +2,12 @@ import { vi } from 'vitest';
 /* eslint-disable max-lines-per-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable dot-notation */
-import * as OrbitFinderFile from '@ootk/src/orbit-design/OrbitFinder';
 import { SatMath } from '@app/app/analysis/sat-math';
 import { ServiceLocator } from '@app/engine/core/service-locator';
 import { Kilometers } from '@app/engine/ootk/src/main';
 import { Breakup } from '@app/plugins/breakup/breakup';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
+import * as OrbitFinderFile from '@ootk/src/orbit-design/OrbitFinder';
 import { defaultSat } from '@test/environment/apiMocks';
 import { setupStandardEnvironment, standardSelectSat } from '@test/environment/standard-env';
 import { standardPluginMenuButtonTests, standardPluginSuite, websiteInit } from '@test/generic-tests';
@@ -29,7 +29,7 @@ describe('Breakup_class', () => {
       standardSelectSat();
       // Mock OrbitFinder class
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function () {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
@@ -146,7 +146,7 @@ describe('Breakup_class', () => {
 
       vi.spyOn(SatMath, 'getDirection').mockReturnValue('Error');
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function test() {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
@@ -163,7 +163,7 @@ describe('Breakup_class', () => {
       standardSelectSat();
 
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function test() {
           return {
             rotateOrbitToLatLon: () => ['Error', 'Error message'],
           };
@@ -180,7 +180,7 @@ describe('Breakup_class', () => {
       standardSelectSat();
 
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function test() {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
@@ -199,7 +199,7 @@ describe('Breakup_class', () => {
       standardSelectSat();
 
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function test() {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
@@ -231,7 +231,7 @@ describe('Breakup_class', () => {
       }
 
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function test() {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };
@@ -251,7 +251,7 @@ describe('Breakup_class', () => {
       (global as any).settingsManager.searchLimit = 100;
 
       vi.spyOn(OrbitFinderFile, 'OrbitFinder').mockImplementation(
-        function() {
+        function test() {
           return {
             rotateOrbitToLatLon: () => [defaultSat.tle1, defaultSat.tle2],
           };

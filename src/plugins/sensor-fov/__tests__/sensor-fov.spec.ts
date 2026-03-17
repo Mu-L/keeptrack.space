@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { waitForAppReady } from '@test/e2e/keeptrack-fixtures';
 
 test.describe('SensorFov', () => {
@@ -10,10 +10,10 @@ test.describe('SensorFov', () => {
     const utilityIcon = page.locator('#SensorFov-utility-icon');
 
     await expect(utilityIcon).toBeAttached();
-    await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(utilityIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // Clicking a disabled utility icon should have no effect
     await utilityIcon.click({ force: true });
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 2_000 });
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 2_000 });
   });
 });

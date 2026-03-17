@@ -33,7 +33,7 @@ test.describe('NaturalEventsPlugin', () => {
     const sideMenu = page.locator('#NaturalEventsPlugin-menu');
 
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify toolbar buttons exist (inside draggable wrapper, use toBeAttached)
     await expect(page.locator('#NaturalEventsPlugin-fetch-btn')).toBeAttached();
@@ -54,6 +54,6 @@ test.describe('NaturalEventsPlugin', () => {
 
     // Close via close button
     await page.locator('#NaturalEventsPlugin-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

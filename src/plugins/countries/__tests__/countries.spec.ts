@@ -22,7 +22,7 @@ test.describe('CountriesMenu Plugin', () => {
     // Click the drawer item — should open side menu and select the icon
     await drawerItem.click();
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify the country list element exists
     const countryList = page.locator('#country-list');
@@ -36,6 +36,6 @@ test.describe('CountriesMenu Plugin', () => {
 
     // Close via the side menu close button
     await page.locator('#countries-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

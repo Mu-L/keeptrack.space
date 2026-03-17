@@ -55,6 +55,6 @@ test.describe('NewLaunch', () => {
 
     // 5. Close via close button and verify icon deselected
     await page.locator('#newLaunch-menu-close-btn').click();
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });

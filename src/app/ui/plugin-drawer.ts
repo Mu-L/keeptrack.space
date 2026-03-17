@@ -51,9 +51,9 @@ export class PluginDrawer {
   private hamburgerEl_: HTMLElement | null = null;
   private groupStates_: Record<string, boolean> = {};
   private recentPluginIds_: string[] = [];
-  private allDrawerItems_: Map<string, DrawerItemData> = new Map();
+  private readonly allDrawerItems_: Map<string, DrawerItemData> = new Map();
   private isRailMode_ = false;
-  private badges_: Map<string, DrawerBadge> = new Map();
+  private readonly badges_: Map<string, DrawerBadge> = new Map();
 
   init(): void {
     this.isMobileMode_ = settingsManager.isMobileModeEnabled;
@@ -144,6 +144,7 @@ export class PluginDrawer {
   }
 
   toggle(): void {
+    ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
     if (this.isOpen_) {
       this.close();
     } else {
@@ -233,7 +234,7 @@ export class PluginDrawer {
       '<div id="drawer-rail-toggle" class="drawer-rail-toggle" role="button" aria-label="Toggle rail mode">',
       `  <img class="drawer-rail-toggle-icon" src="${leftPanelClosePng}" alt="" />`,
       '  <span class="drawer-rail-toggle-label">Collapse</span>',
-      '  <span class="drawer-rail-toggle-shortcut">Ctrl+B</span>',
+      '  <span class="drawer-rail-toggle-shortcut">Tab</span>',
       '</div>',
     ].join('');
 
@@ -597,12 +598,6 @@ export class PluginDrawer {
         evt.preventDefault();
         this.toggle();
       }
-
-      // Ctrl+B toggles rail/expand on tablet+
-      if (evt.ctrlKey && evt.key === 'b' && !this.isMobileMode_) {
-        evt.preventDefault();
-        this.toggle();
-      }
     });
   }
 
@@ -793,7 +788,7 @@ export class PluginDrawer {
 
       header?.addEventListener('click', () => {
         newGroupEl.classList.toggle('collapsed');
-        const key = (newGroupEl as HTMLElement).getAttribute('data-group-key');
+        const key = (newGroupEl as HTMLElement).dataset.groupKey;
 
         if (key) {
           this.groupStates_[key] = !newGroupEl.classList.contains('collapsed');
@@ -838,8 +833,7 @@ export class PluginDrawer {
   }
 
   private exitRailMode_(): void {
-    this.drawerEl_?.classList.remove('rail-hover');
-    this.drawerEl_?.classList.remove('rail-mode');
+    this.drawerEl_?.classList.remove('rail-hover', 'rail-mode');
     document.documentElement.style.setProperty('--drawer-offset', '0px');
     this.updateRailToggleIcon_(false);
   }

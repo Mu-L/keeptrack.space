@@ -14,7 +14,7 @@ test.describe('NightToggle', () => {
     await expect(utilityIcon).toHaveAttribute('data-plugin-id', 'night-toggle-bottom-icon');
 
     // Should not be selected initially (night is drawn as night by default)
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u);
 
     // Read the initial state
     const initialState = await page.evaluate(() => (window as any).settingsManager?.isDrawNightAsDay);
@@ -32,7 +32,7 @@ test.describe('NightToggle', () => {
     }).toPass({ timeout: 5_000 });
 
     // Verify selected state on the icon
-    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Click again to toggle off
     await utilityIcon.click({ force: true });
@@ -45,6 +45,6 @@ test.describe('NightToggle', () => {
     }).toPass({ timeout: 5_000 });
 
     // Verify icon deselected
-    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/);
+    await expect(utilityIcon).not.toHaveClass(/bmenu-item-selected/u);
   });
 });

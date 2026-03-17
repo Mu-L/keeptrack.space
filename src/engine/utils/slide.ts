@@ -14,7 +14,7 @@ export const slideOutLeft = (el: HTMLElement | null, duration: number, callback?
     return;
   }
   el.style.transition = `transform ${duration / 1000}s ${EASING_EXIT}`;
-  el.style.transform = `translateX(${offset ?? -100}%)`;
+  el.style.transform = `translateX(${offset ?? -120}%)`;
   setTimeout(() => {
     if (callback) {
       callback();
@@ -34,7 +34,7 @@ export const slideInRight = (el: HTMLElement | null, duration: number, callback?
 
   // Start off the screen
   el.style.display = 'block';
-  el.style.transform = 'translateX(-100%)';
+  el.style.transform = 'translateX(-120%)';
   el.style.transition = `transform 0s ${EASING_ENTER}`;
   setTimeout(() => {
     el.style.display = 'block';

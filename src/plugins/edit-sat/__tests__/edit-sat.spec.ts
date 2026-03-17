@@ -11,7 +11,7 @@ test.describe('EditSat', () => {
     const bottomIcon = page.locator('#edit-satellite-bottom-icon');
 
     await expect(bottomIcon).toBeAttached();
-    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-disabled/u);
 
     // 2. Side menu should exist in DOM but be hidden
     const sideMenu = page.locator('#editSat-menu');
@@ -35,7 +35,7 @@ test.describe('EditSat', () => {
 
     // 4. Clicking disabled drawer item should NOT open the side menu
     await drawerItem.click({ force: true });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 2_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 2_000 });
 
     // 5. Verify form elements exist in DOM even though menu is hidden
     await expect(page.locator('form#editSat-menu-form')).toBeAttached();

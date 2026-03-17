@@ -31,7 +31,7 @@ test.describe('Collisions Plugin', () => {
     // Click the drawer item — should open side menu and select the icon
     await drawerItem.click();
     await expect(sideMenu).toBeVisible({ timeout: 5_000 });
-    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/);
+    await expect(bottomIcon).toHaveClass(/bmenu-item-selected/u);
 
     // Verify the toolbar buttons exist
     const fetchBtn = page.locator('#Collisions-fetch-btn');
@@ -49,6 +49,6 @@ test.describe('Collisions Plugin', () => {
     await page.evaluate(() => {
       document.getElementById('Collisions-menu-close-btn')?.click();
     });
-    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/, { timeout: 5_000 });
+    await expect(bottomIcon).not.toHaveClass(/bmenu-item-selected/u, { timeout: 5_000 });
   });
 });
