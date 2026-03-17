@@ -1205,8 +1205,6 @@ export class CatalogLoader {
     resp[i].intlDes = intlDes;
     resp[i].active = true;
     if (!settingsManager.isDebrisOnly || (settingsManager.isDebrisOnly && (resp[i].type === SpaceObjectType.ROCKET_BODY || resp[i].type === SpaceObjectType.DEBRIS))) {
-      // resp[i].source = CatalogSource.CELESTRAK;
-
       /*
        * Embed a confidence level into the 64th character of the TLE1
        * All 9s is the default value
