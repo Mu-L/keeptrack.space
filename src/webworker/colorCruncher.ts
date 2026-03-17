@@ -2041,6 +2041,8 @@ onmessage = function onmessage(event: MessageEvent<ColorWorkerInMsg>) {
       }
       scheduleRecalc();
       break;
+    default:
+      break;
   }
 };
 
