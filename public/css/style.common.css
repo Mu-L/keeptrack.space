@@ -2332,7 +2332,6 @@ button.ui-button::-moz-focus-inner {
   width: 230px;
   overflow: hidden;
   height: auto;
-  background: transparent;
   border: none;
   z-index: 2;
   pointer-events: none;
