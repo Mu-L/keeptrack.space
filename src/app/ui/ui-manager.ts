@@ -296,9 +296,9 @@ export class UiManager {
       showEl('keeptrack-header');
       showEl('search-results');
       showEl('nav-footer');
-      showEl('plugin-drawer');
+      showEl('plugin-drawer', 'flex');
       showEl('drawer-overlay');
-      showEl('drawer-utility-footer');
+      showEl('drawer-utility-footer', 'flex');
       showEl('drawer-hamburger');
       this.isUiVisible = true;
     }

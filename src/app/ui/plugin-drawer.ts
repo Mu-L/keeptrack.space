@@ -144,6 +144,7 @@ export class PluginDrawer {
   }
 
   toggle(): void {
+    ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
     if (this.isOpen_) {
       this.close();
     } else {
@@ -233,7 +234,7 @@ export class PluginDrawer {
       '<div id="drawer-rail-toggle" class="drawer-rail-toggle" role="button" aria-label="Toggle rail mode">',
       `  <img class="drawer-rail-toggle-icon" src="${leftPanelClosePng}" alt="" />`,
       '  <span class="drawer-rail-toggle-label">Collapse</span>',
-      '  <span class="drawer-rail-toggle-shortcut">Ctrl+B</span>',
+      '  <span class="drawer-rail-toggle-shortcut">Tab</span>',
       '</div>',
     ].join('');
 
@@ -594,12 +595,6 @@ export class PluginDrawer {
           return;
         }
 
-        evt.preventDefault();
-        this.toggle();
-      }
-
-      // Ctrl+B toggles rail/expand on tablet+
-      if (evt.ctrlKey && evt.key === 'b' && !this.isMobileMode_) {
         evt.preventDefault();
         this.toggle();
       }
