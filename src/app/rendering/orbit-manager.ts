@@ -267,11 +267,24 @@ export class OrbitManager {
   }
 
   private toggleOrbitLines_() {
-    settingsManager.isDrawOrbits = !settingsManager.isDrawOrbits;
-    if (settingsManager.isDrawOrbits) {
-      ServiceLocator.getUiManager().toast('Orbits On', ToastMsgType.normal);
-    } else {
+    if (settingsManager.isDrawOrbits && !settingsManager.isDrawTrailingOrbits) {
+      // Full orbits → Tails only
+      settingsManager.isDrawTrailingOrbits = true;
+      this.updateOrbitType();
+      ServiceLocator.getUiManager().toast('Orbit Tails Only', ToastMsgType.normal);
+    } else if (settingsManager.isDrawOrbits && settingsManager.isDrawTrailingOrbits) {
+      // Tails only → No lines
+      settingsManager.isDrawOrbits = false;
+      settingsManager.isDrawTrailingOrbits = false;
+      this.updateOrbitType();
       ServiceLocator.getUiManager().toast('Orbits Off', ToastMsgType.standby);
+    } else {
+      // No lines → Full orbits
+      settingsManager.isDrawOrbits = true;
+      settingsManager.isDrawTrailingOrbits = false;
+      this.drawOrbitsSettingChanged();
+      this.updateOrbitType();
+      ServiceLocator.getUiManager().toast('Orbits On', ToastMsgType.normal);
     }
   }
 
