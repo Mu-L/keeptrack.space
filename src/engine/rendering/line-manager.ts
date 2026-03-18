@@ -624,8 +624,13 @@ export class LineManager {
         if (v_polarR > 1.0) discard;
 
         // Discard line fragments that cross the antimeridian.
-        // The interpolated ECI position stays near the actual satellite path,
-        // but the interpolated flat X diverges across the map for crossing segments.
+        // Two complementary checks are used:
+        // 1. Position divergence: the interpolated flat X diverges from the
+        //    recomputed flat X (from ECI) for most of the crossing segment.
+        // 2. Gradient check: near the vertices of a crossing segment, positions
+        //    converge so check 1 fails. But the screen-space rate of change of
+        //    v_flatX is enormous for crossing segments (spans the entire map width)
+        //    while the actual ECI motion rate stays normal.
         if (u_flatMapMode) {
           float PI = 3.14159265359;
           float mapW = 2.0 * PI * u_earthRadius;
@@ -639,7 +644,15 @@ export class LineManager {
           float recomputedFlatX = recomputedLon * u_earthRadius;
           // Wrap to camera center to match vertex shader wrapping
           recomputedFlatX = u_flatMapCenterX + mod(recomputedFlatX - u_flatMapCenterX + mapW * 0.5, mapW) - mapW * 0.5;
-          if (abs(v_flatX - recomputedFlatX) > mapW * 0.25) discard;
+          if (abs(v_flatX - recomputedFlatX) > mapW * 0.02) discard;
+
+          // Gradient check: for crossing segments v_flatX changes at ~mapW per
+          // screen-segment-length, while ECI position changes smoothly.
+          // At high latitudes the natural ratio can reach ~6x (1/cos(lat)), so
+          // a threshold of 10x gives safe margin while catching all crossings.
+          float flatXRate = fwidth(v_flatX);
+          float eciRate = length(vec2(fwidth(v_eciPos.x), fwidth(v_eciPos.y)));
+          if (eciRate > 0.0 && flatXRate > eciRate * 10.0) discard;
         }
 
         fragColor = vec4(vColor[0],vColor[1],vColor[2], vColor[3] * vAlpha);
