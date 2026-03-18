@@ -56,9 +56,9 @@ export class FovPredictionThreadManager extends WebWorkerThreadManager {
     catalogJson: string,
     sensors: SensorObjectCruncher[],
     simTimeMs: number,
+    priorityIndices?: number[],
     maxLookaheadMin = 120,
     sweepStepMin = 1,
-    priorityIndices?: number[],
   ): void {
     this.minutesToEntry_ = null;
     this.postMessage({

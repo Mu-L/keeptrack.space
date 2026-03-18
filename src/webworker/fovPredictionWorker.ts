@@ -161,7 +161,7 @@ function sweepSatellite(satIndex: number, simTimeMs: number, step?: number): [nu
 // ─── Priority Sweep ──────────────────────────────────────────────────────────
 
 /** Process only priority (watchlist) satellites first with fine step, then emit partial results. */
-async function prioritySweep(simTimeMs: number): Promise<void> {
+function prioritySweep(simTimeMs: number): void {
   if (!minutesToEntry || !exitTimesMs || priorityIndices.length === 0) {
     return;
   }
@@ -206,8 +206,12 @@ async function fullSweep(simTimeMs: number): Promise<void> {
     return;
   }
 
+  // Capture local references to avoid require-atomic-updates false positives
+  const localMinutesToEntry = minutesToEntry;
+  const localExitTimesMs = exitTimesMs;
+
   // Phase 1: Process priority satellites first with fine step
-  await prioritySweep(simTimeMs);
+  prioritySweep(simTimeMs);
 
   // Phase 2: Process remaining satellites with coarser step
   const coarseStep = Math.max(sweepStepMin * 2, 2);
@@ -231,8 +235,8 @@ async function fullSweep(simTimeMs: number): Promise<void> {
 
       const [entry, exit] = sweepSatellite(i, simTimeMs, coarseStep);
 
-      minutesToEntry[i] = entry;
-      exitTimesMs[i] = exit;
+      localMinutesToEntry[i] = entry;
+      localExitTimesMs[i] = exit;
     }
 
     processed = end;
