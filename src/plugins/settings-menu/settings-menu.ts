@@ -127,7 +127,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
             </div>
             <div class="switch row">
               <label data-position="top" data-delay="50" data-tooltip="Disable this to hide the camera widget">
-                <input id="settings-drawCameraWidget" type="checkbox" checked/>
+                <input id="settings-drawCameraWidget" type="checkbox"/>
                 <span class="lever"></span>
                 Show Camera Widget
               </label>
@@ -227,11 +227,12 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
 
     if (drawCameraWidgetEl) {
       drawCameraWidgetEl.checked = settingsManager.drawCameraWidget;
-      const cameraControlWidgetEl = getEl('camera-control-widget');
+    }
 
-      if (cameraControlWidgetEl) {
-        cameraControlWidgetEl.style.display = settingsManager.drawCameraWidget ? 'block' : 'none';
-      }
+    const cameraControlWidgetEl = getEl('camera-control-widget');
+
+    if (cameraControlWidgetEl) {
+      cameraControlWidgetEl.style.display = settingsManager.drawCameraWidget ? 'block' : 'none';
     }
 
     const settingsElements = [
