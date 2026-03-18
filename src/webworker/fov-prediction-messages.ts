@@ -31,6 +31,8 @@ export interface FovPredInitMsg {
   maxLookaheadMin: number;
   /** Time step for sweep in minutes (default 1). */
   sweepStepMin: number;
+  /** Optional satellite indices to process first (e.g., watchlist). */
+  priorityIndices?: number[];
 }
 
 export interface FovPredTimeMsg {
@@ -54,10 +56,12 @@ export const enum FovPredOutMsgType {
   INCREMENTAL_UPDATE = 1,
   /** Progress during initial sweep (0–1). */
   PROGRESS = 2,
+  /** Priority satellites processed — partial results available. */
+  PRIORITY_SWEEP_COMPLETE = 3,
 }
 
 export interface FovPredOutSweepMsg {
-  typ: FovPredOutMsgType.FULL_SWEEP_COMPLETE | FovPredOutMsgType.INCREMENTAL_UPDATE;
+  typ: FovPredOutMsgType.FULL_SWEEP_COMPLETE | FovPredOutMsgType.INCREMENTAL_UPDATE | FovPredOutMsgType.PRIORITY_SWEEP_COMPLETE;
   /** Minutes to next FOV entry per satellite. Infinity = not in window. Transferred. */
   minutesToEntry: Float32Array;
 }
