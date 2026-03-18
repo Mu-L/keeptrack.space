@@ -268,7 +268,7 @@ export class WebGLRenderer {
       cameraType === CameraType.PLANETARIUM ||
       cameraType === CameraType.FLAT_MAP ||
       watchlistPluginInstance?.hasAnyInView() ||
-      (labelMode === SatLabelMode.ALL && hasWatchlistSats);
+      (labelMode !== SatLabelMode.OFF && hasWatchlistSats);
 
     if (!shouldEnter) {
       this.sensorPos = null;
@@ -289,6 +289,7 @@ export class WebGLRenderer {
         errorManagerInstance.debug('Sensor not found, clearing orbits above!');
         this.sensorPos = null;
         ServiceLocator.getOrbitManager().clearInViewOrbit();
+        ServiceLocator.getSatLabelManager()?.updateLabels([], []);
 
         return;
       }
@@ -305,11 +306,14 @@ export class WebGLRenderer {
     }
 
     // Check if labels should be cleared
+    // FOV_ONLY is NOT cleared here — the inner FOV_ONLY code path checks inViewData
+    // directly and naturally produces an empty set when nothing is in view.
     const shouldClearLabels =
       labelMode === SatLabelMode.OFF ||
       (cameraType !== CameraType.PLANETARIUM &&
         cameraType !== CameraType.FLAT_MAP &&
         labelMode !== SatLabelMode.ALL &&
+        labelMode !== SatLabelMode.FOV_ONLY &&
         !watchlistPluginInstance?.hasAnyInView());
 
     if (shouldClearLabels) {
@@ -348,7 +352,7 @@ export class WebGLRenderer {
         if (visibleSatIds.length >= settingsManager.maxLabels) {
           return;
         }
-        // Hide label if dot is fully transparent (e.g. FOV fade overlay)
+        // Hide label when dot is fully transparent (filter, FOV fade, etc.)
         if (colorData.length > id * 4 + 3 && colorData[id * 4 + 3] <= 0) {
           return;
         }
@@ -376,7 +380,7 @@ export class WebGLRenderer {
         if (dotsManagerInstance.inViewData[id] === 0) {
           return;
         }
-        // Hide label if dot is fully transparent (e.g. FOV fade overlay)
+        // Hide label when dot is fully transparent (filter, FOV fade, etc.)
         if (colorData.length > id * 4 + 3 && colorData[id * 4 + 3] <= 0) {
           return;
         }
