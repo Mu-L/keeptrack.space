@@ -35,6 +35,7 @@ export class FovPredictionThreadManager extends WebWorkerThreadManager {
     switch (data.typ) {
       case FovPredOutMsgType.FULL_SWEEP_COMPLETE:
       case FovPredOutMsgType.INCREMENTAL_UPDATE:
+      case FovPredOutMsgType.PRIORITY_SWEEP_COMPLETE:
         this.minutesToEntry_ = data.minutesToEntry;
         EventBus.getInstance().emit(EventBusEvent.onFovPredictionReady);
         break;
@@ -55,6 +56,7 @@ export class FovPredictionThreadManager extends WebWorkerThreadManager {
     catalogJson: string,
     sensors: SensorObjectCruncher[],
     simTimeMs: number,
+    priorityIndices?: number[],
     maxLookaheadMin = 120,
     sweepStepMin = 1,
   ): void {
@@ -66,6 +68,7 @@ export class FovPredictionThreadManager extends WebWorkerThreadManager {
       simTimeMs,
       maxLookaheadMin,
       sweepStepMin,
+      priorityIndices,
     });
   }
 

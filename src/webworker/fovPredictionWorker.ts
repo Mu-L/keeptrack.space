@@ -50,6 +50,13 @@ let maxLookaheadMin = 120;
 let sweepStepMin = 1;
 let cancelled = false;
 
+/** Satellite indices to process first (e.g., watchlist). */
+let priorityIndices: number[] = [];
+let prioritySet: Set<number> = new Set();
+
+/** 15-second steps for priority satellites to avoid missing short passes. */
+const PRIORITY_STEP_MIN = 0.25;
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Convert a Date-like ms timestamp to julian day and GMST. */
@@ -99,7 +106,7 @@ function isInAnyFov(position: TemeVec3, gmst: number): boolean {
  * Returns [minutesToEntry, exitTimeMs].
  * If no entry found within the lookahead window, returns [Infinity, 0].
  */
-function sweepSatellite(satIndex: number, simTimeMs: number): [number, number] {
+function sweepSatellite(satIndex: number, simTimeMs: number, step?: number): [number, number] {
   const rec = satRecords[satIndex];
 
   if (!rec || !rec.active || !rec.satrec) {
@@ -107,11 +114,12 @@ function sweepSatellite(satIndex: number, simTimeMs: number): [number, number] {
   }
 
   const satrec = rec.satrec;
+  const effectiveStep = step ?? sweepStepMin;
   let entryMin = Infinity;
   let exitMs = 0;
   let wasInFov = false;
 
-  for (let stepMin = 0; stepMin <= maxLookaheadMin; stepMin += sweepStepMin) {
+  for (let stepMin = 0; stepMin <= maxLookaheadMin; stepMin += effectiveStep) {
     const targetMs = simTimeMs + stepMin * 60000;
     const { j, gmst } = timeToJdayGmst(targetMs);
     const m = (j - satrec.jdsatepoch) * 1440.0;
@@ -150,6 +158,44 @@ function sweepSatellite(satIndex: number, simTimeMs: number): [number, number] {
   return [entryMin, exitMs];
 }
 
+// ─── Priority Sweep ──────────────────────────────────────────────────────────
+
+/** Process only priority (watchlist) satellites first with fine step, then emit partial results. */
+function prioritySweep(simTimeMs: number): void {
+  if (!minutesToEntry || !exitTimesMs || priorityIndices.length === 0) {
+    return;
+  }
+
+  for (const idx of priorityIndices) {
+    if (cancelled) {
+      return;
+    }
+    if (idx < 0 || idx >= numObjects) {
+      continue;
+    }
+
+    const [entry, exit] = sweepSatellite(idx, simTimeMs, PRIORITY_STEP_MIN);
+
+    minutesToEntry[idx] = entry;
+    exitTimesMs[idx] = exit;
+  }
+
+  if (cancelled) {
+    return;
+  }
+
+  // Emit partial results immediately so watchlist satellites appear right away
+  const result = new Float32Array(minutesToEntry);
+
+  postMessage(
+    {
+      typ: FovPredOutMsgType.PRIORITY_SWEEP_COMPLETE,
+      minutesToEntry: result,
+    },
+    { transfer: [result.buffer] },
+  );
+}
+
 // ─── Full Sweep (batched with yields) ────────────────────────────────────────
 
 const BATCH_SIZE = 200;
@@ -160,16 +206,37 @@ async function fullSweep(simTimeMs: number): Promise<void> {
     return;
   }
 
+  // Capture local references to avoid require-atomic-updates false positives
+  const localMinutesToEntry = minutesToEntry;
+  const localExitTimesMs = exitTimesMs;
+
+  // Phase 1: Process priority satellites first with fine step
+  prioritySweep(simTimeMs);
+
+  // Phase 2: Process remaining satellites with coarser step
+  const coarseStep = Math.max(sweepStepMin * 2, 2);
   let processed = 0;
 
   for (let start = 0; start < numObjects && !cancelled; start += BATCH_SIZE) {
     const end = Math.min(start + BATCH_SIZE, numObjects);
 
     for (let i = start; i < end; i++) {
-      const [entry, exit] = sweepSatellite(i, simTimeMs);
+      // Skip priority satellites (already processed with fine step)
+      if (prioritySet.has(i)) {
+        continue;
+      }
 
-      minutesToEntry[i] = entry;
-      exitTimesMs[i] = exit;
+      // Skip inactive objects inline to avoid function call overhead
+      const rec = satRecords[i];
+
+      if (!rec || !rec.active || !rec.satrec) {
+        continue;
+      }
+
+      const [entry, exit] = sweepSatellite(i, simTimeMs, coarseStep);
+
+      localMinutesToEntry[i] = entry;
+      localExitTimesMs[i] = exit;
     }
 
     processed = end;
@@ -290,11 +357,15 @@ onmessage = function onmessage(event: MessageEvent<FovPredInMsg>) {
         .filter((s) => s)
         .map((s) => new DetailedSensor(s as ConstructorParameters<typeof DetailedSensor>[0]));
 
+      // Store priority indices
+      priorityIndices = msg.priorityIndices ?? [];
+      prioritySet = new Set(priorityIndices);
+
       // Allocate output arrays
       minutesToEntry = new Float32Array(numObjects).fill(Infinity);
       exitTimesMs = new Float64Array(numObjects);
 
-      // Start full sweep
+      // Start full sweep (priority satellites first, then the rest)
       fullSweep(msg.simTimeMs);
       break;
     }

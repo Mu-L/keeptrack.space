@@ -2326,8 +2326,8 @@ button.ui-button::-moz-focus-inner {
 
 #info-overlay-menu {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: var(--top-menu-height);
+  left: 3rem;
   bottom: 0;
   width: 230px;
   overflow: hidden;
@@ -2339,8 +2339,8 @@ button.ui-button::-moz-focus-inner {
 }
 
 #info-overlay-menu.ui-hidden {
-  top: var(--top-menu-height);
-  left: 3rem;
+  top: 0;
+  left: 0;
 }
 
 #info-overlay-content {

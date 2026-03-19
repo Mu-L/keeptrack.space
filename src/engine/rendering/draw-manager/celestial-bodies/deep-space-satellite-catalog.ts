@@ -3,11 +3,11 @@
  * Add new entries here to register additional deep-space probes.
  * Coefficients are loaded at runtime from JSON files in public/data/ephemeris/.
  */
+import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { Kilometers, Seconds } from '@ootk/src/main';
 import { KM_PER_AU } from 'astronomy-engine';
 import { PlanetColors } from './celestial-body';
 import { DeepSpaceSatellite, DeepSpaceSatelliteConfig, loadChebyshevJson } from './deep-space-satellite';
-import { errorManagerInstance } from '@app/engine/utils/errorManager';
 
 export const DEEP_SPACE_SATELLITE_CONFIGS: DeepSpaceSatelliteConfig[] = [
   {
@@ -41,7 +41,7 @@ export async function loadDeepSpaceSatelliteData(satellites: Record<string, Deep
 
         satellites[config.name].setCoefficients(coefficients);
       } catch {
-        errorManagerInstance.warn(`Failed to load ephemeris for ${config.name}, skipping`);
+        errorManagerInstance.log(`Failed to load ephemeris for ${config.name}, skipping`);
         delete satellites[config.name];
       }
     }),

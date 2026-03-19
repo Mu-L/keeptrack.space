@@ -146,6 +146,73 @@ export const dateFromJday = (year: number, day: number): Date => {
   return new Date(date.setUTCDate(day)); // set the UTC date to the specified day
 };
 
+/**
+ * Normalize a longitude in radians to [-PI, PI].
+ * Mirrors the GLSL: mod(lon + PI, 2.0 * PI) - PI
+ */
+export const wrapLon = (lon: number): number => {
+  const TWO_PI = 2 * Math.PI;
+  // JS % can return negative values, so add TWO_PI to ensure positive modulus
+  const result = ((lon + Math.PI) % TWO_PI + TWO_PI) % TWO_PI - Math.PI;
+
+  return result;
+};
+
+/**
+ * Convert an ECI (or ECEF) position to flat-map X coordinate.
+ * Mirrors the vertex shader logic in line-manager.ts.
+ *
+ * @param eciX - ECI X component (km)
+ * @param eciY - ECI Y component (km)
+ * @param gmst - Greenwich Mean Sidereal Time (radians), 0 for ECEF mode
+ * @param earthRadius - Earth radius (km)
+ * @param flatMapCenterX - Camera pan center X (km)
+ * @returns The wrapped flat-map X coordinate (km)
+ */
+export const eciToFlatMapX = (
+  eciX: number,
+  eciY: number,
+  gmst: number,
+  earthRadius: number,
+  flatMapCenterX: number,
+): number => {
+  const lon = wrapLon(Math.atan2(eciY, eciX) - gmst);
+  const mapW = 2 * Math.PI * earthRadius;
+  const rawX = lon * earthRadius;
+
+  return flatMapCenterX + (((rawX - flatMapCenterX + mapW * 0.5) % mapW) + mapW) % mapW - mapW * 0.5;
+};
+
+/**
+ * Determine whether a flat-map line fragment should be discarded due to
+ * antimeridian crossing. Mirrors the two-check discard logic in the
+ * line-manager fragment shader.
+ *
+ * @param interpolatedFlatX - Linearly interpolated flat X between two vertices (km)
+ * @param interpolatedEci - Linearly interpolated ECI position [x, y] (km)
+ * @param gmst - Greenwich Mean Sidereal Time (radians), 0 for ECEF mode
+ * @param earthRadius - Earth radius (km)
+ * @param flatMapCenterX - Camera pan center X (km)
+ * @returns true if the fragment should be discarded (antimeridian crossing artifact)
+ */
+export const shouldDiscardFlatMapFragment = (
+  interpolatedFlatX: number,
+  interpolatedEci: [number, number],
+  gmst: number,
+  earthRadius: number,
+  flatMapCenterX: number,
+): boolean => {
+  const mapW = 2 * Math.PI * earthRadius;
+  const recomputedFlatX = eciToFlatMapX(interpolatedEci[0], interpolatedEci[1], gmst, earthRadius, flatMapCenterX);
+
+  // Check 1: position divergence (matches shader threshold of mapW * 0.02)
+  if (Math.abs(interpolatedFlatX - recomputedFlatX) > mapW * 0.02) {
+    return true;
+  }
+
+  return false;
+};
+
 export const dateToLocalInIso = (date: Date): string => {
   const offsetMs = -date.getTimezoneOffset() * 60 * 1000;
   const localDate = new Date(date.getTime() + offsetMs);
