@@ -1,4 +1,4 @@
-![Latest Version](https://img.shields.io/badge/version-12.0.6-darkgreen?style=flat-square) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/thkruz/keeptrack.space?style=flat-square) ![language](https://img.shields.io/github/languages/top/thkruz/keeptrack.space?style=flat-square) ![Languages](https://img.shields.io/github/languages/count/thkruz/keeptrack.space?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/thkruz/keeptrack.space?style=flat-square) ![License](https://img.shields.io/github/license/thkruz/keeptrack.space?style=flat-square)
+![Latest Version](https://img.shields.io/badge/version-12.0.7-darkgreen?style=flat-square) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/thkruz/keeptrack.space?style=flat-square) ![language](https://img.shields.io/github/languages/top/thkruz/keeptrack.space?style=flat-square) ![Languages](https://img.shields.io/github/languages/count/thkruz/keeptrack.space?style=flat-square) ![GitHub issues](https://img.shields.io/github/issues/thkruz/keeptrack.space?style=flat-square) ![License](https://img.shields.io/github/license/thkruz/keeptrack.space?style=flat-square)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./public/img/logo.png">
@@ -623,7 +623,7 @@ Disagree with this approach? You're free to fork and maintain your version of Ke
 
 - **Live Demo:** <https://app.keeptrack.space>
 - **Documentation:** <https://docs.keeptrack.space>
-- **API Documentation:** <https://api.keeptrack.space/v3/docs>
+- **API Documentation:** <https://api.keeptrack.space/v4/docs>
 - **OOTK Library:** <https://github.com/thkruz/ootk>
 
 ---

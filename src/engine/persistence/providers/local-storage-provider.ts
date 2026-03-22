@@ -1,5 +1,6 @@
-import type { StorageProvider, StorageProviderConfig } from '../storage-provider';
+import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { StorageKey } from '../storage-key';
+import type { StorageProvider, StorageProviderConfig } from '../storage-provider';
 
 /**
  * LocalStorage implementation of StorageProvider.
@@ -134,13 +135,13 @@ export class LocalStorageProvider implements StorageProvider {
       try {
         callback(key, value);
       } catch (error) {
-        console.error('Error in storage subscriber:', error);
+        errorManagerInstance.warn('Error in storage subscriber:', error);
       }
     });
   }
 
   private handleError_(error: Error): void {
-    console.error('LocalStorageProvider error:', error);
+    errorManagerInstance.warn('LocalStorageProvider error:', error);
     if (this.config_.onError) {
       this.config_.onError(error);
     }

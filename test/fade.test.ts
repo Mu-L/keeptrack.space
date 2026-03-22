@@ -128,6 +128,10 @@ describe('fadeIn_function', () => {
  */
 
 describe('fadeOut_function', () => {
+  beforeEach(() => {
+    KeepTrack.getInstance().containerRoot = document.createElement('div');
+  });
+
   // Tests that the element fades out smoothly with default duration
   it('test_fades_out_with_default_duration', () => {
     const el = document.createElement('div');

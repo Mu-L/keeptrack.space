@@ -191,7 +191,7 @@ export class TransponderChannelData extends KeepTrackPlugin {
     const selectedSat = selectedObj as Satellite;
 
     try {
-      const resp = await apiFetch(`https://api.keeptrack.space/v3/channels/${encodeURIComponent(selectedSat.name)}`);
+      const resp = await apiFetch(`https://api.keeptrack.space/v4/channels/${encodeURIComponent(selectedSat.name)}`);
 
       if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
@@ -202,7 +202,7 @@ export class TransponderChannelData extends KeepTrackPlugin {
       this.displayChannelData_(this.cleanData_(data));
     } catch {
       try {
-        const resp = await apiFetch(`https://api.keeptrack.space/v3/channels/${encodeURIComponent(selectedSat.altName)}`);
+        const resp = await apiFetch(`https://api.keeptrack.space/v4/channels/${encodeURIComponent(selectedSat.altName)}`);
 
         if (!resp.ok) {
           throw new Error(`HTTP ${resp.status}`);

@@ -6,11 +6,11 @@ import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EarthTextureStyle } from '@app/engine/rendering/draw-manager/earth-quality-enums';
 import { GetVariables } from '@app/settings/getVariables';
 import { parseGetVariables } from '@app/settings/parse-get-variables';
-import { SettingsManager } from '@app/settings/settings';
 import * as darkCloudsModule from '@app/settings/presets/darkClouds';
+import { SettingsPresets } from '@app/settings/presets/presets';
 import * as startalkModule from '@app/settings/presets/startalk';
 import * as stemModule from '@app/settings/presets/stem';
-import { SettingsPresets } from '@app/settings/presets/presets';
+import { SettingsManager } from '@app/settings/settings';
 
 describe('parseGetVariables', () => {
   let settingsManager: SettingsManager;
@@ -245,7 +245,7 @@ describe('parseGetVariables', () => {
 
   it('should set latest-sats data source and disable JSC catalog', () => {
     parseGetVariables(['latest-sats=123'], settingsManager);
-    expect(settingsManager.dataSources.tle).toBe('https://api.keeptrack.space/v3/sats/latest/123');
+    expect(settingsManager.dataSources.tle).toBe('https://api.keeptrack.space/v4/sats/latest/123');
     expect(settingsManager.isEnableJscCatalog).toBe(false);
   });
 

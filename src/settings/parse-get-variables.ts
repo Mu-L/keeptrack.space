@@ -144,7 +144,7 @@ export const parseGetVariables = (params: string[], settingsManager: SettingsMan
         settingsManager.dataSources.isSupplementExternal = true;
         break;
       case 'latest-sats':
-        settingsManager.dataSources.tle = `https://api.keeptrack.space/v3/sats/latest/${val}`;
+        settingsManager.dataSources.tle = `https://api.keeptrack.space/v4/sats/latest/${val}`;
         settingsManager.isEnableJscCatalog = false;
         break;
       case 'CATNR':
