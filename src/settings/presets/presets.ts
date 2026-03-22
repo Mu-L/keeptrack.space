@@ -353,7 +353,7 @@ export class SettingsPresets {
     settings.disableAllPlugins();
 
     // Data sources
-    settings.dataSources.tle = 'https://api.keeptrack.space/v3/sats';
+    settings.dataSources.tle = 'https://api.keeptrack.space/v4/sats';
     settings.dataSources.externalTLEsOnly = false;
     settings.dataSources.isSupplementExternal = false;
     settings.isEnableJscCatalog = false;

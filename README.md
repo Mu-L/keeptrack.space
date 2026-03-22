@@ -623,7 +623,7 @@ Disagree with this approach? You're free to fork and maintain your version of Ke
 
 - **Live Demo:** <https://app.keeptrack.space>
 - **Documentation:** <https://docs.keeptrack.space>
-- **API Documentation:** <https://api.keeptrack.space/v3/docs>
+- **API Documentation:** <https://api.keeptrack.space/v4/docs>
 - **OOTK Library:** <https://github.com/thkruz/ootk>
 
 ---
