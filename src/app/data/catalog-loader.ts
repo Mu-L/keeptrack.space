@@ -1295,6 +1295,12 @@ export class CatalogLoader {
   private static processAsciiCatalogKnown_(catalogManagerInstance: CatalogManager, element: AsciiTleSat, tempSatData: Satellite[]) {
     const i = catalogManagerInstance.sccIndex[`${element.SCC}`];
 
+    if (typeof i === 'undefined' || !tempSatData[i]) {
+      CatalogLoader.processAsciiCatalogUnknown_(element, tempSatData, catalogManagerInstance);
+
+      return;
+    }
+
     tempSatData[i].tle1 = element.TLE1;
     tempSatData[i].tle2 = element.TLE2;
     tempSatData[i].name = element.ON || tempSatData[i].name || 'Unknown';

@@ -458,7 +458,9 @@ export class OrbitManager {
           return;
         } // Skip inactive objects
 
-        OrbitManager.checkColorBuffersValidity_(id, colorData);
+        if (!OrbitManager.checkColorBuffersValidity_(id, colorData)) {
+          return;
+        }
 
         // if color is black, we probably have old data, so recalculate color buffers
         if (
@@ -512,29 +514,27 @@ export class OrbitManager {
     const hoverId = hoverManagerInstance.getHoverId();
 
     if (hoverId !== -1 && hoverId !== this.currentSelectId_ && !ServiceLocator.getCatalogManager().getObject(hoverId, GetSatType.EXTRA_ONLY)?.isStatic()) {
-      // Skip if hover ID is beyond current color data bounds (can happen during catalog swap)
-      if (hoverId * 4 + 3 >= colorSchemeManagerInstance.colorData.length) {
+      if (!OrbitManager.checkColorBuffersValidity_(hoverId, colorSchemeManagerInstance.colorData)) {
         return;
       }
-      OrbitManager.checkColorBuffersValidity_(hoverId, colorSchemeManagerInstance.colorData);
       this.lineManagerInstance_.setColorUniforms(settingsManager.orbitHoverColor);
       this.writePathToGpu_(hoverId);
     }
   }
 
-  private static checkColorBuffersValidity_(hoverId: number, colorData: Float32Array) {
-    const hoverIdIndex = hoverId * 4;
+  private static checkColorBuffersValidity_(id: number, colorData: Float32Array): boolean {
+    const idIndex = id * 4;
 
-    OrbitManager.checkColorBufferValidity_(hoverIdIndex, colorData);
-    OrbitManager.checkColorBufferValidity_(hoverIdIndex + 1, colorData);
-    OrbitManager.checkColorBufferValidity_(hoverIdIndex + 2, colorData);
-    OrbitManager.checkColorBufferValidity_(hoverIdIndex + 3, colorData);
+    return (
+      OrbitManager.checkColorBufferValidity_(idIndex, colorData) &&
+      OrbitManager.checkColorBufferValidity_(idIndex + 1, colorData) &&
+      OrbitManager.checkColorBufferValidity_(idIndex + 2, colorData) &&
+      OrbitManager.checkColorBufferValidity_(idIndex + 3, colorData)
+    );
   }
 
-  private static checkColorBufferValidity_(index: number, colorData: Float32Array) {
-    if (typeof colorData[index] === 'undefined') {
-      throw new Error(`color buffer for ${index / 4} not valid`);
-    }
+  private static checkColorBufferValidity_(index: number, colorData: Float32Array): boolean {
+    return typeof colorData[index] !== 'undefined';
   }
 
   private drawInViewObjectOrbit_(mainCameraInstance: Camera): void {
