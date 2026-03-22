@@ -289,7 +289,6 @@ export class DebrisScreening extends KeepTrackPlugin {
 
   onFormSubmit(): void {
     showLoading(() => {
-      console.log('Debris Screening: Form submitted');
       const catalogManager = ServiceLocator.getCatalogManager();
       const timeManager = ServiceLocator.getTimeManager();
 
