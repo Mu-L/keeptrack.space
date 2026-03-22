@@ -425,7 +425,7 @@ export class NewLaunch extends KeepTrackPlugin {
         launchSiteDropdown.dispatchEvent(new Event('change'));
       }
     } else {
-      console.warn(`Launch site ${launchSite.name} not found in launchSites catalog.`);
+      errorManagerInstance.warn(`Launch site ${launchSite.name} not found in launchSites catalog.`);
     }
   }
 
