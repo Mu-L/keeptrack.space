@@ -735,6 +735,8 @@ export class WebGLRenderer {
     this.updatePrimarySatellite_();
     this.updateSecondarySatellite_();
     ServiceLocator.getMainCamera().update(this.dt);
+    // Rebuild projection matrix after camera update so FOV lerps are reflected immediately
+    this.updatePMatrix();
 
     ServiceLocator.getScene().update(timeManagerInstance.simulationTimeObj);
 
@@ -777,17 +779,29 @@ export class WebGLRenderer {
   }
 
   private validateProjectionMatrix_() {
-    const projectionMatrix = ServiceLocator.getMainCamera().projectionMatrix;
+    const mainCamera = ServiceLocator.getMainCamera();
+    const projectionMatrix = mainCamera.projectionMatrix;
 
     if (!projectionMatrix) {
       errorManagerInstance.log('projectionMatrix is undefined - retrying');
       this.updatePMatrix();
+
+      return;
     }
 
     for (let i = 0; i < 16; i++) {
       if (isNaN(projectionMatrix[i])) {
-        errorManagerInstance.log('projectionMatrix is NaN - retrying');
+        const fov = settingsManager.fieldOfView;
+        const aspect = this.gl ? this.gl.drawingBufferWidth / this.gl.drawingBufferHeight : 'no-gl';
+        const cameraType = mainCamera.cameraType;
+
+        errorManagerInstance.log(
+          `projectionMatrix[${i}] is NaN - fov=${fov}, aspect=${aspect}, cameraType=${cameraType}, ` +
+          `matrix=[${Array.from(projectionMatrix).map((v) => (isNaN(v) ? 'NaN' : v.toFixed(4))).join(', ')}]`,
+        );
         this.updatePMatrix();
+
+        return;
       }
     }
 

@@ -167,6 +167,8 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   fieldOfView: 'camera',
   fieldOfViewMax: 'camera',
   fieldOfViewMin: 'camera',
+  fieldOfViewSatellite: 'camera',
+  fieldOfViewLerpSpeed: 'camera',
   cameraDecayFactor: 'camera',
   cameraMovementSpeed: 'camera',
   cameraMovementSpeedMin: 'camera',

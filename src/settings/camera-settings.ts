@@ -43,6 +43,16 @@ export class CameraSettings {
    * * TODO: Implement this for FPS, Planetarium, Astronomy, and Satellite View
    */
   fieldOfViewMin = 0.04 as Radians;
+  /**
+   * The field of view when in satellite-focused camera modes (ECI, LVLH, first-person).
+   * Narrower than default to create telephoto compression (~50mm equivalent).
+   */
+  fieldOfViewSatellite = 0.34 as Radians;
+  /**
+   * Speed of FOV transitions between camera modes.
+   * Higher = faster transition. Used with exponential lerp.
+   */
+  fieldOfViewLerpSpeed = 3;
 
   // Camera Movement
   /**

@@ -96,6 +96,8 @@ export class Camera {
   // Camera mode delegates (plugin-provided camera modes like flat map, polar view)
   private cameraModeDelegates_ = new Map<CameraType, ICameraModeDelegate>();
   private lastCameraType_: CameraType = CameraType.FIXED_TO_EARTH;
+  private fovTarget_: Radians | null = null;
+  private fovDefault_: Radians | null = null;
 
   registerCameraModeDelegate(type: CameraType, delegate: ICameraModeDelegate): void {
     this.cameraModeDelegates_.set(type, delegate);
@@ -346,6 +348,7 @@ export class Camera {
       if (settingsManager.fieldOfView < settingsManager.fieldOfViewMin) {
         settingsManager.fieldOfView = settingsManager.fieldOfViewMin as Radians;
       }
+      this.fovTarget_ = settingsManager.fieldOfView;
       ServiceLocator.getRenderer().glInit();
     }
   }
@@ -379,6 +382,13 @@ export class Camera {
     if (this.lastCameraType_ !== this.cameraType) {
       this.cameraModeDelegates_.get(this.lastCameraType_)?.onExit(this);
       this.cameraModeDelegates_.get(this.cameraType)?.onEnter(this);
+
+      // Set FOV target based on new camera mode
+      if (this.isSatelliteFocusedMode_(this.cameraType)) {
+        this.fovTarget_ = settingsManager.fieldOfViewSatellite;
+      } else if (this.isSatelliteFocusedMode_(this.lastCameraType_)) {
+        this.fovTarget_ = this.fovDefault_ ?? settingsManager.fieldOfView;
+      }
     }
     this.lastCameraType_ = this.cameraType;
 
@@ -862,6 +872,7 @@ export class Camera {
     }
 
     this.updateZoom_(dt);
+    this.updateFovLerp_(dt);
 
     this.updateCameraSnapMode(dt);
 
@@ -1927,6 +1938,34 @@ export class Camera {
     } else {
       settingsManager.satShader.maxSize = settingsManager.satShader.maxAllowedSize;
     }
+  }
+
+  private isSatelliteFocusedMode_(type: CameraType): boolean {
+    return type === CameraType.FIXED_TO_SAT_ECI
+      || type === CameraType.FIXED_TO_SAT_LVLH
+      || type === CameraType.SATELLITE_FIRST_PERSON;
+  }
+
+  private updateFovLerp_(dt: Milliseconds): void {
+    if (this.fovTarget_ === null) {
+      this.fovTarget_ = settingsManager.fieldOfView;
+      this.fovDefault_ = settingsManager.fieldOfView;
+    }
+
+    const current = settingsManager.fieldOfView;
+    const diff = this.fovTarget_ - current;
+
+    if (Math.abs(diff) < 0.0001) {
+      if (current !== this.fovTarget_) {
+        settingsManager.fieldOfView = this.fovTarget_;
+      }
+
+      return;
+    }
+
+    const alpha = 1 - Math.exp(-settingsManager.fieldOfViewLerpSpeed * dt / 1000);
+
+    settingsManager.fieldOfView = (current + diff * alpha) as Radians;
   }
 
   static calculatePMatrix(gl: WebGL2RenderingContext): mat4 {
