@@ -260,7 +260,13 @@ export class CatalogLoader {
       } else {
         // Load the primary catalog
         await apiFetch(settingsManager.dataSources.tle)
-          .then((response) => response.json())
+          .then((response) => {
+            if (response.status === 401) {
+              return [];
+            }
+
+            return response.json();
+          })
           .then((data) => CatalogLoader.parse({
             keepTrackTle: data,
             keepTrackExtra: extraSats,
@@ -1040,6 +1046,9 @@ export class CatalogLoader {
       .then((response) => {
         if (response.ok) {
           return response.json();
+        }
+        if (response.status === 401) {
+          return [];
         }
         throw new Error('Error loading vimpel.json');
       })
