@@ -255,6 +255,10 @@ export abstract class UrlManager {
           case 'zoom':
             this.handleZoomParam_(kv[key], kv.camDistBuffer ?? null);
             break;
+          case 'date':
+          case 'camDistBuffer':
+            // Consumed by other parameter handlers (lat/lon uses date, zoom uses camDistBuffer)
+            break;
           default:
             errorManagerInstance.warn(`Unknown URL parameter: ${key}`);
         }
