@@ -385,8 +385,15 @@ export class Camera {
 
       // Set FOV target based on new camera mode
       if (this.isSatelliteFocusedMode_(this.cameraType)) {
+        // We are entering a satellite-focused mode. If we came from a non-satellite mode,
+        // capture the current non-satellite FOV so we can restore it on exit.
+        if (!this.isSatelliteFocusedMode_(this.lastCameraType_)) {
+          this.fovDefault_ = this.fovTarget_;
+        }
         this.fovTarget_ = settingsManager.fieldOfViewSatellite;
       } else if (this.isSatelliteFocusedMode_(this.lastCameraType_)) {
+        // We are exiting a satellite-focused mode; restore the last non-satellite FOV
+        // (fall back to the current settings value if none was captured).
         this.fovTarget_ = this.fovDefault_ ?? settingsManager.fieldOfView;
       }
     }
