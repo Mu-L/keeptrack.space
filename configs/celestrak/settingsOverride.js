@@ -381,7 +381,7 @@ const settingsOverride = {
     },
   },
   dataSources: {
-    tle: 'https://api.keeptrack.space/v2/sats/celestrak',
+    tle: 'https://api.keeptrack.space/v4/sats/celestrak',
     externalTLEsOnly: false,
     tleDebris: 'https://app.keeptrack.space/tle/TLEdebris.json',
     vimpel: 'https://r2.keeptrack.space/vimpel.json',
