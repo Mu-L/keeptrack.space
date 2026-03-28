@@ -828,7 +828,7 @@ export class PluginDrawer {
   private enterRailMode_(): void {
     this.drawerEl_?.classList.remove('rail-hover');
     this.drawerEl_?.classList.add('rail-mode');
-    document.documentElement.style.setProperty('--drawer-offset', '48px');
+    document.documentElement.style.setProperty('--drawer-offset', '60px');
     this.updateRailToggleIcon_(true);
   }
 
