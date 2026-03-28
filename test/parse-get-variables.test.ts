@@ -279,6 +279,11 @@ describe('parseGetVariables', () => {
     expect(settingsManager.dataSources.externalTLEsOnly).toBe(true);
   });
 
+  it('should set apiKey from query param', () => {
+    parseGetVariables(['apiKey=my-secret-key'], settingsManager);
+    expect(settingsManager.apiKey).toBe('my-secret-key');
+  });
+
   it('should ignore unknown keys', () => {
     expect(() => parseGetVariables(['unknownKey=foo'], settingsManager)).not.toThrow();
   });

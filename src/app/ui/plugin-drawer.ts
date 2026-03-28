@@ -464,6 +464,8 @@ export class PluginDrawer {
         if (pluginId) {
           ServiceLocator.getSoundManager()?.play(SoundNames.CLICK);
           this.trackRecentPlugin_(pluginId);
+          // Collapse rail-hover so the side menu underneath is visible
+          this.drawerEl_?.classList.remove('rail-hover');
           // Close drawer first so the side menu can animate cleanly
           this.close();
           // Small delay to let the drawer close before emitting the event
@@ -475,6 +477,8 @@ export class PluginDrawer {
           const btnEl = getEl(`${topMenuId}-btn`, true);
 
           btnEl?.click();
+          // Collapse rail-hover so the side menu underneath is visible
+          this.drawerEl_?.classList.remove('rail-hover');
           this.close();
         }
       });
@@ -828,7 +832,7 @@ export class PluginDrawer {
   private enterRailMode_(): void {
     this.drawerEl_?.classList.remove('rail-hover');
     this.drawerEl_?.classList.add('rail-mode');
-    document.documentElement.style.setProperty('--drawer-offset', '48px');
+    document.documentElement.style.setProperty('--drawer-offset', '60px');
     this.updateRailToggleIcon_(true);
   }
 

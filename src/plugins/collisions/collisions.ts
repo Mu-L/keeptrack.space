@@ -44,7 +44,7 @@ export class Collisions extends KeepTrackPlugin {
   readonly id = 'Collisions';
   dependencies_ = [];
   requiresInternet = true;
-  private readonly collisionDataSrc_ = 'https://api.keeptrack.space/v2/socrates/latest';
+  private readonly collisionDataSrc_ = 'https://api.keeptrack.space/v4/socrates/latest';
   private selectSatIdOnCruncher_: number | null = null;
   protected collisionList_: CollisionEvent[] = [];
   private isLoggedIn_ = false;
