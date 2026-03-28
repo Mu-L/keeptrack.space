@@ -1941,9 +1941,9 @@ export class Camera {
   }
 
   private isSatelliteFocusedMode_(type: CameraType): boolean {
-    return type === CameraType.FIXED_TO_SAT_ECI
-      || type === CameraType.FIXED_TO_SAT_LVLH
-      || type === CameraType.SATELLITE_FIRST_PERSON;
+    return type === CameraType.FIXED_TO_SAT_ECI ||
+      type === CameraType.FIXED_TO_SAT_LVLH ||
+      type === CameraType.SATELLITE_FIRST_PERSON;
   }
 
   private updateFovLerp_(dt: Milliseconds): void {
