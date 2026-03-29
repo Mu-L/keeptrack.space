@@ -254,6 +254,8 @@ export class UiSettings {
    */
   isDisableToasts = false;
   isDisableSearchBox = false;
+  isDisableClearLinesRmb = false;
+  isShowExtendedUrlParams = false;
   /**
    * The container root element for the application
    * NOTE: This is for initializing it, but keepTrackApi.containerRoot will be used throughout
