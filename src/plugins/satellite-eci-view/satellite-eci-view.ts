@@ -78,6 +78,11 @@ export class SatelliteEciView extends KeepTrackPlugin {
       return;
     }
 
+    if (ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_ECI) {
+      // Ignore if already in ECI view
+      return;
+    }
+
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
     ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT_ECI;
     this.selectSatManager_.selectSat(this.selectSatManager_.selectedSat); // Force update of selected satellite to update camera delegate
