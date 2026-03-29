@@ -236,10 +236,11 @@ export class SatInfoBox extends KeepTrackPlugin {
           <div class="sat-info-key" kt-tooltip="${t7e('satInfoBox.Norad.tooltip')}">${t7e('satInfoBox.Norad.label')}</div>
           <div class="sat-info-value" id="${EL.OBJNUM}">99999</div>
         </div>
+        ${settingsManager.plugins.SatInfoBoxObject?.isShowAltName !== false ? html`
         <div class="sat-info-row sat-only-info">
           <div class="sat-info-key" kt-tooltip="${t7e('satInfoBox.AltName.tooltip')}">${t7e('satInfoBox.AltName.label')}</div>
           <div class="sat-info-value" id="${EL.ALT_NAME}">Alt Name</div>
-        </div>
+        </div>` : ''}
         <div class="sat-info-row sat-only-info">
           <div class="sat-info-key" kt-tooltip="${t7e('satInfoBox.AltId.tooltip')}">${t7e('satInfoBox.AltId.label')}</div>
           <div class="sat-info-value" id="${EL.ALT_ID}">99999</div>
@@ -267,7 +268,8 @@ export class SatInfoBox extends KeepTrackPlugin {
       return;
     }
 
-    const isHasAltName: boolean = !!((obj as Satellite)?.altName && (obj as Satellite).altName !== '');
+    const isShowAltName = settingsManager.plugins.SatInfoBoxObject?.isShowAltName !== false;
+    const isHasAltName: boolean = isShowAltName && !!((obj as Satellite)?.altName && (obj as Satellite).altName !== '');
     const isHasAltId: boolean = !!((obj as Satellite)?.altId && (obj as Satellite).altId !== '');
 
     setInnerHtml(EL.NAME, obj.name);

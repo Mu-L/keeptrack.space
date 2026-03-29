@@ -152,7 +152,7 @@
   border-top: 1px solid var(--kt-border-default, rgba(255, 255, 255, 0.12));
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
   overflow-y: auto;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   z-index: 10000;
 }
 
