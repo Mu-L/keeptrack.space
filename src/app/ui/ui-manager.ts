@@ -341,11 +341,6 @@ export class UiManager {
         shift: true,
         callback: () => this.hideUi(),
       },
-      {
-        key: 'b',
-        shift: false,
-        callback: () => this.toggleBottomMenu(),
-      },
     ]).init();
 
     window.M.Dropdown.init(elems);
