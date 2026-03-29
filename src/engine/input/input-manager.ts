@@ -348,7 +348,7 @@ export class InputManager {
           html`
           <li id="toggle-time-rmb"><a href="#">${t7e('rightClickMenu.pauseClock')}</a></li>
           <li id="reset-camera-rmb"><a href="#">${t7e('rightClickMenu.resetCamera')}</a></li>
-          <li id="clear-lines-rmb"><a href="#">${t7e('rightClickMenu.clearLines')}</a></li>
+          ${settingsManager.isDisableClearLinesRmb ? '' : html`<li id="clear-lines-rmb"><a href="#">${t7e('rightClickMenu.clearLines')}</a></li>`}
           <li id="clear-screen-rmb"><a href="#">${t7e('rightClickMenu.clearScreen')}</a></li>
           `,
         );
