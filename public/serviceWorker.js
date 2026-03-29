@@ -103,7 +103,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetchWithTimeout(e.request, 8000)
         .then((response) => {
-          if (response.ok) {
+          if (response.ok && response.status !== 206) {
             const clone = response.clone();
 
             caches.open(currentCacheName).then((cache) => cache.put(e.request, clone));
@@ -138,7 +138,7 @@ self.addEventListener('fetch', (e) => {
         }
 
         return fetch(e.request).then((response) => {
-          if (response.ok) {
+          if (response.ok && response.status !== 206) {
             const clone = response.clone();
 
             caches.open(currentCacheName).then((cache) => cache.put(e.request, clone));
@@ -157,7 +157,7 @@ self.addEventListener('fetch', (e) => {
     caches.match(e.request).then((cached) => {
       const fresh = fetch(e.request)
         .then((response) => {
-          if (response.ok) {
+          if (response.ok && response.status !== 206) {
             const clone = response.clone();
 
             caches.open(currentCacheName).then((cache) => cache.put(e.request, clone));
