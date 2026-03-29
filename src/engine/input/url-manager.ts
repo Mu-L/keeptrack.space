@@ -349,10 +349,10 @@ export abstract class UrlManager {
     paramSlices.push(`zoom=${mainCamera.zoomLevel().toFixed(2)}`);
 
     if (settingsManager.dataSources.externalTLEsOnly) {
-      paramSlices.push(`tle="${encodeURIComponent(settingsManager.dataSources.externalTLEs)}"`);
+      paramSlices.push(`tle=${encodeURIComponent(settingsManager.dataSources.externalTLEs)}`);
       paramSlices.push('external-only=true');
     } else if (!settingsManager.dataSources.tle.includes('keeptrack.space') && isMaxData) {
-      paramSlices.push(`tle="${encodeURIComponent(settingsManager.dataSources.tle)}"`);
+      paramSlices.push(`tle=${encodeURIComponent(settingsManager.dataSources.tle)}`);
     }
 
     if (settingsManager.isShowExtendedUrlParams) {
