@@ -257,10 +257,17 @@ export abstract class UrlManager {
             break;
           case 'date':
           case 'camDistBuffer':
+          case 'vimpel':
+          case 'sensors':
+          case 'launchSites':
+          case 'tle':
+          case 'external-only':
+          case 'bottomMenu':
+          case 'earth':
             // Consumed by other parameter handlers (lat/lon uses date, zoom uses camDistBuffer)
             break;
           default:
-            errorManagerInstance.warn(`Unknown URL parameter: ${key}`);
+            errorManagerInstance.info(`Unknown URL parameter: ${key}`);
         }
       });
     });
@@ -329,10 +336,6 @@ export abstract class UrlManager {
       paramSlices.push(`regime=${settingsManager.core.regimeFilter.join(',')}`);
     }
 
-    if (settingsManager.isEnableJscCatalog === false) {
-      paramSlices.push('vimpel=false');
-    }
-
     if (this.selectedSat_?.sccNum && !(mainCamera.state.ftsPitch > -0.1 && mainCamera.state.ftsPitch < 0.1 && mainCamera.state.ftsYaw > -0.1 && mainCamera.state.ftsYaw < 0.1)) {
       paramSlices.push(`pitch=${(mainCamera.state.ftsPitch * RAD2DEG).toFixed(3)}`);
       paramSlices.push(`yaw=${(mainCamera.state.ftsYaw * RAD2DEG).toFixed(3)}`);
@@ -345,38 +348,44 @@ export abstract class UrlManager {
 
     paramSlices.push(`zoom=${mainCamera.zoomLevel().toFixed(2)}`);
 
-    if (this.selectedSat_) {
-      paramSlices.push(`camDistBuffer=${mainCamera.state.camDistBuffer}`);
-    }
-
-    if (ServiceLocator.getColorSchemeManager().currentColorScheme.id !== 'CelestrakColorScheme') {
-      const shorthandFromDefinition = Object.keys(UrlManager.colorSchemeDefinitions_).find(
-        (key) => UrlManager.colorSchemeDefinitions_[key] === ServiceLocator.getColorSchemeManager().currentColorScheme.id,
-      );
-
-      paramSlices.push(`color=${shorthandFromDefinition}`);
-    }
-
-    if (settingsManager.isOrbitCruncherInEcf && settingsManager.numberOfEcfOrbitsToDraw !== 1) {
-      paramSlices.push(`ecf=${settingsManager.numberOfEcfOrbitsToDraw}`);
-    }
-
-    if (settingsManager.isDisableSensors) {
-      paramSlices.push('sensors=false');
-    }
-    if (settingsManager.isDisableLaunchSites) {
-      paramSlices.push('launchSites=false');
-    }
-
-    if (settingsManager.isDisableBottomMenu) {
-      paramSlices.push('bottomMenu=false');
-    }
-
     if (settingsManager.dataSources.externalTLEsOnly) {
       paramSlices.push(`tle="${encodeURIComponent(settingsManager.dataSources.externalTLEs)}"`);
       paramSlices.push('external-only=true');
     } else if (!settingsManager.dataSources.tle.includes('keeptrack.space') && isMaxData) {
       paramSlices.push(`tle="${encodeURIComponent(settingsManager.dataSources.tle)}"`);
+    }
+
+    if (settingsManager.isShowExtendedUrlParams) {
+      if (settingsManager.isEnableJscCatalog === false) {
+        paramSlices.push('vimpel=false');
+      }
+
+      if (this.selectedSat_) {
+        paramSlices.push(`camDistBuffer=${mainCamera.state.camDistBuffer}`);
+      }
+
+      if (ServiceLocator.getColorSchemeManager().currentColorScheme.id !== 'CelestrakColorScheme') {
+        const shorthandFromDefinition = Object.keys(UrlManager.colorSchemeDefinitions_).find(
+          (key) => UrlManager.colorSchemeDefinitions_[key] === ServiceLocator.getColorSchemeManager().currentColorScheme.id,
+        );
+
+        paramSlices.push(`color=${shorthandFromDefinition}`);
+      }
+
+      if (settingsManager.isOrbitCruncherInEcf && settingsManager.numberOfEcfOrbitsToDraw !== 1) {
+        paramSlices.push(`ecf=${settingsManager.numberOfEcfOrbitsToDraw}`);
+      }
+
+      if (settingsManager.isDisableSensors) {
+        paramSlices.push('sensors=false');
+      }
+      if (settingsManager.isDisableLaunchSites) {
+        paramSlices.push('launchSites=false');
+      }
+
+      if (settingsManager.isDisableBottomMenu) {
+        paramSlices.push('bottomMenu=false');
+      }
     }
 
     if (paramSlices.length > 0) {
