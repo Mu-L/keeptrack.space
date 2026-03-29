@@ -91,6 +91,9 @@ const settingsOverride = {
     Breakup: {
       enabled: false,
     },
+    BreakupAnalysis: {
+      enabled: false,
+    },
     MissilePlugin: {
       enabled: false,
     },
@@ -104,13 +107,13 @@ const settingsOverride = {
       enabled: false,
     },
     Collisions: {
-      enabled: true,
+      enabled: false,
     },
     Reentries: {
-      enabled: true,
+      enabled: false,
     },
     StereoMap: {
-      enabled: true,
+      enabled: false,
     },
     SatelliteViewPlugin: {
       enabled: false,
@@ -122,19 +125,19 @@ const settingsOverride = {
       enabled: false,
     },
     SatConstellations: {
-      enabled: true,
+      enabled: false,
     },
     CountriesMenu: {
-      enabled: true,
+      enabled: false,
     },
     ColorMenu: {
-      enabled: true,
+      enabled: false,
     },
     PlanetsMenuPlugin: {
       enabled: false,
     },
     SatellitePhotos: {
-      enabled: true,
+      enabled: false,
       order: 240,
     },
     TimeMachine: {
@@ -171,7 +174,7 @@ const settingsOverride = {
       enabled: false,
     },
     NextLaunchesPlugin: {
-      enabled: true,
+      enabled: false,
     },
     LaunchCalendar: {
       enabled: false,
@@ -193,9 +196,10 @@ const settingsOverride = {
     },
     Screenshot: {
       enabled: true,
+      hideBottomIcon: true,
     },
     ScreenRecorder: {
-      enabled: true,
+      enabled: false,
     },
     DopsPlugin: {
       enabled: false,
@@ -207,13 +211,13 @@ const settingsOverride = {
       enabled: false,
     },
     SettingsMenuPlugin: {
-      enabled: true,
+      enabled: false,
     },
     GraphicsMenuPlugin: {
-      enabled: true,
+      enabled: false,
     },
     FilterMenuPlugin: {
-      enabled: true,
+      enabled: false,
     },
     AboutMenuPlugin: {
       enabled: false,
@@ -239,7 +243,7 @@ const settingsOverride = {
       enabled: true,
     },
     SatelliteFixedView: {
-      enabled: false,
+      enabled: true,
     },
     FpsView: {
       enabled: false,
@@ -270,7 +274,7 @@ const settingsOverride = {
     },
     // Educational visualization toggles — explicitly enabled
     GraticuleToggle: {
-      enabled: true,
+      enabled: false,
     },
     PoliticalMapToggle: {
       enabled: true,
@@ -279,26 +283,34 @@ const settingsOverride = {
       enabled: true,
     },
     HideOtherSatellitesPlugin: {
-      enabled: true,
+      enabled: false,
     },
     EarthAtmosphere: {
       enabled: true,
+    },
+    FovFadePlugin: {
+      enabled: false,
     },
     // Non-Menu plugins
     SatInfoBoxCore: {
       enabled: true,
     },
     SatInfoBoxActions: {
-      enabled: true,
+      enabled: false,
     },
     SatInfoBoxLinks: {
-      enabled: true,
+      enabled: false,
     },
     SatInfoBoxObject: {
       enabled: true,
+      isShowStdMag: false,
+      isEstimateRcs: false,
+      isShowConfiguration: false,
+      isShowLaunchVehicle: false,
+      isShowAltName: false,
     },
     SatInfoBoxMission: {
-      enabled: true,
+      enabled: false,
     },
     SatInfoBoxOrbital: {
       enabled: true,
@@ -317,7 +329,7 @@ const settingsOverride = {
       enabled: true,
     },
     GithubLinkPlugin: {
-      enabled: true,
+      enabled: false,
     },
     DateTimeManager: {
       enabled: true,
@@ -336,19 +348,19 @@ const settingsOverride = {
     },
     // RMB plugins
     EarthPresetsPlugin: {
-      enabled: true,
+      enabled: false,
     },
     DrawLinesPlugin: {
       enabled: false,
     },
     ViewInfoRmbPlugin: {
-      enabled: true,
+      enabled: false,
     },
     StarsPlugin: {
       enabled: false,
     },
     CatalogBrowserPlugin: {
-      enabled: true,
+      enabled: false,
       order: 10,
       hideKeepTrackCatalogs: true,
     },
@@ -377,6 +389,9 @@ const settingsOverride = {
       enabled: false,
     },
     BestPassPlugin: {
+      enabled: false,
+    },
+    ScenarioManagementMenu: {
       enabled: false,
     },
   },
@@ -461,7 +476,9 @@ const settingsOverride = {
   isEnableJscCatalog: false,
   isAutoStart: true,
   isDisableSensors: true,
+  isDisableLaunchSites: true,
   isDisablePlanets: true,
+  isDisableClearLinesRmb: true,
 
   colorSchemeInstances: {
     MissionColorScheme: {
