@@ -82,6 +82,7 @@ export interface EngineEventMap {
   [EventBusEvent.loginGateStateChange]: [boolean]; // isAuthenticated
   [EventBusEvent.colorSchemeChanged]: [unknown]; // scheme instance
   [EventBusEvent.scenarioBoundsChanged]: [unknown]; // ScenarioData
+  [EventBusEvent.scenarioUpdated]: [unknown]; // ScenarioData
   [EventBusEvent.cameraTypeChanged]: [string]; // camera type name
   [EventBusEvent.onColorBufferReady]: [];
   [EventBusEvent.onFovPredictionReady]: [];
