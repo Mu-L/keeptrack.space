@@ -8,7 +8,7 @@ test.describe('ScenarioManagementPlugin', () => {
     page.on('pageerror', (err) => errors.push(err.message));
 
     await waitForAppReady(page, {
-      plugins: { ScenarioManagementPlugin: { enabled: true } },
+      plugins: { ScenarioManagementPlugin: { enabled: true }, ScenarioManagementMenu: { enabled: true } },
     });
 
     const fatalErrors = errors.filter((e) => (/scenario/iu).test(e));

@@ -14,7 +14,14 @@ export const stemEnvironment = (settingsManager: SettingsManager) => {
   settingsManager.disableAllPlugins();
   settingsManager.plugins.SoundToggle = { enabled: true };
   settingsManager.plugins.SatInfoBoxCore = { enabled: true };
-  settingsManager.plugins.SatInfoBoxObject = { enabled: true };
+  settingsManager.plugins.SatInfoBoxObject = {
+    enabled: true,
+    isShowStdMag: false,
+    isEstimateRcs: false,
+    isShowConfiguration: true,
+    isShowLaunchVehicle: true,
+    isShowAltName: true,
+  };
   settingsManager.plugins.EarthAtmosphere = { enabled: true };
 
   settingsManager.plugins.TopMenu = { enabled: true };

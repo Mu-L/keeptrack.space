@@ -1,11 +1,13 @@
 // Ensure imports are type only to avoid circular dependencies
 import type { CatalogBrowserConfiguration } from './catalog-browser/catalog-browser-settings';
+import type { SatInfoBoxObjectConfiguration } from './sat-info-box-object/sat-info-box-object-settings';
 import type { SatInfoBoxOrbitalConfiguration } from './sat-info-box-orbital/sat-info-box-orbital-settings';
 
 export type PluginConfiguration = {
   enabled: boolean;
   menuMode?: number[];
   order?: number;
+  hideBottomIcon?: boolean;
 };
 
 /**
@@ -16,6 +18,7 @@ export type KeepTrackPluginsConfiguration = {
   SelectSatManager?: PluginConfiguration;
   StarsPlugin?: PluginConfiguration;
   ScenarioManagementPlugin?: PluginConfiguration;
+  ScenarioManagementMenu?: PluginConfiguration;
   TopMenu?: PluginConfiguration;
   TimeSlider?: PluginConfiguration;
   TooltipsPlugin?: PluginConfiguration;
@@ -26,7 +29,7 @@ export type KeepTrackPluginsConfiguration = {
   SatInfoBoxLinks?: PluginConfiguration;
   SatInfoBoxOrbital?: SatInfoBoxOrbitalConfiguration;
   SatInfoBoxManeuver?: PluginConfiguration;
-  SatInfoBoxObject?: PluginConfiguration;
+  SatInfoBoxObject?: SatInfoBoxObjectConfiguration;
   SatInfoBoxMission?: PluginConfiguration;
   SatInfoBoxSponsor?: PluginConfiguration;
   SatInfoBoxSensor?: PluginConfiguration;
@@ -131,6 +134,7 @@ export type KeepTrackPluginsConfiguration = {
   ColorSchemeEditorPlugin?: PluginConfiguration;
   SettingsMenuPlugin?: PluginConfiguration;
   SearchSettingsPlugin?: PluginConfiguration;
+  GraphicsSettingsPlugin?: PluginConfiguration;
   GraphicsMenuPlugin?: PluginConfiguration;
   GamepadPlugin?: PluginConfiguration;
   VideoDirectorPlugin?: PluginConfiguration;

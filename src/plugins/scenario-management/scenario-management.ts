@@ -1,17 +1,3 @@
-import { SoundNames } from '@app/engine/audio/sounds';
-import { MenuMode, ToastMsgType } from '@app/engine/core/interfaces';
-import { ServiceLocator } from '@app/engine/core/service-locator';
-import { EventBus } from '@app/engine/events/event-bus';
-import { EventBusEvent } from '@app/engine/events/event-bus-events';
-import { compressToGzip, decompressFromGzip } from '@app/engine/utils/compression';
-import { html } from '@app/engine/utils/development/formatter';
-import { errorManagerInstance } from '@app/engine/utils/errorManager';
-import { getEl } from '@app/engine/utils/get-el';
-import { isThisNode } from '@app/engine/utils/isThisNode';
-import landscape3Png from '@public/img/icons/landscape3.png';
-import { saveAs } from 'file-saver';
-import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
-
 /**
  * /////////////////////////////////////////////////////////////////////////////
  *
@@ -33,6 +19,13 @@ import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
  * /////////////////////////////////////////////////////////////////////////////
  */
 
+import { ToastMsgType } from '@app/engine/core/interfaces';
+import { ServiceLocator } from '@app/engine/core/service-locator';
+import { EventBus } from '@app/engine/events/event-bus';
+import { EventBusEvent } from '@app/engine/events/event-bus-events';
+import { errorManagerInstance } from '@app/engine/utils/errorManager';
+import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
+
 declare module '@app/engine/core/interfaces' {
   interface UserSettings {
     scenarioStartTime: Date | null;
@@ -51,86 +44,15 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
   readonly id = 'ScenarioManagementPlugin';
   dependencies_ = [];
 
-  menuMode: MenuMode[] = [MenuMode.TOOLS, MenuMode.ALL];
-
   defaultScenarioName = 'My Scenario';
   defaultScenarioDescription = 'Description of My Scenario';
 
-  bottomIconElementName: string = 'scenario-management-icon';
-  bottomIconImg = landscape3Png;
-  protected formPrefix_ = 'scenario-management-form';
-  sideMenuElementName: string = 'scenario-management-menu';
-  sideMenuElementHtml: string = html`
-  <div id="scenario-management-menu" class="side-menu-parent start-hidden">
-    <div id="scenario-management-content" class="side-menu">
-      <div class="row">
-        <form id="${this.formPrefix_}-form">
-          <div id="${this.formPrefix_}-general">
-            <div class="row center"></div>
-            </br>
-            <div class="row center">
-              <button id="${this.formPrefix_}-submit" class="btn btn-ui waves-effect waves-light" type="submit" name="action">Update Scenario &#9658;</button>
-            </div>
-            <h5 class="center-align">Scenario Settings</h5>
-            <!-- Scenario Name -->
-            <div class="input-field col s12">
-              <input required value="${this.defaultScenarioName}" id="${this.formPrefix_}-name" type="text" kt-tooltip="The name of the scenario.">
-              <label class="active" for="${this.formPrefix_}-name">Scenario Name</label>
-            </div>
-            <!-- Scenario Description -->
-            <div class="input-field col s12">
-              <input id="${this.formPrefix_}-description" type="text"
-              value="${this.defaultScenarioDescription}"
-              kt-tooltip="The description of the scenario." placeholder="Enter scenario description here...">
-              <label class="active" for="${this.formPrefix_}-description">Description</label>
-            </div>
-            <!-- Scenario Start DateTime -->
-            <div class="input-field col s12">
-              <input id="${this.formPrefix_}-start-date" type="text"
-                kt-tooltip="The start DTG of the scenario in UTC (YYYY-MM-DD HH:MM:SS.sss)." placeholder="YYYY-MM-DD HH:MM:SS.sss"
-              >
-              <label class="active" for="${this.formPrefix_}-start-date">Scenario Start</label>
-            </div>
-            <!-- Scenario End DateTime -->
-            <div class="input-field col s12">
-              <input id="${this.formPrefix_}-end-date" type="text"
-                kt-tooltip="The end DTG of the scenario in UTC (YYYY-MM-DD HH:MM:SS.sss)." placeholder="YYYY-MM-DD HH:MM:SS.sss"
-              >
-              <label class="active" for="${this.formPrefix_}-end-date">Scenario End</label>
-            </div>
-          </div>
-        </form>
-        <div class="row center">
-          <button id="${this.formPrefix_}-save" class="btn btn-ui waves-effect waves-light">Save Scenario &#9658;</button>
-        </div>
-        <div class="row center">
-          <button id="${this.formPrefix_}-load" class="btn btn-ui waves-effect waves-light">Load Scenario &#9658;</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-
-  isNotColorPickerInitialSetup = false;
   scenario: ScenarioData = {
     name: this.defaultScenarioName,
     description: this.defaultScenarioDescription,
     startTime: null,
     endTime: null,
   };
-
-  addHtml(): void {
-    super.addHtml();
-    EventBus.getInstance().on(
-      EventBusEvent.uiManagerFinal,
-      () => {
-        getEl(`${this.formPrefix_}-start-date`)?.addEventListener('change', this.onDateChange_.bind(this));
-        getEl(`${this.formPrefix_}-end-date`)?.addEventListener('change', this.onDateChange_.bind(this));
-        getEl(`${this.formPrefix_}-form`)?.addEventListener('submit', this.onSubmit_.bind(this));
-        getEl(`${this.formPrefix_}-save`)?.addEventListener('click', this.onSave_.bind(this));
-        getEl(`${this.formPrefix_}-load`)?.addEventListener('click', this.onLoad_.bind(this));
-      },
-    );
-  }
 
   addJs(): void {
     super.addJs();
@@ -188,89 +110,12 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
       EventBus.getInstance().emit(EventBusEvent.scenarioBoundsChanged, this.scenario);
     }
 
-    (getEl(`${this.formPrefix_}-name`) as HTMLInputElement).value = this.scenario.name;
-    (getEl(`${this.formPrefix_}-description`) as HTMLInputElement).value = this.scenario.description;
-
-    // If start time changes, update the dom element
-    if (partialScenario.startTime) {
-      const startDateInput = getEl(`${this.formPrefix_}-start-date`) as HTMLInputElement;
-
-      if (startDateInput) {
-        startDateInput.value = partialScenario.startTime
-          ? partialScenario.startTime.toISOString().replace('T', ' ').replace('Z', '')
-          : '';
-      }
-    }
-
-    // If end time changes, update the dom element
-    if (partialScenario.endTime) {
-      const endDateInput = getEl(`${this.formPrefix_}-end-date`) as HTMLInputElement;
-
-      if (endDateInput) {
-        endDateInput.value = partialScenario.endTime
-          ? partialScenario.endTime.toISOString().replace('T', ' ').replace('Z', '')
-          : '';
-      }
-    }
+    EventBus.getInstance().emit(EventBusEvent.scenarioUpdated, this.scenario);
 
     return true;
   }
 
-  protected onSubmit_(e?: Event): void {
-    e?.preventDefault();
-
-    const nameInput = getEl(`${this.formPrefix_}-name`) as HTMLInputElement;
-    const descriptionInput = getEl(`${this.formPrefix_}-description`) as HTMLInputElement;
-    const startDateInput = getEl(`${this.formPrefix_}-start-date`) as HTMLInputElement;
-    const endDateInput = getEl(`${this.formPrefix_}-end-date`) as HTMLInputElement;
-
-    const name = nameInput.value;
-    const description = descriptionInput.value;
-    const startDateStr = startDateInput.value;
-    const endDateStr = endDateInput.value;
-
-    if (!name) {
-      errorManagerInstance.warn('Scenario Name is required.');
-
-      return;
-    }
-
-    if (startDateStr && !this.validateDate_(startDateInput)) {
-      errorManagerInstance.warn('Start Date is invalid.');
-
-      return;
-    }
-
-    if (endDateStr && !this.validateDate_(endDateInput)) {
-      errorManagerInstance.warn('End Date is invalid.');
-
-      return;
-    }
-
-    // Here you would typically save these settings to your application's state or backend
-    const newStartTime = startDateStr ? new Date(`${startDateStr}Z`) : null;
-    const newEndTime = endDateStr ? new Date(`${endDateStr}Z`) : null;
-
-    const isUpdateSuccess = this.updateScenario({
-      name,
-      description,
-      startTime: newStartTime,
-      endTime: newEndTime,
-    });
-
-    // Only show toast if button was clicked
-    if (e && isUpdateSuccess) {
-      ServiceLocator.getUiManager().toast('Scenario settings updated successfully!', ToastMsgType.normal);
-    }
-  }
-
-  protected onDateChange_(e: Event): void {
-    const input = e.target as HTMLInputElement;
-
-    this.validateDate_(input);
-  }
-
-  protected validateScenario_(scenario: ScenarioData): boolean {
+  private validateScenario_(scenario: ScenarioData): boolean {
     if (scenario.startTime && scenario.endTime && scenario.startTime >= scenario.endTime) {
       errorManagerInstance.warn('Scenario start time must be before end time.');
 
@@ -302,97 +147,5 @@ export class ScenarioManagementPlugin extends KeepTrackPlugin {
     }
 
     return true;
-  }
-
-  protected validateDate_(input: HTMLInputElement): boolean {
-    const dateStr = input.value;
-
-    // Simple regex to validate the format YYYY-MM-DD HH:MM:SS.sss
-    const regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,3})?$/u;
-
-    const isValid = regex.test(dateStr);
-
-    if (!isValid) {
-      // Show error message
-      input.classList.remove('valid');
-      input.classList.add('invalid');
-    } else {
-      // Remove error message
-      input.classList.remove('invalid');
-      input.classList.add('valid');
-    }
-
-    return isValid;
-  }
-
-  protected async onSave_(evt: Event): Promise<void> {
-    evt.preventDefault();
-    this.onSubmit_();
-    ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
-
-    const file = {
-      version: '3.0' as const,
-      scenario: {
-        name: this.scenario.name,
-        description: this.scenario.description,
-        ...(this.scenario.startTime ? { startTime: this.scenario.startTime.toISOString() } : {}),
-        ...(this.scenario.endTime ? { endTime: this.scenario.endTime.toISOString() } : {}),
-      },
-    };
-
-    try {
-      const compressed = await compressToGzip(JSON.stringify(file));
-      const blob = new Blob([compressed.buffer as ArrayBuffer], { type: 'application/gzip' });
-
-      saveAs(blob, `keeptrack-scenario-${this.scenario.name}.kts`);
-    } catch (e) {
-      if (!isThisNode()) {
-        errorManagerInstance.error(e, 'scenario-management.ts', 'Error saving scenario!');
-      }
-    }
-  }
-
-  protected onLoad_(): void {
-    ServiceLocator.getSoundManager()?.play(SoundNames.MENU_BUTTON);
-    const input = document.createElement('input');
-
-    input.type = 'file';
-    input.accept = '.kts,application/gzip';
-
-    input.onchange = (e: Event) => {
-      const target = e.target as HTMLInputElement;
-
-      if (target.files && target.files.length > 0) {
-        const reader = new FileReader();
-
-        reader.onload = (event: ProgressEvent<FileReader>) => {
-          if (event.target?.result instanceof ArrayBuffer) {
-            decompressFromGzip(new Uint8Array(event.target.result)).then((json) => {
-              try {
-                const parsed = JSON.parse(json);
-                const scenario = parsed.scenario;
-                const scenarioData = {
-                  name: scenario.name,
-                  description: scenario.description || '',
-                  startTime: scenario.startTime ? new Date(scenario.startTime) : null,
-                  endTime: scenario.endTime ? new Date(scenario.endTime) : null,
-                };
-
-                if (this.updateScenario(scenarioData)) {
-                  ServiceLocator.getUiManager().toast('Scenario loaded successfully!', ToastMsgType.normal);
-                }
-              } catch (error) {
-                errorManagerInstance.error(error, 'scenario-management.ts', 'Error loading scenario file!');
-              }
-            }).catch((error: Error) => {
-              errorManagerInstance.error(error, 'scenario-management.ts', 'Error decompressing scenario file!');
-            });
-          }
-        };
-        reader.readAsArrayBuffer(target.files[0]);
-      }
-    };
-
-    input.click();
   }
 }

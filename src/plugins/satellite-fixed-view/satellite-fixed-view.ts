@@ -79,6 +79,11 @@ export class SatelliteFixedView extends KeepTrackPlugin {
       return;
     }
 
+    if (ServiceLocator.getMainCamera().cameraType === CameraType.FIXED_TO_SAT_LVLH) {
+      // Ignore if already in satellite-fixed view
+      return;
+    }
+
     ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
     ServiceLocator.getMainCamera().cameraType = CameraType.FIXED_TO_SAT_LVLH;
     this.selectSatManager_.selectSat(this.selectSatManager_.selectedSat); // Force update of selected satellite to update camera delegate

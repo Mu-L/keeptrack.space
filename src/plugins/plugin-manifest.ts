@@ -45,9 +45,15 @@ export const pluginManifest: PluginDescriptor[] = [
     configKey: 'ScenarioManagementPlugin',
     ossImport: () => import('./scenario-management/scenario-management'),
     ossClassName: 'ScenarioManagementPlugin',
-    proImport: __IS_PRO__ ? () => import('../plugins-pro/scenario-management-pro/scenario-management-pro') : undefined,
-    proClassName: 'ScenarioManagementPro',
     defaultConfig: { enabled: true, order: 1 },
+  },
+  {
+    configKey: 'ScenarioManagementMenu',
+    ossImport: () => import('./scenario-management/scenario-management-menu'),
+    ossClassName: 'ScenarioManagementMenu',
+    proImport: __IS_PRO__ ? () => import('../plugins-pro/scenario-management-pro/scenario-management-pro') : undefined,
+    proClassName: 'ScenarioManagementMenuPro',
+    defaultConfig: { enabled: true, order: 2 },
   },
   {
     configKey: 'TopMenu',
@@ -804,6 +810,12 @@ export const pluginManifest: PluginDescriptor[] = [
     ossImport: () => import('./search-settings/search-settings'),
     ossClassName: 'SearchSettingsPlugin',
     defaultConfig: { enabled: true, order: 589 },
+  },
+  {
+    configKey: 'GraphicsSettingsPlugin',
+    proImport: __IS_PRO__ ? () => import('../plugins-pro/graphics-menu/graphics-settings') : undefined,
+    proClassName: 'GraphicsSettingsPlugin',
+    defaultConfig: { enabled: true, order: 590 },
   },
   {
     configKey: 'GraphicsMenuPlugin',

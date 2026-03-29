@@ -216,6 +216,17 @@ export abstract class KeepTrackPlugin {
   bottomIconCallback: () => void;
 
   /**
+   * Whether the bottom icon is hidden via plugin configuration.
+   * When true, the plugin is still active (RMB menus, event handlers, etc.)
+   * but no bottom bar icon is rendered.
+   */
+  protected isBottomIconHidden_ = false;
+
+  get isBottomIconHidden(): boolean {
+    return this.isBottomIconHidden_;
+  }
+
+  /**
    * Whether the bottom icon is currently disabled.
    */
   isIconDisabled = false;
@@ -448,6 +459,7 @@ export abstract class KeepTrackPlugin {
     }
 
     this.bottomIconOrder = settingsManager.plugins?.[this.id]?.order ?? null;
+    this.isBottomIconHidden_ = settingsManager.plugins?.[this.id]?.hideBottomIcon ?? false;
 
     // Check if this plugin uses the new composition-based architecture
     this.detectAndInitializeComponents_();
@@ -689,7 +701,7 @@ export abstract class KeepTrackPlugin {
       }
     }
 
-    if (this.bottomIconImg && this.bottomIconElementName) {
+    if (this.bottomIconImg && this.bottomIconElementName && !this.isBottomIconHidden_) {
       if (this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
         this.addBottomIcon(this.bottomIconImg, this.isIconDisabledOnLoad);
       }
@@ -944,7 +956,7 @@ export abstract class KeepTrackPlugin {
       throw new Error(`${this.id} JS already added.`);
     }
 
-    if (this.bottomIconElementName) {
+    if (this.bottomIconElementName && !this.isBottomIconHidden_) {
       if (this.bottomIconCallback) {
         this.registerBottomMenuClicked(this.bottomIconCallback);
       } else {
@@ -952,11 +964,11 @@ export abstract class KeepTrackPlugin {
       }
     }
 
-    if (this.sideMenuElementName) {
+    if (this.sideMenuElementName && !this.isBottomIconHidden_) {
       this.registerHideSideMenu(this.bottomIconElementName, this.closeSideMenu.bind(this));
     }
 
-    if (this.sideMenuSecondaryHtml) {
+    if (this.sideMenuSecondaryHtml && !this.isBottomIconHidden_) {
       this.registerHideSideMenu(this.bottomIconElementName, this.closeSecondaryMenu.bind(this));
     }
 
@@ -964,7 +976,7 @@ export abstract class KeepTrackPlugin {
       this.registerRmbCallback(this.rmbCallback);
     }
 
-    if (this.bottomIconElementName && this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
+    if (this.bottomIconElementName && !this.isBottomIconHidden_ && this.iconPlacement !== IconPlacement.UTILITY_ONLY) {
       this.registerMenuMode();
       this.menuMode.forEach((menuMode) => {
         KeepTrackPlugin.registeredMenus[menuMode].push(this.bottomIconElementName);

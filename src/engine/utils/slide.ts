@@ -62,7 +62,7 @@ export const slideOutUp = (el: HTMLElement, duration: number, callback?: () => v
     return;
   }
   el.style.transition = `transform ${duration / 1000}s ${EASING_EXIT}`;
-  el.style.transform = `translateY(${-100}%)`;
+  el.style.transform = `translateY(${-120}%)`;
   setTimeout(() => {
     if (callback) {
       callback();
@@ -77,7 +77,7 @@ export const slideInDown = (el: HTMLElement, duration: number, callback?: () => 
     return;
   }
 
-  el.style.transform = 'translateY(-100%)';
+  el.style.transform = 'translateY(-120%)';
   el.style.transition = `transform 0s ${EASING_ENTER}`;
   el.style.display = 'block';
   setTimeout(() => {

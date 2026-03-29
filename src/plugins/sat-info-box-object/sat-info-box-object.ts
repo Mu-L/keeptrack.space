@@ -83,30 +83,33 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
             <div id="${EL.LAUNCH_PAD}">LAUNCH PAD</div>
           </div>
         </div>
+        ${settingsManager.plugins.SatInfoBoxObject?.isShowLaunchVehicle !== false ? html`
         <div class="sat-info-row">
           <div class="sat-info-key"
             kt-tooltip="${t7e('SatInfoBoxObject.LaunchVehicle.tooltip')}">${t7e('SatInfoBoxObject.LaunchVehicle.label')}
           </div>
           <div class="sat-info-value pointable" id="${EL.VEHICLE}">VEHICLE</div>
-        </div>
+        </div>` : ''}
+        ${settingsManager.plugins.SatInfoBoxObject?.isShowConfiguration !== false ? html`
         <div class="sat-info-row sat-only-info">
           <div class="sat-info-key"
             kt-tooltip="${t7e('SatInfoBoxObject.Configuration.tooltip')}">${t7e('SatInfoBoxObject.Configuration.label')}
           </div>
           <div class="sat-info-value" id="${EL.CONFIGURATION}">NO DATA</div>
-        </div>
+        </div>` : ''}
         <div class="sat-info-row sat-only-info">
           <div class="sat-info-key"
             kt-tooltip="${t7e('SatInfoBoxObject.RCS.tooltip')}">${t7e('SatInfoBoxObject.RCS.label')}
           </div>
           <div class="sat-info-value" id="${EL.RCS}">NO DATA</div>
         </div>
+        ${settingsManager.plugins.SatInfoBoxObject?.isShowStdMag !== false ? html`
         <div class="sat-info-row sat-only-info">
           <div class="sat-info-key"
             kt-tooltip="${t7e('SatInfoBoxObject.StdMag.tooltip')}">${t7e('SatInfoBoxObject.StdMag.label')}
           </div>
           <div class="sat-info-value" id="${EL.STDMAG}">NO DATA</div>
-        </div>
+        </div>` : ''}
       </div>
     `;
   }
@@ -173,7 +176,9 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     this.updateCountryCorrelationTable_(satMisl);
     this.updateLaunchSiteCorrelationTable_(satMisl);
 
-    this.updateLaunchVehicleCorrelationTable_(obj);
+    if (settingsManager.plugins.SatInfoBoxObject?.isShowLaunchVehicle !== false) {
+      this.updateLaunchVehicleCorrelationTable_(obj);
+    }
     this.updateSatType_(obj);
     this.updateSatStatus_(obj);
 
@@ -183,16 +188,26 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
 
     const sat = satMisl as Satellite;
 
-    const satStandardMagnitudeElement = getEl(EL.STDMAG)!;
-    const satConfigurationElement = getEl(EL.CONFIGURATION)!;
+    if (settingsManager.plugins.SatInfoBoxObject?.isShowStdMag !== false) {
+      const satStandardMagnitudeElement = getEl(EL.STDMAG);
 
-    satStandardMagnitudeElement.innerHTML = sat?.vmag && sat?.vmag?.toFixed(2) !== '' ? sat?.vmag?.toFixed(2) : t7e('SatInfoBoxObject.unknown');
-    satConfigurationElement.innerHTML = sat?.configuration && sat?.configuration !== '' ? sat?.configuration : t7e('SatInfoBoxObject.unknown');
+      if (satStandardMagnitudeElement) {
+        satStandardMagnitudeElement.innerHTML = sat?.vmag && sat?.vmag?.toFixed(2) !== '' ? sat?.vmag?.toFixed(2) : t7e('SatInfoBoxObject.unknown');
 
-    if (!sat?.vmag && sat?.vmag !== 0) {
-      sat.vmag = this.calculateStdMag_(sat);
+        if (!sat?.vmag && sat?.vmag !== 0) {
+          sat.vmag = this.calculateStdMag_(sat);
+        }
+      }
     }
-    getEl(EL.CONFIGURATION)!.innerHTML = sat.configuration !== '' ? sat.configuration : t7e('SatInfoBoxObject.unknown');
+
+    if (settingsManager.plugins.SatInfoBoxObject?.isShowConfiguration !== false) {
+      const satConfigurationElement = getEl(EL.CONFIGURATION);
+
+      if (satConfigurationElement) {
+        satConfigurationElement.innerHTML = sat?.configuration && sat?.configuration !== '' ? sat?.configuration : t7e('SatInfoBoxObject.unknown');
+      }
+    }
+
     requestIdleCallback(this.updateRcsData_.bind(this, sat));
   }
 
@@ -420,19 +435,24 @@ export class SatInfoBoxObject extends KeepTrackPlugin {
     }
 
     if ((sat.rcs === null || typeof sat.rcs === 'undefined')) {
-      const estRcs = SatMath.estimateRcsUsingHistoricalData(sat);
-
-      if (estRcs !== null) {
-        satRcsEl.innerHTML = `H-Est ${estRcs.toFixed(4)} m<sup>2</sup>`;
-        satRcsEl.setAttribute('kt-tooltip', `${SatMath.mag2db(estRcs).toFixed(2)} dBsm (Historical Estimate)`);
-      } else if (sat.length && sat.diameter && sat.span && sat.shape) {
-        const rcs = SatMath.estimateRcs(parseFloat(sat.length), parseFloat(sat.diameter), parseFloat(sat.span), sat.shape);
-
-        satRcsEl.innerHTML = `Est ${rcs.toFixed(4)} m<sup>2</sup>`;
-        satRcsEl.setAttribute('kt-tooltip', `Est ${SatMath.mag2db(rcs).toFixed(2)} dBsm`);
-      } else {
+      if (settingsManager.plugins.SatInfoBoxObject?.isEstimateRcs === false) {
         satRcsEl.innerHTML = t7e('Common.unknown');
         satRcsEl.setAttribute('kt-tooltip', t7e('Common.unknown'));
+      } else {
+        const estRcs = SatMath.estimateRcsUsingHistoricalData(sat);
+
+        if (estRcs !== null) {
+          satRcsEl.innerHTML = `H-Est ${estRcs.toFixed(4)} m<sup>2</sup>`;
+          satRcsEl.setAttribute('kt-tooltip', `${SatMath.mag2db(estRcs).toFixed(2)} dBsm (Historical Estimate)`);
+        } else if (sat.length && sat.diameter && sat.span && sat.shape) {
+          const rcs = SatMath.estimateRcs(parseFloat(sat.length), parseFloat(sat.diameter), parseFloat(sat.span), sat.shape);
+
+          satRcsEl.innerHTML = `Est ${rcs.toFixed(4)} m<sup>2</sup>`;
+          satRcsEl.setAttribute('kt-tooltip', `Est ${SatMath.mag2db(rcs).toFixed(2)} dBsm`);
+        } else {
+          satRcsEl.innerHTML = t7e('Common.unknown');
+          satRcsEl.setAttribute('kt-tooltip', t7e('Common.unknown'));
+        }
       }
     } else if (!isNaN(sat.rcs)) {
       satRcsEl.innerHTML = `${sat.rcs} m<sup>2</sup>`;

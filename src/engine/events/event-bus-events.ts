@@ -150,6 +150,11 @@ export enum EventBusEvent {
    */
   scenarioBoundsChanged = 'scenarioBoundsChanged',
   /**
+   * Emitted after any successful updateScenario() call (name, description, or time changes).
+   * Parameters: (scenario: ScenarioData)
+   */
+  scenarioUpdated = 'scenarioUpdated',
+  /**
    * Emitted when the camera type changes via changeCameraType().
    * Parameters: (cameraTypeName: string)
    */

@@ -79,6 +79,9 @@ const settingsOverride = {
       enabled: false,
       order: 40,
     },
+    WatchlistFilterPlugin: {
+      enabled: false,
+    },
     WatchlistOverlay: {
       enabled: false,
       order: 41,
@@ -110,6 +113,9 @@ const settingsOverride = {
     Breakup: {
       enabled: false,
       order: 73,
+    },
+    BreakupAnalysis: {
+      enabled: false,
     },
     MissilePlugin: {
       enabled: false,
@@ -357,6 +363,110 @@ const settingsOverride = {
       enabled: false,
     },
     ViewInfoRmbPlugin: {
+      enabled: false,
+    },
+    // Plugins from CelesTrak config — explicitly disabled to prevent
+    // manifest defaults from adding unwanted UI to the embed deployment.
+    SeismicActivityPlugin: {
+      enabled: false,
+    },
+    AuroraPlugin: {
+      enabled: false,
+    },
+    NaturalEventsPlugin: {
+      enabled: false,
+    },
+    NeighborhoodHistoryPlugin: {
+      enabled: false,
+    },
+    SatelliteEciView: {
+      enabled: false,
+    },
+    SatelliteFixedView: {
+      enabled: false,
+    },
+    FpsView: {
+      enabled: false,
+    },
+    SkipInterpolationToggle: {
+      enabled: false,
+    },
+    SearchSettingsPlugin: {
+      enabled: false,
+    },
+    FavoritesMenuPlugin: {
+      enabled: false,
+    },
+    CommandPalettePlugin: {
+      enabled: false,
+    },
+    CovariancePlugin: {
+      enabled: false,
+    },
+    CovarianceStatsPlugin: {
+      enabled: false,
+    },
+    KeyboardShortcutsPlugin: {
+      enabled: false,
+    },
+    PolarView: {
+      enabled: false,
+    },
+    GraticuleToggle: {
+      enabled: false,
+    },
+    PoliticalMapToggle: {
+      enabled: false,
+    },
+    CloudsToggle: {
+      enabled: false,
+    },
+    HideOtherSatellitesPlugin: {
+      enabled: false,
+    },
+    FovFadePlugin: {
+      enabled: false,
+    },
+    SatInfoBoxSponsor: {
+      enabled: false,
+    },
+    SatInfoBoxDoppler: {
+      enabled: false,
+    },
+    SoundToggle: {
+      enabled: false,
+    },
+    CatalogBrowserPlugin: {
+      enabled: false,
+    },
+    SymbologyPlugin: {
+      enabled: false,
+    },
+    CatalogManagementPlugin: {
+      enabled: false,
+    },
+    ObservationReaderPlugin: {
+      enabled: false,
+    },
+    EclipseSolarAnalysis: {
+      enabled: false,
+    },
+    OpticalSimulation: {
+      enabled: false,
+    },
+    NeighborhoodWatch: {
+      enabled: false,
+    },
+    TocaPocaPlugin: {
+      enabled: false,
+    },
+    ColorSchemeEditorPlugin: {
+      enabled: false,
+    },
+    BestPassPlugin: {
+      enabled: false,
+    },
+    ScenarioManagementMenu: {
       enabled: false,
     },
   },

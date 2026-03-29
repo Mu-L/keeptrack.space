@@ -287,6 +287,13 @@ export class SearchManager {
       groupManagerInstance.clearSelect();
       this.isResultsOpen = false;
 
+      // Clear the current text in the search box and reset search results
+      const searchDom = <HTMLInputElement>getEl('search');
+
+      if (searchDom) {
+        searchDom.value = '';
+      }
+
       settingsManager.lastSearch = '';
       settingsManager.lastSearchResults = [];
       dotsManagerInstance.updateSizeBuffer(catalogManagerInstance.objectCache.length);
@@ -603,6 +610,7 @@ export class SearchManager {
 
   private static getSearchableObjects_(isIncludeMissiles = true): (Satellite | MissileObject)[] | Satellite[] {
     const catalogManagerInstance = ServiceLocator.getCatalogManager();
+    const dotsManagerInstance = ServiceLocator.getDotsManager();
     const searchableObjects = (
       catalogManagerInstance.objectCache.filter((obj) => {
         if (obj.isSensor() || obj.isMarker() || obj.isGroundObject() || obj.isStar()) {
@@ -624,8 +632,8 @@ export class SearchManager {
         } // Everything has a name. If it doesn't then assume it isn't what we are searching for.
 
         // Skip decayed satellites (position 0,0,0) if setting is disabled
-        if (!settingsManager.isShowDecayedInSearch) {
-          const pos = (obj as unknown as { position?: { x: number; y: number; z: number } }).position;
+        if (!settingsManager.isShowDecayedInSearch && dotsManagerInstance.positionData) {
+          const pos = dotsManagerInstance.getCurrentPosition(Number(obj.id));
 
           if (pos && pos.x === 0 && pos.y === 0 && pos.z === 0) {
             return false;
@@ -649,6 +657,7 @@ export class SearchManager {
 
   fillResultBox(results: SearchResult[], catalogManagerInstance: CatalogManager, totalFound?: number) {
     const colorSchemeManagerInstance = ServiceLocator.getColorSchemeManager();
+    const dotsManagerInstance = ServiceLocator.getDotsManager();
 
     const satData = catalogManagerInstance.objectCache;
 
@@ -661,7 +670,7 @@ export class SearchManager {
 
     htmlStr += results.reduce((html, result) => {
       const obj = <Satellite | OemSatellite | MissileObject>satData[result.id];
-      const pos = (obj as unknown as { position?: { x: number; y: number; z: number } }).position;
+      const pos = dotsManagerInstance.positionData ? dotsManagerInstance.getCurrentPosition(Number(obj.id)) : null;
       const isDecayed = pos && pos.x === 0 && pos.y === 0 && pos.z === 0;
       const decayedClass = isDecayed ? ' search-result-decayed' : '';
 

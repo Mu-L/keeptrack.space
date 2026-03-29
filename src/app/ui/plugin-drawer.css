@@ -136,6 +136,12 @@ body.drawer-mode {
     flex-direction: column;
   }
 
+  /* Hide the drawer and hamburger when there are no items */
+  .plugin-drawer.drawer-empty,
+  .drawer-hamburger.drawer-empty {
+    display: none;
+  }
+
   /* Inner wrapper handles scroll — grows to fill available space above the utility footer */
   .drawer-inner {
     flex: 1;

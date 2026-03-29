@@ -35,7 +35,7 @@ export class SoundToggle extends KeepTrackPlugin {
     PluginRegistry.getPlugin(TopMenu)?.navItems.push({
       id: 'sound-btn',
       order: 1,
-      classInner: 'bmenu-item-selected',
+      class: 'bmenu-item-selected',
       icon: soundOnPng,
       tooltip: this.t_('tooltip'),
     });

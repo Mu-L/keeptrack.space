@@ -38,7 +38,7 @@ export class CloudsToggle extends KeepTrackPlugin {
   getKeyboardShortcuts(): IKeyboardShortcut[] {
     return [
       {
-        key: 'K',
+        key: 'c',
         callback: () => this.bottomMenuClicked(),
       },
     ];
@@ -50,7 +50,7 @@ export class CloudsToggle extends KeepTrackPlugin {
         id: 'CloudsToggle.toggle',
         label: 'Toggle Clouds Layer',
         category: 'Display',
-        shortcutHint: 'K',
+        shortcutHint: 'c',
         callback: () => this.bottomMenuClicked(),
       },
     ];

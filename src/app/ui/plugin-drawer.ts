@@ -54,6 +54,7 @@ export class PluginDrawer {
   private readonly allDrawerItems_: Map<string, DrawerItemData> = new Map();
   private isRailMode_ = false;
   private readonly badges_: Map<string, DrawerBadge> = new Map();
+  private hasItems_ = false;
 
   init(): void {
     this.isMobileMode_ = settingsManager.isMobileModeEnabled;
@@ -293,7 +294,7 @@ export class PluginDrawer {
       }
 
       // Handle bottom icon plugins
-      if (!plugin.bottomIconElementName || !plugin.bottomIconImg) {
+      if (!plugin.bottomIconElementName || !plugin.bottomIconImg || plugin.isBottomIconHidden) {
         continue;
       }
 
@@ -380,6 +381,15 @@ export class PluginDrawer {
     this.renderStatusFooter_();
     this.syncInitialUtilityState_();
     PluginDrawer.updateBottomMenuCssVars_();
+
+    // Check if the drawer has any items at all
+    this.hasItems_ = this.allDrawerItems_.size > 0;
+    if (!this.hasItems_) {
+      this.drawerEl_?.classList.add('drawer-empty');
+      this.hamburgerEl_?.classList.add('drawer-empty');
+
+      return;
+    }
 
     // Apply rail mode if it was persisted (desktop only)
     if (this.isRailMode_ && !this.isMobileMode_) {
@@ -592,6 +602,10 @@ export class PluginDrawer {
       }
 
       if (evt.key === 'Tab') {
+        if (!this.hasItems_) {
+          return;
+        }
+
         // Don't toggle if user is typing in an input/textarea
         const activeEl = document.activeElement;
 

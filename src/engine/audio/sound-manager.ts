@@ -41,6 +41,9 @@ export class SoundManager {
   set isMute(value: boolean) {
     if (this.isMute_ !== value) {
       this.isMute_ = value;
+      if (value) {
+        this.stopAll_();
+      }
       EventBus.getInstance().emit(EventBusEvent.soundMuteChanged, value);
     }
   }
@@ -304,6 +307,32 @@ export class SoundManager {
         htmlAudio.currentTime = 0;
       }
     }
+  }
+
+  private stopAll_(): void {
+    // Stop all Web Audio API sounds
+    this.playingSounds.forEach((sounds, key) => {
+      sounds.forEach(({ source }) => {
+        try {
+          source.stop();
+        } catch {
+          // Source may have already stopped
+        }
+      });
+      this.playingSounds.set(key, []);
+    });
+
+    // Stop all HTML5 Audio sounds
+    this.htmlAudioElements.forEach((audio) => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+
+    // Stop chatter loop
+    clearTimeout(this.nextChatter);
+
+    // Cancel any speech synthesis
+    window.speechSynthesis.cancel();
   }
 
   private static fadeOut_(sound: HTMLAudioElement, duration = 1000) {
