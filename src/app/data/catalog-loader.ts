@@ -1209,6 +1209,13 @@ export class CatalogLoader {
       return;
     }
 
+    // If pulling from celestrak.org directly or TLE source is the celestrak endpoint of our API, assume Celestrak source
+    if (settingsManager.dataSources.externalTLEs.includes('celestrak.org') || settingsManager.dataSources.tle.includes('sats/celestrak')) {
+      resp[i].source = CatalogSource.CELESTRAK;
+    } else if (!resp[i].source) {
+      resp[i].source = CatalogSource.UNKNOWN;
+    }
+
     const intlDes = CatalogLoader.parseIntlDes_(resp[i].tle1);
 
     resp[i].intlDes = intlDes;
