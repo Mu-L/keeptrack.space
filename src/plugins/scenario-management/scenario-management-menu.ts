@@ -47,7 +47,7 @@ export class ScenarioManagementMenu extends KeepTrackPlugin {
   protected formPrefix_ = 'scenario-management-form';
   sideMenuElementName: string = 'scenario-management-menu';
 
-  private corePlugin_ = PluginRegistry.getPlugin(ScenarioManagementPlugin)!;
+  private corePlugin_!: ScenarioManagementPlugin;
 
   sideMenuElementHtml: string = html`
   <div id="scenario-management-menu" class="side-menu-parent start-hidden">
@@ -63,13 +63,12 @@ export class ScenarioManagementMenu extends KeepTrackPlugin {
             <h5 class="center-align">Scenario Settings</h5>
             <!-- Scenario Name -->
             <div class="input-field col s12">
-              <input required value="${this.corePlugin_.defaultScenarioName}" id="${this.formPrefix_}-name" type="text" kt-tooltip="The name of the scenario.">
+              <input required id="${this.formPrefix_}-name" type="text" kt-tooltip="The name of the scenario.">
               <label class="active" for="${this.formPrefix_}-name">Scenario Name</label>
             </div>
             <!-- Scenario Description -->
             <div class="input-field col s12">
               <input id="${this.formPrefix_}-description" type="text"
-              value="${this.corePlugin_.defaultScenarioDescription}"
               kt-tooltip="The description of the scenario." placeholder="Enter scenario description here...">
               <label class="active" for="${this.formPrefix_}-description">Description</label>
             </div>
@@ -101,6 +100,19 @@ export class ScenarioManagementMenu extends KeepTrackPlugin {
 
   addHtml(): void {
     super.addHtml();
+
+    this.corePlugin_ = PluginRegistry.getPlugin(ScenarioManagementPlugin)!;
+
+    const nameInput = getEl(`${this.formPrefix_}-name`) as HTMLInputElement;
+    const descriptionInput = getEl(`${this.formPrefix_}-description`) as HTMLInputElement;
+
+    if (nameInput) {
+      nameInput.value = this.corePlugin_.defaultScenarioName;
+    }
+    if (descriptionInput) {
+      descriptionInput.value = this.corePlugin_.defaultScenarioDescription;
+    }
+
     EventBus.getInstance().on(
       EventBusEvent.uiManagerFinal,
       () => {
