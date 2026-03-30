@@ -60,7 +60,7 @@ export class DataSettings {
    *
    * Can be set via the `apiKey` query parameter or programmatically.
    */
-  apiKey = '';
+  apiKey = process.env.KEEPTRACK_API_KEY ?? '';
 
   // Database
   db: unknown = null;
