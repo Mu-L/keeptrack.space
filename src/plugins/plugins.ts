@@ -8,41 +8,50 @@ import type { KeepTrackPluginsConfiguration } from './keeptrack-plugins-configur
 import type { PluginDescriptor } from './plugin-descriptor';
 import { pluginManifest } from './plugin-manifest';
 
+interface ResolvedPlugin {
+  mod: Record<string, unknown>;
+  usedPro: boolean;
+}
+
 export class PluginManager {
   /**
-   * Instantiate and initialize a single plugin from its descriptor.
+   * Download a plugin module without initializing it.
    * Tries the pro import first when IS_PRO=true, falls back to OSS.
    */
-  private static async loadPlugin_(descriptor: PluginDescriptor): Promise<void> {
+  private static async resolveModule_(descriptor: PluginDescriptor): Promise<ResolvedPlugin | null> {
     if (__IS_PRO__ && descriptor.proImport) {
       try {
-        const mod = await descriptor.proImport();
-        const className = descriptor.proClassName ?? descriptor.ossClassName;
-
-        if (!className) {
-          return;
-        }
-        const PluginClass = mod[className] as new () => KeepTrackPlugin;
-        const plugin = new PluginClass();
-
-        if (descriptor.isLoginRequired) {
-          plugin.isLoginRequired = true;
-        }
-        plugin.init();
-
-        return;
+        return { mod: await descriptor.proImport(), usedPro: true };
       } catch { /* fall through to OSS */ }
     }
 
-    if (!descriptor.ossImport || !descriptor.ossClassName) {
-      // Pro-only plugin with no OSS fallback — skip for non-pro builds
+    if (!descriptor.ossImport) {
+      return null;
+    }
+
+    return { mod: await descriptor.ossImport(), usedPro: false };
+  }
+
+  /**
+   * Instantiate and initialize a plugin from an already-resolved module.
+   */
+  private static initPlugin_(descriptor: PluginDescriptor, resolved: ResolvedPlugin): void {
+    const className = resolved.usedPro
+      ? (descriptor.proClassName ?? descriptor.ossClassName)
+      : descriptor.ossClassName;
+
+    if (!className) {
       return;
     }
 
-    const mod = await descriptor.ossImport();
-    const PluginClass = mod[descriptor.ossClassName] as new () => KeepTrackPlugin;
+    const PluginClass = resolved.mod[className] as new () => KeepTrackPlugin;
+    const plugin = new PluginClass();
 
-    new PluginClass().init();
+    if (descriptor.isLoginRequired) {
+      plugin.isLoginRequired = true;
+    }
+
+    plugin.init();
   }
 
   async loadPlugins(plugins: KeepTrackPluginsConfiguration): Promise<void> {
@@ -53,18 +62,42 @@ export class PluginManager {
 
     plugins ??= <KeepTrackPluginsConfiguration>{};
     try {
+      // Build list of enabled descriptors
+      const enabledDescriptors: PluginDescriptor[] = [];
+
       for (const descriptor of pluginManifest) {
         const config = descriptor.alwaysEnabled
           ? { enabled: true }
           : (plugins as Record<string, { enabled: boolean } | undefined>)[descriptor.configKey];
 
         if (config?.enabled) {
-          try {
-            // eslint-disable-next-line no-await-in-loop
-            await PluginManager.loadPlugin_(descriptor);
-          } catch (e) {
-            errorManagerInstance.warn(`Error loading plugin ${descriptor.configKey}: ${(e as Error).message}`);
-          }
+          enabledDescriptors.push(descriptor);
+        }
+      }
+
+      // Phase 1: Download all plugin modules in parallel
+      const resolvedModules = await Promise.all(
+        enabledDescriptors.map((descriptor) =>
+          PluginManager.resolveModule_(descriptor).catch((e) => {
+            errorManagerInstance.warn(`Error downloading plugin ${descriptor.configKey}: ${(e as Error).message}`);
+
+            return null;
+          }),
+        ),
+      );
+
+      // Phase 2: Initialize sequentially in manifest order (preserves dependency checks)
+      for (let i = 0; i < enabledDescriptors.length; i++) {
+        const resolved = resolvedModules[i];
+
+        if (!resolved) {
+          continue;
+        }
+
+        try {
+          PluginManager.initPlugin_(enabledDescriptors[i], resolved);
+        } catch (e) {
+          errorManagerInstance.warn(`Error initializing plugin ${enabledDescriptors[i].configKey}: ${(e as Error).message}`);
         }
       }
 

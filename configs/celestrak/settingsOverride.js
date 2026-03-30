@@ -227,6 +227,9 @@ const settingsOverride = {
     },
     // Plugins not in original override — explicitly disabled to prevent
     // manifest defaults from adding unwanted UI to the CelesTrak deployment.
+    OverflightPlugin: {
+      enabled: false,
+    },
     SeismicActivityPlugin: {
       enabled: false,
     },
