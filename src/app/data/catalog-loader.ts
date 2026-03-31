@@ -197,15 +197,11 @@ export class CatalogLoader {
     try {
       // TODO: Which sources can use this should be definied in the settings (Celestrak Rebase)
       if (
-        (/^https?:\/\/(?:api\.keeptrack\.space|localhost:8787)\/v[23]\/sats(?:\/celestrak)?$/u).test(settingsManager.dataSources.tle)
+        (/^https?:\/\/(?:api\.keeptrack\.space|localhost:8787)\/v4\/sats(?:\/celestrak)?$/u).test(settingsManager.dataSources.tle)
       ) {
-        // If using v3 switch to v2
-        if (settingsManager.dataSources.tle.includes('v2') || settingsManager.limitSats.length > 0) {
-          settingsManager.dataSources.tle = settingsManager.dataSources.tle.replace(/\/v3\//u, '/v2/');
-        }
+        const limitSegment = settingsManager.limitSats ? `/${settingsManager.limitSats}` : '';
 
-        settingsManager.dataSources.tle = `${settingsManager.dataSources.tle}/${settingsManager.limitSats}`;
-        settingsManager.dataSources.tle = settingsManager.dataSources.tle.replace(/\/$/u, '');
+        settingsManager.dataSources.tle = `${settingsManager.dataSources.tle}${limitSegment}?format=keeptrack`;
       }
 
       const {

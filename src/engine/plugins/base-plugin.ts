@@ -446,13 +446,15 @@ export abstract class KeepTrackPlugin {
       throw new Error(`${this.id} is already initialized.`);
     }
 
-    this.checkDependencies();
+    const pluginConfig = settingsManager.plugins[this.id];
 
-    if (settingsManager.plugins[this.id]?.isEnabled === false) {
+    if (pluginConfig === false || pluginConfig?.enabled === false) {
       errorManagerInstance.debug(`${this.id} is disabled in the settings.`);
 
       return;
     }
+
+    this.checkDependencies();
 
     if (settingsManager.plugins[this.id]?.menuMode) {
       this.menuMode = settingsManager.plugins[this.id].menuMode;
