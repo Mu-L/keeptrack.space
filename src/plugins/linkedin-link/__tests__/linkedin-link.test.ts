@@ -3,6 +3,7 @@ import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { LinkedInLinkPlugin } from '@app/plugins/linkedin-link/linkedin-link';
 import { TopMenu } from '@app/plugins/top-menu/top-menu';
+import { settingsManager } from '@app/settings/settings';
 import { setupStandardEnvironment } from '@test/environment/standard-env';
 
 describe('LinkedInLinkPlugin', () => {
@@ -10,6 +11,7 @@ describe('LinkedInLinkPlugin', () => {
 
   beforeEach(() => {
     setupStandardEnvironment([TopMenu]);
+    settingsManager.plugins.LinkedInLinkPlugin = { enabled: true };
     linkedInLinkPlugin = new LinkedInLinkPlugin();
   });
 
