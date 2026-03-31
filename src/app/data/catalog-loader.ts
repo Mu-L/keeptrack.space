@@ -199,8 +199,9 @@ export class CatalogLoader {
       if (
         (/^https?:\/\/(?:api\.keeptrack\.space|localhost:8787)\/v4\/sats(?:\/celestrak)?$/u).test(settingsManager.dataSources.tle)
       ) {
-        settingsManager.dataSources.tle = `${settingsManager.dataSources.tle}/${settingsManager.limitSats}?format=keeptrack`;
-        settingsManager.dataSources.tle = settingsManager.dataSources.tle.replace(/\/$/u, '');
+        const limitSegment = settingsManager.limitSats ? `/${settingsManager.limitSats}` : '';
+
+        settingsManager.dataSources.tle = `${settingsManager.dataSources.tle}${limitSegment}?format=keeptrack`;
       }
 
       const {
