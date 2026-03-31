@@ -469,6 +469,9 @@ const settingsOverride = {
     ScenarioManagementMenu: {
       enabled: false,
     },
+    OverflightPlugin: {
+      enabled: false,
+    },
   },
   dataSources: {
     tle: 'https://api.keeptrack.space/v4/sats',
@@ -512,7 +515,7 @@ const settingsOverride = {
   isDisableUrlBar: true,
   isAutoStart: true,
 
-  initZoomLevel: 0.71,
+  initZoomLevel: 0.87,
 
   isDisableSkybox: true,
   isDisablePlanets: true,
