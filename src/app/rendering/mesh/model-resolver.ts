@@ -14,6 +14,7 @@ export const SatelliteModels = {
   globalstar: 'globalstar',
   glonass: 'glonass',
   gps: 'gps',
+  hubble: 'hubble',
   iridium: 'iridium',
   iss: 'iss',
   lemur: 'lemur',
@@ -24,6 +25,7 @@ export const SatelliteModels = {
   o3b: 'o3b',
   oneweb: 'oneweb',
   orbcomm: 'orbcomm',
+  orion: 'orion',
   rocketbody: 'rocketbody',
   rv: 'rv',
   s1u: 's1u',
@@ -32,6 +34,7 @@ export const SatelliteModels = {
   s6u: 's6u',
   s12u: 's12u',
   sat2: 'sat2',
+  'saturn-iv-b': 'saturn-iv-b',
   sbirs: 'sbirs',
   ses: 'ses',
   spacebee1gen: 'spacebee1gen',
@@ -40,14 +43,16 @@ export const SatelliteModels = {
   starlink: 'starlink',
   sateliotsat: 'sateliotsat',
   sateliotsat2: 'sateliotsat2',
+  tiangong: 'tiangong',
   issmodel: 'issmodel',
   jwst: 'jwst',
 } as const;
 
 enum SatelliteNumber {
   iss = '25544',
-  tianhe = '48274',
+  tiangong = '48274',
   jwst = '50463',
+  hubble = '20580',
 }
 
 export class ModelResolver {
@@ -63,6 +68,7 @@ export class ModelResolver {
     'globalstar': null as MeshModel | null,
     'glonass': null as MeshModel | null,
     'gps': null as MeshModel | null,
+    'hubble': null as MeshModel | null,
     'iridium': null as MeshModel | null,
     'iss': null as MeshModel | null,
     'lemur': null as MeshModel | null,
@@ -73,6 +79,7 @@ export class ModelResolver {
     'o3b': null as MeshModel | null,
     'oneweb': null as MeshModel | null,
     'orbcomm': null as MeshModel | null,
+    'orion': null as MeshModel | null,
     // other: null,
     'rocketbody': null as MeshModel | null,
     'rv': null as MeshModel | null,
@@ -90,6 +97,8 @@ export class ModelResolver {
     'starlink': null as MeshModel | null,
     'sateliotsat': null as MeshModel | null,
     'sateliotsat2': null as MeshModel | null,
+    'saturn-iv-b': null as MeshModel | null,
+    'tianhe': null as MeshModel | null,
   };
 
   private readonly sccNumAehf_ = ['36868', '38254', '39256', '43651', '44481', '45465'];
@@ -152,12 +161,12 @@ export class ModelResolver {
       return SatelliteModels.iss;
     }
 
-    /**
-     * Temporary solution for Tianhe-1
-     * TODO: Create a real model for Tianhe-1
-     */
-    if (sat.sccNum === SatelliteNumber.tianhe) {
-      return SatelliteModels.iss;
+    if (sat.sccNum === SatelliteNumber.hubble) {
+      return SatelliteModels.hubble;
+    }
+
+    if (sat.sccNum === SatelliteNumber.tiangong) {
+      return SatelliteModels.tiangong;
     }
 
     // JWST not ready yet.
