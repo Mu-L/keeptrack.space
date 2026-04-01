@@ -7,8 +7,7 @@
       "sections": {
         "planets": "행성",
         "dwarfPlanets": "왜소행성",
-        "otherCelestialBodies": "기타 천체",
-        "deepSpaceProbes": "심우주 탐사선"
+        "otherCelestialBodies": "기타 천체"
       },
       "tooltips": {
         "centerCamera": "{body}에 카메라를 맞춥니다.",

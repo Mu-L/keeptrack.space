@@ -7,8 +7,7 @@
       "sections": {
         "planets": "Планеты",
         "dwarfPlanets": "Карликовые планеты",
-        "otherCelestialBodies": "Другие небесные тела",
-        "deepSpaceProbes": "Межпланетные зонды"
+        "otherCelestialBodies": "Другие небесные тела"
       },
       "tooltips": {
         "centerCamera": "Направить камеру на {body}.",
