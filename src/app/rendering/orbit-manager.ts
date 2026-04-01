@@ -402,7 +402,7 @@ export class OrbitManager {
           missileParams?.latList, missileParams?.lonList, missileParams?.altList,
         );
       } else if (obj instanceof OemSatellite) {
-        this.setOemSatelliteOrbitBuffer_(id, obj.getOrbitPath(settingsManager.oemOrbitSegments));
+        this.setOemSatelliteOrbitBuffer_(id, obj.getOrbitPath());
       } else {
         // Then it is a satellite
         this.orbitThreadMgr.sendSatelliteUpdate(
@@ -581,6 +581,10 @@ export class OrbitManager {
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, pointsOut);
     }
 
+    // Invalidate the alignment cache so alignOrbitSelectedObject reads the
+    // fresh GPU data next frame instead of reusing a stale orbit shape.
+    this.orbitCache.delete(satId);
+
     this.inProgress_[satId] = false;
   }
 
@@ -701,7 +705,7 @@ export class OrbitManager {
     }
 
     if (obj instanceof OemSatellite && obj.orbitPathCache_) {
-      this.lineManagerInstance_.setAttribsAndDrawLineStrip(this.glBuffers_[id], settingsManager.oemOrbitSegments);
+      this.lineManagerInstance_.setAttribsAndDrawLineStrip(this.glBuffers_[id], obj.orbitPathCache_.length / 4);
     } else {
       this.lineManagerInstance_.setAttribsAndDrawLineStrip(this.glBuffers_[id], settingsManager.orbitSegments + 1);
     }
