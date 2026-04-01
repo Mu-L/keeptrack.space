@@ -212,6 +212,7 @@ const PROPERTY_CATEGORY_MAP: Record<string, keyof SettingsManager> = {
   touchMomentumDamping: 'camera',
   isLocalRotateEnabled: 'camera',
   drawCameraWidget: 'camera',
+  isCompensateForEarthRotation: 'camera',
 
   // Orbital
   isDrawOrbits: 'orbital',

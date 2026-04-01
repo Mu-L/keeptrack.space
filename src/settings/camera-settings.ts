@@ -225,6 +225,9 @@ export class CameraSettings {
 
   /** Enables the camera widget */
   drawCameraWidget = false;
+
+  /** Compensate for Earth rotation so the camera stays fixed to geographic coordinates */
+  isCompensateForEarthRotation = true;
 }
 
 export const defaultCameraSettings = new CameraSettings();

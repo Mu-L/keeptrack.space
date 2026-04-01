@@ -168,6 +168,13 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
                 Disable Time Machine Toasts
               </label>
             </div>
+            <div class="switch row">
+              <label data-position="top" data-delay="50" data-tooltip="Compensate camera yaw for Earth rotation so the view stays fixed to geographic coordinates.">
+                <input id="settings-compensateEarthRotation" type="checkbox" checked/>
+                <span class="lever"></span>
+                Compensate for Earth Rotation
+              </label>
+            </div>
           </div>
           <div class="row light-blue darken-3" style="height:4px; display:block;"></div>
           <div id="settings-opt" class="row">
@@ -249,6 +256,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       { id: 'settings-snp', setting: 'isShowNextPassOnHover' },
       { id: 'settings-freeze-drag', setting: 'isFreezePropRateOnDrag' },
       { id: 'settings-time-machine-toasts', setting: 'isDisableTimeMachineToasts' },
+      { id: 'settings-compensateEarthRotation', setting: 'isCompensateForEarthRotation' },
     ];
 
     settingsElements.forEach(({ id, setting }) => {
@@ -293,6 +301,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
       case 'settings-demo-mode':
       case 'settings-freeze-drag':
       case 'settings-time-machine-toasts':
+      case 'settings-compensateEarthRotation':
       case 'settings-snp':
         if ((<HTMLInputElement>getEl((<HTMLInputElement>e.target)?.id ?? ''))?.checked) {
           ServiceLocator.getSoundManager()?.play(SoundNames.TOGGLE_ON);
@@ -329,6 +338,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     settingsManager.satLabelMode = SatLabelMode.FOV_ONLY;
     settingsManager.isFreezePropRateOnDrag = false;
     settingsManager.isDisableTimeMachineToasts = false;
+    settingsManager.isCompensateForEarthRotation = true;
     PersistenceManager.getInstance().removeItem(StorageKey.SETTINGS_DOT_COLORS);
     SettingsManager.preserveSettings();
     SettingsMenuPlugin.syncOnLoad();
@@ -385,6 +395,7 @@ export class SettingsMenuPlugin extends KeepTrackPlugin {
     settingsManager.isFreezePropRateOnDrag = (<HTMLInputElement>getEl('settings-freeze-drag')).checked;
 
     settingsManager.isDisableTimeMachineToasts = (<HTMLInputElement>getEl('settings-time-machine-toasts')).checked;
+    settingsManager.isCompensateForEarthRotation = (<HTMLInputElement>getEl('settings-compensateEarthRotation')).checked;
     const timeMachinePlugin = PluginRegistry.getPlugin(TimeMachine);
 
     /*
