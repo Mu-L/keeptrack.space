@@ -17,7 +17,7 @@ import { KeepTrack } from '@app/keeptrack';
 import { keepTrackApi } from '@app/keepTrackApi';
 import {
   BaseObject, cKmPerMs, DEG2RAD,
-  eci2lla, eci2rae,
+  eci2lla,
   RadecTopocentric,
   Satellite,
   SpaceObjectType, Sun, SunTime,
@@ -122,7 +122,7 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
     const hasSatSelected = selectSatManager && selectSatManager.selectedSat >= 0;
     const sensorManagerInstance = ServiceLocator.getSensorManager();
 
-    if (!settingsManager.isDisableSensors && hasSatSelected && sensorManagerInstance.isSensorSelected()) {
+    if (hasSatSelected && sensorManagerInstance.isSensorSelected()) {
       showEl(SECTIONS.SENSOR);
 
       // Immediately update sun status so the placeholder is never visible
@@ -137,7 +137,7 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
   }
 
   private updateSensorInfo_(obj: BaseObject) {
-    if (obj === null || typeof obj === 'undefined' || settingsManager.isDisableSensors) {
+    if (obj === null || typeof obj === 'undefined') {
       return;
     }
 
@@ -297,8 +297,16 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
         if (ServiceLocator.getSensorManager().isSensorSelected()) {
           const sensor = ServiceLocator.getSensorManager().currentSensors[0];
 
-          rae = eci2rae(timeManagerInstance.simulationTimeObj, obj.position, sensor);
-          isInView = sensor.isRaeInFov(rae.az, rae.el, rae.rng);
+          // Use SpaceObject.rae() which properly interpolates the ephemeris at the exact time
+          const raeResult = obj.rae(sensor, timeManagerInstance.simulationTimeObj);
+
+          if (raeResult) {
+            rae = raeResult;
+            isInView = sensor.isRaeInFov(rae.az, rae.el, rae.rng);
+          } else {
+            rae = { az: 0, el: 0, rng: 0 };
+            isInView = false;
+          }
         } else {
           rae = {
             az: 0,
@@ -308,7 +316,7 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
           isInView = false;
         }
 
-        const lla = eci2lla(obj.position, ServiceLocator.getTimeManager().gmst);
+        const lla = obj.lla(timeManagerInstance.simulationTimeObj) ?? eci2lla(obj.position, ServiceLocator.getTimeManager().gmst);
         const currentTearr: TearrData = {
           time: timeManagerInstance.simulationTimeObj.toISOString(),
           az: rae.az,
@@ -355,14 +363,10 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
             sensorManagerInstance.currentSensors[0].objName !== uiManagerInstance.lastNextPassCalcSensorShortName) &&
           !obj.isMissile()
         ) {
-          const sat = obj as Satellite;
+          const nextPassText = this.calculateNextPassText_(obj, sensorManagerInstance);
 
-          if (sat.perigee > sensorManagerInstance.currentSensors[0].maxRng) {
-            if (nextPassElement) {
-              nextPassElement.innerHTML = 'Beyond Max Range';
-            }
-          } else if (nextPassElement) {
-            nextPassElement.innerHTML = SensorMath.nextpass(sat, sensorManagerInstance.currentSensors, 2, 5);
+          if (nextPassElement) {
+            nextPassElement.innerHTML = nextPassText;
           }
 
           /*
@@ -379,6 +383,20 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
     } catch {
       errorManagerInstance.debug('Error updating satellite info!');
     }
+  }
+
+  private calculateNextPassText_(obj: BaseObject, sensorManagerInstance: SensorManager): string {
+    if (obj instanceof OemSatellite) {
+      return 'N/A (OEM)';
+    }
+
+    const sat = obj as Satellite;
+
+    if (sat.perigee > sensorManagerInstance.currentSensors[0].maxRng) {
+      return 'Beyond Max Range';
+    }
+
+    return SensorMath.nextpass(sat, sensorManagerInstance.currentSensors, 2, 5);
   }
 
   private updateSatelliteTearrData_(obj: BaseObject, sensorManagerInstance: SensorManager, timeManagerInstance: TimeManager) {
@@ -514,6 +532,8 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
 
     if (elements.vmag) {
       if (obj.isMissile()) {
+        elements.vmag.innerHTML = 'N/A';
+      } else if (obj instanceof OemSatellite) {
         elements.vmag.innerHTML = 'N/A';
       } else {
         const sat = obj as Satellite;
