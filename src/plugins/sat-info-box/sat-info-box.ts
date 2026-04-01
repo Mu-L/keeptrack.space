@@ -274,7 +274,7 @@ export class SatInfoBox extends KeepTrackPlugin {
 
     setInnerHtml(EL.NAME, obj.name);
 
-    if (obj instanceof Satellite) {
+    if (obj instanceof Satellite || obj instanceof OemSatellite) {
       KeepTrack.getInstance().containerRoot.querySelectorAll('.sat-only-info')?.forEach((el) => {
         (<HTMLElement>el).style.display = 'flex';
       });
@@ -283,10 +283,13 @@ export class SatInfoBox extends KeepTrackPlugin {
     const flagEl = getEl(EL.FLAG, true);
 
     if (flagEl) {
-      if (obj.isSatellite() && (obj as Satellite).sccNum5 === '25544') {
+      const countryCode = obj instanceof OemSatellite ? obj.country : (obj as Satellite).country;
+      const sccNum5 = obj instanceof OemSatellite ? obj.sccNum5 : (obj as Satellite).sccNum5;
+
+      if (obj.isSatellite() && sccNum5 === '25544') {
         flagEl.classList.value = 'fi fi-iss';
       } else {
-        flagEl.classList.value = `fi ${country2flagIcon((obj as Satellite).country)}`;
+        flagEl.classList.value = `fi ${country2flagIcon(countryCode)}`;
       }
     }
 
