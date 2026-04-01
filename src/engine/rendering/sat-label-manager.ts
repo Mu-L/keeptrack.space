@@ -338,9 +338,9 @@ export class SatLabelManager {
                 float cosD = cos(deltaGmst);
                 float sinD = sin(deltaGmst);
                 eciPos = vec3(
-                    eciPos.x * cosD - eciPos.y * sinD,
-                    eciPos.x * sinD + eciPos.y * cosD,
-                    eciPos.z
+                    a_satPosition.x * cosD - a_satPosition.y * sinD + worldOffset.x,
+                    a_satPosition.x * sinD + a_satPosition.y * cosD + worldOffset.y,
+                    a_satPosition.z + worldOffset.z
                 );
             }
             clipPos = u_pMvCamMatrix * vec4(eciPos, 1.0);
