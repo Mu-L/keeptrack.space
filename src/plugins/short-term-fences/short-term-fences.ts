@@ -262,6 +262,7 @@ export class ShortTermFences extends KeepTrackPlugin {
       uiName: 'STF',
       zoom: maxrange > 6000 ? ZoomValue.GEO : ZoomValue.LEO,
       volume: true,
+      isVolumetric: true,
     });
 
     if (
