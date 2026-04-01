@@ -622,6 +622,12 @@ export const pluginManifest: PluginDescriptor[] = [
     defaultConfig: { enabled: true, order: 233 },
   },
   {
+    configKey: 'DeepSpaceMissionsPlugin',
+    proImport: __IS_PRO__ ? () => import('../plugins-pro/deep-space-missions-menu/deep-space-missions-menu') : undefined,
+    proClassName: 'DeepSpaceMissionsPlugin',
+    defaultConfig: { enabled: true, order: 234 },
+  },
+  {
     configKey: 'Screenshot',
     ossImport: () => import('./screenshot/screenshot'),
     ossClassName: 'Screenshot',
