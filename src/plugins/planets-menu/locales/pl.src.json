@@ -7,8 +7,7 @@
       "sections": {
         "planets": "Planety",
         "dwarfPlanets": "Planety karłowate",
-        "otherCelestialBodies": "Inne ciała niebieskie",
-        "deepSpaceProbes": "Sondy kosmiczne"
+        "otherCelestialBodies": "Inne ciała niebieskie"
       },
       "tooltips": {
         "centerCamera": "Wyśrodkuj kamerę na {body}.",

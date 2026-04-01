@@ -7,8 +7,7 @@
       "sections": {
         "planets": "Planets",
         "dwarfPlanets": "Dwarf Planets",
-        "otherCelestialBodies": "Other Celestial Bodies",
-        "deepSpaceProbes": "Deep Space Probes"
+        "otherCelestialBodies": "Other Celestial Bodies"
       },
       "tooltips": {
         "centerCamera": "Center the camera on {body}.",

@@ -48,6 +48,7 @@ export interface KeepTrackMeshBuffer {
   indexBuffer: WebGLBuffer;
   vertexCount: number;
   indexCount: number;
+  useUint32Indices?: boolean;
 }
 export type MeshModel = {
   id: number;

@@ -416,6 +416,11 @@ export class ColorSchemeManager {
     EventBus.getInstance().on(EventBusEvent.filterChanged, () => {
       if (this.useWorkerMode_ && this.colorCruncher_) {
         this.forwardFiltersToWorker_();
+        // Filter menu also bridges isDisableSensors/isDisableLaunchSites,
+        // so forward updated settings and flags to the worker too.
+        this.forwardSettingsToWorker_();
+        this.forwardObjectTypeFlagsToWorker_();
+        this.colorCruncher_.sendForceRecolor();
       }
     });
 

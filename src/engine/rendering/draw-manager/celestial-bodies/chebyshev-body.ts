@@ -20,7 +20,15 @@ export abstract class ChebyshevBody extends CelestialBody {
   }
 
   updatePosition(simTime: Date): void {
-    const posTeme = this.getTeme(simTime, SolarBody.Sun).position;
+    const epoch = new EpochUTC((simTime.getTime() / 1000) as Seconds);
+    const j2000 = this.interpolator_.interpolate(epoch);
+
+    if (!j2000) {
+      // Time is outside the Chebyshev ephemeris range — skip update silently
+      return;
+    }
+
+    const posTeme = j2000.toTEME().position;
     const sunEntity = ServiceLocator.getScene().sun;
 
     sunEntity.updateEci();
@@ -39,12 +47,12 @@ export abstract class ChebyshevBody extends CelestialBody {
    * Get J2000 state for the body.
    * Chebyshev data is heliocentric (Sun-centered); center body adjustment is applied when needed.
    */
-  getJ2000(simTime: Date, centerBody = SolarBody.Earth): J2000 {
+  getJ2000(simTime: Date, centerBody = SolarBody.Earth): J2000 | null {
     const epoch = new EpochUTC((simTime.getTime() / 1000) as Seconds);
     const j2000 = this.interpolator_.interpolate(epoch);
 
     if (!j2000) {
-      throw new Error('Time outside ephemeris range');
+      return null;
     }
 
     // Data is heliocentric — return directly for Sun-centered queries
@@ -96,8 +104,8 @@ export abstract class ChebyshevBody extends CelestialBody {
     return j2000;
   }
 
-  getTeme(simTime: Date, centerBody = SolarBody.Earth): TEME {
-    return this.getJ2000(simTime, centerBody).toTEME();
+  getTeme(simTime: Date, centerBody = SolarBody.Earth): TEME | null {
+    return this.getJ2000(simTime, centerBody)?.toTEME() ?? null;
   }
 
   lastUpdateTime: number = 0;
@@ -139,7 +147,10 @@ export abstract class ChebyshevBody extends CelestialBody {
       for (let i = 0; i < this.orbitPathSegments_; i++) {
         const tMs = startMs + i * timesliceMs;
 
-        this.svCache[i] ??= this.getTeme(new Date(tMs), SolarBody.Sun).position;
+        this.svCache[i] ??= this.getTeme(new Date(tMs), SolarBody.Sun)?.position;
+        if (!this.svCache[i]) {
+          continue;
+        }
         const x = this.svCache[i].x;
         const y = this.svCache[i].y;
         const z = this.svCache[i].z;
@@ -156,9 +167,11 @@ export abstract class ChebyshevBody extends CelestialBody {
 
       // Add the current position as the final trail point so the line reaches the body
       if (isTrail && nowMs >= startMs && nowMs <= endMs) {
-        const currentPos = this.getTeme(new Date(nowMs), SolarBody.Sun).position;
+        const currentPos = this.getTeme(new Date(nowMs), SolarBody.Sun)?.position;
 
-        orbitPositions.push([currentPos.x, currentPos.y, currentPos.z, 1.0]);
+        if (currentPos) {
+          orbitPositions.push([currentPos.x, currentPos.y, currentPos.z, 1.0]);
+        }
       }
 
       this.lastUpdateTime = nowMs;

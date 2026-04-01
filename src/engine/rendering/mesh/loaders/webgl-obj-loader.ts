@@ -67,10 +67,28 @@ export class OBJLoader extends MeshLoader {
       };
 
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-      const indexData = mesh[meshName].makeIndexBufferDataForMaterials(...Object.values(mesh[meshName].materialIndices));
+      const useUint32 = numItems > 65535;
+      let indexCount: number;
 
-      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
-      indexBuffer.numItems = indexData.numItems as number;
+      if (useUint32) {
+        // Build Uint32Array directly from raw indices to avoid Uint16 truncation
+        const materialIndicesValues = Object.values(mesh[meshName].materialIndices) as number[];
+        const rawIndices = ([] as number[]).concat(
+          ...materialIndicesValues.map((mtlIdx) => mesh[meshName].indicesPerMaterial[mtlIdx]),
+        );
+
+        const uint32Indices = new Uint32Array(rawIndices);
+
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, uint32Indices, gl.STATIC_DRAW);
+        indexCount = rawIndices.length;
+      } else {
+        const indexData = mesh[meshName].makeIndexBufferDataForMaterials(...Object.values(mesh[meshName].materialIndices));
+
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
+        indexCount = indexData.numItems as number;
+      }
+
+      indexBuffer.numItems = indexCount;
 
       /*
        * this loops through the mesh names and creates new
@@ -85,6 +103,7 @@ export class OBJLoader extends MeshLoader {
           indexBuffer,
           vertexCount: numItems,
           indexCount: indexBuffer.numItems,
+          useUint32Indices: useUint32,
         },
         layout,
         geometry: {

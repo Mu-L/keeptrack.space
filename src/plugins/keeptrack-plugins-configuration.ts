@@ -108,6 +108,7 @@ export type KeepTrackPluginsConfiguration = {
   CountriesMenu?: PluginConfiguration;
   ColorMenu?: PluginConfiguration;
   PlanetsMenuPlugin?: PluginConfiguration;
+  DeepSpaceMissionsPlugin?: PluginConfiguration;
   Screenshot?: PluginConfiguration;
   LaunchCalendar?: PluginConfiguration;
   TimeMachine?: PluginConfiguration;

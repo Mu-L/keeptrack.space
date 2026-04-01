@@ -7,8 +7,7 @@
       "sections": {
         "planets": "惑星",
         "dwarfPlanets": "矮小惑星",
-        "otherCelestialBodies": "その他の天体",
-        "deepSpaceProbes": "深宇宙探査機"
+        "otherCelestialBodies": "その他の天体"
       },
       "tooltips": {
         "centerCamera": "{body} にカメラを合わせる。",

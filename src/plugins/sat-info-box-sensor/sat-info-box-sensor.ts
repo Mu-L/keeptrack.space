@@ -75,6 +75,9 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
     const satInfoBoxPlugin = PluginRegistry.getPlugin(SatInfoBox)!;
 
     satInfoBoxPlugin.addListenerToCollapseElement(getEl(`${SECTIONS.SENSOR}`), { value: this.isSensorSectionCollapsed_ });
+
+    // Set correct initial visibility now that the DOM element exists
+    this.updateSensorVisibility_();
   }
 
   private createSensorSection_(): string {
@@ -115,15 +118,11 @@ export class SatInfoBoxSensor extends KeepTrackPlugin {
   }
 
   private updateSensorVisibility_(): void {
-    if (settingsManager.isDisableSensors) {
-      return;
-    }
-
     const selectSatManager = PluginRegistry.getPlugin(SelectSatManager);
     const hasSatSelected = selectSatManager && selectSatManager.selectedSat >= 0;
     const sensorManagerInstance = ServiceLocator.getSensorManager();
 
-    if (hasSatSelected && sensorManagerInstance.isSensorSelected()) {
+    if (!settingsManager.isDisableSensors && hasSatSelected && sensorManagerInstance.isSensorSelected()) {
       showEl(SECTIONS.SENSOR);
 
       // Immediately update sun status so the placeholder is never visible

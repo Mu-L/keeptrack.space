@@ -44,7 +44,7 @@ export interface OemHeader {
 export interface OemMetadata {
   OBJECT_NAME: string;
   OBJECT_ID: string;
-  CENTER_NAME: 'EARTH' | 'MARS BARYCENTER';
+  CENTER_NAME: 'EARTH' | 'MARS BARYCENTER' | 'SUN' | 'SOLAR SYSTEM BARYCENTER';
   REF_FRAME: string;
   TIME_SYSTEM: string;
   START_TIME: string;
@@ -55,6 +55,8 @@ export interface OemMetadata {
   INTERPOLATION_DEGREE?: number;
   REF_FRAME_EPOCH?: string;
   COMMENT?: string[];
+  /** User-defined parameters from CCSDS OEM USER_DEFINED_ keywords */
+  USER_DEFINED?: Record<string, string>;
 }
 
 export interface OemCovarianceMatrix {
@@ -112,6 +114,29 @@ export class OemSatellite extends SpaceObject {
   sccNum6 = '';
   intlDes = '';
 
+  // Satellite-compatible properties populated from USER_DEFINED_ OEM metadata
+  country = '';
+  launchSite = '';
+  launchPad = '';
+  launchVehicle = '';
+  configuration = '';
+  mission = '';
+  purpose = '';
+  owner = '';
+  manufacturer = '';
+  bus = '';
+  launchMass = '';
+  dryMass = '';
+  lifetime = '';
+  power = '';
+  payload = '';
+  equipment = '';
+  motor = '';
+  length = '';
+  diameter = '';
+  span = '';
+  shape = '';
+
   eci(date?: Date): PosVel | null {
     const effectiveDate = date ?? ServiceLocator.getTimeManager().simulationTimeObj;
 
@@ -161,7 +186,7 @@ export class OemSatellite extends SpaceObject {
     }
 
     this.stateVectorIdx_ = value;
-    this.orbitPathCache_ = this.getOrbitPath(settingsManager.oemOrbitSegments);
+    this.orbitPathCache_ = this.getOrbitPath();
   }
 
   get dataBlockIdx(): number {
@@ -174,7 +199,7 @@ export class OemSatellite extends SpaceObject {
     }
 
     this.dataBlockIdx_ = value;
-    this.orbitPathCache_ = this.getOrbitPath(settingsManager.oemOrbitSegments);
+    this.orbitPathCache_ = this.getOrbitPath();
   }
 
   constructor(oem: ParsedOem) {
@@ -206,6 +231,10 @@ export class OemSatellite extends SpaceObject {
     switch (oem.dataBlocks[0].metadata.CENTER_NAME) {
       case 'MARS BARYCENTER':
         this.centerBody = SolarBody.Mars;
+        break;
+      case 'SUN':
+      case 'SOLAR SYSTEM BARYCENTER':
+        this.centerBody = SolarBody.Sun;
         break;
       case 'EARTH':
       default:
@@ -239,10 +268,56 @@ export class OemSatellite extends SpaceObject {
 
     this.intlDes = oem.dataBlocks[0]?.metadata.OBJECT_ID ?? '';
 
+    // Extract USER_DEFINED_ metadata (CCSDS 502.0-B-3 Section 7.5.1)
+    this.applyUserDefinedMetadata_(oem.dataBlocks[0]?.metadata.USER_DEFINED);
+
     EventBus.getInstance().on(EventBusEvent.onLinesCleared, () => {
       this.removeFullOrbitPath();
       this.removeOrbitHistory();
     });
+  }
+
+  private applyUserDefinedMetadata_(ud?: Record<string, string>): void {
+    if (!ud) {
+      return;
+    }
+
+    this.country = ud.COUNTRY ?? '';
+    this.launchSite = ud.LAUNCH_SITE ?? '';
+    this.launchPad = ud.LAUNCH_PAD ?? '';
+    this.launchVehicle = ud.LAUNCH_VEHICLE ?? '';
+    this.configuration = ud.CONFIGURATION ?? '';
+    this.mission = ud.MISSION ?? '';
+    this.purpose = ud.PURPOSE ?? '';
+    this.owner = ud.USER ?? '';
+    this.manufacturer = ud.CONTRACTOR ?? '';
+    this.bus = ud.BUS ?? '';
+    this.launchMass = ud.LAUNCH_MASS ?? '';
+    this.dryMass = ud.DRY_MASS ?? '';
+    this.lifetime = ud.LIFETIME ?? '';
+    this.power = ud.POWER ?? '';
+    this.payload = ud.PAYLOAD ?? '';
+    this.equipment = ud.EQUIPMENT ?? '';
+    this.motor = ud.MOTOR ?? '';
+    this.length = ud.LENGTH ?? '';
+    this.diameter = ud.DIAMETER ?? '';
+    this.span = ud.SPAN ?? '';
+    this.shape = ud.SHAPE ?? '';
+
+    if (ud.OBJECT_TYPE) {
+      const typeMap: Record<string, SpaceObjectType> = {
+        PAYLOAD: SpaceObjectType.PAYLOAD,
+        ROCKET_BODY: SpaceObjectType.ROCKET_BODY,
+        DEBRIS: SpaceObjectType.DEBRIS,
+        SPECIAL: SpaceObjectType.SPECIAL,
+      };
+
+      this.type = typeMap[ud.OBJECT_TYPE.toUpperCase()] ?? this.type;
+    }
+
+    if (ud.SOURCE) {
+      this.source = ud.SOURCE;
+    }
   }
 
   isSatellite(): boolean {
@@ -558,24 +633,18 @@ export class OemSatellite extends SpaceObject {
     }
   }
 
-  getOrbitPath(segments?: number): Float32Array {
+  getOrbitPath(): Float32Array {
     if (!this.orbitFullPathCache_) {
       this.generateOrbitPath_();
     }
 
-    // If segments is specified and cached path exists, return only the
-    // requested segments starting with current position
-    if (this.orbitFullPathCache_ && segments) {
+    if (this.orbitFullPathCache_) {
       this.updatePosAndVel(ServiceLocator.getTimeManager().simulationTimeObj.getTime() / 1000 as Seconds); // Ensure current indices are up to date
 
-      return this.getSegmentsFromCache_(segments);
+      return this.getSegmentsFromCache_();
     }
 
-    if (segments) {
-      return this.getOrbitPath(segments);
-    }
-
-    // Return the whole cached path if segments is not specified
+    // Fallback: return the whole cached path
     this.orbitPathCache_ = this.orbitFullPathCache_;
 
     return this.orbitFullPathCache_!;
@@ -605,14 +674,15 @@ export class OemSatellite extends SpaceObject {
   }
 
   /**
-   * Compute stride so `segments` points span ~one orbital period from `currentIndex`.
-   * Falls back to distributing across all remaining data when the period is unknown.
+   * Compute the number of data points to span from `currentIndex`, targeting
+   * one orbital period. Falls back to remaining data when the period is unknown.
+   * Capped at the remaining data so callers never index past the end.
    */
-  private computeOrbitStride_(currentIndex: number, totalPoints: number, segments: number): number {
+  private computeOrbitSpan_(currentIndex: number, totalPoints: number): number {
     const remainingCount = totalPoints - currentIndex;
 
-    if (remainingCount <= segments || !this.epochCache_) {
-      return 1;
+    if (remainingCount <= 1 || !this.epochCache_) {
+      return remainingCount;
     }
 
     let spanCount = remainingCount;
@@ -634,14 +704,14 @@ export class OemSatellite extends SpaceObject {
             right = mid;
           }
         }
-        spanCount = Math.max(1, left - currentIndex);
+        spanCount = Math.min(remainingCount, Math.max(1, left - currentIndex));
       }
     } catch { /* Classical elements unavailable */ }
 
-    return Math.max(1, Math.floor(spanCount / (segments - 1)));
+    return spanCount;
   }
 
-  private getSegmentsFromCache_(segments: number) {
+  private getSegmentsFromCache_() {
     if (!this.orbitFullPathCache_) {
       throw new Error('Orbit full path cache is not available.');
     }
@@ -668,88 +738,85 @@ export class OemSatellite extends SpaceObject {
     const currentIndex = this.computeGlobalIndex_();
     const totalPoints = Math.floor(this.orbitFullPathCache_.length / 4);
 
-    // Compute stride to cover approximately one orbital period across `segments` slots.
-    // Without stride, dense ephemeris (e.g., 10s intervals) would only show a fraction of the orbit.
-    const stride = this.computeOrbitStride_(currentIndex, totalPoints, segments);
+    // Compute the span of data points to display (one orbital period or remaining data).
+    const spanCount = this.computeOrbitSpan_(currentIndex, totalPoints);
 
-    const pointsOut = new Float32Array(segments * 4);
-    let loopIdx = 0;
+    // Clamp span to available data so we never index past the end.
+    const lastValidIndex = Math.min(currentIndex + spanCount, totalPoints - 1);
+    const actualSpan = lastValidIndex - currentIndex;
 
-    // Fill pointsOut starting from currentIndex
-    for (let i = 0; i < segments; i++) {
-      if (i === 0) {
-        // First point is always the current position (in TEME from updatePosAndVel)
-        let px: number = this.position.x;
-        let py: number = this.position.y;
-        let pz: number = this.position.z;
+    // +1 for the interpolated current position as the first point
+    const outputCount = actualSpan + 1;
+    const pointsOut = new Float32Array(outputCount * 4);
 
-        if (settingsManager.centerBody !== SolarBody.Earth) {
-          px = px - offsetOrigin.position.x as Kilometers;
-          py = py - offsetOrigin.position.y as Kilometers;
-          pz = pz - offsetOrigin.position.z as Kilometers;
+    // First point is always the current interpolated position
+    let px: number = this.position.x;
+    let py: number = this.position.y;
+    let pz: number = this.position.z;
+
+    if (settingsManager.centerBody !== SolarBody.Earth) {
+      px = px - offsetOrigin.position.x as Kilometers;
+      py = py - offsetOrigin.position.y as Kilometers;
+      pz = pz - offsetOrigin.position.z as Kilometers;
+    }
+
+    if (isEcf) {
+      const { gmst } = calcGmst(ServiceLocator.getTimeManager().simulationTimeObj);
+      const ecef = eci2ecef({ x: px, y: py, z: pz } as TemeVec3, gmst);
+
+      px = ecef.x;
+      py = ecef.y;
+      pz = ecef.z;
+    }
+
+    pointsOut[0] = px;
+    pointsOut[1] = py;
+    pointsOut[2] = pz;
+    pointsOut[3] = 1.0;
+
+    // Remaining points: use every raw ephemeris data point (no downsampling)
+    for (let i = 1; i < outputCount; i++) {
+      const idx = currentIndex + i;
+
+      if (idx < totalPoints) {
+        let deltaOffsetPos = { x: 0, y: 0, z: 0 };
+
+        if (this.isInertialMoonFrame) {
+          if (!this.moonPositionCache_[idx]) {
+            this.moonPositionCache_[idx] = ServiceLocator.getScene().moons.Moon.getTeme(new Date(this.epochCache_![idx]));
+          }
+
+          const newOffsetPos = this.moonPositionCache_[idx];
+
+          deltaOffsetPos = {
+            x: newOffsetPos.position.x - offsetOrigin.position.x,
+            y: newOffsetPos.position.y - offsetOrigin.position.y,
+            z: newOffsetPos.position.z - offsetOrigin.position.z,
+          };
         }
 
+        let x = this.orbitFullPathCache_[idx * 4] - deltaOffsetPos.x;
+        let y = this.orbitFullPathCache_[idx * 4 + 1] - deltaOffsetPos.y;
+        let z = this.orbitFullPathCache_[idx * 4 + 2] - deltaOffsetPos.z;
+
+        // Convert TEME→ECEF if in ECF mode (matching orbit cruncher approach)
         if (isEcf) {
-          const { gmst } = calcGmst(ServiceLocator.getTimeManager().simulationTimeObj);
-          const ecef = eci2ecef({ x: px, y: py, z: pz } as TemeVec3, gmst);
+          const epochMs = this.epochCache_![idx];
+          const { gmst } = calcGmst(new Date(epochMs));
+          const ecef = eci2ecef({ x, y, z } as TemeVec3, gmst);
 
-          px = ecef.x;
-          py = ecef.y;
-          pz = ecef.z;
+          x = ecef.x;
+          y = ecef.y;
+          z = ecef.z;
         }
 
-        pointsOut[i * 4] = px;
-        pointsOut[i * 4 + 1] = py;
-        pointsOut[i * 4 + 2] = pz;
+        pointsOut[i * 4] = x;
+        pointsOut[i * 4 + 1] = y;
+        pointsOut[i * 4 + 2] = z;
         pointsOut[i * 4 + 3] = 1.0;
       } else {
-        const idx = currentIndex + i * stride;
-
-        if (idx < totalPoints) {
-          let deltaOffsetPos = { x: 0, y: 0, z: 0 };
-
-          if (this.isInertialMoonFrame) {
-            if (!this.moonPositionCache_[idx]) {
-              this.moonPositionCache_[idx] = ServiceLocator.getScene().moons.Moon.getTeme(new Date(this.epochCache_![idx]));
-            }
-
-            const newOffsetPos = this.moonPositionCache_[idx];
-
-            deltaOffsetPos = {
-              x: newOffsetPos.position.x - offsetOrigin.position.x,
-              y: newOffsetPos.position.y - offsetOrigin.position.y,
-              z: newOffsetPos.position.z - offsetOrigin.position.z,
-            };
-          }
-
-          let x = this.orbitFullPathCache_[idx * 4] - deltaOffsetPos.x;
-          let y = this.orbitFullPathCache_[idx * 4 + 1] - deltaOffsetPos.y;
-          let z = this.orbitFullPathCache_[idx * 4 + 2] - deltaOffsetPos.z;
-
-          // Convert TEME→ECEF if in ECF mode (matching orbit cruncher approach)
-          if (isEcf) {
-            const epochMs = this.epochCache_![idx];
-            const { gmst } = calcGmst(new Date(epochMs));
-            const ecef = eci2ecef({ x, y, z } as TemeVec3, gmst);
-
-            x = ecef.x;
-            y = ecef.y;
-            z = ecef.z;
-          }
-
-          pointsOut[i * 4] = x;
-          pointsOut[i * 4 + 1] = y;
-          pointsOut[i * 4 + 2] = z;
-          pointsOut[i * 4 + 3] = 1.0;
-
-          loopIdx = i;
-        } else {
-          // If we exceed the available points, continue using the last point in a looped fashion
-          pointsOut[i * 4] = pointsOut[loopIdx * 4];
-          pointsOut[i * 4 + 1] = pointsOut[loopIdx * 4 + 1];
-          pointsOut[i * 4 + 2] = pointsOut[loopIdx * 4 + 2];
-          pointsOut[i * 4 + 3] = 1.0;
-        }
+        // Past end of data — make invisible (alpha=0 hides the segment)
+        pointsOut[i * 4 + 3] = 0.0;
       }
     }
 

@@ -1122,9 +1122,9 @@ export class DotsManager {
                         float cosD = cos(deltaGmst);
                         float sinD = sin(deltaGmst);
                         eciPos = vec3(
-                            eciPos.x * cosD - eciPos.y * sinD,
-                            eciPos.x * sinD + eciPos.y * cosD,
-                            eciPos.z
+                            a_position.x * cosD - a_position.y * sinD + worldOffset.x,
+                            a_position.x * sinD + a_position.y * cosD + worldOffset.y,
+                            a_position.z + worldOffset.z
                         );
                     }
                     position = u_pMvCamMatrix * vec4(eciPos, 1.0);

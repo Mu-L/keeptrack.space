@@ -275,7 +275,7 @@ export abstract class ColorScheme {
   }
 
   checkSensorVisibility_(obj: BaseObject, sensorFlagKey: string, sensorColorKey: string): ColorInformation | null {
-    if (obj.isSensor() && (this.objectTypeFlags[sensorFlagKey] === false || ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM)) {
+    if (obj.isSensor() && (settingsManager.isDisableSensors || this.objectTypeFlags[sensorFlagKey] === false || ServiceLocator.getMainCamera().cameraType === CameraType.PLANETARIUM)) {
       return {
         color: this.colorTheme.deselected,
         pickable: Pickable.No,

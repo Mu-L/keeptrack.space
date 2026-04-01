@@ -91,7 +91,9 @@ export class MeshRenderer {
     this.applyAttributePointers_(this.meshManager_.currentMeshObject.model);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.meshManager_.currentMeshObject.model.buffers.indexBuffer);
-    gl.drawElements(gl.TRIANGLES, this.meshManager_.currentMeshObject.model.buffers.indexCount, gl.UNSIGNED_SHORT, 0);
+    const indexType = this.meshManager_.currentMeshObject.model.buffers.useUint32Indices ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+
+    gl.drawElements(gl.TRIANGLES, this.meshManager_.currentMeshObject.model.buffers.indexCount, indexType, 0);
 
     this.changeVertexAttribArrays(false);
     gl.disable(gl.BLEND);
@@ -122,7 +124,9 @@ export class MeshRenderer {
       gl.uniform3fv(occlusionPrgm.uniform.uWorldOffset, [0, 0, 0]);
 
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.meshManager_.currentMeshObject.model.buffers!.indexBuffer);
-      gl.drawElements(gl.TRIANGLES, this.meshManager_.currentMeshObject.model.buffers!.indexCount, gl.UNSIGNED_SHORT, 0);
+      const occIndexType = this.meshManager_.currentMeshObject.model.buffers!.useUint32Indices ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+
+      gl.drawElements(gl.TRIANGLES, this.meshManager_.currentMeshObject.model.buffers!.indexCount, occIndexType, 0);
 
       occlusionPrgm.attrOff();
     } catch {

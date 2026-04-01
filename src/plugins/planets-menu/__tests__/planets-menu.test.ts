@@ -210,23 +210,10 @@ describe('PlanetsMenuPlugin', () => {
       expect(uiFinalSpy).not.toHaveBeenCalled();
     });
 
-    it('should call addDeepSpaceProbesMenu_ via onBottomIconClick', () => {
+    it('should have bottomIconCallback as no-op', () => {
       const plugin = new PlanetsMenuPlugin();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const spy = vi.spyOn(plugin as any, 'addDeepSpaceProbesMenu_').mockImplementation(() => undefined);
-
-      plugin.onBottomIconClick();
-      expect(spy).toHaveBeenCalled();
-    });
-
-    it('should bridge bottomIconCallback to onBottomIconClick', () => {
-      const plugin = new PlanetsMenuPlugin();
-
-      plugin.onBottomIconClick = vi.fn();
-
-      plugin.bottomIconCallback();
-      expect(plugin.onBottomIconClick).toHaveBeenCalled();
+      expect(() => plugin.bottomIconCallback()).not.toThrow();
     });
 
     it('should register endOfDraw handler on addHtml', () => {
@@ -349,15 +336,11 @@ describe('PlanetsMenuPlugin', () => {
     });
 
     describe('Interaction guards', () => {
-      it('should not call addDeepSpaceProbesMenu_ when planets disabled', () => {
+      it('should not throw when bottomIconCallback called with planets disabled', () => {
         settingsManager.isDisablePlanets = true;
         const plugin = new PlanetsMenuPlugin();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const spy = vi.spyOn(plugin as any, 'addDeepSpaceProbesMenu_').mockImplementation(() => undefined);
-
-        plugin.onBottomIconClick();
-        expect(spy).not.toHaveBeenCalled();
+        expect(() => plugin.bottomIconCallback()).not.toThrow();
       });
 
       it('should not call changePlanet when planets disabled via onContextMenuAction', () => {

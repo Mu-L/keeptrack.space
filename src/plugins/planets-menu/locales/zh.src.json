@@ -7,8 +7,7 @@
       "sections": {
         "planets": "行星",
         "dwarfPlanets": "矮行星",
-        "otherCelestialBodies": "其他天体",
-        "deepSpaceProbes": "深空探测器"
+        "otherCelestialBodies": "其他天体"
       },
       "tooltips": {
         "centerCamera": "将相机对准 {body}。",

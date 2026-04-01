@@ -885,7 +885,7 @@ export class Camera {
 
     // Compensate for Earth rotation in FIXED_TO_EARTH mode
     // so the camera stays fixed to geographic coordinates
-    if (this.cameraType === CameraType.FIXED_TO_EARTH) {
+    if (this.cameraType === CameraType.FIXED_TO_EARTH && settingsManager.isCompensateForEarthRotation) {
       const currentGmst = ServiceLocator.getTimeManager().gmst;
 
       if (this.state.hasPrevGmst) {

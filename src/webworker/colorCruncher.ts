@@ -550,7 +550,7 @@ function objectTypeScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 
   if (flags & ObjFlags.IS_SENSOR) {
-    if (objectTypeFlags.sensor === false || settings.cameraType === CAM_PLANETARIUM) {
+    if (settings.isDisableSensors || objectTypeFlags.sensor === false || settings.cameraType === CAM_PLANETARIUM) {
       writeDeselected(cd, pd, i);
     } else {
       writeColorArr(cd, pd, i, colorTheme.sensor ?? [0, 0, 1, 1], PICKABLE_YES);
@@ -784,7 +784,7 @@ function celestrakScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 
   if (flags & ObjFlags.IS_SENSOR) {
-    if (objectTypeFlags.celestrakDefaultSensor === false || settings.cameraType === CAM_PLANETARIUM) {
+    if (settings.isDisableSensors || objectTypeFlags.celestrakDefaultSensor === false || settings.cameraType === CAM_PLANETARIUM) {
       writeDeselected(cd, pd, i);
     } else {
       writeColorArr(cd, pd, i, colorTheme.celestrakDefaultSensor ?? [0, 0, 1, 0.85], PICKABLE_YES);
@@ -1094,7 +1094,7 @@ function sunlightScheme(cd: Float32Array, pd: Int8Array, i: number): void {
   }
 
   if (flags & ObjFlags.IS_SENSOR) {
-    if (objectTypeFlags.sensor === false) {
+    if (settings.isDisableSensors || objectTypeFlags.sensor === false) {
       writeDeselected(cd, pd, i);
     } else {
       writeColorArr(cd, pd, i, colorTheme.sensor ?? [0, 0, 1, 1], PICKABLE_YES);

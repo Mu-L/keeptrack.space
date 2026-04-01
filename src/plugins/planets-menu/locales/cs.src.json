@@ -7,8 +7,7 @@
       "sections": {
         "planets": "Planety",
         "dwarfPlanets": "Trpasličí planety",
-        "otherCelestialBodies": "Ostatní nebeská tělesa",
-        "deepSpaceProbes": "Sondy do hlubokého vesmíru"
+        "otherCelestialBodies": "Ostatní nebeská tělesa"
       },
       "tooltips": {
         "centerCamera": "Zaměřit kameru na {body}.",
