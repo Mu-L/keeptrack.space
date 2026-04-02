@@ -1,6 +1,6 @@
 :root {
   /** The height of the time slider bar */
-  --time-slider-height: 25px !important;
+  --time-slider-height: 25px;
 }
 
 .time-slider-container {

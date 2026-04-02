@@ -185,6 +185,23 @@ export class TimeSlider extends KeepTrackPlugin {
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
       });
+
+      const onTouchMove = (e: TouchEvent) => {
+        e.preventDefault();
+        updateSliderPosition(e.touches[0].clientX);
+      };
+
+      const onTouchEnd = () => {
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+      };
+
+      slider.addEventListener('touchstart', (e: TouchEvent) => {
+        e.preventDefault();
+        updateSliderPosition(e.touches[0].clientX);
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+      }, { passive: false });
     }
   }
 }
