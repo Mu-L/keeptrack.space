@@ -85,7 +85,7 @@ export class Moon extends CelestialBody {
   }
 
   draw(sunPosition: vec3, tgtBuffer: WebGLFramebuffer | null = null) {
-    if (!this.isLoaded_ || settingsManager.isDisablePlanets) {
+    if (!this.isLoaded_) {
       return;
     }
     super.draw(sunPosition, tgtBuffer);

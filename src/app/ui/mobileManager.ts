@@ -41,6 +41,7 @@ export class MobileManager {
             settingsManager.plugins[key] = false;
           });
           settingsManager.plugins.SoundToggle = cachePlugins.SoundToggle;
+          settingsManager.plugins.SelectSatManager = cachePlugins.SelectSatManager;
           settingsManager.plugins.SatInfoBoxCore = cachePlugins.SatInfoBoxCore;
           settingsManager.plugins.SatInfoBoxObject = cachePlugins.SatInfoBoxObject;
           settingsManager.plugins.TopMenu = cachePlugins.TopMenu;
@@ -48,6 +49,8 @@ export class MobileManager {
           settingsManager.plugins.SatInfoBoxOrbital = cachePlugins.SatInfoBoxOrbital;
           settingsManager.plugins.SatInfoBoxMission = cachePlugins.SatInfoBoxMission;
           settingsManager.plugins.SatInfoBoxSponsor = cachePlugins.SatInfoBoxSponsor;
+          settingsManager.plugins.ScenarioManagementPlugin = cachePlugins.ScenarioManagementPlugin;
+          settingsManager.plugins.TimeSlider = cachePlugins.TimeSlider;
 
           settingsManager.plugins.CountriesMenu = cachePlugins.CountriesMenu;
           settingsManager.plugins.FilterMenuPlugin = cachePlugins.FilterMenuPlugin;
@@ -56,6 +59,10 @@ export class MobileManager {
           settingsManager.plugins.NaturalEventsPlugin = cachePlugins.NaturalEventsPlugin;
           settingsManager.plugins.SeismicActivityPlugin = cachePlugins.SeismicActivityPlugin;
           settingsManager.plugins.FilterMenuPlugin = cachePlugins.FilterMenuPlugin;
+          settingsManager.plugins.DeepSpaceMissionsPlugin = cachePlugins.DeepSpaceMissionsPlugin;
+          settingsManager.plugins.NightToggle = cachePlugins.NightToggle;
+          settingsManager.plugins.GraticuleToggle = cachePlugins.GraticuleToggle;
+          settingsManager.plugins.CloudsToggle = cachePlugins.CloudsToggle;
 
           settingsManager.plugins.LaunchCalendar = cachePlugins.LaunchCalendar;
           settingsManager.plugins.NextLaunchesPlugin = cachePlugins.NextLaunchesPlugin;
@@ -88,7 +95,7 @@ export class MobileManager {
             isDrawMilkyWay: false,
             isDisableGodrays: true,
             godraysSamples: -1,
-            isDisableMoon: true,
+            isDisableMoon: false,
             earthDayTextureQuality: EarthDayTextureQuality.HIGH,
             earthNightTextureQuality: EarthNightTextureQuality.HIGH,
             isDrawNightAsDay: false,

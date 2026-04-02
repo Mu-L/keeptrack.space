@@ -2425,7 +2425,6 @@ button.ui-button::-moz-focus-inner {
 }
 
 #nav-top-center {
-  position: absolute;
   width: 100%;
   text-align: center;
   display: flex;

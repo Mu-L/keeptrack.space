@@ -16,6 +16,7 @@ import { settingsManager } from '@app/settings/settings';
 import leftPanelClosePng from '@public/img/icons/left-panel-close.png';
 import leftPanelOpenPng from '@public/img/icons/left-panel-open.png';
 import searchPng from '@public/img/icons/search.png';
+import ktsOrangeLogoPng from '@public/img/kts-orange-logo.png';
 import {
   type DrawerBadge, type DrawerGroup, type DrawerItemData,
   buildRecentGroupFromCache, loadRecentPlugins, renderBadge,
@@ -191,9 +192,10 @@ export class PluginDrawer {
     const navWrapper = getEl('nav-wrapper', true);
 
     if (this.isMobileMode_) {
-      // Mobile: hamburger inside the drawer, logo in the nav bar
-      this.drawerEl_?.appendChild(btn);
+      // Mobile: hamburger + compact logo in the nav bar (top-left)
+      logoEl.innerHTML = `<img src="${ktsOrangeLogoPng}" alt="KeepTrack" />`;
       navWrapper?.prepend(logoEl);
+      navWrapper?.prepend(btn);
     } else {
       // Desktop: hamburger + logo in the nav bar (top-left)
       navWrapper?.prepend(logoEl);
@@ -513,6 +515,13 @@ export class PluginDrawer {
 
     if (utilityFooter) {
       utilityFooter.addEventListener('click', (evt: Event) => {
+        // On mobile, first tap expands the footer; subsequent taps act on icons
+        if (this.isMobileMode_ && !utilityFooter.classList.contains('expanded')) {
+          utilityFooter.classList.add('expanded');
+
+          return;
+        }
+
         const iconEl = (evt.target as HTMLElement).closest('.drawer-utility-icon') as HTMLElement | null;
 
         if (!iconEl || iconEl.classList.contains('disabled')) {
@@ -533,6 +542,19 @@ export class PluginDrawer {
           iconEl.classList.toggle('bmenu-item-selected');
         }
       });
+
+      // On mobile, collapse utility footer when tapping outside it.
+      // Use touchstart because the WebGL canvas swallows click events.
+      if (this.isMobileMode_) {
+        const collapseIfOutside = (evt: Event) => {
+          if (utilityFooter.classList.contains('expanded') && !utilityFooter.contains(evt.target as Node)) {
+            utilityFooter.classList.remove('expanded');
+          }
+        };
+
+        document.addEventListener('touchstart', collapseIfOutside, { passive: true });
+        document.addEventListener('click', collapseIfOutside);
+      }
     }
 
     // Search trigger — opens command palette

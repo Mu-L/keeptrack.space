@@ -336,12 +336,12 @@ export class Scene {
           this.getBodyById(settingsManager.centerBody)?.draw(this.sun.position, renderer.postProcessingManager.curBuffer);
         }
 
-        if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
-          if (settingsManager.isDrawEarth !== false && camera.cameraType !== CameraType.ASTRONOMY && camera.cameraType !== CameraType.PLANETARIUM) {
-            this.earth.draw(renderer.postProcessingManager.curBuffer);
-          }
-          this.getBodyById(SolarBody.Moon)?.draw(this.sun.position, renderer.postProcessingManager.curBuffer);
+      }
+      if (settingsManager.centerBody === SolarBody.Earth || settingsManager.centerBody === SolarBody.Moon) {
+        if (settingsManager.isDrawEarth !== false && camera.cameraType !== CameraType.ASTRONOMY && camera.cameraType !== CameraType.PLANETARIUM) {
+          this.earth.draw(renderer.postProcessingManager.curBuffer);
         }
+        this.getBodyById(SolarBody.Moon)?.draw(this.sun.position, renderer.postProcessingManager.curBuffer);
       }
 
       EventBus.getInstance().emit(EventBusEvent.drawOptionalScenery);
@@ -552,16 +552,19 @@ export class Scene {
         for (const planet of Object.values(this.planets)) {
           planet.init(this.gl_);
         }
-        for (const moon of Object.values(this.moons)) {
-          moon.init(this.gl_);
-        }
         for (const dwarfPlanet of Object.values(this.dwarfPlanets)) {
           dwarfPlanet.init(this.gl_);
         }
+
+        // This doesn't belong under a disable planets flag
         await loadDeepSpaceSatelliteData(this.deepSpaceSatellites);
         for (const deepSpaceSat of Object.values(this.deepSpaceSatellites)) {
           deepSpaceSat.init(this.gl_);
         }
+      }
+
+      for (const moon of Object.values(this.moons)) {
+        moon.init(this.gl_);
       }
 
       if (!settingsManager.isDisableSearchBox) {
