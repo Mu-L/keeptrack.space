@@ -10,6 +10,7 @@ import { SatInfoBox } from '@app/plugins/sat-info-box/sat-info-box';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
 import { Satellite, SpaceObjectType, Star } from '@ootk/src/main';
 import searchPng from '@public/img/icons/search.png';
+import { settingsManager } from '@app/settings/settings';
 import { errorManagerInstance } from '../../engine/utils/errorManager';
 import { getEl } from '../../engine/utils/get-el';
 import { slideInDown, slideOutUp } from '../../engine/utils/slide';
@@ -197,14 +198,16 @@ export class SearchManager {
       }
     });
 
-    // Add keyboard hint to search placeholder
-    const searchInput = getEl('search') as HTMLInputElement | null;
+    // Add keyboard hint to search placeholder (skip on mobile — no keyboard)
+    if (!settingsManager.isMobileModeEnabled) {
+      const searchInput = getEl('search') as HTMLInputElement | null;
 
-    if (searchInput) {
-      const currentPlaceholder = searchInput.placeholder;
+      if (searchInput) {
+        const currentPlaceholder = searchInput.placeholder;
 
-      if (!currentPlaceholder.includes('(F)')) {
-        searchInput.placeholder = `${currentPlaceholder} (F)`;
+        if (!currentPlaceholder.includes('(F)')) {
+          searchInput.placeholder = `${currentPlaceholder} (F)`;
+        }
       }
     }
   }
