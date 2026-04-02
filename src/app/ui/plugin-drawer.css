@@ -503,7 +503,7 @@ body.drawer-mode {
     bottom: 12px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100000;
+    z-index: 10000;
     background: rgba(30, 30, 30, 0.75);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -993,24 +993,22 @@ body.drawer-mode:not(.is-mobile-mode) {
    =================================================================== */
 body.is-mobile-mode {
 
-  /* Mobile hamburger is inside the drawer, acts as a tab on the right edge */
+  /* Mobile hamburger is in the nav bar (top-left) */
   .drawer-hamburger {
-    position: absolute;
-    top: 0;
-    right: calc(-1 * var(--nav-bar-height));
+    position: relative;
     width: var(--nav-bar-height);
     height: var(--nav-bar-height);
-    background: var(--color-dark-background);
-    border-radius: 0 6px 6px 0;
-    transition: right var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1)),
-      border-radius var(--kt-duration-slow, 300ms) var(--kt-easing-enter, cubic-bezier(0, 0, 0.2, 1));
+    background: transparent;
+    flex-shrink: 0;
   }
 
-  .plugin-drawer.open .drawer-hamburger {
-    right: 0;
-    border-radius: 0;
-    margin-top: -0.5rem;
-    padding-top: 1rem;
+  /* Compact orange logo for mobile */
+  .nav-logo {
+    padding-left: 0.25rem;
+  }
+
+  .nav-logo img {
+    height: 28px;
   }
 
   .plugin-drawer.mobile-mode {
@@ -1064,6 +1062,16 @@ body.is-mobile-mode {
     padding-right: 10px !important;
   }
 
+  .drawer-search {
+    display: none !important;
+  }
+
+  /* Hide keyboard shortcut hints on mobile */
+  .drawer-item-shortcut,
+  .drawer-rail-toggle-shortcut {
+    display: none !important;
+  }
+
   /* Hide the search toggle button (search is always visible) */
   #search-btn {
     display: none !important;
@@ -1073,7 +1081,6 @@ body.is-mobile-mode {
   #nav-wrapper {
     justify-content: space-between !important;
     align-items: center !important;
-    padding-left: var(--nav-bar-height) !important;
   }
 
   #nav-top-center {
@@ -1148,5 +1155,53 @@ body.is-mobile-mode {
     display: block;
     width: max-content;
     min-width: 100%;
+  }
+
+  /* ---- Utility footer: replace :hover with .expanded class on mobile ---- */
+  .drawer-utility-footer {
+    /* Disable hover-based expansion on touch devices */
+    max-width: 48px;
+    padding: 6px;
+    gap: 0;
+  }
+
+  .drawer-utility-footer:hover {
+    max-width: 48px;
+    padding: 6px;
+    gap: 0;
+    cursor: pointer;
+    box-shadow: none;
+  }
+
+  .drawer-utility-footer:hover::before {
+    width: 28px;
+    opacity: 1;
+    overflow: visible;
+  }
+
+  .drawer-utility-footer:hover .drawer-utility-section {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  /* JS-toggled expanded state */
+  .drawer-utility-footer.expanded {
+    max-width: 90vw;
+    padding: 6px 12px;
+    gap: 2px;
+    cursor: default;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .drawer-utility-footer.expanded::before {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .drawer-utility-footer.expanded .drawer-utility-section {
+    max-width: 600px;
+    opacity: 1;
   }
 }
