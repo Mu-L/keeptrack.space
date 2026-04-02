@@ -258,7 +258,7 @@ export class CatalogLoader {
         await apiFetch(settingsManager.dataSources.tle)
           .then((response) => {
             if (response.status === 401) {
-              return [];
+              throw new Error('Failed to fetch');
             }
 
             return response.json();
