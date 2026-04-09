@@ -14,7 +14,8 @@
         "sensorToSatellite": "センサーから衛星",
         "satelliteToSatellite": "衛星から衛星",
         "satelliteToSun": "衛星から太陽",
-        "satelliteToMoon": "衛星から月"
+        "satelliteToMoon": "衛星から月",
+        "moonOrbit": "月の軌道を描画"
       },
       "errorMsgs": {
         "noPrimarySat": "衛星間ラインの主衛星が選択されていません。"

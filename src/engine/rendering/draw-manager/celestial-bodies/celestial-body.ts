@@ -16,7 +16,7 @@ import { SphereGeometry } from '@app/engine/rendering/sphere-geometry';
 import { glsl } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { DEG2RAD, TemeVec3, EpochUTC, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, TEME, Vector3D } from '@ootk/src/main';
+import { DEG2RAD, EpochUTC, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, TEME, TemeVec3, Vector3D } from '@ootk/src/main';
 import { Body, KM_PER_AU, BackdatePosition as backdatePosition, RotationAxis as rotationAxis } from 'astronomy-engine';
 import { mat3, mat4, vec3 } from 'gl-matrix';
 import { DepthManager } from '../../depth-manager';
@@ -28,7 +28,7 @@ export const PlanetColors = {
   MERCURY: [0.59, 0.4, 0.6, 0.95] as rgbaArray,
   VENUS: [0.69, 0.47, 0.1, 0.95] as rgbaArray,
   EARTH: [0, 0.6, 0.8, 0.95] as rgbaArray,
-  MOON: [0, 0.6, 0.8, 0.7] as rgbaArray,
+  MOON: [1.0, 1.0, 1.0, 0.7] as rgbaArray,
   MARS: [0.6, 0.3, 0.1, 0.95] as rgbaArray,
   JUPITER: [0.95, 0.71, 0.64, 0.7] as rgbaArray,
   SATURN: [0.72, 0.65, 0.52, 0.7] as rgbaArray,
@@ -411,7 +411,7 @@ export abstract class CelestialBody {
     if (this.fullOrbitPathEarthCentered) {
       this.fullOrbitPathEarthCentered.isGarbage = true;
     }
-    this.fullOrbitPathEarthCentered = lineManager.createOrbitPath(orbitPositions, this.color, SolarBody.Sun);
+    this.fullOrbitPathEarthCentered = lineManager.createOrbitPath(orbitPositions, this.color, SolarBody.Earth);
   }
 
   protected calculateRelativeSatPos() {

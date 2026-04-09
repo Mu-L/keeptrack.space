@@ -14,7 +14,8 @@
         "sensorToSatellite": "Senzor – satelit",
         "satelliteToSatellite": "Satelit – satelit",
         "satelliteToSun": "Satelit – Slunce",
-        "satelliteToMoon": "Satelit – Měsíc"
+        "satelliteToMoon": "Satelit – Měsíc",
+        "moonOrbit": "Nakreslit oběžnou dráhu Měsíce"
       },
       "errorMsgs": {
         "noPrimarySat": "Nebyl vybrán primární satelit pro linii satelit–satelit."

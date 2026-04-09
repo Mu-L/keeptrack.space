@@ -14,7 +14,8 @@
         "sensorToSatellite": "Sensore-Satellite",
         "satelliteToSatellite": "Satellite-Satellite",
         "satelliteToSun": "Satellite-Sole",
-        "satelliteToMoon": "Satellite-Luna"
+        "satelliteToMoon": "Satellite-Luna",
+        "moonOrbit": "Disegna orbita della Luna"
       },
       "errorMsgs": {
         "noPrimarySat": "Nessun satellite primario selezionato per la linea satellite-satellite."

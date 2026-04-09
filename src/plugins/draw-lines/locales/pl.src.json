@@ -14,7 +14,8 @@
         "sensorToSatellite": "Czujnik do satelity",
         "satelliteToSatellite": "Satelita do satelity",
         "satelliteToSun": "Satelita do Słońca",
-        "satelliteToMoon": "Satelita do Księżyca"
+        "satelliteToMoon": "Satelita do Księżyca",
+        "moonOrbit": "Rysuj orbitę Księżyca"
       },
       "errorMsgs": {
         "noPrimarySat": "Nie wybrano głównego satelity dla linii satelita–satelita."
