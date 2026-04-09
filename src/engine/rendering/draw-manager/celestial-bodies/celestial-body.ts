@@ -28,7 +28,7 @@ export const PlanetColors = {
   MERCURY: [0.59, 0.4, 0.6, 0.95] as rgbaArray,
   VENUS: [0.69, 0.47, 0.1, 0.95] as rgbaArray,
   EARTH: [0, 0.6, 0.8, 0.95] as rgbaArray,
-  MOON: [0, 0.6, 0.8, 0.7] as rgbaArray,
+  MOON: [1.0, 1.0, 1.0, 0.7] as rgbaArray,
   MARS: [0.6, 0.3, 0.1, 0.95] as rgbaArray,
   JUPITER: [0.95, 0.71, 0.64, 0.7] as rgbaArray,
   SATURN: [0.72, 0.65, 0.52, 0.7] as rgbaArray,
