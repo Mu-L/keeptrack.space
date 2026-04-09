@@ -14,7 +14,8 @@
         "sensorToSatellite": "Capteur vers satellite",
         "satelliteToSatellite": "Satellite vers satellite",
         "satelliteToSun": "Satellite vers le Soleil",
-        "satelliteToMoon": "Satellite vers la Lune"
+        "satelliteToMoon": "Satellite vers la Lune",
+        "moonOrbit": "Dessiner l'orbite de la Lune"
       },
       "errorMsgs": {
         "noPrimarySat": "Aucun satellite principal sélectionné pour la ligne satellite vers satellite."

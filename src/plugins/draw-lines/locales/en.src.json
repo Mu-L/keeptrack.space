@@ -14,7 +14,8 @@
         "sensorToSatellite": "Sensor to Satellite",
         "satelliteToSatellite": "Satellite to Satellite",
         "satelliteToSun": "Satellite to Sun",
-        "satelliteToMoon": "Satellite to Moon"
+        "satelliteToMoon": "Satellite to Moon",
+        "moonOrbit": "Draw Moon's Orbit"
       },
       "errorMsgs": {
         "noPrimarySat": "No primary satellite selected for Satellite to Satellite line."

@@ -2,6 +2,8 @@
 import { MissileObject } from '@app/app/data/catalog-manager/MissileObject';
 import { OemSatellite } from '@app/app/objects/oem-satellite';
 import { SolarBody } from '@app/engine/core/interfaces';
+import { PluginRegistry } from '@app/engine/core/plugin-registry';
+import { ServiceLocator } from '@app/engine/core/service-locator';
 import { EventBus } from '@app/engine/events/event-bus';
 import { EventBusEvent } from '@app/engine/events/event-bus-events';
 import { ReferenceFrame } from '@app/engine/math/reference-frames';
@@ -11,11 +13,9 @@ import { html } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { hideEl } from '@app/engine/utils/get-el';
 import { t7e } from '@app/locales/keys';
-import { Satellite, Kilometers } from '@ootk/src/main';
+import { Kilometers, Satellite } from '@ootk/src/main';
 import { KeepTrackPlugin } from '../../engine/plugins/base-plugin';
 import { SelectSatManager } from '../select-sat-manager/select-sat-manager';
-import { PluginRegistry } from '@app/engine/core/plugin-registry';
-import { ServiceLocator } from '@app/engine/core/service-locator';
 
 export class DrawLinesPlugin extends KeepTrackPlugin {
   readonly id = 'DrawLinesPlugin';
@@ -51,6 +51,7 @@ export class DrawLinesPlugin extends KeepTrackPlugin {
       <li id="line-sat-sat-rmb"><a href="#">${m('satelliteToSatellite')}</a></li>
       <li id="line-sat-sun-rmb"><a href="#">${m('satelliteToSun')}</a></li>
       <li id="line-sat-moon-rmb"><a href="#">${m('satelliteToMoon')}</a></li>
+      <li id="line-moon-orbit-rmb"><a href="#">${m('moonOrbit')}</a></li>
     </ul>
     `;
   }
@@ -132,6 +133,9 @@ export class DrawLinesPlugin extends KeepTrackPlugin {
         break;
       case 'line-sat-moon-rmb':
         lineManagerInstance.createSat2CelestialBody(clickSatObj, SolarBody.Moon);
+        break;
+      case 'line-moon-orbit-rmb':
+        ServiceLocator.getScene().moons?.Moon?.drawFullOrbitPathRelativeToEarth();
         break;
       default:
         break;
