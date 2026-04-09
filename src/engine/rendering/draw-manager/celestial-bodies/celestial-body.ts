@@ -16,7 +16,7 @@ import { SphereGeometry } from '@app/engine/rendering/sphere-geometry';
 import { glsl } from '@app/engine/utils/development/formatter';
 import { errorManagerInstance } from '@app/engine/utils/errorManager';
 import { SelectSatManager } from '@app/plugins/select-sat-manager/select-sat-manager';
-import { DEG2RAD, TemeVec3, EpochUTC, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, TEME, Vector3D } from '@ootk/src/main';
+import { DEG2RAD, EpochUTC, J2000, Kilometers, KilometersPerSecond, Seconds, SpaceObjectType, TEME, TemeVec3, Vector3D } from '@ootk/src/main';
 import { Body, KM_PER_AU, BackdatePosition as backdatePosition, RotationAxis as rotationAxis } from 'astronomy-engine';
 import { mat3, mat4, vec3 } from 'gl-matrix';
 import { DepthManager } from '../../depth-manager';
@@ -411,7 +411,7 @@ export abstract class CelestialBody {
     if (this.fullOrbitPathEarthCentered) {
       this.fullOrbitPathEarthCentered.isGarbage = true;
     }
-    this.fullOrbitPathEarthCentered = lineManager.createOrbitPath(orbitPositions, this.color, SolarBody.Sun);
+    this.fullOrbitPathEarthCentered = lineManager.createOrbitPath(orbitPositions, this.color, SolarBody.Earth);
   }
 
   protected calculateRelativeSatPos() {
